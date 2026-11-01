@@ -10,6 +10,7 @@ import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
 import { search, lookup, Entry } from '@core/lookup';
 import { renderHandler, FEATURES, Feature } from '@core/templates';
 import { simulate } from './sim';
+import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
@@ -452,3 +453,171 @@ document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.addE
 
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 selectTab('problems');
+
+// ---------------------------------------------------------------------------
+// Fix with AI (artifact `sample` capability: Claude, on the viewer's own account)
+
+const AUTO_KEY = 'nucleus-workbench-ai-auto';
+const aiBox = $('#ai-box');
+const aiBtn = $('#ai-fix') as HTMLButtonElement;
+const aiAuto = $('#ai-auto') as HTMLInputElement;
+try {
+  aiAuto.checked = localStorage.getItem(AUTO_KEY) === '1';
+} catch {
+  /* ignore */
+}
+aiAuto.addEventListener('change', () => {
+  try {
+    localStorage.setItem(AUTO_KEY, aiAuto.checked ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+});
+
+let sample: any = null;
+let aiCtl: AbortController | null = null;
+(async () => {
+  try {
+    sample = await (window as any).claude?.use?.('sample');
+  } catch {
+    sample = null;
+  }
+  if (sample) $('#ai-bar').hidden = false;
+})();
+
+const AI_ERRORS: Record<string, string> = {
+  rate_limited: 'Too many requests right now. Try again in a minute.',
+  session_expired: 'Your Claude session expired. Sign in again, then retry.',
+  refused: 'Claude declined to change this handler.',
+  empty_completion: 'Claude returned nothing. Try again, or ask for less in the note.',
+  invalid_json: "Claude's answer wasn't in the expected format. Try again.",
+  prompt_too_large: 'This handler is too large to send in one request.',
+};
+const AI_UNAVAILABLE = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed']);
+
+function aiStatus(text: string) {
+  const el = aiBox.querySelector('.ai-status-text');
+  if (el) el.textContent = text;
+}
+
+async function runAiFix() {
+  if (!sample) return;
+  const base = editor.getValue();
+  const before = counts(base);
+  aiCtl = new AbortController();
+  aiBtn.disabled = true;
+  aiBox.hidden = false;
+  aiBox.innerHTML = `<div class="ai-status"><span class="spinner" aria-hidden="true"></span><span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
+  $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
+
+  const limits = await sample.limits().catch(() => null);
+  const tools = limits?.tools
+    ? pageTools().map((t) => ({
+        ...t,
+        execute: (input: { [k: string]: unknown }) => {
+          aiStatus(t.name === 'lint_handler' ? 'Claude is checking its fix with the linter…' : `Claude is looking up ${String(input.query ?? '').slice(0, 40)}…`);
+          return t.execute(input);
+        },
+      }))
+    : undefined;
+  try {
+    const r: any = await sample.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
+      signal: aiCtl.signal,
+      ...(tools ? { tools } : { cache: false }),
+      onText: () => aiStatus('Claude is writing the fix…'),
+    });
+    const code = typeof r?.code === 'string' ? r.code.replace(/\r\n/g, '\n') : '';
+    const changes = Array.isArray(r?.changes) ? r.changes.map(String).slice(0, 20) : [];
+    if (!code.trim()) {
+      aiBox.innerHTML = `<p>Claude's answer had no handler code. Try again.</p>`;
+    } else if (code === base) {
+      aiBox.innerHTML = `<p>Claude found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
+    } else {
+      showProposal(base, code, changes, before);
+    }
+  } catch (e: any) {
+    if (e?.code === 'cancelled') {
+      aiBox.hidden = true;
+    } else if (AI_UNAVAILABLE.has(e?.code)) {
+      $('#ai-bar').hidden = true;
+      aiBox.innerHTML = `<p>Claude isn't available on this page for your account, so Fix with AI is turned off.</p>`;
+    } else {
+      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? 'Something went wrong reaching Claude. Try again.')}</p>`;
+    }
+  } finally {
+    aiBtn.disabled = false;
+    aiCtl = null;
+  }
+}
+aiBtn.addEventListener('click', runAiFix);
+
+function applyCode(code: string) {
+  const doc = editor.getDoc();
+  doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix');
+}
+
+function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }) {
+  const after = counts(code);
+  const edited = editor.getValue() !== base;
+  const better = after.errors < before.errors || (after.errors === before.errors && after.warnings < before.warnings);
+  const notWorse = after.errors <= before.errors;
+  const lines = hunks(diffLines(base, code));
+  const rows = lines
+    .map((l) =>
+      l === null
+        ? '<tr class="gap"><td colspan="4">⋯</td></tr>'
+        : `<tr class="${l.kind === '+' ? 'add' : l.kind === '-' ? 'del' : ''}"><td class="n">${l.a ?? ''}</td><td class="n">${l.b ?? ''}</td><td class="sign">${l.kind === ' ' ? '' : l.kind}</td><td class="code">${esc(l.text) || ' '}</td></tr>`,
+    )
+    .join('');
+  const added = lines.filter((l) => l?.kind === '+').length;
+  const removed = lines.filter((l) => l?.kind === '-').length;
+  const chip = (n: number, kind: string) => `<span class="chip ${n ? kind : 'ok'}">${n} ${kind === 'error' ? 'error' : 'warning'}${n === 1 ? '' : 's'}</span>`;
+  const delta = `<div class="ai-delta">Before ${chip(before.errors, 'error')} ${chip(before.warnings, 'warning')} → after ${chip(after.errors, 'error')} ${chip(after.warnings, 'warning')} <span class="muted">· +${added} −${removed} lines</span></div>`;
+
+  const introduced = newProblems(base, code);
+  const baseLines = base.split('\n').length;
+  const bigRewrite = removed > Math.max(20, baseLines * 0.5);
+  let reason = '';
+  if (edited) reason = 'You edited the handler while Claude was working, so this was not applied automatically. Accepting replaces your latest edits.';
+  else if (introduced.length) reason = `This version adds ${introduced.length} new problem${introduced.length > 1 ? 's' : ''} (${introduced.slice(0, 2).join('; ')}${introduced.length > 2 ? '; …' : ''}), so it was not applied automatically.`;
+  else if (bigRewrite) reason = `This rewrites a large part of the handler (${removed} of ${baseLines} lines removed), so it was not applied automatically.`;
+  else if (!notWorse) reason = 'This version has more errors than yours, so it was not applied automatically.';
+  else if (!better) reason = 'This version does not reduce the problem count, so it was not applied automatically.';
+  const auto = aiAuto.checked && !reason;
+
+  const body = (state: 'review' | 'applied') => `
+    <h3>${state === 'applied' ? 'Applied Claude\'s fix' : "Claude's proposed fix"}</h3>
+    ${changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
+    ${delta}
+    ${reason && (aiAuto.checked || introduced.length || bigRewrite || edited) ? `<p class="note">${esc(aiAuto.checked ? reason : reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, ''))}</p>` : ''}
+    <div class="diff-wrap"><table class="diff"><tbody>${rows}</tbody></table></div>
+    <div class="ai-actions">${
+      state === 'applied'
+        ? '<button class="btn" id="ai-undo" type="button">Undo</button><button class="btn" id="ai-close" type="button">Close</button>'
+        : '<button class="btn primary" id="ai-accept" type="button">Accept</button><button class="btn" id="ai-reject" type="button">Reject</button>'
+    }</div>`;
+
+  const showApplied = () => {
+    aiBox.innerHTML = body('applied');
+    $('#ai-undo').addEventListener('click', () => {
+      if (editor.getValue() === code) {
+        editor.undo();
+        aiBox.innerHTML = '<p>Undone. Your handler is back to how it was.</p>';
+      } else {
+        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe. Use Ctrl+Z in the editor instead.</p>';
+      }
+    });
+    $('#ai-close').addEventListener('click', () => (aiBox.hidden = true));
+  };
+  if (auto) {
+    applyCode(code);
+    showApplied();
+    return;
+  }
+  aiBox.innerHTML = body('review');
+  $('#ai-accept').addEventListener('click', () => {
+    applyCode(code);
+    showApplied();
+  });
+  $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
+}

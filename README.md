@@ -77,7 +77,14 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - API search;
 - the New Handler templates;
 - a per-player `Game.Play` simulation;
-- the probes, shown next to the linter's verdict.
+- the probes, shown next to the linter's verdict;
+- **Fix with AI**, when the page runs inside a Claude viewer.
+
+**Fix with AI** works like this:
+- It calls Claude through the artifact `sample` capability, on the viewer's own account.
+- Claude gets the page's linter and API lookup as tools, so it can check its own fix.
+- The result is shown as a diff, with error and warning counts before and after. You choose **Accept** or **Reject**.
+- In **Apply automatically** mode the fix is applied straight away, with **Undo**. It still goes to review if the fix adds any new problem, removes more than half the handler, doesn't reduce the problem count, or you edited the handler meanwhile.
 
 It uses the same core code as the extension, from a checkout of [splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode). That checkout needs `npm ci` run in it first.
 
