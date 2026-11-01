@@ -1,0 +1,220 @@
+<title>Nucleus Handler Workbench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>/*CODEMIRROR_CSS*/</style>
+<style>
+/* Layout: a two-pane workbench, code on the left, analysis on the right; stacks on phones. */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --surface-2: #e9edf3; --line: #d3dae4;
+  --fg: #16202c; --muted: #5a6879; --accent: #1f7fae; --accent-fg: #ffffff;
+  --err: #c2362f; --err-bg: #fbe9e7; --warn: #a86400; --warn-bg: #fdf1dc; --info: #2b6cb0; --info-bg: #e5effa; --ok: #2c7a4b; --ok-bg: #e3f3e9;
+  --code-bg: #fbfcfd; --kw: #7a3e9d; --str: #2c7a4b; --num: #a85a00; --cmt: #7d8896; --prop: #1f5f8b;
+  --font-display: "Chakra Petch", "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141b; --surface: #161d26; --surface-2: #1d2631; --line: #2a3542;
+  --fg: #e3e9f0; --muted: #93a1b1; --accent: #4fb3e3; --accent-fg: #06131c;
+  --err: #ff7b72; --err-bg: #3a1d1d; --warn: #f0b252; --warn-bg: #362a14; --info: #79b8ff; --info-bg: #182a3d; --ok: #6fd39a; --ok-bg: #16301f;
+  --code-bg: #121921; --kw: #d2a8ff; --str: #8ddb9c; --num: #f2b36b; --cmt: #6f7d8c; --prop: #8cc8f2;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #161d26; --surface-2: #1d2631; --line: #2a3542;
+  --fg: #e3e9f0; --muted: #93a1b1; --accent: #4fb3e3; --accent-fg: #06131c;
+  --err: #ff7b72; --err-bg: #3a1d1d; --warn: #f0b252; --warn-bg: #362a14; --info: #79b8ff; --info-bg: #182a3d; --ok: #6fd39a; --ok-bg: #16301f;
+  --code-bg: #121921; --kw: #d2a8ff; --str: #8ddb9c; --num: #f2b36b; --cmt: #6f7d8c; --prop: #8cc8f2;
+  color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body); }
+.app { height: 100%; display: flex; flex-direction: column; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px; gap: 10px; box-sizing: border-box; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mark { width: 26px; height: 26px; border-radius: 6px; background: var(--surface-2); display: grid; grid-template-rows: 1fr 1fr; gap: 3px; padding: 4px; box-sizing: border-box; flex: none; }
+.mark i { background: var(--accent); border-radius: 2px; }
+.mark i + i { opacity: .6; }
+h1 { font: 600 19px/1.1 var(--font-display); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 12.5px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; align-items: center; }
+button, select, input { font: inherit; color: inherit; }
+.btn, select { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+.btn:hover, select:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 12px; }
+.pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.pane-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 40px; box-sizing: border-box; }
+#status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
+#editor { flex: 1; min-height: 0; position: relative; }
+#editor .CodeMirror { position: absolute; inset: 0; height: auto; font: 13px/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }
+.CodeMirror-gutters { background: var(--surface-2); border-right: 1px solid var(--line); }
+.CodeMirror-linenumber { color: var(--muted); }
+.CodeMirror-cursor { border-left-color: var(--fg); }
+.CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 600; }
+.cm-s-default .cm-keyword { color: var(--kw); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
+.cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
+.cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--fg); }
+.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--muted); }
+.CodeMirror-lint-mark-error { background: none; border-bottom: 2px wavy var(--err); }
+.CodeMirror-lint-mark-warning { background: none; border-bottom: 2px wavy var(--warn); }
+.CodeMirror-lint-mark-info { background: none; border-bottom: 2px dotted var(--info); }
+.CodeMirror-lint-tooltip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.45 var(--font-body); max-width: 460px; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 50; }
+.CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font: 12.5px var(--font-mono); max-height: 260px; box-shadow: 0 8px 22px rgba(0,0,0,.2); z-index: 60; }
+.CodeMirror-hint { color: var(--fg); display: flex; justify-content: space-between; gap: 16px; padding: 3px 8px; }
+li.CodeMirror-hint-active { background: var(--accent); color: var(--accent-fg); }
+li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
+.hint-type { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hint-name.dep { text-decoration: line-through; opacity: .7; }
+
+#sig { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: 12px/1.5 var(--font-mono); box-shadow: 0 4px 14px rgba(0,0,0,.15); overflow-x: auto; }
+#sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }
+#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); pointer-events: none; }
+#tip p, .api p { margin: 0 0 6px; }
+.doc-code, #tip pre { background: var(--surface-2); border-radius: 5px; padding: 6px 8px; font: 12px/1.45 var(--font-mono); margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
+a { color: var(--accent); }
+
+[role=tablist] { display: flex; gap: 2px; overflow-x: auto; }
+[role=tab] { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px 6px; cursor: pointer; color: var(--muted); font-weight: 500; white-space: nowrap; }
+[role=tab][aria-selected=true] { color: var(--fg); border-bottom-color: var(--accent); }
+.count { font: 500 11px var(--font-mono); background: var(--surface-2); color: var(--muted); border-radius: 9px; padding: 1px 6px; margin-left: 4px; }
+[role=tabpanel] { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.panel-tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; }
+.panel-tools label { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12.5px; }
+
+.pill, .chip { display: inline-block; border-radius: 999px; font-size: 11.5px; font-weight: 600; padding: 1px 8px; background: var(--surface-2); color: var(--muted); letter-spacing: .01em; }
+.pill { padding: 2px 10px; }
+.error.pill, .chip.error { background: var(--err-bg); color: var(--err); }
+.chip.warning { background: var(--warn-bg); color: var(--warn); }
+.chip.info { background: var(--info-bg); color: var(--info); }
+.ok.pill, .chip.ok { background: var(--ok-bg); color: var(--ok); }
+.muted { color: var(--muted); }
+.empty { color: var(--muted); }
+
+#problems { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.problem { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 6px; }
+.problem.error { border-left-color: var(--err); } .problem.warning { border-left-color: var(--warn); } .problem.info, .problem.hint { border-left-color: var(--info); }
+.loc { font: 12px var(--font-mono); background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; height: fit-content; font-variant-numeric: tabular-nums; }
+.msg { overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+.rule { font: 11.5px var(--font-mono); color: var(--muted); cursor: help; }
+.fix { font-size: 12px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); border-radius: 5px; padding: 1px 8px; cursor: pointer; }
+.fix:hover { background: var(--accent); color: var(--accent-fg); }
+
+.banner { border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.banner.error { background: var(--err-bg); color: var(--err); } .banner.ok { background: var(--ok-bg); color: var(--ok); }
+.player { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+h3 { font-size: 13.5px; margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
+dl { margin: 0 0 6px; } dt { color: var(--muted); font-size: 12px; } dd { margin: 0; }
+.mono { font: 12.5px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.mono-list { list-style: none; margin: 4px 0 0; padding: 0; font: 12px/1.55 var(--font-mono); }
+.mono-list li { padding: 2px 0; border-bottom: 1px dashed var(--line); overflow-wrap: anywhere; }
+.mono-list.warn li { color: var(--warn); }
+summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+table { border-collapse: collapse; width: 100%; }
+.opts td { border-bottom: 1px solid var(--line); padding: 3px 6px; vertical-align: top; }
+.table-wrap { overflow-x: auto; }
+.probes th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 6px; border-bottom: 1px solid var(--line); }
+.probes td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.probes tr.disagree { background: var(--err-bg); }
+.detail { color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); overflow-wrap: anywhere; }
+.center { text-align: center; } .agree { color: var(--ok); font-weight: 700; } .disagree-mark { color: var(--err); font-weight: 700; }
+.lede { margin: 0 0 12px; max-width: 65ch; }
+.link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
+#api-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--code-bg); margin-bottom: 12px; }
+.api { border-bottom: 1px solid var(--line); padding: 8px 0; }
+.api h4 { margin: 0 0 4px; font: 600 13px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); padding: 18px; width: min(520px, calc(100vw - 32px)); box-sizing: border-box; }
+dialog::backdrop { background: rgba(10, 15, 22, .45); }
+dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.field input { padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--code-bg); }
+.field small, .check small { color: var(--muted); display: block; font-size: 12px; }
+.check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
+.check input { margin-top: 4px; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+@media (max-width: 860px) {
+  .app { height: auto; min-height: 100%; }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  #editor { height: 52vh; flex: none; }
+  .pane.side { min-height: 60vh; }
+  .toolbar { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><i></i><i></i></span>
+      <div>
+        <h1>Nucleus Handler Workbench</h1>
+        <div class="sub">Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <select id="samples" aria-label="Load an example"></select>
+      <button class="btn" id="new-open" type="button">New handler…</button>
+      <button class="btn" id="copy" type="button">Copy handler</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="pane" aria-label="Handler source">
+      <div class="pane-head"><div id="status"></div></div>
+      <div id="editor"><div id="sig" hidden></div></div>
+    </section>
+
+    <section class="pane side" aria-label="Analysis">
+      <div class="pane-head" role="tablist">
+        <button role="tab" data-tab="problems" type="button">Problems <span class="count" id="count-problems">0</span></button>
+        <button role="tab" data-tab="simulate" type="button">Simulate</button>
+        <button role="tab" data-tab="api" type="button">API</button>
+        <button role="tab" data-tab="probes" type="button">Engine probes <span class="count" id="count-probes">–</span></button>
+      </div>
+      <div role="tabpanel" id="panel-problems">
+        <div class="panel-tools"><label><input type="checkbox" id="show-hints"> Show hints (deprecated options)</label><span class="muted">Hover code for docs · type <code>.</code> or Ctrl+Space to complete</span></div>
+        <ul id="problems"></ul>
+      </div>
+      <div role="tabpanel" id="panel-simulate" hidden>
+        <div class="panel-tools">
+          <label>Players <select id="sim-players"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+          <label>Monitor <select id="sim-res"><option value="1920x1080" selected>1920×1080</option><option value="2560x1440">2560×1440</option><option value="3840x2160">3840×2160</option></select></label>
+          <label>Keyboard & mouse <select id="sim-kb"><option value="0" selected>Player 1</option><option value="1">Player 2</option><option value="-1">Nobody</option></select></label>
+          <button class="btn primary" id="sim-run" type="button">Run again</button>
+        </div>
+        <p class="muted" style="margin:0 0 12px;max-width:65ch">Loads the handler and runs <code>Game.Play</code> once per player in this browser, emulating the Jint 2.11.58 rules Nucleus follows (ignored unknown options, list and enum conversions, argument checks). File, registry and process calls are recorded, not performed. Windows, focus and input still need a real test in Nucleus.</p>
+        <div id="sim-out"></div>
+      </div>
+      <div role="tabpanel" id="panel-api" hidden>
+        <input id="api-q" type="search" placeholder="Search the handler API: KillMutex, window title, Context.ModifySaveFile…" aria-label="Search the handler API">
+        <div id="api-results"></div>
+      </div>
+      <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
+    </section>
+  </div>
+  <footer><span id="build-info"></span><span>Your draft is kept in this browser only.</span></footer>
+</div>
+
+<div id="tip" hidden></div>
+
+<dialog id="new-dialog">
+  <form id="new-form">
+    <h2>New handler</h2>
+    <div class="field"><label for="new-name">Game name</label><input id="new-name" required value="Deep Rock Galactic"><small>Shown in Nucleus. Also used for <code>Game.GUID</code> (letters, digits and spaces only).</small></div>
+    <div class="field"><label for="new-exe">Executable</label><input id="new-exe" required pattern="[^\\/:*?&quot;&lt;&gt;|]+\.exe" value="FSD-Win64-Shipping.exe"></div>
+    <div class="field"><label for="new-steam">Steam app ID <span class="muted">(optional)</span></label><input id="new-steam" inputmode="numeric" pattern="\d*" value="548430"></div>
+    <div id="feature-list"></div>
+    <div class="actions"><button class="btn" type="button" id="new-cancel">Cancel</button><button class="btn primary" type="submit">Create</button></div>
+  </form>
+</dialog>
+
+<script>/*PROBES_AND_BUILD*/</script>
+<script>/*APP_JS*/</script>

@@ -69,6 +69,24 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - **`run.sh --verified`** runs only files listed in that manifest whose hash still matches. **`run.sh --own`** refuses anything under `downloads/`. Don't copy Hub files elsewhere to get around this.
 - **Isolation:** when `unshare -n` is available, the harness runs without network access, in a throwaway working directory and `HOME`.
 
+## Workbench (browser GUI)
+
+`playground/` builds a single self-contained page for testing by hand. It has:
+
+- an editor with live lint squiggles, quick fixes, completion, hover docs and signature help;
+- API search;
+- the New Handler templates;
+- a per-player `Game.Play` simulation;
+- the probes, shown next to the linter's verdict.
+
+It uses the same core code as the extension, from a checkout of [splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode). That checkout needs `npm ci` run in it first.
+
+```bash
+cd playground && npm install && node build.mjs --core ../../splitscreenme-vscode   # → dist/workbench.html
+```
+
+The simulation runs in the browser's JavaScript engine, not Jint. It emulates the Jint rules the probes confirmed, and it refuses code Jint can't parse.
+
 ## Probes
 
 `probes/*.js` are tiny handlers that each pin down one engine behaviour handler tooling relies on. `probes/expected.txt` holds the reviewed results. Highlights from Jint 2.11.58:
@@ -102,4 +120,5 @@ tools/mkstubs.mjs        C# stubs from Nucleus' real declarations
 tools/csparse.mjs        C# member parser (from splitscreenme-vscode's scripts/generate-api.mjs)
 tools/fetch_verified.py  version-verified Hub downloads + manifest
 probes/                  engine behaviour probes + expected results
+playground/              browser workbench (build.mjs → dist/workbench.html)
 ```
