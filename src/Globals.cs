@@ -1,0 +1,1 @@
+namespace Nucleus.Gaming { public static class Globals { public static string UserEnvironmentRoot = @"C:\Users\me"; public static string UserDocumentsRoot = @"C:\Users\me\Documents"; public static string NucleusInstallRoot = @"C:\Nucleus"; } }

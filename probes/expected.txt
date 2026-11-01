@@ -1,0 +1,41 @@
+LOADED 01-let-const-toplevel.js (no Game.Play)
+OK 02-const-reassign.js  calls=0  args[P1]=c=2 d=5
+LOAD-FAIL 03-const-in-for.js  ParserException line 4: Unexpected token const
+LOADED 04-let-in-for.js (no Game.Play)
+LOAD-FAIL 05-arrow.js  ParserException line 4: Unexpected token )
+LOAD-FAIL 06-template.js  ParserException line 4: Unexpected token ILLEGAL
+LOAD-FAIL 07-trailing-comma-call.js  ParserException line 4: Unexpected token )
+LOAD-FAIL 08-class.js  ParserException line 4: Unexpected reserved word
+OK 09-unknown-write.js  calls=0  args[P1]=read=undefined
+LOADED 10-unknown-write-strict.js (no Game.Play)
+OK 11-first-letter-case.js  calls=0  args[P1]=w=960 sg=false
+OK 12-inner-case.js  calls=0  args[P1]=x=undefined
+OK 13-string-False-to-bool.js  calls=0  args[P1]=sg=false ff=true
+LOAD-FAIL 14-string-to-string-array.js  ArgumentException Value of object[] type is expected, but actual type is System.String.
+OK 15-string-to-number.js  calls=0  args[P1]=hi=100
+OK 16-number-to-string.js  calls=0  args[P1]=sid=12345
+LOAD-FAIL 17-context-toplevel.js  JavaScriptException Context is not defined
+LOADED 18-typeof-context-toplevel.js (no Game.Play)
+OK 19-writetextfile-array-and-varargs.js  calls=4  args[P1]=
+OK 20-inisaveinfo-number.js  calls=2  args[P1]=
+PLAY-FAIL 21-wrong-arg-count.js  P1 JavaScriptException: No public methods with the specified arguments were found. | P2 JavaScriptException: No public methods with the specified arguments were found.
+PLAY-FAIL 22-inisaveinfo-2-args.js  P1 JavaScriptException: No public methods with the specified arguments were found. | P2 JavaScriptException: No public methods with the specified arguments were found.
+OK 23-playerlist-protoinput.js  calls=6  args[P1]=
+OK 24-enum-bool-assign.js  calls=0  args[P1]=swp=1 dpi=1
+OK 25-nucleus-protoinput-enum.js  calls=0  args[P1]=swp=2
+OK 26-args-idiom.js  calls=0  args[P1]=-windowed
+OK 27-context-startargs.js  calls=0  args[P1]=-windowed -ResX=960 -ResY=1080 -p0
+OK 28-options.js  calls=0  args[P1]=gfx=Low
+OK 29-player-owner.js  calls=0  args[P1]=fs=false kb=true
+LOADED 30-getter-es5.js (no Game.Play)
+LOAD-FAIL 31-number-literal-es6.js  ParserException line 4: Unexpected token ILLEGAL
+LOAD-FAIL 32-object-shorthand.js  ParserException line 4: Unexpected token }
+LOAD-FAIL 33-default-param.js  ParserException line 4: Unexpected token =
+LOAD-FAIL 34-optional-catch.js  ParserException line 4: Unexpected token {
+LOADED 35-array-trailing-comma.js (no Game.Play)
+OK 36-findline-replace.js  calls=4  args[P1]=
+OK 37-regkey.js  calls=2  args[P1]=
+LOAD-FAIL 38-strict-unknown-toplevel.js  JavaScriptException 
+PLAY-FAIL 39-strict-unknown-play.js  P1 JavaScriptException:  | P2 JavaScriptException: 
+OK 40-dpi-false.js  calls=0  args[P1]=dpi=0
+LOAD-FAIL 41-number-to-array.js  ArgumentException Value of object[] type is expected, but actual type is System.Double.
