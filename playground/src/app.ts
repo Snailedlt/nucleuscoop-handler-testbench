@@ -436,7 +436,7 @@ function runSim() {
   const simple = mode === 'simple';
   if (!r.loaded) {
     out.push(
-      `<div class="banner error"><strong>Nucleus can't load this handler, so nothing would start.</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.<div class="mono small">${esc(r.loadError ?? '')}</div></div>`,
+      `<div class="banner error"><strong>${esc(sessionSummary(r))}</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.<div class="mono small">${esc(r.loadError ?? '')}</div></div>`,
     );
   } else {
     out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
