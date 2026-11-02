@@ -19,6 +19,8 @@ LOAD-FAIL 107-string-line-continuation.js  ParserException line 6: Unexpected to
 OK 108-expression-across-lines.js  calls=0  args[P1]=xy
 OK 109-return-asi.js  calls=0  args[P1]=undefined
 OK 11-first-letter-case.js  calls=0  args[P1]=w=960 sg=false
+PLAY-FAIL 110-optional-param-omitted.js  P1 JavaScriptException: No public methods with the specified arguments were found. | P2 JavaScriptException: No public methods with the specified arguments were found.
+OK 111-optional-param-passed.js  calls=2  args[P1]=r=14
 OK 12-inner-case.js  calls=0  args[P1]=x=undefined
 OK 13-string-False-to-bool.js  calls=0  args[P1]=sg=false ff=true
 LOAD-FAIL 14-string-to-string-array.js  ArgumentException Value of object[] type is expected, but actual type is System.String.

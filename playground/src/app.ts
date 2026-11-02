@@ -9,7 +9,7 @@ import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api'
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
 import { search, lookup, Entry } from '@core/lookup';
 import { renderHandler, FEATURES } from '@core/templates';
-import { simulate } from '@core/sim';
+import { simulate, sessionSummary } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
 import { zipStore } from './zipstore';
@@ -439,12 +439,7 @@ function runSim() {
       `<div class="banner error"><strong>Nucleus can't load this handler, so nothing would start.</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.<div class="mono small">${esc(r.loadError ?? '')}</div></div>`,
     );
   } else {
-    const failed = r.players.filter((p) => p.error);
-    out.push(
-      failed.length
-        ? `<div class="banner error"><strong>Setup fails for ${failed.length} of ${r.players.length} players.</strong> Those players' games won't start.</div>`
-        : `<div class="banner ok"><strong>Nucleus would set up all ${r.players.length} player${r.players.length === 1 ? '' : 's'}.</strong>${r.hasPlay ? '' : ' The handler has no <code>Game.Play</code>, so every player gets the same setup.'}</div>`,
-    );
+    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
   }
   if (r.ignored.length) {
     const uniq = [...new Set(r.ignored)];
@@ -453,7 +448,8 @@ function runSim() {
   for (const p of r.players) {
     const role = p.index === kb ? 'keyboard & mouse' : 'controller';
     out.push(`<section class="player"><h3>Player ${p.index + 1} <span class="chip ${p.index === kb ? 'info' : ''}">${role}</span></h3>
-      ${p.error ? `<div class="banner error">Setting up this player's game fails here, so this player's window won't start.<div class="mono small">${esc(p.error)}</div></div>` : ''}
+      ${p.error ? `<div class="banner error">Setting up this player fails here, and Nucleus ends the session.<div class="mono small">${esc(p.error)}</div></div>` : ''}
+      ${p.note ? `<p class="muted">${esc(p.note)}</p>` : ''}
       <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
       <dt>Starts the game with</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
       ${p.effects.length ? `<dl><dt>Changes before the game starts</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : '<p class="muted">Changes no files before the game starts.</p>'}
@@ -461,7 +457,7 @@ function runSim() {
     </section>`);
   }
   for (const c of r.callbacks) {
-    out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.error)}</div>` : ''}
+    out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.note ?? '')}<div class="mono small">${esc(c.error)}</div></div>` : ''}
       ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list">${c.calls.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`}</section>`);
   }
   if (r.options.length) {

@@ -137,6 +137,8 @@ The page shows the same comparison live in Advanced mode → Engine probes.
   - **a non-array value for an array option makes the handler fail to load** (14, 41).
 - **`Game.DPIHandling = true` selects `Scaled`, and `false` selects `True`** (24, 40). Use the enum.
 - **Globals:** `Context` at the top level fails to load (17); `typeof Context` is safe (18).
+- **Nucleus re-joins the file line by line** with extra line breaks (107–109): a string continued with `\` no longer parses; other multi-line code is unaffected.
+- **C# default parameter values are ignored** (110, 111): `Context.RandomString(8)` throws; pass every parameter.
 - **Built-ins are ES5 only (42–106):** `padStart`/`padEnd` exist, but `.includes()`, `.startsWith()`, `.endsWith()`, `.repeat()`, `.find()`, `.findIndex()`, `.fill()`, `.flat()`, `.trimStart()`/`.trimEnd()`/`.trimLeft()`, `Object.assign`/`entries`/`values`, `Array.from`/`of`, `Number.isInteger`/`isNaN`/`parseInt`, `Math.trunc`/`sign`/`log10`, `Map`, `Set` and `WeakMap` throw when the code runs ("Object has no method …", "… is not defined"). `Promise`, `Symbol`, `Reflect`, `Proxy` and `Number.EPSILON` are `undefined`. The handler still loads, so only code that actually runs fails.
 - **Method calls:**
   - a wrong argument count throws "No public methods with the specified arguments were found" (21, 22);
