@@ -113,10 +113,12 @@ cd playground && npm install && node build.mjs --core ../../splitscreenme-vscode
 
 The simulation runs in the browser's JavaScript engine, not Jint. It emulates the Jint rules the probes confirmed, and it refuses code Jint can't parse. Before running a handler it rewrites the source so the browser behaves like Jint where they differ: ES2015+ built-ins Jint lacks (`.includes()`, `Object.assign`, `Map`, …) fail, `let`/`const` become `var`, and a top-level `"use strict"` applies to the whole handler.
 
-`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 106. Run it after changing `src/sim.ts`:
+The simulation lives in splitscreenme-vscode (`src/core/sim.ts`), where it also powers the extension's **Try it** panel and `nucleus simulate`; this page bundles the same file.
+
+`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 106. `--isolated` does the same through `nucleus simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
 
 ```bash
-cd playground && node sim-parity.mjs --core ../../splitscreenme-vscode
+cd playground && node sim-parity.mjs --core ../../splitscreenme-vscode              # and with --isolated
 ```
 
 The page shows the same comparison live in Advanced mode → Engine probes.

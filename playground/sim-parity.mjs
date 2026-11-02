@@ -1,19 +1,24 @@
-// Differential check: the browser simulation (src/sim.ts) against real Jint 2.11.58.
+// Differential check: the "Try it" simulation (src/core/sim.ts in splitscreenme-vscode, also
+// used by this workbench) against real Jint 2.11.58.
 // Runs every probe through the simulation and compares the outcome (and, for probes that
 // run, Context.StartArguments of player 1) with probes/expected.txt, which test-probes.sh
 // records from the real engine.
 //
-//   node sim-parity.mjs [--core ../../splitscreenme-vscode]
+//   node sim-parity.mjs [--core ../../splitscreenme-vscode] [--isolated]
+//
+// --isolated runs each probe through `nucleus simulate --json` (the core's dist/cli.js, so run
+// `npm run build` there first): the sandboxed path the CLI and VS Code use.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import * as esbuild from 'esbuild';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const argCore = process.argv.indexOf('--core');
 const coreRepo = path.resolve(argCore > 0 ? process.argv[argCore + 1] : process.env.SPLITSCREENME_VSCODE ?? path.join(here, '..', '..', 'splitscreenme-vscode'));
 const out = await esbuild.build({
-  entryPoints: [path.join(here, 'src', 'sim.ts')],
+  stdin: { contents: "export * from '@core/sim';", resolveDir: here, loader: 'ts' },
   bundle: true,
   format: 'cjs',
   platform: 'node',
@@ -24,7 +29,18 @@ const out = await esbuild.build({
 });
 const mod = { exports: {} };
 new Function('module', 'exports', 'require', out.outputFiles[0].text)(mod, mod.exports, (await import('node:module')).createRequire(import.meta.url));
-const { simulate } = mod.exports;
+const isolated = process.argv.includes('--isolated');
+const cli = path.join(coreRepo, 'dist', 'cli.js');
+const opts = { players: 2, width: 1920, height: 1080, keyboardPlayer: 0 }; // as in src/Harness.cs
+const simulate = isolated
+  ? (_src, _o, file) => {
+      try {
+        return JSON.parse(execFileSync(process.execPath, [cli, 'simulate', file, '--json', '--players', '2', '--keyboard', '1'], { encoding: 'utf8' }));
+      } catch (e) {
+        return JSON.parse(e.stdout); // exit code 1 when the handler fails
+      }
+    }
+  : mod.exports.simulate;
 
 const probesDir = path.join(here, '..', 'probes');
 const expected = fs.readFileSync(path.join(probesDir, 'expected.txt'), 'utf8').trim().split('\n').map((l) => {
@@ -33,7 +49,8 @@ const expected = fs.readFileSync(path.join(probesDir, 'expected.txt'), 'utf8').t
 });
 let bad = 0;
 for (const e of expected) {
-  const r = simulate(fs.readFileSync(path.join(probesDir, e.name), 'utf8'), { players: 2, width: 1920, height: 1080, keyboardPlayer: 0 } /* as in src/Harness.cs */);
+  const file = path.join(probesDir, e.name);
+  const r = simulate(fs.readFileSync(file, 'utf8'), opts, file);
   const p = r.players[0];
   const status = !r.loaded ? 'LOAD-FAIL' : !r.hasPlay ? 'LOADED' : r.players.some((x) => x.error) ? 'PLAY-FAIL' : 'OK';
   const value = status === 'OK' ? p.startArguments.trim() : null;
@@ -42,5 +59,6 @@ for (const e of expected) {
     console.log(`DIFF ${e.name}: Jint ${e.status}${e.value !== null ? ` "${e.value}"` : ''}, simulation ${status}${value !== null ? ` "${value}"` : ''} ${r.loadError ?? p?.error ?? ''}`);
   }
 }
-console.log(bad ? `${bad} of ${expected.length} probes differ from Jint.` : `The simulation matches Jint on all ${expected.length} probes.`);
+const how = isolated ? ' (isolated, through nucleus simulate)' : '';
+console.log(bad ? `${bad} of ${expected.length} probes differ from Jint${how}.` : `The simulation matches Jint on all ${expected.length} probes${how}.`);
 process.exit(bad ? 1 : 0);

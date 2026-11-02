@@ -9,7 +9,7 @@ import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api'
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
 import { search, lookup, Entry } from '@core/lookup';
 import { renderHandler, FEATURES } from '@core/templates';
-import { simulate } from './sim';
+import { simulate } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
 import { zipStore } from './zipstore';
