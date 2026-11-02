@@ -1,3 +1,4 @@
+import { applyTheme, initDevBar } from './devbar';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/lint/lint';
@@ -15,6 +16,7 @@ import { fixAll } from '@core/fix';
 import { zipStore } from './zipstore';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
+applyTheme();
 declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source: string }
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[] };
@@ -447,7 +449,7 @@ function runSim() {
   }
   for (const p of r.players) {
     const role = p.index === kb ? 'keyboard & mouse' : 'controller';
-    out.push(`<section class="player"><h3>Player ${p.index + 1} <span class="chip ${p.index === kb ? 'info' : ''}">${role}</span></h3>
+    out.push(`<section class="player p${(p.index % 8) + 1}"><h3>Player ${p.index + 1} <span class="chip ${p.index === kb ? 'info' : ''}">${role}</span></h3>
       ${p.error ? `<div class="banner error">Setting up this player fails here, and Nucleus ends the session.<div class="mono small">${esc(p.error)}</div></div>` : ''}
       ${p.note ? `<p class="muted">${esc(p.note)}</p>` : ''}
       <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
@@ -646,6 +648,7 @@ function entries(): OpenEntry[] {
     })),
     { group: 'Actions', title: 'Fix problems automatically', sub: 'Alt+Shift+F', keywords: 'fix all repair', run: () => ($('#fix-all') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Simulate the handler', sub: 'Ctrl+Enter: launch arguments and file edits per player', keywords: 'run play simulate', run: () => selectTab('simulate') },
+    { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: site theme (splitscreen.me / v3), colour mode, contrast check', keywords: 'dev theme v3 colour color dark light contrast', run: () => devBar.toggle() },
     { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
     { group: 'Actions', title: 'Copy the handler', keywords: 'clipboard', run: () => ($('#copy') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Keyboard shortcuts', keywords: 'help keys', run: () => helpDialog.showModal() },
@@ -813,6 +816,11 @@ $('#copy').addEventListener('click', async () => {
 });
 
 let toastTimer: number | undefined;
+const devBar = initDevBar({
+  build: `core ${BUILD.core} · Nucleus ${String(BUILD.nucleus ?? '?').slice(0, 7)} · Jint ${BUILD.jint ?? '?'}`,
+  toast: (t) => toast(t),
+});
+
 function toast(text: string) {
   const el = $('#toast');
   el.textContent = text;
@@ -1256,6 +1264,16 @@ $('#save-go').addEventListener('click', async () => {
 function openFromHash(): boolean {
   const h = decodeURIComponent(location.hash.slice(1));
   if (!h) return false;
+  if (h === 'dev') {
+    // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
+    devBar.show();
+    try {
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch {
+      /* ignore */
+    }
+    return false;
+  }
   if (h.startsWith('hub-')) {
     const i = HUB_EXAMPLES.handlers.findIndex((x) => x.id === h.slice(4));
     if (i >= 0) return openHub(i), true;

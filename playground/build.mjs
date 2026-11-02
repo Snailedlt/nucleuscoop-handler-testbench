@@ -177,7 +177,7 @@ const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint
 
 const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar WORKER_SRC = ${JSON.stringify(workerSrc)};`.replace(/<\/script/gi, '<\\/script');
 let html = fs.readFileSync(path.join(here, 'src', 'page.html'), 'utf8');
-html = html.replace('/*CODEMIRROR_CSS*/', () => css).replace('/*PROBES_AND_BUILD*/', () => data).replace('/*APP_JS*/', () => js);
+html = html.replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim()).replace('/*CODEMIRROR_CSS*/', () => css).replace('/*PROBES_AND_BUILD*/', () => data).replace('/*APP_JS*/', () => js);
 
 fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
