@@ -46,6 +46,68 @@ const probes = fs.readdirSync(probesDir).filter((f) => f.endsWith('.js')).sort()
   detail: (expected[name]?.detail ?? '').replace(/calls=\d+\s*args\[P1\]=\s*$/, '').replace(/\(no Game\.Play\)/, '').trim(),
 }));
 
+// Hub examples: a snapshot of the most-downloaded handlers, taken through the hub API at
+// build time (a published artifact can't reach other sites at view time). Only handlers whose
+// CURRENT VERSION is verified are included: the source is that verified package's own jsContent.
+//   --hub <n>      how many to include (default 40, 0 to skip)
+//   --refresh-hub  ignore the local cache (hub-cache.json)
+const HUB = 'https://hub.splitscreen.me';
+const argHub = process.argv.indexOf('--hub');
+const hubCount = argHub > 0 ? Number(process.argv[argHub + 1]) : 40;
+const cachePath = path.join(here, 'hub-cache.json');
+async function hubExamples() {
+  if (!hubCount) return { takenAt: null, handlers: [], rejected: [] };
+  if (!process.argv.includes('--refresh-hub') && fs.existsSync(cachePath)) {
+    const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    if (cached.handlers.length >= hubCount) return { ...cached, handlers: cached.handlers.slice(0, hubCount) };
+  }
+  const get = async (url) => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${url}: ${r.status}`);
+    return r.json();
+  };
+  const listing = (await get(`${HUB}/api/v1/allhandlers`)).Handlers.sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0));
+  const handlers = [];
+  const rejected = [];
+  for (const h of listing) {
+    if (handlers.length >= hubCount) break;
+    let meta;
+    try {
+      meta = (await get(`${HUB}/api/v1/package/${h.currentPackage}`)).packages?.[0]?.meta;
+    } catch (e) {
+      rejected.push({ id: h._id, title: h.title, reason: `package lookup failed: ${e.message}` });
+      continue;
+    }
+    const reason =
+      meta?.verified !== true ? 'current version is not verified'
+      : meta.handlerId !== h._id || meta.handlerVersion !== h.currentVersion ? 'package does not match the current version'
+      : typeof meta.jsContent !== 'string' || !meta.jsContent.trim() ? 'package has no handler source'
+      : null;
+    if (reason) {
+      rejected.push({ id: h._id, title: h.title, reason });
+      continue;
+    }
+    handlers.push({
+      id: h._id,
+      title: h.title,
+      game: h.gameName,
+      owner: h.ownerName,
+      version: h.currentVersion,
+      downloads: h.downloadCount ?? 0,
+      maxPlayers: h.maxPlayers ?? null,
+      multiKbm: !!h.playableMultiMouseKeyboard,
+      updated: meta.releaseDate ?? h.updatedAt ?? null,
+      url: `${HUB}/handler/${h._id}`,
+      source: meta.jsContent.replace(/\r\n/g, '\n'),
+    });
+  }
+  const result = { takenAt: new Date().toISOString(), handlers, rejected };
+  fs.writeFileSync(cachePath, JSON.stringify(result));
+  return result;
+}
+const hub = await hubExamples();
+if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handler(s) whose current version isn't verified: ${hub.rejected.map((r) => r.title).join(', ')}`);
+
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
 const build = { core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
 
@@ -66,10 +128,10 @@ const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
 const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css')].join('\n');
 
-const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};`.replace(/<\/script/gi, '<\\/script');
+const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};`.replace(/<\/script/gi, '<\\/script');
 let html = fs.readFileSync(path.join(here, 'src', 'page.html'), 'utf8');
 html = html.replace('/*CODEMIRROR_CSS*/', () => css).replace('/*PROBES_AND_BUILD*/', () => data).replace('/*APP_JS*/', () => js);
 
 fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
-console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes`);
+console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers`);

@@ -78,6 +78,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - the New Handler templates;
 - a per-player `Game.Play` simulation;
 - the probes, shown next to the linter's verdict;
+- **Hub examples**: the most-downloaded handlers whose current version is verified, snapshotted from the hub API at build time (`--hub <n>`, default 40; `--refresh-hub` to re-fetch). A published artifact can't reach other sites when you view it, so they are embedded. Each one's source is that verified package's own `jsContent`;
 - **Fix all problems**: the extension's deterministic, offline fixes, with a diff to review or **Apply automatically**;
 - **Fix with AI**, only when the page runs inside a Claude viewer.
 

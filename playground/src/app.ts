@@ -15,6 +15,8 @@ import { fixAll } from '@core/fix';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
+interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source: string }
+declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[] };
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -79,6 +81,7 @@ function sampleSource(id: string): string {
     return renderHandler({ gameName: 'Example Game', executableName: 'ExampleGame.exe', steamId: '123450', features: t.features });
   }
   if (id.startsWith('probe:')) return PROBES[Number(id.slice(6))].source;
+  if (id.startsWith('hub:')) return HUB_EXAMPLES.handlers[Number(id.slice(4))].source;
   return '';
 }
 
@@ -403,17 +406,63 @@ const samples = $('#samples') as HTMLSelectElement;
 samples.innerHTML =
   `<option value="">Load an example…</option><option value="buggy">Handler with common mistakes</option>` +
   `<optgroup label="Templates">${TEMPLATE_SAMPLES.map((t, i) => `<option value="tpl:${i}">${esc(t.label.replace('Template: ', ''))}</option>`).join('')}</optgroup>` +
+  (HUB_EXAMPLES.handlers.length ? `<optgroup label="Hub handlers (verified)">${HUB_EXAMPLES.handlers.map((h, i) => `<option value="hub:${i}">${esc(h.title)} v${h.version}</option>`).join('')}</optgroup>` : '') +
   `<optgroup label="Engine probes">${PROBES.map((p, i) => `<option value="probe:${i}">${esc(p.name)}</option>`).join('')}</optgroup>`;
 samples.addEventListener('change', () => {
-  if (samples.value) loadSource(sampleSource(samples.value));
+  if (samples.value.startsWith('hub:')) loadHub(Number(samples.value.slice(4)));
+  else if (samples.value) loadSource(sampleSource(samples.value));
   samples.value = '';
 });
 
-function loadSource(src: string) {
+function loadSource(src: string, note = '') {
   editor.setValue(src);
   editor.clearHistory();
   editor.focus();
+  const el = $('#source-note');
+  el.innerHTML = note;
+  el.hidden = !note;
 }
+
+function loadHub(i: number) {
+  const h = HUB_EXAMPLES.handlers[i];
+  loadSource(
+    h.source,
+    `<span>${esc(h.title)} v${h.version} by ${esc(h.owner)} · <span class="chip ok">verified</span></span><a href="${esc(h.url)}" target="_blank" rel="noopener">View on the Hub</a>`,
+  );
+  selectTab('problems');
+}
+
+// Hub tab: verified handlers snapshotted from hub.splitscreen.me at build time.
+const hubLint = new Map<number, { errors: number; warnings: number }>();
+function renderHub() {
+  const q = ($('#hub-q') as HTMLInputElement).value.trim().toLowerCase();
+  const list = HUB_EXAMPLES.handlers.map((h, i) => ({ h, i })).filter(({ h }) => !q || `${h.title} ${h.game} ${h.owner}`.toLowerCase().includes(q));
+  const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+  $('#hub-intro').innerHTML = HUB_EXAMPLES.handlers.length
+    ? `The ${HUB_EXAMPLES.handlers.length} most-downloaded handlers on <a href="https://hub.splitscreen.me" target="_blank" rel="noopener">hub.splitscreen.me</a> whose current version is verified, as of ${esc(taken)}. Open one to see how its author did it, and what the linter makes of it.`
+    : 'No Hub handlers were included when this page was built.';
+  $('#hub-list').innerHTML = list.length
+    ? list
+        .map(({ h, i }) => {
+          let c = hubLint.get(i);
+          if (!c) {
+            const d = lint(h.source);
+            c = { errors: d.filter((x) => x.severity === 'error').length, warnings: d.filter((x) => x.severity === 'warning').length };
+            hubLint.set(i, c);
+          }
+          const lintChips = `<span class="hub-lint"><span class="chip ${c.errors ? 'error' : 'ok'}">${c.errors} error${c.errors === 1 ? '' : 's'}</span><span class="chip ${c.warnings ? 'warning' : 'ok'}">${c.warnings} warning${c.warnings === 1 ? '' : 's'}</span></span>`;
+          return `<li class="hub-item">
+            <h4>${esc(h.title)}</h4>
+            <div class="hub-actions"><button class="btn" type="button" data-hub="${i}">Open</button><a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a></div>
+            <div class="hub-meta"><span>${esc(h.game)}</span><span>by ${esc(h.owner)}</span><span>v${h.version}</span><span>${h.downloads.toLocaleString()} downloads</span>${h.maxPlayers ? `<span>up to ${h.maxPlayers} players</span>` : ''}${h.multiKbm ? '<span>multiple keyboards & mice</span>' : ''}${lintChips}</div>
+          </li>`;
+        })
+        .join('')
+    : `<p class="empty">No handler matches "${esc(q)}".</p>`;
+  $('#hub-list').querySelectorAll<HTMLButtonElement>('[data-hub]').forEach((b) => b.addEventListener('click', () => loadHub(Number(b.dataset.hub))));
+}
+$('#count-hub').textContent = String(HUB_EXAMPLES.handlers.length);
+$('#hub-q').addEventListener('input', renderHub);
 
 $('#feature-list').innerHTML = FEATURES.map(
   (f) => `<label class="check"><input type="checkbox" id="feat-${f.id}" value="${f.id}"><span><strong>${esc(f.label)}</strong><small>${esc(f.detail)}</small></span></label>`,
@@ -448,6 +497,7 @@ function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
+  if (id === 'hub') renderHub();
 }
 document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
 ['sim-players', 'sim-res', 'sim-kb'].forEach((id) => $(`#${id}`).addEventListener('change', runSim));
