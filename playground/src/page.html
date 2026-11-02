@@ -217,6 +217,8 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .plain-title { font-weight: 600; }
 .plain-why { margin: 2px 0 0; }
 .tech { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.banner .small { font-size: 12px; margin-top: 4px; opacity: .85; overflow-wrap: anywhere; font-weight: 400; }
+.tech[open] summary { color: var(--muted); }
 .tech summary { margin: 0; font-size: 12px; }
 .fix.primary { background: var(--accent); color: var(--accent-fg); }
 .effects { list-style: none; margin: 4px 0 0; padding: 0; }
@@ -292,7 +294,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button class="btn" id="new-open" type="button">New handler…</button>
       <button class="btn" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
       <button class="btn" id="copy" type="button" title="Copy the handler source">Copy</button>
-      <button class="btn icon dev-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button class="btn icon" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
     </div>
   </header>
 
@@ -312,10 +314,10 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
     <section class="pane side" aria-label="Analysis">
       <div class="pane-head" role="tablist">
-        <button role="tab" data-tab="problems" type="button"><span class="simple-only">1. Check</span><span class="dev-only">Problems</span> <span class="count" id="count-problems">0</span></button>
-        <button role="tab" data-tab="simulate" type="button"><span class="simple-only">2. Try it</span><span class="dev-only">Simulate</span></button>
-        <button role="tab" data-tab="api" type="button" class="dev-only">API</button>
-        <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes">41</span></button>
+        <button role="tab" data-tab="problems" type="button">Check <span class="count" id="count-problems">0</span></button>
+        <button role="tab" data-tab="simulate" type="button">Try it</button>
+        <button role="tab" data-tab="api" type="button" title="Every option and function a handler can use">Reference</button>
+        <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes"></span></button>
       </div>
       <div role="tabpanel" id="panel-problems">
         <div id="welcome" hidden></div>
@@ -346,8 +348,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <label>Keyboard & mouse <select id="sim-kb"><option value="0" selected>Player 1</option><option value="1">Player 2</option><option value="-1">Nobody</option></select></label>
           <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
         </div>
-        <p class="muted simple-only" style="margin:0 0 12px;max-width:65ch">What Nucleus would set up for each player: where its window goes, how the game is started, and which settings files it changes. Nothing on your computer is touched. Whether the game actually plays well still needs a real test in Nucleus.</p>
-        <p class="muted dev-only" style="margin:0 0 12px;max-width:65ch">Loads the handler and runs <code>Game.Play</code> once per player in this browser, emulating the Jint 2.11.58 rules Nucleus follows (ignored unknown options, list and enum conversions, argument checks). File, registry and process calls are recorded, not performed. Windows, focus and input still need a real test in Nucleus.</p>
+        <p class="muted" style="margin:0 0 12px;max-width:65ch">What Nucleus would set up for each player: where its window goes, how the game is started, and which settings files it changes. Nothing on your computer is touched. Whether the game actually plays well still needs a real test in Nucleus.<span class="dev-only"> How: the handler is loaded and <code>Game.Play</code> runs once per player in this browser, following the Jint 2.11.58 rules Nucleus uses (checked against the real engine on every probe). File, registry and process calls are recorded, not performed.</span></p>
         <div id="sim-out"></div>
       </div>
       <div role="tabpanel" id="panel-api" hidden>

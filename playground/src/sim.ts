@@ -4,7 +4,8 @@
 // unknown members, array fields rejecting non-arrays, booleans becoming 0/1 for enums,
 // wrong argument counts throwing. Syntax Jint can't parse is refused up front by the linter.
 import { api, Member, jintMemberName } from '@core/api';
-import { lint } from '@core/lint';
+import { lint, MISSING_GLOBALS, MISSING_METHODS, MISSING_STATIC } from '@core/lint';
+import * as acorn from 'acorn';
 
 export interface SimOptions {
   players: number;
@@ -152,8 +153,10 @@ function clr(type: string, label: string, log: string[], ignored: string[], stor
     get(_t, p) {
       if (p === '__label') return label;
       if (typeof p !== 'string') return undefined;
+      if (p.startsWith(NOJINT)) p = p.slice(NOJINT.length); // .NET objects do have e.g. List.Find
       if (p in extra) return extra[p];
       const key = jintMemberName(members, p);
+      if (key && key in extra) return extra[key]; // computed values (Context.Width), any first-letter case
       if (!key) return undefined; // Jint: unknown members read as undefined
       const m = members[key];
       if (m.kind === 'method') {
@@ -178,7 +181,7 @@ function clr(type: string, label: string, log: string[], ignored: string[], stor
       const key = jintMemberName(members, p);
       if (!key) {
         ignored.push(`${label}.${p} = ${fmt(value)} (no such member; Nucleus ignores it)`);
-        return true;
+        return false; // ignored in sloppy code; "use strict" code throws, as in Jint
       }
       const m = members[key];
       if (m.kind === 'method' || m.kind === 'object' || m.readonly) {
@@ -205,6 +208,7 @@ function systemNs(log: string[], path = 'System'): any {
   return new Proxy(fn, {
     get(_t, p) {
       if (typeof p !== 'string' || p === 'then') return undefined;
+      if (p.startsWith(NOJINT)) p = p.slice(NOJINT.length);
       return systemNs(log, `${path}.${p}`);
     },
     apply(_t, _this, args) {
@@ -236,6 +240,66 @@ function nucleusNs(): any {
 
 const LOAD_BLOCKERS = new Set(['syntax-error', 'es5-only']);
 
+// Make the browser's engine behave like Jint 2.11 where they differ, by rewriting the source:
+// - ES2015+ built-ins Jint lacks (`"".includes`, `Object.assign`, `Map`, ...) are renamed so
+//   they fail here too;
+// - `let`/`const` become `var` (Jint parses them but treats them as `var`);
+// - a top-level "use strict" applies to the whole handler (the `with` wrapper hides it).
+const NOJINT = '__nojint_';
+function withoutModernBuiltins(src: string): { code: string; declared: Set<string> } {
+  const declared = new Set<string>();
+  let ast: any;
+  try {
+    ast = acorn.parse(src, { ecmaVersion: 2020, allowReturnOutsideFunction: true });
+  } catch {
+    return { code: src, declared };
+  }
+  const nodes: any[] = [];
+  const own = new Set<string>();
+  const visit = (n: any) => {
+    if (!n || typeof n.type !== 'string') return;
+    nodes.push(n);
+    if (n.type === 'Property' && !n.computed) own.add(n.key.name ?? String(n.key.value));
+    if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && !n.left.computed) own.add(n.left.property.name);
+    if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') declared.add(n.id.name);
+    if ((n.type === 'FunctionDeclaration' || n.type === 'FunctionExpression') && n.id) declared.add(n.id.name);
+    for (const k of Object.keys(n)) {
+      const v = n[k];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v.type === 'string') visit(v);
+    }
+  };
+  visit(ast);
+  const edits: { at: number; end: number; text: string }[] = [];
+  for (const n of nodes) {
+    if (n.type === 'MemberExpression' && !n.computed && n.property.type === 'Identifier') {
+      const name = n.property.name;
+      const isStatic = n.object.type === 'Identifier' && MISSING_STATIC[n.object.name]?.includes(name) && !declared.has(n.object.name);
+      const onNamespace = n.object.type === 'Identifier' && (n.object.name in MISSING_STATIC || n.object.name === 'JSON');
+      if (isStatic || (MISSING_METHODS.has(name) && !own.has(name) && !onNamespace)) edits.push({ at: n.property.start, end: n.property.start, text: NOJINT });
+    } else if (n.type === 'VariableDeclaration' && n.kind !== 'var') {
+      edits.push({ at: n.start, end: n.start + n.kind.length, text: 'var' });
+    } else if (n.type === 'UnaryExpression' && n.operator === 'typeof' && n.argument.type === 'Identifier' && MISSING_GLOBALS.has(n.argument.name) && !declared.has(n.argument.name)) {
+      edits.push({ at: n.argument.start, end: n.argument.end, text: '(void 0)' });
+    }
+  }
+  let code = src;
+  for (const e of edits.sort((a, b) => b.at - a.at)) code = code.slice(0, e.at) + e.text + code.slice(e.end);
+  if (ast.body.some((st: any) => st.type === 'ExpressionStatement' && st.directive === 'use strict')) code = `(function () {\n${code}\n})();`;
+  return { code, declared };
+}
+
+/** An error as Nucleus would report it. */
+function engineError(e: any): string {
+  if (e instanceof JintError) return `Jint: ${e.message}`;
+  const msg = String(e?.message ?? e);
+  const m = msg.match(new RegExp(`${NOJINT}(\\w+)`));
+  if (m) return `Jint: Object has no method '${m[1]}'`;
+  const strict = msg.match(/'set' on proxy: trap returned falsish for property '([^']+)'/);
+  if (strict) return `Jint: "use strict" code can't set \`${strict[1]}\`: no such member`;
+  return `${e?.name ?? 'Error'}: ${msg}`;
+}
+
 export function simulate(src: string, opt: SimOptions): SimResult {
   const result: SimResult = { loaded: false, ignored: [], options: [], players: [], callbacks: [], hasPlay: false };
   const blocker = lint(src).find((d) => d.severity === 'error' && LOAD_BLOCKERS.has(d.rule));
@@ -261,13 +325,16 @@ export function simulate(src: string, opt: SimOptions): SimResult {
     System: systemNs(loadLog),
     importNamespace: () => systemNs(loadLog, 'ns'),
   };
-  const callbackOnly = ['Context', 'Player', 'PlayerList', 'Handler', 'ProtoInput'];
+  const { code, declared } = withoutModernBuiltins(src);
+  const missing = [...MISSING_GLOBALS].filter((g) => !declared.has(g));
   const scopeProxy = new Proxy(scope, {
-    has: (_t, p) => typeof p === 'string' && (p in scope || callbackOnly.includes(p)),
+    // Context, Player, ... are only in scope while a callback runs; outside, the lookup falls
+    // through to the (absent) global, so reads throw and `typeof` gives "undefined", as in Jint.
+    has: (_t, p) => typeof p === 'string' && (p in scope || missing.includes(p)),
     get(_t, p) {
       if (typeof p !== 'string') return undefined;
       if (p in scope) return scope[p];
-      if (callbackOnly.includes(p)) throw new ReferenceError(`${p} is not defined`);
+      if (missing.includes(p)) throw new ReferenceError(`${p} is not defined`);
       return undefined;
     },
     set(_t, p, v) {
@@ -278,10 +345,10 @@ export function simulate(src: string, opt: SimOptions): SimResult {
 
   try {
     // eslint-disable-next-line no-new-func
-    new Function('__scope', `with (__scope) {\n${src}\n}`)(scopeProxy);
+    new Function('__scope', `with (__scope) {\n${code}\n}`)(scopeProxy);
     result.loaded = true;
   } catch (e: any) {
-    result.loadError = `${e instanceof JintError ? 'Jint' : e?.name ?? 'Error'}: ${e?.message ?? e}`;
+    result.loadError = engineError(e);
     return result;
   }
 
@@ -371,7 +438,7 @@ export function simulate(src: string, opt: SimOptions): SimResult {
       try {
         (play as () => void)();
       } catch (e: any) {
-        run.error = `${e instanceof JintError ? 'Jint' : e?.name ?? 'Error'}: ${e?.message ?? e}`;
+        run.error = engineError(e);
       } finally {
         effects = null;
       }
@@ -392,7 +459,7 @@ export function simulate(src: string, opt: SimOptions): SimResult {
     try {
       cb();
     } catch (e: any) {
-      entry.error = `${e instanceof JintError ? 'Jint' : e?.name ?? 'Error'}: ${e?.message ?? e}`;
+      entry.error = engineError(e);
     }
     entry.calls = [...protoLog];
     result.callbacks.push(entry);

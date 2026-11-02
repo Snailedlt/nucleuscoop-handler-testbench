@@ -8,6 +8,13 @@ LOAD-FAIL 07-trailing-comma-call.js  ParserException line 4: Unexpected token )
 LOAD-FAIL 08-class.js  ParserException line 4: Unexpected reserved word
 OK 09-unknown-write.js  calls=0  args[P1]=read=undefined
 LOADED 10-unknown-write-strict.js (no Game.Play)
+OK 100-builtin-array-lastindexof.js  calls=0  args[P1]=1
+OK 101-builtin-string-substr.js  calls=0  args[P1]=bc
+OK 102-builtin-string-replace.js  calls=0  args[P1]=a+b
+OK 103-builtin-array-some.js  calls=0  args[P1]=true
+OK 104-builtin-object-create.js  calls=0  args[P1]=false
+PLAY-FAIL 105-builtin-string-trimleft.js  P1 JavaScriptException: Object has no method 'trimLeft' | P2 JavaScriptException: Object has no method 'trimLeft'
+OK 106-builtin-typeof-map.js  calls=0  args[P1]=undefined
 OK 11-first-letter-case.js  calls=0  args[P1]=w=960 sg=false
 OK 12-inner-case.js  calls=0  args[P1]=x=undefined
 OK 13-string-False-to-bool.js  calls=0  args[P1]=sg=false ff=true
@@ -39,3 +46,61 @@ LOAD-FAIL 38-strict-unknown-toplevel.js  JavaScriptException
 PLAY-FAIL 39-strict-unknown-play.js  P1 JavaScriptException:  | P2 JavaScriptException: 
 OK 40-dpi-false.js  calls=0  args[P1]=dpi=0
 LOAD-FAIL 41-number-to-array.js  ArgumentException Value of object[] type is expected, but actual type is System.Double.
+PLAY-FAIL 42-builtin-string-includes.js  P1 JavaScriptException: Object has no method 'includes' | P2 JavaScriptException: Object has no method 'includes'
+PLAY-FAIL 43-builtin-string-startswith.js  P1 JavaScriptException: Object has no method 'startsWith' | P2 JavaScriptException: Object has no method 'startsWith'
+PLAY-FAIL 44-builtin-string-endswith.js  P1 JavaScriptException: Object has no method 'endsWith' | P2 JavaScriptException: Object has no method 'endsWith'
+PLAY-FAIL 45-builtin-string-repeat.js  P1 JavaScriptException: Object has no method 'repeat' | P2 JavaScriptException: Object has no method 'repeat'
+OK 46-builtin-string-padstart.js  calls=0  args[P1]=00a
+PLAY-FAIL 47-builtin-array-includes.js  P1 JavaScriptException: Object has no method 'includes' | P2 JavaScriptException: Object has no method 'includes'
+PLAY-FAIL 48-builtin-array-find.js  P1 JavaScriptException: Object has no method 'find' | P2 JavaScriptException: Object has no method 'find'
+PLAY-FAIL 49-builtin-array-findindex.js  P1 JavaScriptException: Object has no method 'findIndex' | P2 JavaScriptException: Object has no method 'findIndex'
+PLAY-FAIL 50-builtin-array-from.js  P1 JavaScriptException: Object has no method 'from' | P2 JavaScriptException: Object has no method 'from'
+PLAY-FAIL 51-builtin-object-assign.js  P1 JavaScriptException: Object has no method 'assign' | P2 JavaScriptException: Object has no method 'assign'
+OK 52-builtin-object-keys.js  calls=0  args[P1]=1
+OK 53-builtin-json-stringify.js  calls=0  args[P1]={"a":1}
+OK 54-builtin-array-map.js  calls=0  args[P1]=2
+OK 55-builtin-string-split.js  calls=0  args[P1]=2
+PLAY-FAIL 56-builtin-number-isinteger.js  P1 JavaScriptException: Object has no method 'isInteger' | P2 JavaScriptException: Object has no method 'isInteger'
+PLAY-FAIL 57-builtin-math-trunc.js  P1 JavaScriptException: Object has no method 'trunc' | P2 JavaScriptException: Object has no method 'trunc'
+OK 58-builtin-string-trim.js  calls=0  args[P1]=a
+OK 59-builtin-date-now.js  calls=0  args[P1]=true
+OK 60-builtin-array-sort.js  calls=0  args[P1]=1,3
+OK 61-builtin-parseint.js  calls=0  args[P1]=8
+OK 62-builtin-number-tofixed.js  calls=0  args[P1]=2
+PLAY-FAIL 63-builtin-map.js  P1 JavaScriptException: Map is not defined | P2 JavaScriptException: Map is not defined
+PLAY-FAIL 64-builtin-array-fill.js  P1 JavaScriptException: Object has no method 'fill' | P2 JavaScriptException: Object has no method 'fill'
+PLAY-FAIL 65-builtin--1-2-flat.js  P1 JavaScriptException: Object has no method 'flat' | P2 JavaScriptException: Object has no method 'flat'
+PLAY-FAIL 66-builtin-array-flatmap.js  P1 JavaScriptException: Object has no method 'flatMap' | P2 JavaScriptException: Object has no method 'flatMap'
+PLAY-FAIL 67-builtin-string-trimstart.js  P1 JavaScriptException: Object has no method 'trimStart' | P2 JavaScriptException: Object has no method 'trimStart'
+PLAY-FAIL 68-builtin-string-trimend.js  P1 JavaScriptException: Object has no method 'trimEnd' | P2 JavaScriptException: Object has no method 'trimEnd'
+OK 69-builtin-string-padend.js  calls=0  args[P1]=a00
+PLAY-FAIL 70-builtin-string-codepointat.js  P1 JavaScriptException: Object has no method 'codePointAt' | P2 JavaScriptException: Object has no method 'codePointAt'
+PLAY-FAIL 71-builtin-string-normalize.js  P1 JavaScriptException: Object has no method 'normalize' | P2 JavaScriptException: Object has no method 'normalize'
+PLAY-FAIL 72-builtin-object-entries.js  P1 JavaScriptException: Object has no method 'entries' | P2 JavaScriptException: Object has no method 'entries'
+PLAY-FAIL 73-builtin-object-values.js  P1 JavaScriptException: Object has no method 'values' | P2 JavaScriptException: Object has no method 'values'
+PLAY-FAIL 74-builtin-object-is.js  P1 JavaScriptException: Object has no method 'is' | P2 JavaScriptException: Object has no method 'is'
+PLAY-FAIL 75-builtin-object-fromentries.js  P1 JavaScriptException: Object has no method 'fromEntries' | P2 JavaScriptException: Object has no method 'fromEntries'
+PLAY-FAIL 76-builtin-array-of.js  P1 JavaScriptException: Object has no method 'of' | P2 JavaScriptException: Object has no method 'of'
+PLAY-FAIL 77-builtin-number-isnan.js  P1 JavaScriptException: Object has no method 'isNaN' | P2 JavaScriptException: Object has no method 'isNaN'
+PLAY-FAIL 78-builtin-number-isfinite.js  P1 JavaScriptException: Object has no method 'isFinite' | P2 JavaScriptException: Object has no method 'isFinite'
+PLAY-FAIL 79-builtin-number-parsefloat.js  P1 JavaScriptException: Object has no method 'parseFloat' | P2 JavaScriptException: Object has no method 'parseFloat'
+PLAY-FAIL 80-builtin-number-parseint.js  P1 JavaScriptException: Object has no method 'parseInt' | P2 JavaScriptException: Object has no method 'parseInt'
+OK 81-builtin-number-epsilon.js  calls=0  args[P1]=undefined
+PLAY-FAIL 82-builtin-math-sign.js  P1 JavaScriptException: Object has no method 'sign' | P2 JavaScriptException: Object has no method 'sign'
+PLAY-FAIL 83-builtin-math-log2.js  P1 JavaScriptException: Object has no method 'log2' | P2 JavaScriptException: Object has no method 'log2'
+PLAY-FAIL 84-builtin-math-log10.js  P1 JavaScriptException: Object has no method 'log10' | P2 JavaScriptException: Object has no method 'log10'
+PLAY-FAIL 85-builtin-math-cbrt.js  P1 JavaScriptException: Object has no method 'cbrt' | P2 JavaScriptException: Object has no method 'cbrt'
+PLAY-FAIL 86-builtin-math-hypot.js  P1 JavaScriptException: Object has no method 'hypot' | P2 JavaScriptException: Object has no method 'hypot'
+PLAY-FAIL 87-builtin-string-fromcodepoint.js  P1 JavaScriptException: Object has no method 'fromCodePoint' | P2 JavaScriptException: Object has no method 'fromCodePoint'
+PLAY-FAIL 88-builtin-set.js  P1 JavaScriptException: Set is not defined | P2 JavaScriptException: Set is not defined
+PLAY-FAIL 89-builtin-weakmap.js  P1 JavaScriptException: WeakMap is not defined | P2 JavaScriptException: WeakMap is not defined
+OK 90-builtin-typeof-promise.js  calls=0  args[P1]=undefined
+OK 91-builtin-typeof-symbol.js  calls=0  args[P1]=undefined
+OK 92-builtin-typeof-reflect.js  calls=0  args[P1]=undefined
+OK 93-builtin-typeof-proxy.js  calls=0  args[P1]=undefined
+PLAY-FAIL 94-builtin-array-keys.js  P1 JavaScriptException: Object has no method 'keys' | P2 JavaScriptException: Object has no method 'keys'
+OK 95-builtin-object-getownpropertynames.js  calls=0  args[P1]=1
+OK 96-builtin-array-isarray.js  calls=0  args[P1]=true
+OK 97-builtin-array-reduce.js  calls=0  args[P1]=3
+OK 98-builtin-json-parse.js  calls=0  args[P1]=1
+OK 99-builtin-date.js  calls=0  args[P1]=1970-01-01T00:00:00.000Z

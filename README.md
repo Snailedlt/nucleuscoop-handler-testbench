@@ -111,7 +111,15 @@ It uses the same core code as the extension, from a checkout of [splitscreenme-v
 cd playground && npm install && node build.mjs --core ../../splitscreenme-vscode   # → dist/workbench.html
 ```
 
-The simulation runs in the browser's JavaScript engine, not Jint. It emulates the Jint rules the probes confirmed, and it refuses code Jint can't parse.
+The simulation runs in the browser's JavaScript engine, not Jint. It emulates the Jint rules the probes confirmed, and it refuses code Jint can't parse. Before running a handler it rewrites the source so the browser behaves like Jint where they differ: ES2015+ built-ins Jint lacks (`.includes()`, `Object.assign`, `Map`, …) fail, `let`/`const` become `var`, and a top-level `"use strict"` applies to the whole handler.
+
+`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 106. Run it after changing `src/sim.ts`:
+
+```bash
+cd playground && node sim-parity.mjs --core ../../splitscreenme-vscode
+```
+
+The page shows the same comparison live in Advanced mode → Engine probes.
 
 ## Probes
 
@@ -127,6 +135,7 @@ The simulation runs in the browser's JavaScript engine, not Jint. It emulates th
   - **a non-array value for an array option makes the handler fail to load** (14, 41).
 - **`Game.DPIHandling = true` selects `Scaled`, and `false` selects `True`** (24, 40). Use the enum.
 - **Globals:** `Context` at the top level fails to load (17); `typeof Context` is safe (18).
+- **Built-ins are ES5 only (42–106):** `padStart`/`padEnd` exist, but `.includes()`, `.startsWith()`, `.endsWith()`, `.repeat()`, `.find()`, `.findIndex()`, `.fill()`, `.flat()`, `.trimStart()`/`.trimEnd()`/`.trimLeft()`, `Object.assign`/`entries`/`values`, `Array.from`/`of`, `Number.isInteger`/`isNaN`/`parseInt`, `Math.trunc`/`sign`/`log10`, `Map`, `Set` and `WeakMap` throw when the code runs ("Object has no method …", "… is not defined"). `Promise`, `Symbol`, `Reflect`, `Proxy` and `Number.EPSILON` are `undefined`. The handler still loads, so only code that actually runs fails.
 - **Method calls:**
   - a wrong argument count throws "No public methods with the specified arguments were found" (21, 22);
   - numbers and booleans are accepted for string parameters (20);

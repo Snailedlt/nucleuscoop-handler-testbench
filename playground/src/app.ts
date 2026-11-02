@@ -90,6 +90,7 @@ const PLAIN: Record<string, { title: string; why: string }> = {
   'hub-install-parse': { title: 'Would break installing this handler', why: 'When installing, Nucleus reads the game name and .exe from these lines in a strict way.' },
   'guid-characters': { title: 'Special characters in the GUID', why: 'The GUID becomes a folder name. Letters, digits and spaces are safest.' },
   'protoinput-legacy-hooks': { title: 'Old input settings are still on', why: 'With Proto Input they should be turned off, or two input systems run at once.' },
+  'missing-builtin': { title: "A JavaScript function Nucleus doesn't have", why: "Nucleus uses an older JavaScript engine that lacks this function, so the handler stops with an error when it reaches this line." },
   deprecated: { title: 'An outdated setting', why: 'It still works, but it has been replaced.' },
 };
 
@@ -107,8 +108,8 @@ let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
 let problemIndex = -1;
 let shownProblems: Diagnostic[] = [];
 
-// Advanced mode (off by default): rule ids, filters, API reference, engine probes, raw calls.
-// Off: plain language and a guided flow.
+// Advanced mode (off by default) only ADDS detail to the same screens: exact positions, rule ids,
+// severity filters and suggestions, technical messages expanded, recorded calls, engine probes.
 type Mode = 'simple' | 'dev';
 const MODE_KEY = 'nucleus-workbench-advanced';
 let mode: Mode = 'simple';
@@ -172,7 +173,7 @@ const editor = CodeMirror($('#editor'), {
           .map((d) => ({
             from: posAt(text, d.start),
             to: posAt(text, Math.max(d.end, d.start + 1)),
-            message: mode === 'simple' ? `${PLAIN[d.rule]?.title ?? d.message}. ${d.message.replace(/`/g, '')}` : `${d.message} [${d.rule}]`,
+            message: `${PLAIN[d.rule]?.title ?? d.rule}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
             severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
           }));
       }),
@@ -282,7 +283,7 @@ function showSignature() {
   const c = callContextAt(text, editor.indexFromPos(editor.getCursor()));
   if (!c || (c.callee.kind !== 'member' && c.callee.kind !== 'nucleusClass')) {
     // Touch screens have no hover: show the docs for whatever is under the cursor instead.
-    if (coarse.matches && mode === 'dev') {
+    if (coarse.matches) {
       const r = resolveAt(text, editor.indexFromPos(editor.getCursor()));
       if (r && r.resolved.kind === 'member') {
         const m = r.resolved.member;
@@ -323,7 +324,11 @@ function renderProblems(text: string) {
   const counts = { error: 0, warning: 0, info: 0, hint: 0 } as Record<string, number>;
   for (const d of current) counts[d.severity]++;
   const simple = mode === 'simple';
-  const list = simple ? current.filter((d) => d.severity === 'error' || d.severity === 'warning') : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter));
+  const rank = { error: 0, warning: 1, info: 2, hint: 3 } as Record<string, number>;
+  // Errors first (they stop Nucleus), then in line order.
+  const list = (simple ? current.filter((d) => d.severity === 'error' || d.severity === 'warning') : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter)))
+    .slice()
+    .sort((a, b) => rank[a.severity] - rank[b.severity] || a.start - b.start);
   shownProblems = list;
   problemIndex = -1;
   const serious = counts.error + counts.warning;
@@ -332,26 +337,20 @@ function renderProblems(text: string) {
   $('#f-all').textContent = String(counts.error + counts.warning + counts.info);
   for (const k of ['error', 'warning', 'info', 'hint']) $(`#f-${k}`).textContent = String(counts[k]);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
-  if (simple) {
-    $('#status').innerHTML = counts.error
-      ? `<span class="pill error">Nucleus can't use this handler yet</span><span>${plural(serious, 'thing')} to fix</span>`
-      : counts.warning
-        ? `<span class="pill ok">Nucleus can use this handler</span><span>but ${plural(counts.warning, 'setting')} may not work as intended</span>`
-        : `<span class="pill ok">Ready for Nucleus</span><span>Next: <button class="link" type="button" id="v-try">try it</button></span>`;
-    $('#status').querySelector('#v-try')?.addEventListener('click', () => selectTab('simulate'));
-  } else {
-    $('#status').innerHTML = counts.error
-      ? `<span class="pill error">Nucleus won't load or run this</span><span>${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}</span>`
-      : counts.warning
-        ? `<span class="pill ok">Loads in Nucleus</span><span>${plural(counts.warning, 'warning')}: options Nucleus may ignore or misread</span>`
-        : `<span class="pill ok">Loads in Nucleus</span><span>No errors or warnings.</span>`;
-  }
+  const tally = simple ? '' : ` <span class="muted">(${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}, ${counts.info} info)</span>`;
+  $('#status').innerHTML = counts.error
+    ? `<span class="pill error">Nucleus can't use this handler yet</span><span>${plural(serious, 'thing')} to fix${tally}</span>`
+    : counts.warning
+      ? `<span class="pill ok">Nucleus can use this handler</span><span>but ${plural(counts.warning, 'setting')} may not work as intended${tally}</span>`
+      : `<span class="pill ok">Ready for Nucleus</span><span>Next: <button class="link" type="button" id="v-try">try it</button>${tally}</span>`;
+  $('#status').querySelector('#v-try')?.addEventListener('click', () => selectTab('simulate'));
   const el = $('#problems');
   if (!list.length) {
-    el.innerHTML = simple
-      ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${counts.info ? ` (${plural(counts.info, 'small suggestion')} are shown in Advanced mode.)` : ''}</li>`
-      : filter === 'all'
-        ? `<li class="empty">Nothing to fix. Next: <button class="link" type="button" id="go-sim">simulate it</button> to see each player's launch arguments and file edits${counts.hint ? `, or check the <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about deprecated options` : ''}.</li>`
+    el.innerHTML =
+      simple || filter === 'all'
+        ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${
+            simple ? '' : counts.hint ? ` There ${counts.hint === 1 ? 'is' : 'are'} also <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about outdated options.` : ''
+          }</li>`
         : `<li class="empty">No ${filter === 'info' ? 'info' : filter + 's'}.</li>`;
     el.querySelector('#go-sim')?.addEventListener('click', () => selectTab('simulate'));
     el.querySelector('#go-hints')?.addEventListener('click', () => setFilter('hint'));
@@ -361,25 +360,19 @@ function renderProblems(text: string) {
     .map((d, i) => {
       const line = lineOf(text, d.start) + 1;
       const col = d.start - (text.lastIndexOf('\n', d.start - 1) + 1) + 1;
-      if (simple) {
-        const plain = PLAIN[d.rule] ?? { title: d.rule, why: '' };
-        const about = d.message.match(/`([^`]+)`/)?.[1];
-        const fixes = (d.fixes ?? [])
-          .map((f, j) => `<button class="fix${f.preferred ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button">${f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`)
-          .join('');
-        return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
-          <button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}</button>
-          <div class="body"><div class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div>
-          <p class="plain-why">${esc(plain.why)}</p>
-          <div class="meta">${fixes}<button class="link" type="button" data-jump="${d.start}">Show me</button></div>
-          <details class="tech"><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')} <span class="rule">[${d.rule}]</span></details></div></li>`;
-      }
-      const fixes = (d.fixes ?? []).map((f, j) => `<button class="fix" data-d="${i}" data-f="${j}" type="button">${esc(f.title.replace(/`/g, ''))}</button>`).join('');
-      const auto = d.fixes?.some((f) => f.preferred) ? '<span class="fixable" title="Fixed by Fix problems">auto-fixable</span>' : '';
+      const plain = PLAIN[d.rule] ?? { title: d.rule, why: '' };
+      const about = d.message.match(/`([^`]+)`/)?.[1];
+      const fixes = (d.fixes ?? [])
+        .map((f, j) => `<button class="fix${f.preferred ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button" title="${esc(f.title.replace(/`/g, ''))}">${f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`)
+        .join('');
+      // Advanced adds (never replaces): the column, severity, rule id and the technical message expanded.
+      const extra = simple ? '' : `<span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>`;
       return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
-        <button class="loc" data-jump="${d.start}" type="button" title="Go to line ${line}">${line}:${col}</button>
-        <div class="body"><div class="msg">${md(d.message).replace(/^<p>|<\/p>$/g, '')}</div>
-        <div class="meta"><span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>${auto}${fixes}</div></div></li>`;
+        <button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
+        <div class="body"><div class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div>
+        <p class="plain-why">${esc(plain.why)}</p>
+        <div class="meta">${fixes}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
+        <details class="tech"${simple ? '' : ' open'}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></li>`;
     })
     .join('');
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
@@ -443,35 +436,33 @@ function runSim() {
   const simple = mode === 'simple';
   if (!r.loaded) {
     out.push(
-      simple
-        ? `<div class="banner error"><strong>Nucleus can't load this handler, so nothing would start.</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.</div>`
-        : `<div class="banner error"><strong>Doesn't load.</strong> ${esc(r.loadError ?? '')}</div>`,
+      `<div class="banner error"><strong>Nucleus can't load this handler, so nothing would start.</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.<div class="mono small">${esc(r.loadError ?? '')}</div></div>`,
     );
   } else {
     const failed = r.players.filter((p) => p.error);
     out.push(
       failed.length
-        ? `<div class="banner error"><strong>${simple ? `Setup fails for ${failed.length} of ${r.players.length} players.` : `Game.Play fails for ${failed.length} of ${r.players.length} players.`}</strong> Those players' games won't start.</div>`
-        : `<div class="banner ok"><strong>${simple ? `Nucleus would set up all ${r.players.length} player${r.players.length === 1 ? '' : 's'}.` : `Loads${r.hasPlay ? ` and Game.Play ran for all ${r.players.length} players` : ' (no Game.Play)'}.`}</strong></div>`,
+        ? `<div class="banner error"><strong>Setup fails for ${failed.length} of ${r.players.length} players.</strong> Those players' games won't start.</div>`
+        : `<div class="banner ok"><strong>Nucleus would set up all ${r.players.length} player${r.players.length === 1 ? '' : 's'}.</strong>${r.hasPlay ? '' : ' The handler has no <code>Game.Play</code>, so every player gets the same setup.'}</div>`,
     );
   }
   if (r.ignored.length) {
     const uniq = [...new Set(r.ignored)];
-    out.push(`<h3>${simple ? 'Settings Nucleus skips' : 'Ignored by Nucleus'} <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
+    out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
   }
   for (const p of r.players) {
     const role = p.index === kb ? 'keyboard & mouse' : 'controller';
     out.push(`<section class="player"><h3>Player ${p.index + 1} <span class="chip ${p.index === kb ? 'info' : ''}">${role}</span></h3>
-      ${p.error ? `<div class="banner error">${esc(mode === 'simple' ? "Setting up this player's game fails here, so this player's window won't start. " : '')}${esc(p.error)}</div>` : ''}
+      ${p.error ? `<div class="banner error">Setting up this player's game fails here, so this player's window won't start.<div class="mono small">${esc(p.error)}</div></div>` : ''}
       <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
-      <dt>${mode === 'simple' ? 'Starts the game with' : 'Launch arguments'}</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
-      ${p.effects.length ? `<dl><dt>${mode === 'simple' ? 'Changes before the game starts' : 'Effects'}</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : mode === 'simple' ? '<p class="muted">Changes no files before the game starts.</p>' : ''}
-      ${mode === 'dev' ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list">${p.calls.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
+      <dt>Starts the game with</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
+      ${p.effects.length ? `<dl><dt>Changes before the game starts</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : '<p class="muted">Changes no files before the game starts.</p>'}
+      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list">${p.calls.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
     </section>`);
   }
   for (const c of r.callbacks) {
     out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.error)}</div>` : ''}
-      <details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list">${c.calls.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details></section>`);
+      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list">${c.calls.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`}</section>`);
   }
   if (r.options.length) {
     out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono">${esc(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</td></tr>`).join('')}</tbody></table></details>`);
@@ -516,28 +507,42 @@ renderApi('');
 // ---------------------------------------------------------------------------
 // Probes: real Jint results vs the linter
 
+/** The outcome the browser simulation predicts, in the testbench's terms (OK, LOADED, LOAD-FAIL, PLAY-FAIL). */
+function simOutcome(src: string): string {
+  // The same setup as the testbench harness: 2 players, player 1 on keyboard and mouse.
+  const r = simulate(src, { players: 2, width: 1920, height: 1080, keyboardPlayer: 0 });
+  return !r.loaded ? 'LOAD-FAIL' : !r.hasPlay ? 'LOADED' : r.players.some((x) => x.error) ? 'PLAY-FAIL' : 'OK';
+}
+
 function renderProbes() {
   let agree = 0;
+  let simAgree = 0;
   const rows = PROBES.map((p, i) => {
     const errs = lint(p.source).filter((d) => d.severity === 'error');
     const fails = p.jint === 'LOAD-FAIL' || p.jint === 'PLAY-FAIL';
     const ok = fails ? errs.length > 0 : errs.length === 0;
     if (ok) agree++;
+    const sim = simOutcome(p.source);
+    const simOk = sim === p.jint;
+    if (simOk) simAgree++;
     const jintLabel: Record<string, string> = { OK: 'runs', LOADED: 'loads', 'LOAD-FAIL': "doesn't load", 'PLAY-FAIL': 'Game.Play throws' };
     return `<tr class="${ok ? '' : 'disagree'}">
       <td><button class="link" data-probe="${i}">${esc(p.name.replace(/\.js$/, '').replace(/^\d+-/, '').replace(/-/g, ' '))}</button></td>
       <td><span class="chip ${fails ? 'error' : 'ok'}">${jintLabel[p.jint] ?? p.jint}</span>${p.detail ? `<div class="detail">${esc(p.detail)}</div>` : ''}</td>
       <td>${errs.length ? `<span class="chip error">${errs.length} error${errs.length > 1 ? 's' : ''}</span> <span class="detail">${esc([...new Set(errs.map((e) => e.rule))].join(', '))}</span>` : '<span class="chip ok">no errors</span>'}</td>
-      <td class="center">${ok ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td></tr>`;
+      <td class="center">${ok ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td>
+      <td><span class="chip ${sim === 'LOAD-FAIL' || sim === 'PLAY-FAIL' ? 'error' : 'ok'}">${jintLabel[sim]}</span> ${simOk ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td></tr>`;
   });
-  $('#probes').innerHTML = `<p class="lede">Each probe isolates one engine behaviour. The <strong>Jint 2.11.58</strong> column is what happened when the testbench ran it with Nucleus' engine setup; the <strong>Linter</strong> column is computed live in this page. They agree on <strong>${agree} of ${PROBES.length}</strong>.</p>
-    <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+  $('#probes').innerHTML = `<p class="lede">Each probe isolates one engine behaviour. The <strong>Jint 2.11.58</strong> column is what happened when the testbench ran it with Nucleus' engine setup; the <strong>Linter</strong> and <strong>Try it</strong> columns are computed live in this page. The linter agrees on <strong>${agree} of ${PROBES.length}</strong> (an error exactly when Jint fails); Try it predicts the same outcome on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
+    <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th><th>Try it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   $('#count-probes').textContent = `${agree}/${PROBES.length}`;
+  $('#count-probes').title = `Linter agrees with Jint on ${agree} of ${PROBES.length} probes; Try it on ${simAgree}`;
   $('#probes').querySelectorAll<HTMLButtonElement>('[data-probe]').forEach((b) =>
     b.addEventListener('click', () => openProbe(Number(b.dataset.probe))),
   );
 }
 let probesRendered = false;
+$('#count-probes').textContent = String(PROBES.length); // becomes "agree/total" once the tab is opened
 
 // ---------------------------------------------------------------------------
 // Documents: what's in the editor, where it came from, shareable #links
@@ -1085,7 +1090,7 @@ function setMode(m: Mode) {
     /* ignore */
   }
   const active = document.querySelector<HTMLElement>('[role=tab][aria-selected=true]')?.dataset.tab;
-  if (m === 'simple' && (active === 'api' || active === 'probes')) selectTab('problems');
+  if (m === 'simple' && active === 'probes') selectTab('problems');
   (editor as any).performLint();
   if (active === 'simulate') runSim();
 }
@@ -1093,7 +1098,7 @@ const advanced = $('#advanced') as HTMLInputElement;
 advanced.checked = mode === 'dev';
 advanced.addEventListener('change', () => {
   setMode(advanced.checked ? 'dev' : 'simple');
-  toast(advanced.checked ? 'Advanced mode on: rule details, filters, API reference and engine probes.' : 'Advanced mode off.');
+  toast(advanced.checked ? 'Advanced mode on: rule ids, filters, suggestions, recorded calls and engine probes.' : 'Advanced mode off: the same screens, without the extra detail.');
 });
 
 // ---------------------------------------------------------------------------
