@@ -28,7 +28,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 export const SITES: { id: Site; label: string; title: string }[] = [
   { id: 'www', label: 'splitscreen.me', title: 'The current site (Docusaurus): brand blue, system fonts, light and dark' },
-  { id: 'v3', label: 'v3.splitscreen.me', title: 'The new site ("Bezel"): monochrome, Archivo, dark only; colour means a player' },
+  { id: 'v3', label: 'v3.splitscreen.me', title: 'The new site ("Bezel"): monochrome, Archivo, light and dark; colour means a player' },
 ];
 
 // Token pairs that carry text, checked against WCAG AA (4.5:1).
@@ -108,11 +108,10 @@ export function initDevBar(opts: { build: string; toast: (text: string) => void 
     }
     const res = contrast();
     const fail = res.filter((x) => x.r < 4.5).length;
-    const v3 = site() === 'v3';
     bar.innerHTML = `<button class="devtag" data-dev="min" type="button" title="Minimise">DEV</button>
       <span class="devseg" role="group" aria-label="Site theme">${SITES.map((s) => `<button type="button" data-dev-site="${s.id}" aria-pressed="${site() === s.id}" title="${esc(s.title)}">${esc(s.label)}</button>`).join('')}</span>
-      <span class="devseg" role="group" aria-label="Colour mode"${v3 ? ' title="v3.splitscreen.me is dark only"' : ''}>${(['auto', 'light', 'dark'] as Mode[])
-        .map((m) => `<button type="button" data-dev-mode="${m}" aria-pressed="${!v3 && mode() === m}"${v3 ? ' disabled' : ''}>${m[0].toUpperCase() + m.slice(1)}</button>`)
+      <span class="devseg" role="group" aria-label="Colour mode">${(['auto', 'light', 'dark'] as Mode[])
+        .map((m) => `<button type="button" data-dev-mode="${m}" aria-pressed="${mode() === m}">${m[0].toUpperCase() + m.slice(1)}</button>`)
         .join('')}</span>
       <button type="button" data-dev="contrast" aria-pressed="${panel === 'contrast'}" class="${fail ? 'bad' : 'good'}" title="WCAG AA contrast of the theme's text colours">Contrast ${res.length - fail}/${res.length}</button>
       <span class="devinfo" title="Linter core · Nucleus · Jint">${esc(opts.build)}</span>

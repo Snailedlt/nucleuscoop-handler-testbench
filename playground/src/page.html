@@ -38,16 +38,30 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
   --err: #ff7b7f; --err-bg: #3d1c1e; --warn: #ffc94d; --warn-bg: #3a2e10; --info: #54c7ec; --info-bg: #15313b; --ok: #5fd97c; --ok-bg: #16301e;
   --code-bg: #282a36; --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --cmt: #8b96c4; --prop: #8be9fd;
   color-scheme: dark }
-/* v3.splitscreen.me "Bezel": dark only, so it ignores the light/dark choice (doubled attribute: wins over the blocks above). */
+/* v3.splitscreen.me "Bezel" (doubled attribute: wins over the splitscreen.me blocks above).
+ * Light is this page's own variant of Bezel (v3 itself is dark only): a pale bezel around white panes, still
+ * monochrome; the primary button is now the darkest thing on screen. Player colours stay for players only. */
 :root[data-site="v3"][data-site] {
-  --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
-  --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
-  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #a3abba; --info-bg: #1b1f28; --ok: #8fe3b8; --ok-bg: #10261c;
-  --code-bg: #0e1015; --kw: #f3f4f6; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #c3c9d4;
+  --bg: #e4e7ec; --surface: #ffffff; --surface-2: #f1f3f6; --line: #d3d8e0;
+  --fg: #0b0d12; --muted: #4d5565; --accent: #0b0d12; --accent-fg: #ffffff; --brand: #0b0d12;
+  --err: #b5162f; --err-bg: #fde9ec; --warn: #8a5200; --warn-bg: #fdf0dd; --info: #4d5565; --info-bg: #eef0f4; --ok: #11663f; --ok-bg: #e2f4ea;
+  --code-bg: #f7f8fa; --kw: #0b0d12; --str: #11663f; --num: #8a5200; --cmt: #5d6576; --prop: #353c49;
   --font-display: "Archivo", system-ui, sans-serif; --font-body: "Archivo", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   --display-stretch: 125%; --display-weight: 800;
   --r-pane: 14px; --r-ctl: 8px;
+  color-scheme: light }
+@media (prefers-color-scheme: dark) { :root[data-site="v3"][data-site]:not([data-theme="light"]) {
+  --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
+  --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
+  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #a3abba; --info-bg: #1b1f28; --ok: #8fe3b8; --ok-bg: #10261c;
+  --code-bg: #0e1015; --kw: #f3f4f6; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #c3c9d4;
+  color-scheme: dark } }
+:root[data-site="v3"][data-site][data-theme="dark"] {
+  --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
+  --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
+  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #a3abba; --info-bg: #1b1f28; --ok: #8fe3b8; --ok-bg: #10261c;
+  --code-bg: #0e1015; --kw: #f3f4f6; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #c3c9d4;
   color-scheme: dark }
 
 html, body { height: 100%; }
@@ -56,6 +70,7 @@ html, body { height: 100%; }
 .devbar { position: fixed; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 80; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border-radius: 12px; background: #16181d; color: #e8eaf0; box-sizing: border-box;
   font: 12px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+.devbar[hidden] { display: none !important; }
 .devbar button { font: inherit; color: inherit; background: #262a33; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .devbar button:hover:not(:disabled) { background: #333845; }
 .devbar button:disabled { opacity: .45; cursor: default; }
