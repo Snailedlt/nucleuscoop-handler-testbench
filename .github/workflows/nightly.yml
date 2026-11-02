@@ -1,0 +1,69 @@
+name: Nightly check
+# Real Jint vs Try it, every night, against splitscreenme-vscode's main branch:
+#   1. engine probes still give the recorded Jint 2.11.58 results (test-probes.sh)
+#   2. Try it predicts the same outcome on every probe, directly and isolated (sim-parity.mjs)
+#   3. every verified Hub handler (current version, sha256-checked) runs in real Jint, network
+#      isolated, and Try it predicts the same outcome and launch arguments; none has lint errors
+#      (tools/compare-hub.mjs, also written to the run summary)
+#   4. a warning when Nucleus master has moved past the commit the stubs are pinned to
+on:
+  schedule:
+    - cron: '7 3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/nightly.yml', 'tools/**', 'run.sh', 'setup.sh', 'src/**', 'probes/**']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Snailedlt/splitscreenme-vscode
+          ref: main
+          path: core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Mono
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mono-devel unzip
+      - name: Allow unprivileged network isolation (unshare -rn)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: Build the linter and CLI
+        working-directory: core
+        run: npm ci && npm run build
+      - name: Build the Jint harness
+        run: ./setup.sh
+      - name: Engine probes (real Jint)
+        run: ./test-probes.sh
+      - name: Try it matches Jint on every probe
+        working-directory: playground
+        run: |
+          npm ci
+          node sim-parity.mjs --core ../core
+          node sim-parity.mjs --core ../core --isolated
+      - name: Fetch verified Hub handlers (current verified versions only)
+        run: python3 -I tools/fetch_verified.py --limit 200
+      - name: Run them in real Jint (network isolated)
+        run: REQUIRE_ISOLATION=1 ./run.sh --verified > jint-hub.txt
+      - name: Compare with Try it, and lint
+        run: node tools/compare-hub.mjs jint-hub.txt core
+      - name: Is Nucleus newer than the pinned stubs?
+        if: always()
+        run: |
+          pinned=$(grep -oP 'NUCLEUS_REF:-\K[0-9a-f]+' setup.sh)
+          latest=$(git ls-remote https://github.com/SplitScreen-Me/splitscreenme-nucleus refs/heads/master | cut -f1)
+          [ "$pinned" = "$latest" ] || echo "::warning::Nucleus master is at ${latest:0:7}, the stubs are pinned to ${pinned:0:7}. Update NUCLEUS_REF in setup.sh (and regenerate the API model in splitscreenme-vscode)."
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-results
+          path: |
+            jint-hub.txt
+            downloads/compare-hub.json
+            downloads/verified-manifest.json

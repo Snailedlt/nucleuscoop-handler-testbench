@@ -60,5 +60,9 @@ fi
 sandbox=$(mktemp -d)
 trap 'rm -rf "$sandbox"' EXIT
 isolate=()
-if command -v unshare >/dev/null && unshare -n true 2>/dev/null; then isolate=(unshare -n); else echo "(network isolation unavailable; running without it)"; fi
+# Network isolation: a new network namespace (root), or one inside an unprivileged user namespace.
+if command -v unshare >/dev/null && unshare -n true 2>/dev/null; then isolate=(unshare -n)
+elif command -v unshare >/dev/null && unshare -rn true 2>/dev/null; then isolate=(unshare -rn)
+elif [ "${REQUIRE_ISOLATION:-}" = 1 ]; then echo "Network isolation unavailable and REQUIRE_ISOLATION=1: not running."; exit 3
+else echo "(network isolation unavailable; running without it)"; fi
 HOME=$sandbox TMPDIR=$sandbox "${isolate[@]}" mono build/harness.exe "${verbose[@]}" "${run_list[@]}"

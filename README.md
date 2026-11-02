@@ -56,6 +56,8 @@ python3 -I tools/fetch_verified.py --limit 150        # or: --id <handlerId>
 ./test-probes.sh
 ```
 
+**Nightly** (`.github/workflows/nightly.yml`, also on pushes to the harness, tools or probes): the probes in real Jint, Try it's parity on every probe, and every verified Hub handler run in real Jint (network isolated) and compared with Try it by `tools/compare-hub.mjs`: outcome, player 1's launch arguments, and lint errors. Last local run: 150 handlers, 91 comparable (the rest touch real files the harness can't provide), 91/91 outcomes and launch arguments agree, no lint errors. It also warns when Nucleus master moves past the commit the stubs are pinned to.
+
 ## Safety: only verified Hub handlers are run
 
 Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), so running one means trusting it.
