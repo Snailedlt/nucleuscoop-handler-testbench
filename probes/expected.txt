@@ -69,7 +69,7 @@ OK 61-builtin-parseint.js  calls=0  args[P1]=8
 OK 62-builtin-number-tofixed.js  calls=0  args[P1]=2
 PLAY-FAIL 63-builtin-map.js  P1 JavaScriptException: Map is not defined | P2 JavaScriptException: Map is not defined
 PLAY-FAIL 64-builtin-array-fill.js  P1 JavaScriptException: Object has no method 'fill' | P2 JavaScriptException: Object has no method 'fill'
-PLAY-FAIL 65-builtin--1-2-flat.js  P1 JavaScriptException: Object has no method 'flat' | P2 JavaScriptException: Object has no method 'flat'
+PLAY-FAIL 65-builtin-array-flat.js  P1 JavaScriptException: Object has no method 'flat' | P2 JavaScriptException: Object has no method 'flat'
 PLAY-FAIL 66-builtin-array-flatmap.js  P1 JavaScriptException: Object has no method 'flatMap' | P2 JavaScriptException: Object has no method 'flatMap'
 PLAY-FAIL 67-builtin-string-trimstart.js  P1 JavaScriptException: Object has no method 'trimStart' | P2 JavaScriptException: Object has no method 'trimStart'
 PLAY-FAIL 68-builtin-string-trimend.js  P1 JavaScriptException: Object has no method 'trimEnd' | P2 JavaScriptException: Object has no method 'trimEnd'
