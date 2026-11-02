@@ -10,7 +10,7 @@ import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api'
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
 import { search, lookup, Entry } from '@core/lookup';
 import { renderHandler, FEATURES } from '@core/templates';
-import { simulate, sessionSummary } from '@core/sim';
+import { simulate, sessionSummary, groupIgnored } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
 import { zipStore } from './zipstore';
@@ -96,6 +96,14 @@ const PLAIN: Record<string, { title: string; why: string }> = {
   deprecated: { title: 'An outdated setting', why: 'It still works, but it has been replaced.' },
 };
 
+/** Plain-language text for a problem; some messages are more specific than their rule. */
+function plainFor(d: Diagnostic): { title: string; why: string } {
+  if (d.rule === 'unknown-member' && /four controllers/.test(d.message)) {
+    return { title: "A controller slot Nucleus doesn't have", why: 'Nucleus and Proto Input take at most four controllers per instance (ProtoController1 to 4), so this line does nothing. Removing it is safe.' };
+  }
+  return PLAIN[d.rule] ?? { title: d.rule, why: '' };
+}
+
 const STORE_KEY = 'nucleus-workbench-draft';
 let initial = BUGGY;
 try {
@@ -175,7 +183,7 @@ const editor = CodeMirror($('#editor'), {
           .map((d) => ({
             from: posAt(text, d.start),
             to: posAt(text, Math.max(d.end, d.start + 1)),
-            message: `${PLAIN[d.rule]?.title ?? d.rule}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
+            message: `${plainFor(d).title}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
             severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
           }));
       }),
@@ -362,7 +370,7 @@ function renderProblems(text: string) {
     .map((d, i) => {
       const line = lineOf(text, d.start) + 1;
       const col = d.start - (text.lastIndexOf('\n', d.start - 1) + 1) + 1;
-      const plain = PLAIN[d.rule] ?? { title: d.rule, why: '' };
+      const plain = plainFor(d);
       const about = d.message.match(/`([^`]+)`/)?.[1];
       const fixes = (d.fixes ?? [])
         .map((f, j) => `<button class="fix${f.preferred ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button" title="${esc(f.title.replace(/`/g, ''))}">${f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`)
@@ -444,7 +452,7 @@ function runSim() {
     out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
   }
   if (r.ignored.length) {
-    const uniq = [...new Set(r.ignored)];
+    const uniq = groupIgnored(r.ignored);
     out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
   }
   for (const p of r.players) {
