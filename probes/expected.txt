@@ -15,6 +15,9 @@ OK 103-builtin-array-some.js  calls=0  args[P1]=true
 OK 104-builtin-object-create.js  calls=0  args[P1]=false
 PLAY-FAIL 105-builtin-string-trimleft.js  P1 JavaScriptException: Object has no method 'trimLeft' | P2 JavaScriptException: Object has no method 'trimLeft'
 OK 106-builtin-typeof-map.js  calls=0  args[P1]=undefined
+LOAD-FAIL 107-string-line-continuation.js  ParserException line 6: Unexpected token ILLEGAL
+OK 108-expression-across-lines.js  calls=0  args[P1]=xy
+OK 109-return-asi.js  calls=0  args[P1]=undefined
 OK 11-first-letter-case.js  calls=0  args[P1]=w=960 sg=false
 OK 12-inner-case.js  calls=0  args[P1]=x=undefined
 OK 13-string-False-to-bool.js  calls=0  args[P1]=sg=false ff=true
