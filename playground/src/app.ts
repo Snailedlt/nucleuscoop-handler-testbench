@@ -12,11 +12,13 @@ import { renderHandler, FEATURES, Feature } from '@core/templates';
 import { simulate } from './sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
+import { zipStore } from './zipstore';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source: string }
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[] };
+declare const WORKER_SRC: string;
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -88,6 +90,24 @@ function sampleSource(id: string): string {
 // ---------------------------------------------------------------------------
 // Editor
 
+/** Plain-language explanations for the Simple view. */
+const PLAIN: Record<string, { title: string; why: string }> = {
+  'syntax-error': { title: "Nucleus can't read this file", why: 'Something is missing or extra here, often a bracket, a quote or a comma. Nothing else can be checked until this is fixed.' },
+  'es5-only': { title: 'Newer JavaScript than Nucleus understands', why: 'Nucleus only reads an older form of JavaScript, so it stops loading the handler here.' },
+  'let-const-semantics': { title: 'Written in a newer style', why: 'Nucleus treats this like a plain "var". Usually harmless.' },
+  'unknown-member': { title: "A setting Nucleus doesn't know", why: "Nucleus skips it, so it does nothing. It's usually a typo." },
+  'readonly-member': { title: 'A value Nucleus sets by itself', why: 'Changing it here has no effect.' },
+  'type-mismatch': { title: 'The value has the wrong form', why: 'Nucleus expects a different kind of value here, for example a list in [ ] brackets, or true / false.' },
+  'wrong-arguments': { title: 'A function gets the wrong number of values', why: 'Nucleus stops with an error when it reaches this line.' },
+  'missing-required': { title: 'Required information is missing', why: "Every handler needs the game's name, a GUID and the game's .exe file name." },
+  'callback-only-global': { title: 'Code in the wrong place', why: 'This code needs the game to be starting, so it belongs inside Game.Play. Here it stops Nucleus from loading the handler.' },
+  'duplicate-assignment': { title: 'The same setting is set twice', why: 'Only the last value counts, so this one does nothing.' },
+  'hub-install-parse': { title: 'Would break installing this handler', why: 'When installing, Nucleus reads the game name and .exe from these lines in a strict way.' },
+  'guid-characters': { title: 'Special characters in the GUID', why: 'The GUID becomes a folder name. Letters, digits and spaces are safest.' },
+  'protoinput-legacy-hooks': { title: 'Old input settings are still on', why: 'With Proto Input they should be turned off, or two input systems run at once.' },
+  deprecated: { title: 'An outdated setting', why: 'It still works, but it has been replaced.' },
+};
+
 const STORE_KEY = 'nucleus-workbench-draft';
 let initial = BUGGY;
 try {
@@ -102,6 +122,52 @@ let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
 let problemIndex = -1;
 let shownProblems: Diagnostic[] = [];
 let fixCountTimer: number | undefined;
+
+// View mode. Simple: plain language and a guided flow. Developer: everything.
+type Mode = 'simple' | 'dev';
+const MODE_KEY = 'nucleus-workbench-mode';
+let mode: Mode = 'simple';
+try {
+  const stored = localStorage.getItem(MODE_KEY) as Mode | null;
+  // Returning visitors (from before modes existed) start in Developer, where everything was.
+  const returning = localStorage.getItem('nucleus-workbench-welcomed') === '1' || !!localStorage.getItem('nucleus-workbench-draft');
+  mode = stored === 'simple' || stored === 'dev' ? stored : returning ? 'dev' : 'simple';
+} catch {
+  /* storage unavailable */
+}
+document.documentElement.dataset.mode = mode;
+
+// Lint in a Web Worker so typing never waits; fall back to the main thread if workers are unavailable.
+type Analysis = { diagnostics: Diagnostic[]; fixable: number };
+let worker: Worker | null = null;
+let reqId = 0;
+const pending = new Map<number, { text: string; resolve: (a: Analysis) => void }>();
+const analyzeHere = (text: string): Analysis => ({ diagnostics: lint(text), fixable: fixAll(text).applied.length });
+try {
+  worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+  worker.onmessage = (e: MessageEvent<Analysis & { id: number }>) => {
+    const p = pending.get(e.data.id);
+    pending.delete(e.data.id);
+    p?.resolve(e.data);
+  };
+  worker.onerror = () => {
+    worker = null;
+    for (const [id, p] of pending) {
+      pending.delete(id);
+      p.resolve(analyzeHere(p.text));
+    }
+  };
+} catch {
+  worker = null;
+}
+function analyze(text: string): Promise<Analysis> {
+  if (!worker) return Promise.resolve(analyzeHere(text));
+  const id = ++reqId;
+  return new Promise((resolve) => {
+    pending.set(id, { text, resolve });
+    worker!.postMessage({ id, text });
+  });
+}
 const sevClass: Record<string, string> = { error: 'error', warning: 'warning', info: 'info', hint: 'hint' };
 
 const editor = CodeMirror($('#editor'), {
@@ -114,18 +180,20 @@ const editor = CodeMirror($('#editor'), {
   autoCloseBrackets: true,
   gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers'],
   lint: {
-    getAnnotations: (text: string) => {
-      current = lint(text);
-      renderProblems(text);
-      return current
-        .filter((d) => d.severity !== 'hint' || filter === 'hint')
-        .map((d) => ({
-          from: posAt(text, d.start),
-          to: posAt(text, Math.max(d.end, d.start + 1)),
-          message: `${d.message} [${d.rule}]`,
-          severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
-        }));
-    },
+    getAnnotations: (text: string) =>
+      analyze(text).then((r) => {
+        current = r.diagnostics;
+        setFixCount(r.fixable);
+        renderProblems(text);
+        return current
+          .filter((d) => d.severity !== 'hint' || (mode === 'dev' && filter === 'hint'))
+          .map((d) => ({
+            from: posAt(text, d.start),
+            to: posAt(text, Math.max(d.end, d.start + 1)),
+            message: mode === 'simple' ? `${PLAIN[d.rule]?.title ?? d.message}. ${d.message.replace(/`/g, '')}` : `${d.message} [${d.rule}]`,
+            severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
+          }));
+      }),
     delay: 250,
   },
   extraKeys: {
@@ -226,10 +294,21 @@ function describeResolved(res: Resolved, word: string): string {
 
 // Signature help
 const sig = $('#sig');
+const coarse = matchMedia('(pointer: coarse)');
 function showSignature() {
   const text = editor.getValue();
   const c = callContextAt(text, editor.indexFromPos(editor.getCursor()));
   if (!c || (c.callee.kind !== 'member' && c.callee.kind !== 'nucleusClass')) {
+    // Touch screens have no hover: show the docs for whatever is under the cursor instead.
+    if (coarse.matches && mode === 'dev') {
+      const r = resolveAt(text, editor.indexFromPos(editor.getCursor()));
+      if (r && r.resolved.kind === 'member') {
+        const m = r.resolved.member;
+        sig.innerHTML = `<div><strong>${esc(ownerLabel(r.resolved.owner))}.${esc(r.resolved.name)}</strong>: ${esc(m.kind === 'method' ? 'method' : m.ts ?? '')}${m.doc ? ` · ${esc(m.doc.split('\n')[0].slice(0, 140))}` : ''}</div>`;
+        sig.hidden = false;
+        return;
+      }
+    }
     sig.hidden = true;
     return;
   }
@@ -261,23 +340,35 @@ function showSignature() {
 function renderProblems(text: string) {
   const counts = { error: 0, warning: 0, info: 0, hint: 0 } as Record<string, number>;
   for (const d of current) counts[d.severity]++;
-  const list = current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter));
+  const simple = mode === 'simple';
+  const list = simple ? current.filter((d) => d.severity === 'error' || d.severity === 'warning') : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter));
   shownProblems = list;
   problemIndex = -1;
-  $('#count-problems').textContent = String(counts.error + counts.warning);
+  const serious = counts.error + counts.warning;
+  $('#count-problems').textContent = String(serious);
+  $('#count-switch').textContent = String(serious);
   $('#f-all').textContent = String(counts.error + counts.warning + counts.info);
   for (const k of ['error', 'warning', 'info', 'hint']) $(`#f-${k}`).textContent = String(counts[k]);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
-  $('#status').innerHTML = counts.error
-    ? `<span class="pill error">Nucleus won't load or run this</span><span>${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}</span>`
-    : counts.warning
-      ? `<span class="pill ok">Loads in Nucleus</span><span>${plural(counts.warning, 'warning')}: options Nucleus may ignore or misread</span>`
-      : `<span class="pill ok">Loads in Nucleus</span><span>No errors or warnings.</span>`;
-  scheduleFixCount();
+  if (simple) {
+    $('#status').innerHTML = counts.error
+      ? `<span class="pill error">Nucleus can't use this handler yet</span><span>${plural(serious, 'thing')} to fix</span>`
+      : counts.warning
+        ? `<span class="pill ok">Nucleus can use this handler</span><span>but ${plural(counts.warning, 'setting')} may not work as intended</span>`
+        : `<span class="pill ok">Ready for Nucleus</span><span>Next: <button class="link" type="button" id="v-try">try it</button></span>`;
+    $('#status').querySelector('#v-try')?.addEventListener('click', () => selectTab('simulate'));
+  } else {
+    $('#status').innerHTML = counts.error
+      ? `<span class="pill error">Nucleus won't load or run this</span><span>${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}</span>`
+      : counts.warning
+        ? `<span class="pill ok">Loads in Nucleus</span><span>${plural(counts.warning, 'warning')}: options Nucleus may ignore or misread</span>`
+        : `<span class="pill ok">Loads in Nucleus</span><span>No errors or warnings.</span>`;
+  }
   const el = $('#problems');
   if (!list.length) {
-    el.innerHTML =
-      filter === 'all'
+    el.innerHTML = simple
+      ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${counts.info ? ` (${plural(counts.info, 'small suggestion')} are in the Developer view.)` : ''}</li>`
+      : filter === 'all'
         ? `<li class="empty">Nothing to fix. Next: <button class="link" type="button" id="go-sim">simulate it</button> to see each player's launch arguments and file edits${counts.hint ? `, or check the <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about deprecated options` : ''}.</li>`
         : `<li class="empty">No ${filter === 'info' ? 'info' : filter + 's'}.</li>`;
     el.querySelector('#go-sim')?.addEventListener('click', () => selectTab('simulate'));
@@ -288,6 +379,19 @@ function renderProblems(text: string) {
     .map((d, i) => {
       const line = lineOf(text, d.start) + 1;
       const col = d.start - (text.lastIndexOf('\n', d.start - 1) + 1) + 1;
+      if (simple) {
+        const plain = PLAIN[d.rule] ?? { title: d.rule, why: '' };
+        const about = d.message.match(/`([^`]+)`/)?.[1];
+        const fixes = (d.fixes ?? [])
+          .map((f, j) => `<button class="fix${f.preferred ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button">${f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`)
+          .join('');
+        return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
+          <button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}</button>
+          <div class="body"><div class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div>
+          <p class="plain-why">${esc(plain.why)}</p>
+          <div class="meta">${fixes}<button class="link" type="button" data-jump="${d.start}">Show me</button></div>
+          <details class="tech"><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')} <span class="rule">[${d.rule}]</span></details></div></li>`;
+      }
       const fixes = (d.fixes ?? []).map((f, j) => `<button class="fix" data-d="${i}" data-f="${j}" type="button">${esc(f.title.replace(/`/g, ''))}</button>`).join('');
       const auto = d.fixes?.some((f) => f.preferred) ? '<span class="fixable" title="Fixed by Fix problems">auto-fixable</span>' : '';
       return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
@@ -302,14 +406,14 @@ function renderProblems(text: string) {
       editor.operation(() => {
         for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
       });
-      toast(`Applied: ${fix.title.replace(/`/g, '')}. Ctrl+Z undoes it.`);
-      editor.focus();
+      toast(`Fixed: ${fix.title.replace(/`/g, '')}. Ctrl+Z undoes it.`);
     }),
   );
-  el.querySelectorAll<HTMLButtonElement>('.loc').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
+  el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
 }
 
 function jumpTo(offset: number) {
+  if (narrow()) setView('code');
   const p = editor.posFromIndex(offset);
   editor.setCursor(p);
   editor.scrollIntoView(p, 80);
@@ -338,15 +442,11 @@ function setFilter(f: typeof filter) {
 }
 document.querySelectorAll<HTMLButtonElement>('.filter').forEach((b) => b.addEventListener('click', () => setFilter(b.dataset.filter as typeof filter)));
 
-// "Fix problems" shows how many it can fix; computing it lints a few times, so debounce.
-function scheduleFixCount() {
-  clearTimeout(fixCountTimer);
-  fixCountTimer = window.setTimeout(() => {
-    const n = fixAll(editor.getValue()).applied.length;
-    const btn = $('#fix-all') as HTMLButtonElement;
-    btn.disabled = n === 0;
-    btn.textContent = n ? `Fix ${n} problem${n === 1 ? '' : 's'}` : 'Nothing to fix automatically';
-  }, 300);
+// "Fix problems" shows how many it can fix (counted in the worker along with the lint).
+function setFixCount(n: number) {
+  const btn = $('#fix-all') as HTMLButtonElement;
+  btn.disabled = n === 0;
+  btn.textContent = n ? `Fix ${n} problem${n === 1 ? '' : 's'} automatically` : 'Nothing to fix automatically';
 }
 
 // ---------------------------------------------------------------------------
@@ -358,25 +458,33 @@ function runSim() {
   const kb = Number(($('#sim-kb') as HTMLSelectElement).value);
   const r = simulate(editor.getValue(), { players, width, height, keyboardPlayer: kb });
   const out: string[] = [];
+  const simple = mode === 'simple';
   if (!r.loaded) {
-    out.push(`<div class="banner error"><strong>Doesn't load.</strong> ${esc(r.loadError ?? '')}</div>`);
+    out.push(
+      simple
+        ? `<div class="banner error"><strong>Nucleus can't load this handler, so nothing would start.</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.</div>`
+        : `<div class="banner error"><strong>Doesn't load.</strong> ${esc(r.loadError ?? '')}</div>`,
+    );
   } else {
     const failed = r.players.filter((p) => p.error);
     out.push(
       failed.length
-        ? `<div class="banner error"><strong>Game.Play fails for ${failed.length} of ${r.players.length} players.</strong> Those instances won't be set up.</div>`
-        : `<div class="banner ok"><strong>Loads${r.hasPlay ? ` and Game.Play ran for all ${r.players.length} players` : ' (no Game.Play)'}.</strong></div>`,
+        ? `<div class="banner error"><strong>${simple ? `Setup fails for ${failed.length} of ${r.players.length} players.` : `Game.Play fails for ${failed.length} of ${r.players.length} players.`}</strong> Those players' games won't start.</div>`
+        : `<div class="banner ok"><strong>${simple ? `Nucleus would set up all ${r.players.length} player${r.players.length === 1 ? '' : 's'}.` : `Loads${r.hasPlay ? ` and Game.Play ran for all ${r.players.length} players` : ' (no Game.Play)'}.`}</strong></div>`,
     );
   }
   if (r.ignored.length) {
     const uniq = [...new Set(r.ignored)];
-    out.push(`<h3>Ignored by Nucleus <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
+    out.push(`<h3>${simple ? 'Settings Nucleus skips' : 'Ignored by Nucleus'} <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
   }
   for (const p of r.players) {
-    out.push(`<section class="player"><h3>Player ${p.index + 1}${p.index === kb ? ' <span class="chip info">keyboard & mouse</span>' : ' <span class="chip">controller</span>'}</h3>
-      ${p.error ? `<div class="banner error">${esc(p.error)}</div>` : ''}
-      <dl><dt>Launch arguments</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(none)</span>'}</dd></dl>
-      ${p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list">${p.calls.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>'}
+    const role = p.index === kb ? 'keyboard & mouse' : 'controller';
+    out.push(`<section class="player"><h3>Player ${p.index + 1} <span class="chip ${p.index === kb ? 'info' : ''}">${role}</span></h3>
+      ${p.error ? `<div class="banner error">${esc(mode === 'simple' ? "Setting up this player's game fails here, so this player's window won't start. " : '')}${esc(p.error)}</div>` : ''}
+      <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
+      <dt>${mode === 'simple' ? 'Starts the game with' : 'Launch arguments'}</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
+      ${p.effects.length ? `<dl><dt>${mode === 'simple' ? 'Changes before the game starts' : 'Effects'}</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : mode === 'simple' ? '<p class="muted">Changes no files before the game starts.</p>' : ''}
+      ${mode === 'dev' ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list">${p.calls.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
     </section>`);
   }
   for (const c of r.callbacks) {
@@ -387,6 +495,7 @@ function runSim() {
     out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono">${esc(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</td></tr>`).join('')}</tbody></table></details>`);
   }
   $('#sim-out').innerHTML = out.join('');
+  $('#sim-out').querySelector('#sim-check')?.addEventListener('click', () => selectTab('problems'));
 }
 $('#sim-run').addEventListener('click', runSim);
 
@@ -446,7 +555,7 @@ function renderProbes() {
     b.addEventListener('click', () => openProbe(Number(b.dataset.probe))),
   );
 }
-renderProbes();
+let probesRendered = false;
 
 // ---------------------------------------------------------------------------
 // Documents: what's in the editor, where it came from, shareable #links
@@ -732,6 +841,11 @@ function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
+  if (id === 'probes' && !probesRendered) {
+    probesRendered = true;
+    renderProbes();
+  }
+  if (narrow()) setView('results');
   try {
     localStorage.setItem(TAB_KEY, id);
   } catch {
@@ -971,6 +1085,179 @@ function showProposal(base: string, code: string, changes: string[], before: { e
 }
 
 // ---------------------------------------------------------------------------
+// Simple / Developer view
+
+function setMode(m: Mode) {
+  mode = m;
+  document.documentElement.dataset.mode = m;
+  document.querySelectorAll<HTMLButtonElement>('.mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  try {
+    localStorage.setItem(MODE_KEY, m);
+  } catch {
+    /* ignore */
+  }
+  const active = document.querySelector<HTMLElement>('[role=tab][aria-selected=true]')?.dataset.tab;
+  if (m === 'simple' && (active === 'api' || active === 'probes')) selectTab('problems');
+  (editor as any).performLint();
+  if (active === 'simulate') runSim();
+}
+document.querySelectorAll<HTMLButtonElement>('.mode button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode as Mode)));
+document.querySelectorAll<HTMLButtonElement>('.mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+
+// ---------------------------------------------------------------------------
+// Small screens: show the handler or the results, with a switch
+
+const narrowQuery = matchMedia('(max-width: 860px)');
+function narrow() {
+  return narrowQuery.matches;
+}
+function setView(v: 'code' | 'results') {
+  $('#main').dataset.view = v;
+  document.querySelectorAll<HTMLButtonElement>('.switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+  if (v === 'code') editor.refresh();
+}
+document.querySelectorAll<HTMLButtonElement>('.switch button').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'code' | 'results')));
+narrowQuery.addEventListener('change', () => editor.refresh());
+
+// ---------------------------------------------------------------------------
+// Open a file from the computer (picker or drag & drop): .js, or a .zip/.nc package
+
+async function readZipHandler(buf: ArrayBuffer): Promise<string | null> {
+  const v = new DataView(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) {
+    if (v.getUint32(i, true) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) return null;
+  const count = v.getUint16(eocd + 10, true);
+  let p = v.getUint32(eocd + 16, true);
+  const dec = new TextDecoder();
+  let pick: { method: number; start: number; size: number; name: string } | null = null;
+  for (let i = 0; i < count; i++) {
+    const method = v.getUint16(p + 10, true);
+    const csize = v.getUint32(p + 20, true);
+    const nlen = v.getUint16(p + 28, true);
+    const xlen = v.getUint16(p + 30, true);
+    const clen = v.getUint16(p + 32, true);
+    const local = v.getUint32(p + 42, true);
+    const name = dec.decode(new Uint8Array(buf, p + 46, nlen));
+    p += 46 + nlen + xlen + clen;
+    const isRootJs = !name.includes('/') && /\.js$/i.test(name);
+    if (isRootJs && (!pick || name.toLowerCase() === 'handler.js')) {
+      const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
+      pick = { method, start, size: csize, name };
+    }
+  }
+  if (!pick) return null;
+  const data = new Uint8Array(buf, pick.start, pick.size);
+  if (pick.method === 0) return dec.decode(data);
+  if (pick.method === 8 && 'DecompressionStream' in window) {
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw' as CompressionFormat));
+    return await new Response(stream).text();
+  }
+  return null;
+}
+
+async function openFile(file: File) {
+  try {
+    let text: string | null;
+    if (/\.(zip|nc)$/i.test(file.name)) {
+      text = await readZipHandler(await file.arrayBuffer());
+      if (text === null) {
+        toast(`${file.name} doesn't contain a handler.js this page can read.`);
+        return;
+      }
+    } else {
+      text = await file.text();
+    }
+    loadSource(text.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name.replace(/\.(zip|nc)$/i, '.js'), kind: 'draft' });
+    toast(`Opened ${file.name}.`);
+  } catch {
+    toast(`Couldn't read ${file.name}.`);
+  }
+}
+const fileInput = $('#file-input') as HTMLInputElement;
+$('#file-open').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files?.[0];
+  if (f) openFile(f);
+  fileInput.value = '';
+});
+const dropHint = $('#drop-hint');
+let dragDepth = 0;
+const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+document.addEventListener('dragenter', (e) => {
+  if (!hasFiles(e)) return;
+  dragDepth++;
+  dropHint.hidden = false;
+});
+document.addEventListener('dragleave', (e) => {
+  if (!hasFiles(e)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) dropHint.hidden = true;
+});
+document.addEventListener('dragover', (e) => {
+  if (hasFiles(e)) e.preventDefault();
+});
+document.addEventListener(
+  'drop',
+  (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth = 0;
+    dropHint.hidden = true;
+    const f = e.dataTransfer!.files[0];
+    if (f) openFile(f);
+  },
+  true,
+);
+
+// ---------------------------------------------------------------------------
+// Save for Nucleus: a .zip with handler.js that Nucleus' "Extract handler" installs
+
+let downloads: any = null;
+(async () => {
+  try {
+    downloads = await (window as any).claude?.use?.('downloads');
+  } catch {
+    downloads = null;
+  }
+  if (downloads) $('#save').hidden = false;
+})();
+const saveDialog = $('#save-dialog') as HTMLDialogElement;
+const handlerFileName = () => {
+  const m = editor.getValue().match(/^Game\.GameName\s*=\s*"([^"]*)"/m);
+  const name = (m?.[1] || doc.name.replace(/\.js$/i, '') || 'handler').replace(/[\\/:*?"<>|]/g, '').trim() || 'handler';
+  return name;
+};
+$('#save').addEventListener('click', () => {
+  const name = handlerFileName();
+  $('#save-name').textContent = `${name}.zip`;
+  $('#save-js').textContent = `${name}.js`;
+  saveDialog.showModal();
+});
+$('#save-cancel').addEventListener('click', () => saveDialog.close());
+$('#save-go').addEventListener('click', async () => {
+  const name = handlerFileName();
+  const errorsLeft = current.filter((d) => d.severity === 'error').length;
+  try {
+    const zip = zipStore([{ name: 'handler.js', data: new TextEncoder().encode(editor.getValue()) }]);
+    await downloads.save({ filename: `${name}.zip`, data: zip });
+    saveDialog.close();
+    toast(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
+  } catch (e: any) {
+    saveDialog.close();
+    if (e?.code === 'declined') return;
+    if (['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) $('#save').hidden = true;
+    toast("Couldn't save the file here. Use Copy instead and paste it into a .js file.");
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
 
 function openFromHash(): boolean {
@@ -1004,13 +1291,16 @@ try {
 }
 if (!welcomed) {
   const w = $('#welcome');
-  w.innerHTML = `<h3>Test a Nucleus Co-op handler before you open Nucleus</h3>
-    <ol><li>Paste a handler, or open one of 40 verified Hub handlers with <button class="link" type="button" data-w="open">Open (Ctrl K)</button>.</li>
-    <li>Fix what Nucleus would reject: most problems fix themselves with one click.</li>
-    <li><button class="link" type="button" data-w="sim">Simulate</button> it to see each player's launch arguments and file edits.</li></ol>
+  w.innerHTML = `<h3>Check a Nucleus Co-op handler before you play</h3>
+    <p class="muted" style="margin:0 0 4px">A handler is the small file that tells Nucleus Co-op how to run a game split-screen. It lives in the <code>handlers</code> folder inside your Nucleus Co-op folder.</p>
+    <ol><li><button class="link" type="button" data-w="file">Open your handler file</button>, drop it here, or <button class="link" type="button" data-w="open">pick an example</button>.</li>
+    <li>Fix what Nucleus would reject. Most problems fix themselves with one click.</li>
+    <li><button class="link" type="button" data-w="sim">Try it</button> to see what each player gets.</li>
+    <li>Save it for Nucleus, or copy it back into your handler file.</li></ol>
     <button class="btn" type="button" data-w="close">Got it</button>`;
   w.hidden = false;
   w.querySelector('[data-w=open]')!.addEventListener('click', showOpen);
+  w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
   w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
   w.querySelector('[data-w=close]')!.addEventListener('click', () => {
     w.hidden = true;

@@ -17,6 +17,10 @@ export interface PlayerRun {
   index: number;
   startArguments: string;
   calls: string[];
+  /** The same calls in plain language, for the ones that change something. */
+  effects: string[];
+  /** e.g. "left half of the screen, 960 × 1080" */
+  window: string;
   error?: string;
 }
 
@@ -31,6 +35,67 @@ export interface SimResult {
 }
 
 class JintError extends Error {}
+
+let effects: string[] | null = null;
+const base = (p: unknown) => String(p ?? '').split(/[\\/]/).filter(Boolean).pop() ?? String(p);
+const plainValue = (v: unknown) => (typeof v === 'string' ? v : v && typeof v === 'object' && 'Value' in (v as any) ? String((v as any).Value) : String(v));
+
+/** A plain-language line for calls that change something on disk or start/stop programs. */
+function describeCall(label: string, name: string, args: unknown[]): string | null {
+  const a = args;
+  if (label === 'Context') {
+    switch (name) {
+      case 'ModifySaveFile': {
+        const infos = (Array.isArray(a[3]) ? a[3] : a.slice(3)) as any[];
+        const sets = infos.filter((i) => i && typeof i === 'object' && 'Key' in i).map((i) => `${i.Key} = ${plainValue(i.Value)}`);
+        return `Changes ${base(a[1])}${sets.length ? `: ${sets.join(', ')}` : ''}`;
+      }
+      case 'WriteTextFile': {
+        const lines = Array.isArray(a[1]) ? a[1].length : a.length - 1;
+        return `Writes ${base(a[0])} (${lines} line${lines === 1 ? '' : 's'})`;
+      }
+      case 'ReplaceLinesInTextFile':
+      case 'ReplacePartialLinesInTextFile': {
+        const lines = (Array.isArray(a[1]) ? a[1] : []).map((l: unknown) => String(l).split('|').pop());
+        return `Changes ${base(a[0])}${lines.length ? `: ${lines.join(', ')}` : ''}`;
+      }
+      case 'ChangeXmlAttributeValue':
+        return `Changes ${base(a[0])}: ${a[2]} = ${a[3]}`;
+      case 'ChangeXmlNodeValue':
+      case 'ChangeXmlNodeInnerTextValue':
+        return `Changes ${base(a[0])}: ${String(a[1]).replace(/^\/+/, '')} = ${a[2]}`;
+      case 'EditRegKey':
+      case 'EditRegKeyNoBackup':
+        return `Sets registry value ${a[2]} = ${a[3]}`;
+      case 'DeleteRegKey':
+        return `Deletes registry key ${a[1]}`;
+      case 'StartProcess':
+        return `Starts ${base(a[0])}`;
+      case 'RunAdditionalFiles':
+        return `Runs ${(Array.isArray(a[0]) ? a[0] : [a[0]]).map(base).join(', ')}`;
+      case 'KillProcessesMatchingProcessName':
+      case 'KillProcessesMatchingWindowName':
+        return `Closes ${a[0]}`;
+      case 'CopyScriptFolder':
+        return "Copies the handler's own files into the game folder";
+      case 'PatchFile':
+      case 'PatchFileFindAll':
+      case 'PatchFileFindPattern':
+      case 'HexEdit':
+        return `Patches ${base(a[1] ?? a[0])}`;
+    }
+  }
+  return null;
+}
+function describeSystem(path: string, args: unknown[]): string | null {
+  if (/IO\.File\.Copy$/.test(path)) return `Copies ${base(args[0])}${base(args[1]) !== base(args[0]) ? ` to ${base(args[1])}` : ''}`;
+  if (/IO\.File\.Delete$/.test(path)) return `Deletes ${base(args[0])}`;
+  if (/IO\.File\.(WriteAllText|WriteAllLines|AppendAllText)$/.test(path)) return `Writes ${base(args[0])}`;
+  if (/IO\.Directory\.CreateDirectory$/.test(path)) return `Creates folder ${base(args[0])}`;
+  if (/IO\.Directory\.Delete$/.test(path)) return `Deletes folder ${base(args[0])}`;
+  if (/Diagnostics\.Process\.Start$/.test(path)) return `Starts ${base(args[0])}`;
+  return null;
+}
 
 const fmt = (v: unknown): string => {
   if (v === null) return 'null';
@@ -99,6 +164,8 @@ function clr(type: string, label: string, log: string[], ignored: string[], stor
             return args.length >= req && args.length <= max;
           });
           log.push(`${label}.${key}(${args.map(fmt).join(', ')})`);
+          const fx = effects && describeCall(label, key, args);
+          if (fx) effects!.push(fx);
           if (!ok) throw new JintError('No public methods with the specified arguments were found.');
           const returns = m.overloads?.find((o) => o.params.length === args.length)?.returns ?? m.overloads?.[0]?.returns ?? 'void';
           return returnValue(key, returns, args, store);
@@ -142,6 +209,8 @@ function systemNs(log: string[], path = 'System'): any {
     },
     apply(_t, _this, args) {
       log.push(`${path}(${args.map(fmt).join(', ')})`);
+      const fx = effects && describeSystem(path, args);
+      if (fx) effects!.push(fx);
       if (/Path\.Combine$/.test(path)) return args.join('\\');
       if (/\.(Exists)$/.test(path)) return false;
       if (/Path\.GetFileName$/.test(path)) return String(args[0]).split('\\').pop();
@@ -290,11 +359,21 @@ export function simulate(src: string, opt: SimOptions): SimResult {
       scope.PlayerList = playerList;
       scope.Handler = {};
       scope.ProtoInput = protoInput;
-      const run: PlayerRun = { index: i, startArguments: '', calls };
+      const where = (() => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        if (opt.players === 1) return 'the whole screen';
+        if (rows === 1) return cols === 2 ? (col === 0 ? 'the left half of the screen' : 'the right half of the screen') : `column ${col + 1}`;
+        return `the ${row === 0 ? 'top' : 'bottom'}-${col === 0 ? 'left' : 'right'} quarter of the screen`;
+      })();
+      const run: PlayerRun = { index: i, startArguments: '', calls, effects: [], window: `${where}, ${w} × ${h}` };
+      effects = run.effects;
       try {
         (play as () => void)();
       } catch (e: any) {
         run.error = `${e instanceof JintError ? 'Jint' : e?.name ?? 'Error'}: ${e?.message ?? e}`;
+      } finally {
+        effects = null;
       }
       run.startArguments = String(ctxStore.StartArguments ?? '');
       run.calls.push(...loadLog.splice(0));

@@ -209,15 +209,55 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .entry .b { display: flex; gap: 4px; flex-wrap: wrap; }
 .entry .kind { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 #help-dialog .keys td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+/* --- views: Simple (plain language) vs Developer (everything) --- */
+:root[data-mode=simple] .dev-only, :root[data-mode=dev] .simple-only { display: none !important; }
+.mode { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.mode button { border: 0; background: var(--surface); padding: 6px 10px; cursor: pointer; }
+.mode button[aria-pressed=true] { background: var(--fg); color: var(--bg); font-weight: 600; }
+.plain-title { font-weight: 600; }
+.plain-why { margin: 2px 0 0; }
+.tech { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.tech summary { margin: 0; font-size: 12px; }
+.fix.primary { background: var(--accent); color: var(--accent-fg); }
+.effects { list-style: none; margin: 4px 0 0; padding: 0; }
+.effects li { padding: 3px 0 3px 18px; position: relative; overflow-wrap: anywhere; }
+.effects li::before { content: "•"; position: absolute; left: 4px; color: var(--accent); }
+.steps { padding-left: 20px; margin: 0 0 10px; display: flex; flex-direction: column; gap: 6px; }
+#drop-hint { position: absolute; inset: 40px 0 0; z-index: 8; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 2px dashed var(--accent); border-radius: 8px; font-weight: 600; color: var(--fg); pointer-events: none; }
+#drop-hint[hidden] { display: none; }
+.pane { position: relative; }
+/* --- phone / tablet: one pane at a time --- */
+.switch { display: none; }
+@media (max-width: 860px) {
+  .app { height: 100%; min-height: 0; gap: 8px; }
+  header { gap: 8px; }
+  .sub { display: none; }
+  .toolbar { margin-left: 0; width: 100%; gap: 6px; }
+  .toolbar .btn, .toolbar .mode { flex: 1 1 auto; }
+  .switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .switch button { border: 0; background: var(--surface); padding: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .switch button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); }
+  .switch button[aria-pressed=true] .count { background: color-mix(in srgb, var(--accent-fg) 25%, transparent); color: inherit; }
+  .main { grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
+  .main[data-view=code] .pane.side, .main[data-view=results] .pane:not(.side) { display: none; }
+  #editor { flex: 1; height: auto; }
+  .pane.side { min-height: 0; }
+  .tip-line { display: none; }
+  .app > footer { display: none; }
+  .mode button { flex: 1; }
+}
+@media (max-width: 600px) {
+  dialog, #open-dialog { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; box-sizing: border-box; }
+  .entries { grid-template-columns: minmax(0, 1fr); }
+  #toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (pointer: coarse) {
+  .btn, select, .filter, .fix, .mode button, [role=tab], .loc { min-height: 40px; }
+  .fix { padding: 4px 12px; }
+  #open-q, #api-q { font-size: 16px; } /* no zoom-on-focus on iOS */
+}
 footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
-@media (max-width: 860px) {
-  .app { height: auto; min-height: 100%; }
-  .main { grid-template-columns: minmax(0, 1fr); }
-  #editor { height: 52vh; flex: none; }
-  .pane.side { min-height: 60vh; }
-  .toolbar { margin-left: 0; }
-}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -231,28 +271,40 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       </div>
     </div>
     <div class="toolbar">
-      <button class="btn primary" id="open-open" type="button" title="Examples, Hub handlers, probes and actions (Ctrl+K)">Open… <kbd>Ctrl K</kbd></button>
+      <div class="mode" role="group" aria-label="View">
+        <button type="button" data-mode="simple" aria-pressed="true" title="Plain-language explanations and a step-by-step flow">Simple</button>
+        <button type="button" data-mode="dev" aria-pressed="false" title="Rule ids, filters, API reference, engine probes and shortcuts">Developer</button>
+      </div>
+      <button class="btn primary" id="open-open" type="button" title="Examples, Hub handlers, probes and actions (Ctrl+K)">Examples… <kbd class="dev-only">Ctrl K</kbd></button>
+      <button class="btn" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
+      <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
       <button class="btn" id="new-open" type="button">New handler…</button>
+      <button class="btn" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
       <button class="btn" id="copy" type="button" title="Copy the handler source">Copy</button>
-      <button class="btn icon" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button class="btn icon dev-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
     </div>
   </header>
 
-  <div class="main">
+  <div class="switch" role="group" aria-label="Show">
+    <button type="button" data-view="code" aria-pressed="false">Handler</button>
+    <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
+  </div>
+  <div class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
         <div class="doc-title"><span id="doc-name">Untitled handler</span><span id="doc-edited" class="muted" hidden>· edited</span></div>
         <div id="doc-meta"></div>
       </div>
+      <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
       <div id="editor"><div id="sig" hidden></div></div>
     </section>
 
     <section class="pane side" aria-label="Analysis">
       <div class="pane-head" role="tablist">
-        <button role="tab" data-tab="problems" type="button">Problems <span class="count" id="count-problems">0</span></button>
-        <button role="tab" data-tab="simulate" type="button">Simulate</button>
-        <button role="tab" data-tab="api" type="button">API</button>
-        <button role="tab" data-tab="probes" type="button">Engine probes <span class="count" id="count-probes">–</span></button>
+        <button role="tab" data-tab="problems" type="button"><span class="simple-only">1. Check</span><span class="dev-only">Problems</span> <span class="count" id="count-problems">0</span></button>
+        <button role="tab" data-tab="simulate" type="button"><span class="simple-only">2. Try it</span><span class="dev-only">Simulate</span></button>
+        <button role="tab" data-tab="api" type="button" class="dev-only">API</button>
+        <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes">41</span></button>
       </div>
       <div role="tabpanel" id="panel-problems">
         <div id="welcome" hidden></div>
@@ -266,7 +318,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           </div>
         </div>
         <div id="ai-box" hidden></div>
-        <div class="filters" role="group" aria-label="Show problems">
+        <div class="filters dev-only" role="group" aria-label="Show problems">
           <button class="filter" type="button" data-filter="all" aria-pressed="true">All <span id="f-all"></span></button>
           <button class="filter" type="button" data-filter="error" aria-pressed="false">Errors <span id="f-error"></span></button>
           <button class="filter" type="button" data-filter="warning" aria-pressed="false">Warnings <span id="f-warning"></span></button>
@@ -283,7 +335,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <label>Keyboard & mouse <select id="sim-kb"><option value="0" selected>Player 1</option><option value="1">Player 2</option><option value="-1">Nobody</option></select></label>
           <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
         </div>
-        <p class="muted" style="margin:0 0 12px;max-width:65ch">Loads the handler and runs <code>Game.Play</code> once per player in this browser, emulating the Jint 2.11.58 rules Nucleus follows (ignored unknown options, list and enum conversions, argument checks). File, registry and process calls are recorded, not performed. Windows, focus and input still need a real test in Nucleus.</p>
+        <p class="muted simple-only" style="margin:0 0 12px;max-width:65ch">What Nucleus would set up for each player: where its window goes, how the game is started, and which settings files it changes. Nothing on your computer is touched. Whether the game actually plays well still needs a real test in Nucleus.</p>
+        <p class="muted dev-only" style="margin:0 0 12px;max-width:65ch">Loads the handler and runs <code>Game.Play</code> once per player in this browser, emulating the Jint 2.11.58 rules Nucleus follows (ignored unknown options, list and enum conversions, argument checks). File, registry and process calls are recorded, not performed. Windows, focus and input still need a real test in Nucleus.</p>
         <div id="sim-out"></div>
       </div>
       <div role="tabpanel" id="panel-api" hidden>
@@ -293,7 +346,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </div>
-  <footer><span id="build-info"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -321,6 +374,17 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   </tbody></table>
   <p class="muted">Links like <code>#hub-&lt;id&gt;</code>, <code>#probe-17</code> or <code>#example-mistakes</code> open that example directly.</p>
   <div class="actions"><button class="btn primary" type="button" id="help-close">Close</button></div>
+</dialog>
+
+<dialog id="save-dialog">
+  <h2>Install it in Nucleus Co-op</h2>
+  <ol class="steps">
+    <li>Save the file: <strong id="save-name"></strong>.</li>
+    <li>Open Nucleus Co-op and drag the file onto the <strong>Extract handler</strong> button (the box-with-arrow icon next to the game list).</li>
+    <li>Nucleus asks to replace the old handler if there is one, then offers to add the game. Pick the game's .exe when asked.</li>
+  </ol>
+  <p class="muted">Prefer doing it by hand? Copy the handler and paste it into <code>Nucleus Co-op\handlers\<span id="save-js"></span></code>, then restart Nucleus.</p>
+  <div class="actions"><button class="btn" type="button" id="save-cancel">Cancel</button><button class="btn primary" type="button" id="save-go">Save .zip</button></div>
 </dialog>
 
 <dialog id="new-dialog">

@@ -124,11 +124,25 @@ const result = await esbuild.build({
   logLevel: 'warning',
 });
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+// The linter also runs in a Web Worker (from a blob: URL), so typing never waits on it.
+const workerBuild = await esbuild.build({
+  entryPoints: [path.join(here, 'src', 'worker.ts')],
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: 'es2020',
+  minify: true,
+  write: false,
+  alias: { '@core': path.join(coreRepo, 'src', 'core') },
+  nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
+  logLevel: 'warning',
+});
+const workerSrc = workerBuild.outputFiles[0].text;
 
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
 const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css')].join('\n');
 
-const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};`.replace(/<\/script/gi, '<\\/script');
+const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};\nvar WORKER_SRC = ${JSON.stringify(workerSrc)};`.replace(/<\/script/gi, '<\\/script');
 let html = fs.readFileSync(path.join(here, 'src', 'page.html'), 'utf8');
 html = html.replace('/*CODEMIRROR_CSS*/', () => css).replace('/*PROBES_AND_BUILD*/', () => data).replace('/*APP_JS*/', () => js);
 
