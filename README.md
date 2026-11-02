@@ -88,6 +88,15 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - The result is shown as a diff, with error and warning counts before and after. You choose **Accept** or **Reject**.
 - In **Apply automatically** mode the fix is applied straight away, with **Undo**. It still goes to review if the fix adds any new problem, removes more than half the handler, doesn't reduce the problem count, or you edited the handler meanwhile.
 
+Everything is keyboard-driven:
+- **Ctrl/⌘+K** opens one searchable list of starters, Hub handlers, probes and actions;
+- **Ctrl/⌘+Enter** simulates;
+- **Alt+Shift+F** fixes problems;
+- **F8** / **Shift+F8** steps through problems;
+- **?** lists the shortcuts.
+
+Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly. The page also remembers your draft, the active tab and the simulation settings in your browser.
+
 It uses the same core code as the extension, from a checkout of [splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode). That checkout needs `npm ci` run in it first.
 
 ```bash

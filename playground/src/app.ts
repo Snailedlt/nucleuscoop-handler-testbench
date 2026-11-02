@@ -97,6 +97,11 @@ try {
 }
 
 let current: Diagnostic[] = [];
+// Problems-panel state; declared before the editor because it lints as soon as it is created.
+let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
+let problemIndex = -1;
+let shownProblems: Diagnostic[] = [];
+let fixCountTimer: number | undefined;
 const sevClass: Record<string, string> = { error: 'error', warning: 'warning', info: 'info', hint: 'hint' };
 
 const editor = CodeMirror($('#editor'), {
@@ -113,7 +118,7 @@ const editor = CodeMirror($('#editor'), {
       current = lint(text);
       renderProblems(text);
       return current
-        .filter((d) => d.severity !== 'hint' || showHints())
+        .filter((d) => d.severity !== 'hint' || filter === 'hint')
         .map((d) => ({
           from: posAt(text, d.start),
           to: posAt(text, Math.max(d.end, d.start + 1)),
@@ -133,7 +138,6 @@ function posAt(text: string, offset: number) {
   const line = lineOf(text, offset);
   return CodeMirror.Pos(line, offset - (text.lastIndexOf('\n', offset - 1) + 1));
 }
-const showHints = () => ($('#show-hints') as HTMLInputElement).checked;
 
 editor.on('change', () => {
   try {
@@ -253,28 +257,43 @@ function showSignature() {
 // ---------------------------------------------------------------------------
 // Problems
 
+
 function renderProblems(text: string) {
-  const list = current.filter((d) => d.severity !== 'hint' || showHints());
   const counts = { error: 0, warning: 0, info: 0, hint: 0 } as Record<string, number>;
   for (const d of current) counts[d.severity]++;
-  $('#count-problems').textContent = String(list.length);
-  $('#status').innerHTML =
-    `<span class="pill ${counts.error ? 'error' : 'ok'}">${counts.error ? `${counts.error} error${counts.error > 1 ? 's' : ''}: Nucleus won't load or run this` : 'Loads in Nucleus'}</span>` +
-    `<span class="muted">${counts.warning} warning${counts.warning === 1 ? '' : 's'} · ${counts.info} info · ${counts.hint} hint${counts.hint === 1 ? '' : 's'}</span>`;
+  const list = current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter));
+  shownProblems = list;
+  problemIndex = -1;
+  $('#count-problems').textContent = String(counts.error + counts.warning);
+  $('#f-all').textContent = String(counts.error + counts.warning + counts.info);
+  for (const k of ['error', 'warning', 'info', 'hint']) $(`#f-${k}`).textContent = String(counts[k]);
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  $('#status').innerHTML = counts.error
+    ? `<span class="pill error">Nucleus won't load or run this</span><span>${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}</span>`
+    : counts.warning
+      ? `<span class="pill ok">Loads in Nucleus</span><span>${plural(counts.warning, 'warning')}: options Nucleus may ignore or misread</span>`
+      : `<span class="pill ok">Loads in Nucleus</span><span>No errors or warnings.</span>`;
+  scheduleFixCount();
   const el = $('#problems');
   if (!list.length) {
-    el.innerHTML = `<p class="empty">No problems. ${counts.hint ? 'Tick "Show hints" to see deprecated options.' : ''}</p>`;
+    el.innerHTML =
+      filter === 'all'
+        ? `<li class="empty">Nothing to fix. Next: <button class="link" type="button" id="go-sim">simulate it</button> to see each player's launch arguments and file edits${counts.hint ? `, or check the <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about deprecated options` : ''}.</li>`
+        : `<li class="empty">No ${filter === 'info' ? 'info' : filter + 's'}.</li>`;
+    el.querySelector('#go-sim')?.addEventListener('click', () => selectTab('simulate'));
+    el.querySelector('#go-hints')?.addEventListener('click', () => setFilter('hint'));
     return;
   }
   el.innerHTML = list
     .map((d, i) => {
       const line = lineOf(text, d.start) + 1;
       const col = d.start - (text.lastIndexOf('\n', d.start - 1) + 1) + 1;
-      const fixes = (d.fixes ?? []).map((f, j) => `<button class="fix" data-d="${i}" data-f="${j}">${esc(f.title.replace(/`/g, ''))}</button>`).join('');
-      return `<li class="problem ${sevClass[d.severity]}">
-        <button class="loc" data-jump="${d.start}">${line}:${col}</button>
+      const fixes = (d.fixes ?? []).map((f, j) => `<button class="fix" data-d="${i}" data-f="${j}" type="button">${esc(f.title.replace(/`/g, ''))}</button>`).join('');
+      const auto = d.fixes?.some((f) => f.preferred) ? '<span class="fixable" title="Fixed by Fix problems">auto-fixable</span>' : '';
+      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
+        <button class="loc" data-jump="${d.start}" type="button" title="Go to line ${line}">${line}:${col}</button>
         <div class="body"><div class="msg">${md(d.message).replace(/^<p>|<\/p>$/g, '')}</div>
-        <div class="meta"><span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>${fixes}</div></div></li>`;
+        <div class="meta"><span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>${auto}${fixes}</div></div></li>`;
     })
     .join('');
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
@@ -283,19 +302,52 @@ function renderProblems(text: string) {
       editor.operation(() => {
         for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
       });
+      toast(`Applied: ${fix.title.replace(/`/g, '')}. Ctrl+Z undoes it.`);
       editor.focus();
     }),
   );
-  el.querySelectorAll<HTMLButtonElement>('.loc').forEach((b) =>
-    b.addEventListener('click', () => {
-      const p = editor.posFromIndex(Number(b.dataset.jump));
-      editor.setCursor(p);
-      editor.scrollIntoView(p, 80);
-      editor.focus();
-    }),
-  );
+  el.querySelectorAll<HTMLButtonElement>('.loc').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
 }
-$('#show-hints').addEventListener('change', () => (editor as any).performLint());
+
+function jumpTo(offset: number) {
+  const p = editor.posFromIndex(offset);
+  editor.setCursor(p);
+  editor.scrollIntoView(p, 80);
+  editor.focus();
+}
+
+/** F8 / Shift+F8: move through the problems shown in the list. */
+function stepProblem(dir: 1 | -1) {
+  if (!shownProblems.length) {
+    toast('No problems to go to.');
+    return;
+  }
+  selectTab('problems');
+  problemIndex = (problemIndex + dir + shownProblems.length) % shownProblems.length;
+  document.querySelectorAll('.problem.current').forEach((e) => e.classList.remove('current'));
+  const li = document.querySelector(`.problem[data-i="${problemIndex}"]`);
+  li?.classList.add('current');
+  li?.scrollIntoView({ block: 'nearest' });
+  jumpTo(shownProblems[problemIndex].start);
+}
+
+function setFilter(f: typeof filter) {
+  filter = f;
+  document.querySelectorAll<HTMLButtonElement>('.filter').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === f)));
+  (editor as any).performLint();
+}
+document.querySelectorAll<HTMLButtonElement>('.filter').forEach((b) => b.addEventListener('click', () => setFilter(b.dataset.filter as typeof filter)));
+
+// "Fix problems" shows how many it can fix; computing it lints a few times, so debounce.
+function scheduleFixCount() {
+  clearTimeout(fixCountTimer);
+  fixCountTimer = window.setTimeout(() => {
+    const n = fixAll(editor.getValue()).applied.length;
+    const btn = $('#fix-all') as HTMLButtonElement;
+    btn.disabled = n === 0;
+    btn.textContent = n ? `Fix ${n} problem${n === 1 ? '' : 's'}` : 'Nothing to fix automatically';
+  }, 300);
+}
 
 // ---------------------------------------------------------------------------
 // Simulate
@@ -391,78 +443,246 @@ function renderProbes() {
     <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   $('#count-probes').textContent = `${agree}/${PROBES.length}`;
   $('#probes').querySelectorAll<HTMLButtonElement>('[data-probe]').forEach((b) =>
-    b.addEventListener('click', () => {
-      loadSource(PROBES[Number(b.dataset.probe)].source);
-      selectTab('problems');
-    }),
+    b.addEventListener('click', () => openProbe(Number(b.dataset.probe))),
   );
 }
 renderProbes();
 
 // ---------------------------------------------------------------------------
-// Samples, new handler, tabs
+// Documents: what's in the editor, where it came from, shareable #links
 
-const samples = $('#samples') as HTMLSelectElement;
-samples.innerHTML =
-  `<option value="">Load an example…</option><option value="buggy">Handler with common mistakes</option>` +
-  `<optgroup label="Templates">${TEMPLATE_SAMPLES.map((t, i) => `<option value="tpl:${i}">${esc(t.label.replace('Template: ', ''))}</option>`).join('')}</optgroup>` +
-  (HUB_EXAMPLES.handlers.length ? `<optgroup label="Hub handlers (verified)">${HUB_EXAMPLES.handlers.map((h, i) => `<option value="hub:${i}">${esc(h.title)} v${h.version}</option>`).join('')}</optgroup>` : '') +
-  `<optgroup label="Engine probes">${PROBES.map((p, i) => `<option value="probe:${i}">${esc(p.name)}</option>`).join('')}</optgroup>`;
-samples.addEventListener('change', () => {
-  if (samples.value.startsWith('hub:')) loadHub(Number(samples.value.slice(4)));
-  else if (samples.value) loadSource(sampleSource(samples.value));
-  samples.value = '';
-});
+interface DocMeta { name: string; kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new'; hash?: string; hubIndex?: number }
+const META_KEY = 'nucleus-workbench-doc';
+let doc: DocMeta = { name: 'Untitled handler', kind: 'draft' };
+let loadedText = editor.getValue();
+try {
+  const saved = JSON.parse(localStorage.getItem(META_KEY) || 'null');
+  if (saved?.name) doc = saved;
+  else if (initial === BUGGY) doc = { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' };
+  loadedText = localStorage.getItem(META_KEY + '-base') ?? (initial === BUGGY ? BUGGY : editor.getValue());
+} catch {
+  /* storage unavailable */
+}
 
-function loadSource(src: string, note = '') {
+function renderDocHead() {
+  $('#doc-name').textContent = doc.name;
+  $('#doc-edited').hidden = editor.getValue() === loadedText || doc.kind === 'draft' || doc.kind === 'new';
+  const h = doc.kind === 'hub' && doc.hubIndex !== undefined ? HUB_EXAMPLES.handlers[doc.hubIndex] : undefined;
+  const parts: string[] = [];
+  if (h) parts.push(`<span>v${h.version} by ${esc(h.owner)}</span><span class="chip ok">verified on the Hub</span><a href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a>`);
+  else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
+  else if (doc.kind === 'template') parts.push('<span>Template</span>');
+  if (doc.hash) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this example">Copy link</button>`);
+  $('#doc-meta').innerHTML = parts.join('');
+  $('#doc-meta').querySelector('#copy-link')?.addEventListener('click', async () => {
+    const url = location.href.replace(/#.*$/, '') + '#' + doc.hash;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied. It opens this example for anyone who can open this page.');
+    } catch {
+      toast(url);
+    }
+  });
+}
+
+function loadSource(src: string, meta: DocMeta) {
   editor.setValue(src);
   editor.clearHistory();
-  editor.focus();
-  const el = $('#source-note');
-  el.innerHTML = note;
-  el.hidden = !note;
-}
-
-function loadHub(i: number) {
-  const h = HUB_EXAMPLES.handlers[i];
-  loadSource(
-    h.source,
-    `<span>${esc(h.title)} v${h.version} by ${esc(h.owner)} · <span class="chip ok">verified</span></span><a href="${esc(h.url)}" target="_blank" rel="noopener">View on the Hub</a>`,
-  );
+  loadedText = src;
+  doc = meta;
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(doc));
+    localStorage.setItem(META_KEY + '-base', src);
+  } catch {
+    /* ignore */
+  }
+  if (meta.hash) history.replaceState(null, '', '#' + meta.hash);
+  else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  renderDocHead();
+  aiBox.hidden = true;
   selectTab('problems');
+  editor.focus();
+}
+editor.on('change', () => renderDocHead());
+
+function openHub(i: number) {
+  const h = HUB_EXAMPLES.handlers[i];
+  loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}` });
+  toast(`Opened ${h.title} v${h.version} from the Hub.`);
+}
+function openProbe(i: number) {
+  const p = PROBES[i];
+  loadSource(p.source, { name: `Probe: ${probeTitle(p.name)}`, kind: 'probe', hash: `probe-${p.name.slice(0, 2)}` });
+}
+const probeTitle = (name: string) => name.replace(/\.js$/, '').replace(/^\d+-/, '').replace(/-/g, ' ');
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+// ---------------------------------------------------------------------------
+// Open dialog (Ctrl+K): starters, Hub handlers, probes and actions in one searchable list
+
+interface OpenEntry { group: string; title: string; sub?: string; badges?: string; keywords?: string; run: () => void; lint?: () => string }
+const hubLint = new Map<number, string>();
+function hubLintBadges(i: number): string {
+  let html = hubLint.get(i);
+  if (html === undefined) {
+    const d = lint(HUB_EXAMPLES.handlers[i].source);
+    const e = d.filter((x) => x.severity === 'error').length;
+    const w = d.filter((x) => x.severity === 'warning').length;
+    html = e ? `<span class="chip error">${e} error${e === 1 ? '' : 's'}</span>` : w ? `<span class="chip warning">${w} warning${w === 1 ? '' : 's'}</span>` : '<span class="chip ok">clean</span>';
+    hubLint.set(i, html);
+  }
+  return html;
 }
 
-// Hub tab: verified handlers snapshotted from hub.splitscreen.me at build time.
-const hubLint = new Map<number, { errors: number; warnings: number }>();
-function renderHub() {
-  const q = ($('#hub-q') as HTMLInputElement).value.trim().toLowerCase();
-  const list = HUB_EXAMPLES.handlers.map((h, i) => ({ h, i })).filter(({ h }) => !q || `${h.title} ${h.game} ${h.owner}`.toLowerCase().includes(q));
-  const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-  $('#hub-intro').innerHTML = HUB_EXAMPLES.handlers.length
-    ? `The ${HUB_EXAMPLES.handlers.length} most-downloaded handlers on <a href="https://hub.splitscreen.me" target="_blank" rel="noopener">hub.splitscreen.me</a> whose current version is verified, as of ${esc(taken)}. Open one to see how its author did it, and what the linter makes of it.`
-    : 'No Hub handlers were included when this page was built.';
-  $('#hub-list').innerHTML = list.length
-    ? list
-        .map(({ h, i }) => {
-          let c = hubLint.get(i);
-          if (!c) {
-            const d = lint(h.source);
-            c = { errors: d.filter((x) => x.severity === 'error').length, warnings: d.filter((x) => x.severity === 'warning').length };
-            hubLint.set(i, c);
-          }
-          const lintChips = `<span class="hub-lint"><span class="chip ${c.errors ? 'error' : 'ok'}">${c.errors} error${c.errors === 1 ? '' : 's'}</span><span class="chip ${c.warnings ? 'warning' : 'ok'}">${c.warnings} warning${c.warnings === 1 ? '' : 's'}</span></span>`;
-          return `<li class="hub-item">
-            <h4>${esc(h.title)}</h4>
-            <div class="hub-actions"><button class="btn" type="button" data-hub="${i}">Open</button><a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a></div>
-            <div class="hub-meta"><span>${esc(h.game)}</span><span>by ${esc(h.owner)}</span><span>v${h.version}</span><span>${h.downloads.toLocaleString()} downloads</span>${h.maxPlayers ? `<span>up to ${h.maxPlayers} players</span>` : ''}${h.multiKbm ? '<span>multiple keyboards & mice</span>' : ''}${lintChips}</div>
-          </li>`;
-        })
-        .join('')
-    : `<p class="empty">No handler matches "${esc(q)}".</p>`;
-  $('#hub-list').querySelectorAll<HTMLButtonElement>('[data-hub]').forEach((b) => b.addEventListener('click', () => loadHub(Number(b.dataset.hub))));
+const outcomeRank = (j: string) => (j === 'LOAD-FAIL' ? 0 : j === 'PLAY-FAIL' ? 1 : 2);
+function entries(): OpenEntry[] {
+  const jintLabel: Record<string, string> = { OK: 'runs', LOADED: 'loads', 'LOAD-FAIL': "doesn't load", 'PLAY-FAIL': 'Game.Play throws' };
+  const list: OpenEntry[] = [
+    { group: 'Start', title: 'New handler…', sub: 'Game name, executable and features; generates a handler that passes the linter.', keywords: 'create template', run: () => newDialog.showModal() },
+    { group: 'Start', title: 'Handler with common mistakes', sub: 'The mistakes Nucleus trips over most; most fix themselves in one click.', keywords: 'example buggy sample', run: () => loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' }) },
+    ...TEMPLATE_SAMPLES.map((t, i) => ({
+      group: 'Start',
+      title: `Template: ${t.label.replace('Template: ', '')}`,
+      sub: t.features.length ? FEATURES.filter((f) => t.features.includes(f.id)).map((f) => f.label).join(' + ') : 'The minimal starting point.',
+      keywords: 'template',
+      run: () => loadSource(sampleSource(`tpl:${i}`), { name: t.label, kind: 'template', hash: `template-${slug(t.label.replace('Template: ', ''))}` }),
+    })),
+    { group: 'Actions', title: 'Fix problems automatically', sub: 'Alt+Shift+F', keywords: 'fix all repair', run: () => ($('#fix-all') as HTMLButtonElement).click() },
+    { group: 'Actions', title: 'Simulate the handler', sub: 'Ctrl+Enter: launch arguments and file edits per player', keywords: 'run play simulate', run: () => selectTab('simulate') },
+    { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
+    { group: 'Actions', title: 'Copy the handler', keywords: 'clipboard', run: () => ($('#copy') as HTMLButtonElement).click() },
+    { group: 'Actions', title: 'Keyboard shortcuts', keywords: 'help keys', run: () => helpDialog.showModal() },
+    ...HUB_EXAMPLES.handlers.map((h, i) => ({
+      group: 'Hub handlers',
+      title: h.title,
+      sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version} · ${h.downloads.toLocaleString()} downloads${h.maxPlayers ? ` · up to ${h.maxPlayers} players` : ''}${h.multiKbm ? ' · multiple keyboards & mice' : ''}`,
+      keywords: `${h.game} ${h.owner} hub`,
+      lint: () => hubLintBadges(i),
+      run: () => openHub(i),
+    })),
+    ...PROBES.map((p, i) => ({ p, i }))
+      .sort((a, b) => outcomeRank(a.p.jint) - outcomeRank(b.p.jint) || a.i - b.i)
+      .map(({ p, i }) => ({
+      group: `Engine probes: ${p.jint === 'LOAD-FAIL' ? "doesn't load" : p.jint === 'PLAY-FAIL' ? 'Game.Play throws' : 'works'}`,
+      title: probeTitle(p.name),
+      sub: p.detail || undefined,
+      badges: `<span class="chip ${p.jint === 'LOAD-FAIL' || p.jint === 'PLAY-FAIL' ? 'error' : 'ok'}">Jint: ${jintLabel[p.jint] ?? p.jint}</span>`,
+      keywords: `probe ${p.name}`,
+      run: () => openProbe(i),
+    })),
+  ];
+  return list;
 }
-$('#count-hub').textContent = String(HUB_EXAMPLES.handlers.length);
-$('#hub-q').addEventListener('input', renderHub);
+
+const openDialog = $('#open-dialog') as HTMLDialogElement;
+const helpDialog = $('#help-dialog') as HTMLDialogElement;
+const newDialog = $('#new-dialog') as HTMLDialogElement;
+let shownEntries: OpenEntry[] = [];
+let activeEntry = 0;
+
+function renderOpen() {
+  const q = ($('#open-q') as HTMLInputElement).value.trim().toLowerCase();
+  const all = entries();
+  let shown: OpenEntry[];
+  if (q) {
+    const words = q.split(/\s+/);
+    shown = all
+      .map((e) => {
+        const title = e.title.toLowerCase();
+        const hay = `${title} ${(e.sub ?? '').toLowerCase()} ${(e.keywords ?? '').toLowerCase()} ${e.group.toLowerCase()}`;
+        if (!words.every((w) => hay.includes(w))) return null;
+        const score = words.reduce((n, w) => n + (title.startsWith(w) ? 4 : title.includes(w) ? 2 : 1), 0);
+        return { e, score };
+      })
+      .filter((x): x is { e: OpenEntry; score: number } => !!x)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.e)
+      .slice(0, 60);
+  } else {
+    shown = all.filter((e) => e.group !== 'Actions');
+  }
+  shownEntries = shown;
+  activeEntry = Math.min(activeEntry, Math.max(0, shown.length - 1));
+  const body = $('#open-body');
+  if (!shown.length) {
+    body.innerHTML = `<p class="empty">Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</p>`;
+    return;
+  }
+  const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+  const groupNote: Record<string, string> = {
+    'Hub handlers': `${HUB_EXAMPLES.handlers.length} most-downloaded, current version verified, as of ${esc(taken)}`,
+  };
+  let html = '';
+  let lastGroup = '';
+  shown.forEach((e, i) => {
+    const group = q ? 'Results' : e.group;
+    if (group !== lastGroup) {
+      if (lastGroup) html += '</div>';
+      html += `<div class="group-title">${esc(group)}${groupNote[group] ? ` <small>${groupNote[group]}</small>` : ''}</div><div class="entries${q ? ' rows' : ''}">`;
+      lastGroup = group;
+    }
+    html += `<button class="entry${i === activeEntry ? ' active' : ''}" type="button" role="option" data-e="${i}" aria-selected="${i === activeEntry}">
+      ${q ? `<span class="kind">${esc(e.group)}</span>` : ''}<span class="t">${esc(e.title)}</span>${e.sub ? `<span class="s">${esc(e.sub)}</span>` : ''}
+      ${e.badges || e.lint ? `<span class="b">${e.badges ?? ''}<span data-lint="${i}"></span></span>` : ''}</button>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  body.querySelectorAll<HTMLButtonElement>('.entry').forEach((b) => b.addEventListener('click', () => runEntry(Number(b.dataset.e))));
+  // Lint results for Hub cards fill in progressively, without blocking typing.
+  const pending = shown.map((e, i) => ({ e, i })).filter(({ e }) => e.lint);
+  const fill = () => {
+    const batch = pending.splice(0, 6);
+    for (const { e, i } of batch) {
+      const slot = body.querySelector(`[data-lint="${i}"]`);
+      if (slot && shownEntries[i] === e) slot.innerHTML = e.lint!();
+    }
+    if (pending.length && openDialog.open) setTimeout(fill, 0);
+  };
+  setTimeout(fill, 0);
+}
+
+function runEntry(i: number) {
+  const e = shownEntries[i];
+  if (!e) return;
+  openDialog.close();
+  e.run();
+}
+function moveActive(d: number) {
+  if (!shownEntries.length) return;
+  activeEntry = (activeEntry + d + shownEntries.length) % shownEntries.length;
+  document.querySelectorAll('#open-body .entry').forEach((el, i) => {
+    el.classList.toggle('active', i === activeEntry);
+    el.setAttribute('aria-selected', String(i === activeEntry));
+  });
+  document.querySelector('#open-body .entry.active')?.scrollIntoView({ block: 'nearest' });
+}
+function showOpen() {
+  ($('#open-q') as HTMLInputElement).value = '';
+  activeEntry = 0;
+  renderOpen();
+  openDialog.showModal();
+  ($('#open-q') as HTMLInputElement).focus();
+}
+$('#open-open').addEventListener('click', showOpen);
+$('#open-close').addEventListener('click', () => openDialog.close());
+$('#open-q').addEventListener('input', () => {
+  activeEntry = 0;
+  renderOpen();
+});
+$('#open-q').addEventListener('keydown', (e: KeyboardEvent) => {
+  const cols = ($('#open-q') as HTMLInputElement).value.trim() ? 1 : Math.max(1, Math.floor(($('#open-body').clientWidth || 1) / 246));
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(cols); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-cols); }
+  else if (e.key === 'ArrowRight' && cols > 1) { e.preventDefault(); moveActive(1); }
+  else if (e.key === 'ArrowLeft' && cols > 1) { e.preventDefault(); moveActive(-1); }
+  else if (e.key === 'Enter') { e.preventDefault(); runEntry(activeEntry); }
+});
+openDialog.addEventListener('click', (e) => {
+  if (e.target === openDialog) openDialog.close(); // click on the backdrop
+});
+
+// ---------------------------------------------------------------------------
+// New handler
 
 $('#feature-list').innerHTML = FEATURES.map(
   (f) => `<label class="check"><input type="checkbox" id="feat-${f.id}" value="${f.id}"><span><strong>${esc(f.label)}</strong><small>${esc(f.detail)}</small></span></label>`,
@@ -473,37 +693,94 @@ $('#new-form').addEventListener('submit', (e) => {
   const exe = ($('#new-exe') as HTMLInputElement).value.trim();
   const steam = ($('#new-steam') as HTMLInputElement).value.trim();
   const features = FEATURES.filter((f) => ($(`#feat-${f.id}`) as HTMLInputElement).checked).map((f) => f.id);
-  loadSource(renderHandler({ gameName: name, executableName: exe, steamId: steam || undefined, features }));
-  ($('#new-dialog') as HTMLDialogElement).close();
-  selectTab('problems');
+  newDialog.close();
+  loadSource(renderHandler({ gameName: name, executableName: exe, steamId: steam || undefined, features }), { name: `${name}.js`, kind: 'new' });
+  toast('Created. It passes the linter; next, simulate it or adjust the options.');
 });
-$('#new-open').addEventListener('click', () => ($('#new-dialog') as HTMLDialogElement).showModal());
-$('#new-cancel').addEventListener('click', () => ($('#new-dialog') as HTMLDialogElement).close());
+$('#new-open').addEventListener('click', () => newDialog.showModal());
+$('#new-cancel').addEventListener('click', () => newDialog.close());
+
+// ---------------------------------------------------------------------------
+// Copy, toast, help, tabs, shortcuts
 
 $('#copy').addEventListener('click', async () => {
-  const btn = $('#copy');
   try {
     await navigator.clipboard.writeText(editor.getValue());
-    btn.textContent = 'Copied';
+    toast(`Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
     editor.focus();
-    btn.textContent = 'Press Ctrl+C';
+    toast('Selected the handler. Press Ctrl+C to copy.');
   }
-  setTimeout(() => (btn.textContent = 'Copy handler'), 1600);
 });
 
+let toastTimer: number | undefined;
+function toast(text: string) {
+  const el = $('#toast');
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => (el.hidden = true), 3200);
+}
+
+$('#help-open').addEventListener('click', () => helpDialog.showModal());
+$('#help-open-2').addEventListener('click', () => helpDialog.showModal());
+$('#help-close').addEventListener('click', () => helpDialog.close());
+
+const TAB_KEY = 'nucleus-workbench-tab';
 function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
-  if (id === 'hub') renderHub();
+  try {
+    localStorage.setItem(TAB_KEY, id);
+  } catch {
+    /* ignore */
+  }
 }
 document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
-['sim-players', 'sim-res', 'sim-kb'].forEach((id) => $(`#${id}`).addEventListener('change', runSim));
+
+const SIM_KEY = 'nucleus-workbench-sim';
+const simIds = ['sim-players', 'sim-res', 'sim-kb'];
+try {
+  const saved = JSON.parse(localStorage.getItem(SIM_KEY) || '{}');
+  for (const id of simIds) if (saved[id] !== undefined) ($(`#${id}`) as HTMLSelectElement).value = saved[id];
+} catch {
+  /* ignore */
+}
+simIds.forEach((id) =>
+  $(`#${id}`).addEventListener('change', () => {
+    try {
+      localStorage.setItem(SIM_KEY, JSON.stringify(Object.fromEntries(simIds.map((x) => [x, ($(`#${x}`) as HTMLSelectElement).value]))));
+    } catch {
+      /* ignore */
+    }
+    runSim();
+  }),
+);
+
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    if (openDialog.open) openDialog.close();
+    else showOpen();
+  } else if (mod && e.key === 'Enter') {
+    e.preventDefault();
+    selectTab('simulate');
+  } else if (e.altKey && e.shiftKey && e.code === 'KeyF') {
+    e.preventDefault();
+    ($('#fix-all') as HTMLButtonElement).click();
+  } else if (e.key === 'F8') {
+    e.preventDefault();
+    stepProblem(e.shiftKey ? -1 : 1);
+  } else if (e.key === '?' && !(e.target as HTMLElement).closest('.CodeMirror, input, textarea, select')) {
+    e.preventDefault();
+    helpDialog.showModal();
+  }
+});
 
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
-selectTab('problems');
 
 // ---------------------------------------------------------------------------
 // Fix with AI (artifact `sample` capability: Claude, on the viewer's own account)
@@ -691,4 +968,67 @@ function showProposal(base: string, code: string, changes: string[], before: { e
     showApplied();
   });
   $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
+}
+
+// ---------------------------------------------------------------------------
+// Start-up: #links, first-visit welcome, last tab
+
+function openFromHash(): boolean {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (!h) return false;
+  if (h.startsWith('hub-')) {
+    const i = HUB_EXAMPLES.handlers.findIndex((x) => x.id === h.slice(4));
+    if (i >= 0) return openHub(i), true;
+  } else if (h.startsWith('probe-')) {
+    const i = PROBES.findIndex((p) => p.name.startsWith(h.slice(6).padStart(2, '0') + '-'));
+    if (i >= 0) return openProbe(i), true;
+  } else if (h === 'example-mistakes') {
+    return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
+  } else if (h.startsWith('template-')) {
+    const i = TEMPLATE_SAMPLES.findIndex((t) => `template-${slug(t.label.replace('Template: ', ''))}` === h);
+    if (i >= 0) return loadSource(sampleSource(`tpl:${i}`), { name: TEMPLATE_SAMPLES[i].label, kind: 'template', hash: h }), true;
+  }
+  toast(`The link "#${h}" doesn't match an example in this build.`);
+  return false;
+}
+window.addEventListener('hashchange', () => {
+  if (location.hash.slice(1) !== doc.hash) openFromHash();
+});
+
+const WELCOME_KEY = 'nucleus-workbench-welcomed';
+let welcomed = false;
+try {
+  welcomed = localStorage.getItem(WELCOME_KEY) === '1';
+} catch {
+  /* ignore */
+}
+if (!welcomed) {
+  const w = $('#welcome');
+  w.innerHTML = `<h3>Test a Nucleus Co-op handler before you open Nucleus</h3>
+    <ol><li>Paste a handler, or open one of 40 verified Hub handlers with <button class="link" type="button" data-w="open">Open (Ctrl K)</button>.</li>
+    <li>Fix what Nucleus would reject: most problems fix themselves with one click.</li>
+    <li><button class="link" type="button" data-w="sim">Simulate</button> it to see each player's launch arguments and file edits.</li></ol>
+    <button class="btn" type="button" data-w="close">Got it</button>`;
+  w.hidden = false;
+  w.querySelector('[data-w=open]')!.addEventListener('click', showOpen);
+  w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
+  w.querySelector('[data-w=close]')!.addEventListener('click', () => {
+    w.hidden = true;
+    try {
+      localStorage.setItem(WELCOME_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+let startTab = 'problems';
+try {
+  startTab = localStorage.getItem(TAB_KEY) || 'problems';
+} catch {
+  /* ignore */
+}
+if (!openFromHash()) {
+  renderDocHead();
+  selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 }
