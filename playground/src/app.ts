@@ -1,4 +1,5 @@
 import { applyTheme, initDevBar } from './devbar';
+import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/lint/lint';
@@ -574,17 +575,45 @@ function renderDocHead() {
   if (h) parts.push(`<span>v${h.version} by ${esc(h.owner)}</span><span class="chip ok">verified on the Hub</span><a href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a>`);
   else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
   else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
-  if (doc.hash) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this example">Copy link</button>`);
+  if (doc.hash || canShare()) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this handler (or just the selected lines)">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
-  $('#doc-meta').querySelector('#copy-link')?.addEventListener('click', async () => {
-    const url = location.href.replace(/#.*$/, '') + '#' + doc.hash;
+  $('#doc-meta').querySelector('#copy-link')?.addEventListener('click', copyLink);
+}
+
+/**
+ * Copy link: an unchanged example links by name (#hub-…); anything else is packed into the link
+ * (#share-…). With text selected, only the selection is shared.
+ */
+const DISCORD_LIMIT = 2000;
+async function copyLink() {
+  const selection = editor.getSelection();
+  const edited = editor.getValue() !== loadedText;
+  let id = doc.hash && !edited && !selection ? doc.hash : '';
+  if (!id) {
     try {
-      await navigator.clipboard.writeText(url);
-      toast('Link copied. It opens this example for anyone who can open this page.');
+      id = await encodeShare(selection || editor.getValue());
     } catch {
-      toast(url);
+      toast("This browser can't make share links. Use Copy instead.");
+      return;
     }
-  });
+  }
+  const what = selection ? 'the selected lines' : doc.hash && !edited ? 'this example' : 'this handler';
+  if ((window as any).claude) {
+    // Inside a Claude artifact the page's own address isn't the artifact's link: put the id in the
+    // hash, which the artifact's address and Share > Copy link follow.
+    history.replaceState(null, '', '#' + id);
+    toast(`The page link now opens ${what}. Copy it from the address bar or Share > Copy link.`);
+    return;
+  }
+  const url = location.href.replace(/#.*$/, '') + '#' + id;
+  const long = url.length > DISCORD_LIMIT ? ` It is ${url.length.toLocaleString()} characters, too long for a Discord message (${DISCORD_LIMIT.toLocaleString()}): ${selection ? 'share the file instead' : 'select just the lines that matter and copy again, or share the file'}.` : '';
+  try {
+    await navigator.clipboard.writeText(url);
+    toast(`Link copied. It opens ${what} for anyone.${long}`);
+  } catch {
+    toast(`Couldn't copy. The link is in the address bar.${long}`);
+    history.replaceState(null, '', '#' + id);
+  }
 }
 
 function loadSource(src: string, meta: DocMeta) {
@@ -1235,6 +1264,20 @@ let downloads: any = null;
   } catch {
     downloads = null;
   }
+  if (!downloads && !(window as any).claude) {
+    // A normal web page (GitHub Pages): an ordinary browser download.
+    downloads = {
+      save: async ({ filename, data }: { filename: string; data: Uint8Array }) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([data as BlobPart], { type: "application/zip" }));
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      },
+    };
+  }
   if (downloads) $('#save').hidden = false;
 })();
 const saveDialog = $('#save-dialog') as HTMLDialogElement;
@@ -1272,6 +1315,12 @@ $('#save-go').addEventListener('click', async () => {
 function openFromHash(): boolean {
   const h = decodeURIComponent(location.hash.slice(1));
   if (!h) return false;
+  if (h.startsWith(SHARE_PREFIX)) {
+    decodeShare(h)
+      .then((src) => loadSource(src, { name: 'Shared handler', kind: 'example', hash: h }))
+      .catch(() => toast('This share link is damaged or incomplete. Ask for it again, or for the file.'));
+    return true;
+  }
   if (h === 'dev') {
     // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
     devBar.show();

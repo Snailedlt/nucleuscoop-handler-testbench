@@ -181,4 +181,23 @@ html = html.replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src',
 
 fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
+// The same page as a standalone site (GitHub Pages): the document wrapper and base styles that the
+// Claude artifact host otherwise adds.
+fs.mkdirSync(path.join(here, 'dist', 'pages'), { recursive: true });
+fs.writeFileSync(
+  path.join(here, 'dist', 'pages', 'index.html'),
+  `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Write a Nucleus Co-op handler and see what Nucleus will make of it: checks, fixes, and what each player gets.">
+<style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; height: 100%; } body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }</style>
+</head>
+<body>
+${html}
+</body>
+</html>
+`,
+);
 console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

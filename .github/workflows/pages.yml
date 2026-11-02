@@ -1,0 +1,56 @@
+name: Workbench (GitHub Pages)
+# Publishes the browser workbench to https://snailedlt.github.io/nucleuscoop-handler-testbench/
+# Built from this repo plus splitscreenme-vscode's main branch (the linter and Try it), with a fresh
+# snapshot of verified Hub handlers and the Discord bot's templates. Rebuilt daily so both stay current.
+# One-time setup: Settings > Pages > Build and deployment > Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Snailedlt/splitscreenme-vscode
+          ref: main
+          path: core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: core
+      - run: npm ci
+        working-directory: playground
+      - name: Build (fresh Hub snapshot, verified versions only)
+        run: node build.mjs --core ../core --refresh-hub
+        working-directory: playground
+      - name: Try it still matches Jint on every probe
+        run: node sim-parity.mjs --core ../core
+        working-directory: playground
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: playground/dist/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

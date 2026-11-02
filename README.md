@@ -71,7 +71,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 
 ## Workbench (browser GUI)
 
-`playground/` builds a single self-contained page for testing by hand. It has:
+`playground/` builds a single self-contained page for testing by hand. It's published at **https://snailedlt.github.io/nucleuscoop-handler-testbench/** (`.github/workflows/pages.yml`: on every push and daily, against splitscreenme-vscode's `main`; one-time setup: Settings > Pages > Source: GitHub Actions). It has:
 
 - an editor with live lint squiggles, quick fixes, completion, hover docs and signature help;
 - API search;
@@ -104,6 +104,8 @@ In Advanced mode everything is keyboard-driven:
 - **?** lists the shortcuts.
 
 **Theme and dev bar.** The page uses splitscreen.me's theme (brand blue, system fonts, light and dark). A dev bar, like lonnsinnplassering's, switches to v3.splitscreen.me's "Bezel" theme (from the `v3.0.0-beta` branch of splitscreenme-hub: monochrome chrome, Archivo and JetBrains Mono, player colours on Try it's player cards; v3 itself is dark only, the light variant is this page's own), sets the colour mode, and checks the WCAG contrast of the theme's text colours. Open it with Ctrl+Alt+D (remembered), a `#dev` link (this page load only), or "Show or hide the dev bar" under Examples… (Ctrl K). The theme choice sticks even with the bar hidden.
+
+**Share links.** **Copy link** puts the handler, compressed, into the link (`#share-…`), so anyone with the link sees the same code; with text selected it shares just the selection, which keeps links short enough for a Discord message (2,000 characters; whole handlers are usually longer).
 
 Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly. The page also remembers your draft, the active tab and the simulation settings in your browser.
 
