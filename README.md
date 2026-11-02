@@ -2,6 +2,17 @@
 
 Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) game handlers outside Nucleus, on Linux or macOS with Mono, using **the same JavaScript engine version Nucleus ships (Jint 2.11.58), set up the same way**. Use it to check that a handler loads and that its `Game.Play` logic runs for each player, without Windows, the game or controllers.
 
+**Browser workbench: https://snailedlt.github.io/nucleuscoop-handler-testbench/** (from `playground/`): check a handler, fix it, and see what Nucleus sets up for each player, in the browser. Nothing to install.
+
+<p>
+  <img src="docs/images/check.png" width="49%" alt="Check: Skyrim Together Reborn, a verified Hub handler, with its five ProtoController5 to 9 lines flagged and explained">
+  <img src="docs/images/try-it.png" width="49%" alt="Try it: StardewValley with 4 players in the v3.splitscreen.me theme, each player's window and the settings files Nucleus would change">
+</p>
+<p>
+  <img src="docs/images/fix-all.png" width="49%" alt="Fix all: the automatic fixes for a handler with common mistakes, as a list and a diff, before you accept them">
+  <img src="docs/images/phone.png" width="24%" alt="The workbench on a phone: the Check results for the example handler">
+</p>
+
 ## What it does
 
 1. **Loads** each handler exactly like `GenericGameInfo`'s constructor in Nucleus:

@@ -50,7 +50,7 @@ function md(src: string): string {
 // Samples
 
 
-const BUGGY = `// A handler with common mistakes. Try the quick fixes in Problems.
+const BUGGY = `// A handler with common mistakes. See what Check finds, then fix them.
 Game.GameName = "Buggy Game";
 Game.GUID = "Buggy: Game!";
 Game.ExecutableName = "buggy.exe";
