@@ -11,6 +11,7 @@ import { search, lookup, Entry } from '@core/lookup';
 import { renderHandler, FEATURES, Feature } from '@core/templates';
 import { simulate } from './sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
+import { fixAll } from '@core/fix';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
@@ -482,7 +483,11 @@ let aiCtl: AbortController | null = null;
   } catch {
     sample = null;
   }
-  if (sample) $('#ai-bar').hidden = false;
+  // Fix with AI only exists inside a Claude artifact viewer.
+  if (sample) {
+    aiBtn.hidden = false;
+    ($('#ai-note') as HTMLInputElement).hidden = false;
+  }
 })();
 
 const AI_ERRORS: Record<string, string> = {
@@ -539,8 +544,9 @@ async function runAiFix() {
     if (e?.code === 'cancelled') {
       aiBox.hidden = true;
     } else if (AI_UNAVAILABLE.has(e?.code)) {
-      $('#ai-bar').hidden = true;
-      aiBox.innerHTML = `<p>Claude isn't available on this page for your account, so Fix with AI is turned off.</p>`;
+      aiBtn.hidden = true;
+      ($('#ai-note') as HTMLInputElement).hidden = true;
+      aiBox.innerHTML = `<p>Claude isn't available on this page for your account, so Fix with AI is turned off. Fix all problems still works.</p>`;
     } else {
       aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? 'Something went wrong reaching Claude. Try again.')}</p>`;
     }
@@ -551,12 +557,26 @@ async function runAiFix() {
 }
 aiBtn.addEventListener('click', runAiFix);
 
+// Fix all: the deterministic, offline fixes (the same as `nucleus lint --fix` and the extension).
+$('#fix-all').addEventListener('click', () => {
+  const base = editor.getValue();
+  const before = counts(base);
+  const r = fixAll(base);
+  aiBox.hidden = false;
+  if (r.code === base) {
+    aiBox.innerHTML = `<p>Nothing can be fixed automatically. ${before.errors + before.warnings ? 'The remaining problems need your decision; see their quick fixes below' + (sample ? ', or try Fix with AI' : '') + '.' : ''}</p>`;
+    return;
+  }
+  const changes = [...new Set(r.applied.map((a) => `${a.title} (line ${a.line})`))];
+  showProposal(base, r.code, changes, before, 'Fix all');
+});
+
 function applyCode(code: string) {
   const doc = editor.getDoc();
   doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix');
 }
 
-function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }) {
+function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }, source: 'AI' | 'Fix all' = 'AI') {
   const after = counts(code);
   const edited = editor.getValue() !== base;
   const better = after.errors < before.errors || (after.errors === before.errors && after.warnings < before.warnings);
@@ -586,7 +606,8 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   const auto = aiAuto.checked && !reason;
 
   const body = (state: 'review' | 'applied') => `
-    <h3>${state === 'applied' ? 'Applied Claude\'s fix' : "Claude's proposed fix"}</h3>
+    <h3>${source === 'Fix all' ? (state === 'applied' ? 'Applied automatic fixes' : 'Automatic fixes') : state === 'applied' ? 'Applied Claude\'s fix' : "Claude's proposed fix"}</h3>
+    ${source === 'Fix all' && after.errors + after.warnings ? `<p class="muted">${after.errors + after.warnings} problem${after.errors + after.warnings === 1 ? '' : 's'} need${after.errors + after.warnings === 1 ? 's' : ''} your decision and stay${after.errors + after.warnings === 1 ? 's' : ''} listed below.</p>` : ''}
     ${changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
     ${delta}
     ${reason && (aiAuto.checked || introduced.length || bigRewrite || edited) ? `<p class="note">${esc(aiAuto.checked ? reason : reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, ''))}</p>` : ''}

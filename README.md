@@ -78,7 +78,8 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - the New Handler templates;
 - a per-player `Game.Play` simulation;
 - the probes, shown next to the linter's verdict;
-- **Fix with AI**, when the page runs inside a Claude viewer.
+- **Fix all problems**: the extension's deterministic, offline fixes, with a diff to review or **Apply automatically**;
+- **Fix with AI**, only when the page runs inside a Claude viewer.
 
 **Fix with AI** works like this:
 - It calls Claude through the artifact `sample` capability, on the viewer's own account.

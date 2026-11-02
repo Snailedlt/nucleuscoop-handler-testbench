@@ -201,10 +201,11 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <button role="tab" data-tab="probes" type="button">Engine probes <span class="count" id="count-probes">–</span></button>
       </div>
       <div role="tabpanel" id="panel-problems">
-        <div class="ai-bar" id="ai-bar" hidden>
-          <button class="btn primary" id="ai-fix" type="button">Fix with AI</button>
+        <div class="ai-bar" id="ai-bar">
+          <button class="btn primary" id="fix-all" type="button">Fix all problems</button>
+          <button class="btn" id="ai-fix" type="button" hidden>Fix with AI</button>
           <label class="toggle"><input type="checkbox" id="ai-auto"> Apply automatically</label>
-          <input id="ai-note" type="text" placeholder="Optional: anything else to change" aria-label="Extra instructions for Claude">
+          <input id="ai-note" type="text" placeholder="For AI: anything else to change" aria-label="Extra instructions for Claude" hidden>
         </div>
         <div id="ai-box" hidden></div>
         <div class="panel-tools"><label><input type="checkbox" id="show-hints"> Show hints (deprecated options)</label><span class="muted">Hover code for docs · type <code>.</code> or Ctrl+Space to complete</span></div>
