@@ -75,9 +75,10 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 
 - an editor with live lint squiggles, quick fixes, completion, hover docs and signature help;
 - API search;
-- the New Handler templates;
+- the New Handler generator;
 - a per-player `Game.Play` simulation;
 - the probes, shown next to the linter's verdict;
+- **Engine templates**: the same files the SplitScreen.Me Discord bot sends with `/create`. They are read at build time from [splitscreenme-discordbot](https://github.com/SplitScreen-Me/splitscreenme-discordbot)'s `src/handler_templates`, using a cached shallow clone in `.cache/`. Pass `--bot <path>` to use a local checkout, or `--refresh-bot` to re-clone;
 - **Hub examples**: the most-downloaded handlers whose current version is verified, snapshotted from the hub API at build time (`--hub <n>`, default 40; `--refresh-hub` to re-fetch). A published artifact can't reach other sites when you view it, so they are embedded. Each one's source is that verified package's own `jsContent`;
 - **Fix all problems**: the extension's deterministic, offline fixes, with a diff to review or **Apply automatically**;
 - **Fix with AI**, only when the page runs inside a Claude viewer.
@@ -88,13 +89,14 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - The result is shown as a diff, with error and warning counts before and after. You choose **Accept** or **Reject**.
 - In **Apply automatically** mode the fix is applied straight away, with **Undo**. It still goes to review if the fix adds any new problem, removes more than half the handler, doesn't reduce the problem count, or you edited the handler meanwhile.
 
-It has two views:
-- **Simple** (the default for new visitors): problems in plain language with **Fix this** and **Show me**, a readable per-player preview ("Window: the left half of the screen, 960 × 1080", "Changes config.ini: Width = 960"), and **Save for Nucleus**. That saves a `.zip` you drag onto Nucleus Co-op's *Extract handler* button.
-- **Developer**: rule ids, severity filters, the API reference, engine probes and recorded calls.
+**Advanced mode** is off by default. You turn it on with the switch at the top right.
+
+- **Off:** problems in plain language with **Fix this** and **Show me**, a readable per-player preview ("Window: the left half of the screen, 960 × 1080", "Changes config.ini: Width = 960"), and **Save for Nucleus**. That saves a `.zip` you drag onto Nucleus Co-op's *Extract handler* button.
+- **On:** rule ids, severity filters, the API reference, engine probes and recorded calls.
 
 You can open handler `.js`, `.zip` or `.nc` files by picking them or dropping them on the page. Linting runs in a Web Worker so typing stays smooth in long handlers, and on phones a Handler / Results switch shows one pane at a time.
 
-In the Developer view everything is keyboard-driven:
+In Advanced mode everything is keyboard-driven:
 - **Ctrl/⌘+K** opens one searchable list of starters, Hub handlers, probes and actions;
 - **Ctrl/⌘+Enter** simulates;
 - **Alt+Shift+F** fixes problems;

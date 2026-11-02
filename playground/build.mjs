@@ -106,6 +106,39 @@ async function hubExamples() {
   return result;
 }
 const hub = await hubExamples();
+
+// Engine templates: the same files the SplitScreen.Me Discord bot sends with /create
+// (SplitScreen-Me/splitscreenme-discordbot, src/handler_templates). Uses --bot <path>,
+// or a shallow clone cached in .cache/.
+//   --refresh-bot  re-clone the bot repo
+const argBot = process.argv.indexOf('--bot');
+const BOT_REPO = 'https://github.com/SplitScreen-Me/splitscreenme-discordbot';
+function botTemplates() {
+  let dir = argBot > 0 ? path.resolve(process.argv[argBot + 1]) : path.join(here, '.cache', 'splitscreenme-discordbot');
+  if (argBot < 0) {
+    if (process.argv.includes('--refresh-bot')) fs.rmSync(dir, { recursive: true, force: true });
+    if (!fs.existsSync(path.join(dir, '.git'))) {
+      fs.mkdirSync(path.dirname(dir), { recursive: true });
+      execSync(`git clone --quiet --depth 1 ${BOT_REPO} "${dir}"`, { stdio: 'inherit' });
+    }
+  }
+  const tdir = path.join(dir, 'src', 'handler_templates');
+  if (!fs.existsSync(tdir)) {
+    console.warn(`No handler_templates in ${dir}; skipping the Discord bot templates.`);
+    return { commit: null, templates: [] };
+  }
+  const NAMES = { cry_engine: 'CryEngine', diesel: 'Diesel', generic: 'Generic (any engine)', mt_framework: 'MT Framework', source_engine: 'Source', unity: 'Unity', unreal_engine_3: 'Unreal Engine 3', unreal_engine_4: 'Unreal Engine 4' };
+  const templates = fs
+    .readdirSync(tdir)
+    .filter((f) => f.endsWith('.js'))
+    .sort()
+    .map((f) => {
+      const id = f.slice(0, -3);
+      return { id, name: NAMES[id] ?? id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), source: fs.readFileSync(path.join(tdir, f), 'utf8').replace(/\r\n/g, '\n') };
+    });
+  return { commit: rev(dir), templates };
+}
+const bot = botTemplates();
 if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handler(s) whose current version isn't verified: ${hub.rejected.map((r) => r.title).join(', ')}`);
 
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
@@ -142,10 +175,10 @@ const workerSrc = workerBuild.outputFiles[0].text;
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
 const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css')].join('\n');
 
-const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};\nvar WORKER_SRC = ${JSON.stringify(workerSrc)};`.replace(/<\/script/gi, '<\\/script');
+const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar WORKER_SRC = ${JSON.stringify(workerSrc)};`.replace(/<\/script/gi, '<\\/script');
 let html = fs.readFileSync(path.join(here, 'src', 'page.html'), 'utf8');
 html = html.replace('/*CODEMIRROR_CSS*/', () => css).replace('/*PROBES_AND_BUILD*/', () => data).replace('/*APP_JS*/', () => js);
 
 fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
-console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers`);
+console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

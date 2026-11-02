@@ -8,7 +8,7 @@ import { lint, Diagnostic, RULES, lineOf } from '@core/lint';
 import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
 import { search, lookup, Entry } from '@core/lookup';
-import { renderHandler, FEATURES, Feature } from '@core/templates';
+import { renderHandler, FEATURES } from '@core/templates';
 import { simulate } from './sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
@@ -19,6 +19,7 @@ declare const BUILD: { core: string; nucleus: string | null; jint: string | null
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source: string }
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[] };
 declare const WORKER_SRC: string;
+declare const BOT_TEMPLATES: { commit: string | null; templates: { id: string; name: string; source: string }[] };
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -45,12 +46,6 @@ function md(src: string): string {
 // ---------------------------------------------------------------------------
 // Samples
 
-const TEMPLATE_SAMPLES: { label: string; features: Feature[] }[] = [
-  { label: 'Template: basic', features: [] },
-  { label: 'Template: Proto Input (multiple keyboards & mice)', features: ['protoinput'] },
-  { label: 'Template: Goldberg + INI resolution', features: ['goldberg', 'resolution-ini'] },
-  { label: 'Template: everything', features: FEATURES.map((f) => f.id) },
-];
 
 const BUGGY = `// A handler with common mistakes. Try the quick fixes in Problems.
 Game.GameName = "Buggy Game";
@@ -76,16 +71,6 @@ Game.Play = function () {
 };
 `;
 
-function sampleSource(id: string): string {
-  if (id === 'buggy') return BUGGY;
-  if (id.startsWith('tpl:')) {
-    const t = TEMPLATE_SAMPLES[Number(id.slice(4))];
-    return renderHandler({ gameName: 'Example Game', executableName: 'ExampleGame.exe', steamId: '123450', features: t.features });
-  }
-  if (id.startsWith('probe:')) return PROBES[Number(id.slice(6))].source;
-  if (id.startsWith('hub:')) return HUB_EXAMPLES.handlers[Number(id.slice(4))].source;
-  return '';
-}
 
 // ---------------------------------------------------------------------------
 // Editor
@@ -121,17 +106,14 @@ let current: Diagnostic[] = [];
 let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
 let problemIndex = -1;
 let shownProblems: Diagnostic[] = [];
-let fixCountTimer: number | undefined;
 
-// View mode. Simple: plain language and a guided flow. Developer: everything.
+// Advanced mode (off by default): rule ids, filters, API reference, engine probes, raw calls.
+// Off: plain language and a guided flow.
 type Mode = 'simple' | 'dev';
-const MODE_KEY = 'nucleus-workbench-mode';
+const MODE_KEY = 'nucleus-workbench-advanced';
 let mode: Mode = 'simple';
 try {
-  const stored = localStorage.getItem(MODE_KEY) as Mode | null;
-  // Returning visitors (from before modes existed) start in Developer, where everything was.
-  const returning = localStorage.getItem('nucleus-workbench-welcomed') === '1' || !!localStorage.getItem('nucleus-workbench-draft');
-  mode = stored === 'simple' || stored === 'dev' ? stored : returning ? 'dev' : 'simple';
+  mode = localStorage.getItem(MODE_KEY) === '1' ? 'dev' : 'simple';
 } catch {
   /* storage unavailable */
 }
@@ -367,7 +349,7 @@ function renderProblems(text: string) {
   const el = $('#problems');
   if (!list.length) {
     el.innerHTML = simple
-      ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${counts.info ? ` (${plural(counts.info, 'small suggestion')} are in the Developer view.)` : ''}</li>`
+      ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${counts.info ? ` (${plural(counts.info, 'small suggestion')} are shown in Advanced mode.)` : ''}</li>`
       : filter === 'all'
         ? `<li class="empty">Nothing to fix. Next: <button class="link" type="button" id="go-sim">simulate it</button> to see each player's launch arguments and file edits${counts.hint ? `, or check the <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about deprecated options` : ''}.</li>`
         : `<li class="empty">No ${filter === 'info' ? 'info' : filter + 's'}.</li>`;
@@ -580,7 +562,7 @@ function renderDocHead() {
   const parts: string[] = [];
   if (h) parts.push(`<span>v${h.version} by ${esc(h.owner)}</span><span class="chip ok">verified on the Hub</span><a href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a>`);
   else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
-  else if (doc.kind === 'template') parts.push('<span>Template</span>');
+  else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
   if (doc.hash) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this example">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
   $('#doc-meta').querySelector('#copy-link')?.addEventListener('click', async () => {
@@ -619,6 +601,11 @@ function openHub(i: number) {
   loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}` });
   toast(`Opened ${h.title} v${h.version} from the Hub.`);
 }
+function openTemplate(id: string) {
+  const t = BOT_TEMPLATES.templates.find((x) => x.id === id);
+  if (!t) return;
+  loadSource(t.source, { name: `${t.name} template`, kind: 'template', hash: `template-${slug(t.id)}` });
+}
 function openProbe(i: number) {
   const p = PROBES[i];
   loadSource(p.source, { name: `Probe: ${probeTitle(p.name)}`, kind: 'probe', hash: `probe-${p.name.slice(0, 2)}` });
@@ -649,12 +636,12 @@ function entries(): OpenEntry[] {
   const list: OpenEntry[] = [
     { group: 'Start', title: 'New handler…', sub: 'Game name, executable and features; generates a handler that passes the linter.', keywords: 'create template', run: () => newDialog.showModal() },
     { group: 'Start', title: 'Handler with common mistakes', sub: 'The mistakes Nucleus trips over most; most fix themselves in one click.', keywords: 'example buggy sample', run: () => loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' }) },
-    ...TEMPLATE_SAMPLES.map((t, i) => ({
-      group: 'Start',
-      title: `Template: ${t.label.replace('Template: ', '')}`,
-      sub: t.features.length ? FEATURES.filter((f) => t.features.includes(f.id)).map((f) => f.label).join(' + ') : 'The minimal starting point.',
-      keywords: 'template',
-      run: () => loadSource(sampleSource(`tpl:${i}`), { name: t.label, kind: 'template', hash: `template-${slug(t.label.replace('Template: ', ''))}` }),
+    ...BOT_TEMPLATES.templates.map((t) => ({
+      group: 'Engine templates',
+      title: t.name,
+      sub: t.id === 'generic' ? 'A starting point for any game.' : `A starting point for ${t.name} games.`,
+      keywords: `template engine ${t.id}`,
+      run: () => openTemplate(t.id),
     })),
     { group: 'Actions', title: 'Fix problems automatically', sub: 'Alt+Shift+F', keywords: 'fix all repair', run: () => ($('#fix-all') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Simulate the handler', sub: 'Ctrl+Enter: launch arguments and file edits per player', keywords: 'run play simulate', run: () => selectTab('simulate') },
@@ -669,7 +656,7 @@ function entries(): OpenEntry[] {
       lint: () => hubLintBadges(i),
       run: () => openHub(i),
     })),
-    ...PROBES.map((p, i) => ({ p, i }))
+    ...(mode === 'dev' ? PROBES : []).map((p, i) => ({ p, i }))
       .sort((a, b) => outcomeRank(a.p.jint) - outcomeRank(b.p.jint) || a.i - b.i)
       .map(({ p, i }) => ({
       group: `Engine probes: ${p.jint === 'LOAD-FAIL' ? "doesn't load" : p.jint === 'PLAY-FAIL' ? 'Game.Play throws' : 'works'}`,
@@ -720,6 +707,7 @@ function renderOpen() {
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   const groupNote: Record<string, string> = {
     'Hub handlers': `${HUB_EXAMPLES.handlers.length} most-downloaded, current version verified, as of ${esc(taken)}`,
+    'Engine templates': 'The same templates the SplitScreen.Me Discord bot sends with /create',
   };
   let html = '';
   let lastGroup = '';
@@ -1085,14 +1073,14 @@ function showProposal(base: string, code: string, changes: string[], before: { e
 }
 
 // ---------------------------------------------------------------------------
-// Simple / Developer view
+// Advanced mode switch
 
 function setMode(m: Mode) {
   mode = m;
   document.documentElement.dataset.mode = m;
-  document.querySelectorAll<HTMLButtonElement>('.mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  advanced.checked = m === 'dev';
   try {
-    localStorage.setItem(MODE_KEY, m);
+    localStorage.setItem(MODE_KEY, m === 'dev' ? '1' : '0');
   } catch {
     /* ignore */
   }
@@ -1101,8 +1089,12 @@ function setMode(m: Mode) {
   (editor as any).performLint();
   if (active === 'simulate') runSim();
 }
-document.querySelectorAll<HTMLButtonElement>('.mode button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode as Mode)));
-document.querySelectorAll<HTMLButtonElement>('.mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+const advanced = $('#advanced') as HTMLInputElement;
+advanced.checked = mode === 'dev';
+advanced.addEventListener('change', () => {
+  setMode(advanced.checked ? 'dev' : 'simple');
+  toast(advanced.checked ? 'Advanced mode on: rule details, filters, API reference and engine probes.' : 'Advanced mode off.');
+});
 
 // ---------------------------------------------------------------------------
 // Small screens: show the handler or the results, with a switch
@@ -1272,8 +1264,8 @@ function openFromHash(): boolean {
   } else if (h === 'example-mistakes') {
     return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
   } else if (h.startsWith('template-')) {
-    const i = TEMPLATE_SAMPLES.findIndex((t) => `template-${slug(t.label.replace('Template: ', ''))}` === h);
-    if (i >= 0) return loadSource(sampleSource(`tpl:${i}`), { name: TEMPLATE_SAMPLES[i].label, kind: 'template', hash: h }), true;
+    const t = BOT_TEMPLATES.templates.find((x) => slug(x.id) === slug(h.slice('template-'.length)));
+    if (t) return openTemplate(t.id), true;
   }
   toast(`The link "#${h}" doesn't match an example in this build.`);
   return false;
@@ -1293,7 +1285,7 @@ if (!welcomed) {
   const w = $('#welcome');
   w.innerHTML = `<h3>Check a Nucleus Co-op handler before you play</h3>
     <p class="muted" style="margin:0 0 4px">A handler is the small file that tells Nucleus Co-op how to run a game split-screen. It lives in the <code>handlers</code> folder inside your Nucleus Co-op folder.</p>
-    <ol><li><button class="link" type="button" data-w="file">Open your handler file</button>, drop it here, or <button class="link" type="button" data-w="open">pick an example</button>.</li>
+    <ol><li><button class="link" type="button" data-w="file">Open your handler file</button>, drop it here, or <button class="link" type="button" data-w="open">start from an example</button> (engine templates and Hub handlers).</li>
     <li>Fix what Nucleus would reject. Most problems fix themselves with one click.</li>
     <li><button class="link" type="button" data-w="sim">Try it</button> to see what each player gets.</li>
     <li>Save it for Nucleus, or copy it back into your handler file.</li></ol>

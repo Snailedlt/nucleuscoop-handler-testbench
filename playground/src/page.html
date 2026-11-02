@@ -209,7 +209,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .entry .b { display: flex; gap: 4px; flex-wrap: wrap; }
 .entry .kind { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 #help-dialog .keys td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
-/* --- views: Simple (plain language) vs Developer (everything) --- */
+/* --- Advanced mode off (simple-only shown) / on (dev-only shown) --- */
 :root[data-mode=simple] .dev-only, :root[data-mode=dev] .simple-only { display: none !important; }
 .mode { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 .mode button { border: 0; background: var(--surface); padding: 6px 10px; cursor: pointer; }
@@ -233,7 +233,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   header { gap: 8px; }
   .sub { display: none; }
   .toolbar { margin-left: 0; width: 100%; gap: 6px; }
-  .toolbar .btn, .toolbar .mode { flex: 1 1 auto; }
+  .toolbar .btn { flex: 1 1 auto; }
+  header .adv { order: 1; margin-left: auto; padding-left: 0; border-left: 0; }
+  header .brand { order: 0; min-width: 0; }
+  header .toolbar { order: 2; }
   .switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .switch button { border: 0; background: var(--surface); padding: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .switch button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); }
@@ -244,7 +247,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .pane.side { min-height: 0; }
   .tip-line { display: none; }
   .app > footer { display: none; }
-  .mode button { flex: 1; }
 }
 @media (max-width: 600px) {
   dialog, #open-dialog { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; box-sizing: border-box; }
@@ -256,6 +258,16 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .fix { padding: 4px 12px; }
   #open-q, #api-q { font-size: 16px; } /* no zoom-on-focus on iOS */
 }
+.adv { order: 3; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; padding-left: 14px; border-left: 1px solid var(--line); user-select: none; }
+.adv input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.adv .track { width: 32px; height: 18px; border-radius: 9px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.adv .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+.adv input:checked + .track { background: var(--accent); }
+.adv input:checked + .track::after { transform: translateX(14px); }
+.adv input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+.adv:has(input:checked) { color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .adv .track, .adv .track::after { transition: none; } }
+header .toolbar { order: 2; }
 footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -270,11 +282,10 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div class="sub">Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
       </div>
     </div>
+    <label class="adv" title="Show rule details, filters, the API reference, engine probes and keyboard shortcuts">
+      <input type="checkbox" id="advanced" role="switch"><span class="track" aria-hidden="true"></span>Advanced mode
+    </label>
     <div class="toolbar">
-      <div class="mode" role="group" aria-label="View">
-        <button type="button" data-mode="simple" aria-pressed="true" title="Plain-language explanations and a step-by-step flow">Simple</button>
-        <button type="button" data-mode="dev" aria-pressed="false" title="Rule ids, filters, API reference, engine probes and shortcuts">Developer</button>
-      </div>
       <button class="btn primary" id="open-open" type="button" title="Examples, Hub handlers, probes and actions (Ctrl+K)">Examples… <kbd class="dev-only">Ctrl K</kbd></button>
       <button class="btn" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
       <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
