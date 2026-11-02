@@ -685,7 +685,7 @@ function entries(): OpenEntry[] {
     })),
     { group: 'Actions', title: 'Fix problems automatically', sub: 'Alt+Shift+F', keywords: 'fix all repair', run: () => ($('#fix-all') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Simulate the handler', sub: 'Ctrl+Enter: launch arguments and file edits per player', keywords: 'run play simulate', run: () => selectTab('simulate') },
-    { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: site theme (splitscreen.me / v3), colour mode, contrast check', keywords: 'dev theme v3 colour color dark light contrast', run: () => devBar.toggle() },
+    { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: colour mode, contrast check and other developer tools', keywords: 'dev theme colour color dark light contrast', run: () => devBar.toggle() },
     { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
     { group: 'Actions', title: 'Copy the handler', keywords: 'clipboard', run: () => ($('#copy') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Keyboard shortcuts', keywords: 'help keys', run: () => helpDialog.showModal() },

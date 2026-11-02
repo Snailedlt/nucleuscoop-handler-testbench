@@ -6,7 +6,7 @@ Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) ga
 
 <p>
   <img src="docs/images/check.png" width="49%" alt="Check: Skyrim Together Reborn, a verified Hub handler, with its five ProtoController5 to 9 lines flagged and explained">
-  <img src="docs/images/try-it.png" width="49%" alt="Try it: StardewValley with 4 players in the v3.splitscreen.me theme, each player's window and the settings files Nucleus would change">
+  <img src="docs/images/try-it.png" width="49%" alt="Try it: StardewValley with 4 players, each player's window and the settings files Nucleus would change">
 </p>
 <p>
   <img src="docs/images/fix-all.png" width="49%" alt="Fix all: the automatic fixes for a handler with common mistakes, as a list and a diff, before you accept them">
@@ -116,7 +116,7 @@ In Advanced mode everything is keyboard-driven:
 - **F8** / **Shift+F8** steps through problems;
 - **?** lists the shortcuts.
 
-**Theme and dev bar.** The page uses splitscreen.me's theme (brand blue, system fonts, light and dark). A dev bar, like lonnsinnplassering's, switches to v3.splitscreen.me's "Bezel" theme (from the `v3.0.0-beta` branch of splitscreenme-hub: monochrome chrome, Archivo and JetBrains Mono, player colours on Try it's player cards; v3 itself is dark only, the light variant is this page's own), sets the colour mode, and checks the WCAG contrast of the theme's text colours. Open it with Ctrl+Alt+D (remembered), a `#dev` link (this page load only), or "Show or hide the dev bar" under Examples… (Ctrl K). The theme choice sticks even with the bar hidden.
+**Theme and dev bar.** The page uses splitscreen.me's theme (brand blue, system fonts, light and dark). A dev bar, like lonnsinnplassering's, sets the colour mode and checks the WCAG contrast of the theme's text colours. Open it with Ctrl+Alt+D (remembered), a `#dev` link (this page load only), or "Show or hide the dev bar" under Examples… (Ctrl K).
 
 **Share links.** **Copy link** puts the handler, compressed, into the link (`#share-…`), so anyone with the link sees the same code; with text selected it shares just the selection, which keeps links short enough for a Discord message (2,000 characters; whole handlers are usually longer).
 
