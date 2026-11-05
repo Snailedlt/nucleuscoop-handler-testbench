@@ -271,8 +271,7 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 #keybar button { flex: none; min-width: 40px; height: 38px; padding: 0 10px; font: 600 15px var(--font-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 #keybar button.kb-act { font: 600 13px var(--font-body); }
 body.keybar-on .app { padding-bottom: 52px; }
-body.keybar-top #keybar { padding: calc(6px + env(safe-area-inset-top, 0px)) 6px 6px; border-top: 0; border-bottom: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
-body.keybar-top .app { padding-top: 56px; }
+body.keybar-est .app { padding-bottom: calc(52px + var(--kb-est, 0px)) !important; }
 #tipbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 1.45; }
 #tipbar[hidden] { display: none; }
 #tipbar.contextual { background: var(--info-bg); border-top-color: var(--info); }
@@ -502,11 +501,13 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .doc-head { flex-wrap: nowrap; }
   .doc-head #doc-meta { display: none; }
   /* Lines: a sheet over the lower part of the screen, so the code stays in view */
-  #lines { position: fixed !important; left: 0 !important; right: 0 !important; bottom: env(safe-area-inset-bottom, 0px) !important; top: auto !important; height: min(58vh, 520px); width: auto !important; z-index: 60; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.35) !important; }
+  #lines { position: fixed !important; left: 0 !important; right: 0 !important; bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; top: auto !important; height: min(58vh, 520px); width: auto !important; z-index: 60; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.35) !important; }
   body.keybar-on #lines { bottom: 52px !important; }
   #lines .lines-opts, #lines #lines-info { display: none; }
-  /* One header row: logo, Handler / Results, More, Settings */
-  header { flex-wrap: nowrap !important; align-items: center; }
+  /* One row at the bottom, in thumb reach: logo, Handler / Results, More, Settings */
+  header { flex-wrap: nowrap !important; align-items: center; order: 10; flex: none; }
+  .app { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.keybar-on header, body.keybar-est header { display: none !important; }
   header .brand h1, header .brand .sub { display: none; }
   header .toolbar { width: auto !important; flex: none; }
   header .toolbar .btn { padding: 8px 10px; }

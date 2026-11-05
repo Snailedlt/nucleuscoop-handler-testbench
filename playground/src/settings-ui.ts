@@ -133,13 +133,37 @@ export function initSettings(d: Deps) {
   let focused = false;
   // The on-screen keyboard shrinks the visible area (the visual viewport), not the page: size the
   // workbench to what's visible, so the line being typed stays above the keyboard and the symbol keys.
-  // Some browsers, and pages shown inside a frame, can't tell how tall the keyboard is: then the
-  // symbol keys sit at the top of the screen, where the keyboard can't cover them.
+  // Some browsers, and pages shown inside a frame (where the keyboard can't be measured at all),
+  // don't say how tall the keyboard is: then the symbol keys go where the keyboard most likely ends,
+  // a height learned on this device or a generous estimate, so they sit on top of it, never under.
   let kbOpen = false;
   let baseH = window.innerHeight; // the page's height without a keyboard
   let waited = false; // gave the keyboard time to open
   let waitTimer: number | undefined;
   window.addEventListener('resize', () => !focused && (baseH = window.innerHeight));
+  const portrait = () => window.innerHeight >= window.innerWidth;
+  const LEARN_KEY = 'nucleus-workbench-kb';
+  const learned = (): number | undefined => {
+    try {
+      return JSON.parse(get(LEARN_KEY) || '{}')[portrait() ? 'p' : 'l'];
+    } catch {
+      return undefined;
+    }
+  };
+  const learn = (h: number) => {
+    try {
+      const o = JSON.parse(get(LEARN_KEY) || '{}');
+      o[portrait() ? 'p' : 'l'] = Math.round(h);
+      put(LEARN_KEY, JSON.stringify(o));
+    } catch {}
+  };
+  // Phone keyboards (with their suggestion row) take about 35-40% of a portrait screen and about
+  // half of a landscape one: lean high, so a wrong guess leaves a gap instead of hiding the keys.
+  const estimate = () => {
+    const tall = Math.max(screen.width, screen.height);
+    const short = Math.min(screen.width, screen.height);
+    return learned() ?? Math.round(Math.min(window.innerHeight * 0.6, portrait() ? 0.42 * tall : 0.55 * short));
+  };
   function placeKeybar() {
     const vv = window.visualViewport;
     const open = !!vv && focused && touch() && vv.height < window.innerHeight - 120;
@@ -154,19 +178,19 @@ export function initSettings(d: Deps) {
       if (focused) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
     }
     // The keyboard showed up as a smaller page (resizes-content) or a smaller visual viewport.
-    const seen = (vv ? vv.height : window.innerHeight) < baseH - 120;
+    const visible = vv ? vv.height : window.innerHeight;
+    const seen = visible < baseH - 120;
+    if (seen && focused) learn(baseH - visible);
     const show = focused && ed.keybar && touch() && (seen || waited);
+    const guess = show && !seen;
     bar.hidden = !show;
     document.body.classList.toggle('keybar-on', show && seen);
-    document.body.classList.toggle('keybar-top', show && !seen);
+    document.body.classList.toggle('keybar-est', guess);
     if (!show) return;
-    if (seen) {
-      bar.style.top = '';
-      bar.style.bottom = `${vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0}px`;
-    } else {
-      bar.style.bottom = 'auto';
-      bar.style.top = `${vv ? vv.offsetTop : 0}px`;
-    }
+    const bottom = seen ? (vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0) : estimate();
+    bar.style.bottom = `${bottom}px`;
+    document.documentElement.style.setProperty('--kb-est', guess ? `${bottom}px` : '0px');
+    if (guess) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
   }
   const onFocus = () => {
     focused = true;
