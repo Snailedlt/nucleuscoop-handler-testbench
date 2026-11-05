@@ -23,6 +23,12 @@ PLAY-FAIL 110-optional-param-omitted.js  P1 JavaScriptException: No public metho
 OK 111-optional-param-passed.js  calls=2  args[P1]=r=14
 OK 112-let-then-var-redeclare.js  calls=0  args[P1]=b
 OK 113-protocontroller5.js  calls=0  args[P1]=pc4=4 pc5=undefined
+OK 114-path-combine-params-5.js  calls=0  args[P1]=parts=5
+OK 115-path-combine-params-1.js  calls=0  args[P1]=a
+PLAY-FAIL 116-system-misspelled-call.js  P1 JavaScriptException: Object has no method 'Exsts' | P2 JavaScriptException: Object has no method 'Exsts'
+OK 117-system-misspelled-read.js  calls=0  args[P1]=read=undefined
+PLAY-FAIL 118-file-copy-one-arg.js  P1 JavaScriptException: No public methods with the specified arguments were found. | P2 JavaScriptException: No public methods with the specified arguments were found.
+OK 119-system-environment-thread.js  calls=0  args[P1]=user=string
 OK 12-inner-case.js  calls=0  args[P1]=x=undefined
 OK 13-string-False-to-bool.js  calls=0  args[P1]=sg=false ff=true
 LOAD-FAIL 14-string-to-string-array.js  ArgumentException Value of object[] type is expected, but actual type is System.String.
