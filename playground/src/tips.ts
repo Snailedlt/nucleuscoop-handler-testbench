@@ -100,6 +100,7 @@ const GUI_TIPS = ([
   { id: 'g-lines', text: 'The Lines list has every name a handler can use. Click one to insert it; names already in the handler show their value.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-ctrlk', text: 'Click the handler’s name above the code to switch to an example or a Hub handler. Ctrl+K (⌘K on a Mac) opens the same list, with every action.' },
   { id: 'g-hover', text: 'Hover any name in the code for its docs. Type `.` or press Ctrl+Space for suggestions.' },
+  { id: 'g-vscode', text: 'The editor uses VS Code\'s keys: Ctrl+/ comments a line, Alt+↑/↓ moves it, Ctrl+D selects the next match, Ctrl+. shows the fixes for a line. Press ? for all of them.' },
   { id: 'g-f8', text: 'F8 jumps to the next problem. Alt+Shift+F fixes everything that can be fixed automatically.' },
   { id: 'g-share', text: 'Copy link shares the handler as a link. Select some lines first to share only those.', action: { label: 'Copy link', run: 'share' } },
   { id: 'g-tryit', text: 'Try it shows what each player gets: window position, launch arguments and file changes.', action: { label: 'Try it', run: 'tryit' } },

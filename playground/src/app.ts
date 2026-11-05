@@ -6,6 +6,7 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
+import { vscodeKeys, vscodeMouse } from './keys';
 import { lint, Diagnostic, RULES, lineOf } from '@core/lint';
 import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
@@ -203,7 +204,14 @@ const editor = CodeMirror($('#editor'), {
       }),
     delay: 250,
   },
+  configureMouse: vscodeMouse,
   extraKeys: {
+    // Ctrl+.: the problems (and fixes) at the cursor, else on its line.
+    ...vscodeKeys((cm: any) => {
+      const c = cm.getCursor();
+      showLineProblems(c.line, cm.indexFromPos(c));
+      if (linePop.hidden) showLineProblems(c.line);
+    }),
     'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
     Tab: (cm: any) => cm.execCommand('insertSoftTab'),
   },
@@ -1226,11 +1234,23 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     lines.toggle();
     return;
   }
-  if (mod && e.key.toLowerCase() === 'k') {
+  // The command palette: Ctrl+K here, and VS Code's Ctrl+P, Ctrl+Shift+P and F1.
+  if ((mod && !e.shiftKey && e.key.toLowerCase() === 'k') || (mod && e.key.toLowerCase() === 'p') || e.key === 'F1') {
     e.preventDefault();
     if (openDialog.open) openDialog.close();
     else showOpen();
-  } else if (mod && e.key === 'Enter') {
+  } else if (mod && e.key.toLowerCase() === 's') {
+    e.preventDefault(); // instead of the browser saving the page
+    const save = $('#save') as HTMLButtonElement;
+    if (save.hidden) ($('#code-menu-open') as HTMLButtonElement).click();
+    else save.click();
+  } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
+    e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
+    lines.toggle();
+  } else if (mod && e.key === ',') {
+    e.preventDefault();
+    settings.open();
+  } else if (mod && !e.shiftKey && e.key === 'Enter') {
     e.preventDefault();
     selectTab('simulate');
   } else if (e.altKey && e.shiftKey && e.code === 'KeyF') {

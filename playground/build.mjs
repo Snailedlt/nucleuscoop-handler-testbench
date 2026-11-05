@@ -228,7 +228,7 @@ const result = await esbuild.build({
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
-const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css')].join('\n');
+const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css'), cm('addon/dialog/dialog.css')].join('\n');
 
 // Each Hub example's problem counts, worked out here so the Open list needs no handler sources.
 const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning' });

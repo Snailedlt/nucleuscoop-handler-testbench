@@ -188,6 +188,14 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #lines-info .link { margin-top: 4px; font-size: 12px; }
 /* Tip bar: loading-screen tips, and Clippy-style heads-ups when the code makes one relevant */
 /* Problems on a line (tap a marker next to the code), and the problem strip under the code on phones */
+.keys .kh th { text-align: left; font: 600 12px var(--font-body); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 12px 0 4px; }
+#help-dialog { max-height: 86vh; overflow: auto; }
+/* Find, replace and go to line (CodeMirror's dialog), in the workbench's colours */
+.CodeMirror-dialog { background: var(--surface); color: var(--fg); border-color: var(--line) !important; padding: 6px 10px; font: 13px var(--font-body); z-index: 6; }
+.CodeMirror-dialog input { font: 13px var(--font-mono); color: var(--fg); background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px; width: 18em; }
+.CodeMirror-dialog button { font: inherit; }
+.CodeMirror-search-hint { color: var(--muted); margin-left: 6px; }
+.cm-searching { background: color-mix(in srgb, var(--warn) 35%, transparent); }
 #line-pop { position: absolute; left: 44px; right: 12px; z-index: 6; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 10px 28px rgba(0,0,0,.3); padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 8px; max-height: 45%; overflow: auto; }
 #line-pop[hidden] { display: none; }
 #line-pop .lp-close + * { padding-right: 30px; }
@@ -878,15 +886,34 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">
   <h2>Keyboard shortcuts</h2>
+  <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl.</p>
   <table class="keys"><tbody>
-    <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>K</kbd></td><td>Open an example, Hub handler, probe or action</td></tr>
-    <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>Enter</kbd></td><td>Simulate the handler</td></tr>
-    <tr><td><kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>F</kbd></td><td>Fix problems automatically</td></tr>
-    <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Complete (also after typing <kbd>.</kbd>)</td></tr>
-    <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the list of names (click one to insert it)</td></tr>
-    <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>Z</kbd></td><td>Undo, including applied fixes</td></tr>
+    <tr class="kh"><th colspan="2">Workbench</th></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>K</kbd> · <kbd>Ctrl</kbd> <kbd>P</kbd> · <kbd>F1</kbd></td><td>Examples, Hub handlers and every action</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Enter</kbd></td><td>Try it (simulate the handler)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save for Nucleus</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>B</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the Lines list</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>,</kbd></td><td>Settings</td></tr>
     <tr><td><kbd>?</kbd></td><td>This list (outside the editor)</td></tr>
+    <tr class="kh"><th colspan="2">Problems</th></tr>
+    <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>.</kbd></td><td>Problems and fixes on this line</td></tr>
+    <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>F</kbd></td><td>Fix everything that can be fixed</td></tr>
+    <tr class="kh"><th colspan="2">Editing</th></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Suggestions (also after typing <kbd>.</kbd>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>/</kbd></td><td>Comment or uncomment the line</td></tr>
+    <tr><td><kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Move the line up / down</td></tr>
+    <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Copy the line up / down</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>K</kbd></td><td>Delete the line</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>Enter</kbd></td><td>New line above</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>]</kbd> / <kbd>[</kbd></td><td>Indent / outdent</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>L</kbd></td><td>Select the line</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>D</kbd></td><td>Select the next match too (edit several at once)</td></tr>
+    <tr><td><kbd>Alt</kbd> click · <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Add a cursor (<kbd>Esc</kbd> for one cursor again)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>F</kbd> · <kbd>F3</kbd></td><td>Find · next match</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>H</kbd></td><td>Replace (<kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>F</kbd> on a Mac)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>G</kbd></td><td>Go to line</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> · <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo (including applied fixes) · redo</td></tr>
   </tbody></table>
   <p>Tips under the code: <button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button> · <button class="link" type="button" id="tips-reset">Show heads-ups again</button></p>
   <p class="muted">Links like <code>#hub-&lt;id&gt;</code>, <code>#probe-17</code> or <code>#example-mistakes</code> open that example directly.</p>
