@@ -1,6 +1,6 @@
 // What's new: the workbench's CHANGELOG.md, inside the workbench. After an update, a short note says
 // what changed (not on a first visit), with a link to the full list. Can be turned off in Settings.
-declare const CHANGES: { id: string; items: { summary: string; details: string }[] }[];
+declare const CHANGES: { id: string; items: { group: string; summary: string; details: string; image?: { alt: string; file: string } }[] }[];
 
 const SEEN_KEY = 'nucleus-workbench-news-seen';
 const ON_KEY = 'nucleus-workbench-news';
@@ -26,9 +26,16 @@ export function initNews() {
   const dlg = $('#news-dialog') as HTMLDialogElement;
   const latest = CHANGES[0]?.id;
   const open = () => {
-    $('#news-body').innerHTML = CHANGES.map(
-      (c, i) => `<h3>${esc(when(c.id))}${i === 0 && c.id !== 'Unreleased' ? ' <span class="chip ok">latest</span>' : ''}</h3><ul>${c.items.map((it) => `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}</li>`).join('')}</ul>`,
-    ).join('');
+    const item = (it: (typeof CHANGES)[number]['items'][number]) =>
+      `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}${it.image ? `<img src="changes/${esc(it.image.file)}" alt="${esc(it.image.alt)}" loading="lazy">` : ''}</li>`;
+    $('#news-body').innerHTML = CHANGES.map((c, i) => {
+      const groups = [...new Set(c.items.map((it) => it.group))];
+      return `<h3>${esc(when(c.id))}${i === 0 && c.id !== 'Unreleased' ? ' <span class="chip ok">latest</span>' : ''}</h3>${groups
+        .map((g) => `${g ? `<h4>${esc(g)}</h4>` : ''}<ul>${c.items.filter((it) => it.group === g).map(item).join('')}</ul>`)
+        .join('')}`;
+    }).join('');
+    // No screenshots in the single offline file: drop the ones that don't load.
+    $('#news-body').querySelectorAll('img').forEach((img) => img.addEventListener('error', () => img.remove()));
     dlg.showModal();
     seen();
   };

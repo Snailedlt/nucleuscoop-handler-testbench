@@ -159,22 +159,30 @@ if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handle
 
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
 const build = { core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
-// What's new, from ../CHANGELOG.md: dated sections ("## 2026-11-05"), newest first; each bullet
-// starts with a **short summary**. "Unreleased" is only shown in preview builds (--preview).
+// What's new, from ../CHANGELOG.md: dated sections ("## 2026-11-05"), newest first, in emoji groups
+// ("### ✨ New"); each bullet starts with a **short summary**, and may have a screenshot under it
+// ("  ![alt](docs/images/changelog/x.png)", copied to changes/ next to the page). "Unreleased" is only
+// shown in preview builds (--preview).
 function changes() {
-  const text = fs.readFileSync(path.join(here, '..', 'CHANGELOG.md'), 'utf8');
+  const text = fs.readFileSync(path.join(here, '..', 'CHANGELOG.md'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
   const out = [];
   for (const part of text.split(/^## /m).slice(1)) {
     const [head, ...rest] = part.split('\n');
     const id = head.trim();
     if (id === 'Unreleased' && !process.argv.includes('--preview')) continue;
     if (id !== 'Unreleased' && !/^\d{4}-\d{2}-\d{2}$/.test(id)) continue;
-    const items = rest
-      .filter((l) => l.startsWith('- '))
-      .map((l) => {
+    const items = [];
+    let group = '';
+    for (const l of rest) {
+      if (l.startsWith('### ')) group = l.slice(4).trim();
+      else if (l.startsWith('- ')) {
         const m = l.match(/^- \*\*(.+?)\*\*\s*(.*)$/);
-        return m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' };
-      });
+        items.push({ group, ...(m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' }) });
+      } else {
+        const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.png)\)/);
+        if (img && items.length) items[items.length - 1].image = { alt: img[1], file: img[2] };
+      }
+    }
     if (items.length) out.push({ id, items });
   }
   return out;
@@ -242,6 +250,9 @@ fs.mkdirSync(path.join(here, 'dist', 'pages'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(pageHtml(false)));
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
+// Screenshots in What's new, loaded only when it is opened.
+fs.mkdirSync(path.join(here, 'dist', 'pages', 'changes'), { recursive: true });
+for (const c of CHANGES) for (const it of c.items) if (it.image) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', it.image.file), path.join(here, 'dist', 'pages', 'changes', it.image.file));
 // One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
 fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).

@@ -1,33 +1,62 @@
 # Changelog
 
-The browser workbench (<https://snailedlt.github.io/nucleuscoop-handler-testbench/>) updates whenever `main` changes, so its notes are dated instead of versioned. Add a line under **Unreleased** with each user-visible change, starting with a **short summary** in bold; when it goes live, the section gets that day's date.
+What changed in the browser workbench (<https://snailedlt.github.io/nucleuscoop-handler-testbench/>). It updates whenever `main` changes, so releases are dated. Newest first. The workbench shows this list itself under **What's new**.
+
+<!--
+How to write it (people and AI agents read this, and the workbench shows it):
+- Add each user-visible change under "## Unreleased", in one of these groups, biggest change first:
+  ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently)
+- One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
+- A screenshot for big, visible changes, indented under its line: `  ![What it shows](docs/images/changelog/<date>-<name>.png)` (≈700–1000 px wide).
+- When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>".
+-->
 
 ## Unreleased
 
-- **What's new, in the workbench.** After an update, a short note says what changed, with a link to this list (also in the footer, the ⋯ menu, Settings and Ctrl+K). It can be turned off in Settings.
-- **Easier on the Hub.** The site's Hub snapshot only fetches handler versions it doesn't have yet, and the full Hub check runs weekly instead of nightly.
+### ✨ New
+
+- **What's new, in the workbench.** After an update, a short note says what changed, with a link to this list (also in the footer, the ⋯ menu, Settings and Ctrl+K). Turn it off in Settings.
+  ![The What's new window, listing the latest changes by date](docs/images/changelog/whats-new.png)
+- **The workbench as one offline file.** `workbench.html` in the extension's releases (or `nucleus workbench`) is the whole workbench in a single file: open it locally or host it yourself.
+- **`llms.txt` for AI agents.** It tells agents where to find the MCP server, the agent skill and the API reference, and asks them to run the tools themselves instead of using this site.
+
+### 🛠️ Improved
+
+- **Go back a tip.** The tip bar has ‹ and › to go back and forth.
+
+### ⚡ Faster
+
 - **Loads about half as much.** A visit downloads about 235 KB instead of 433 KB: Hub examples load when you open one, and the checker is no longer sent twice.
-- **The workbench as one offline file.** `workbench.html` in the extension's releases (or `nucleus workbench`) is the whole workbench in a single file, to open locally or host yourself.
-- **Previous tip.** The tip bar has ‹ and › to go back and forth.
-- **`llms.txt` for AI agents.** The site lists where agents find the MCP server, the agent skill and the API reference, and asks them to run the tools themselves instead of using the hosted workbench.
+- **Easier on the Hub.** The site's Hub snapshot only fetches handler versions it doesn't have yet, and the full Hub check runs weekly instead of nightly.
 
 ## 2026-11-05
 
-- **Lines list beside the code.** Every name a handler can use, click to insert. It shows what the handler already sets and jumps there instead of adding a second line, dims names that don't work where the cursor is, inserts whole lines and suggests values, filters by type and text (shorthand like `kmd` finds KillMutexDelay), groups by object or topic, and sorts by how many of the 600 Hub handlers use each name. Its gear has the list settings, niche ones under Advanced. (Idea: messenils.)
-- **Tips under the code.** Loading-screen-style tips, plus a heads-up when the code makes one relevant (each shown once). Can be turned off.
-- **Settings.** The gear in the header: theme, text size, line wrap, symbol keys, tips and the Lines list; Advanced mode and the developer bar under Advanced.
-- **Works on phones.** A slim header with a ⋯ menu, Lines full screen, wrapped lines and a row of symbol keys above the on-screen keyboard.
-- **Intro page for testers.** <https://snailedlt.github.io/nucleuscoop-handler-testbench/start/>, with screenshots, the install guide and a download link that always points to the newest release.
-- **Fixed: the Lines scrollbar hid the values on the right** on Windows. (Reported by Horah.)
-- **Fixed two false flags** found by checking all 600 Hub handlers: a syntax error on `let x` followed by `var x`, and a Proto Input warning on 11 handlers.
+### ✨ New
+
+- **Lines list beside the code.** Every name a handler can use, click to insert. It shows what the handler already sets (and jumps there instead of adding a second line), dims names that don't work where the cursor is, suggests values, and sorts by how many of the 600 Hub handlers use each name. Its ⚙️ has the list settings. Idea: messenils.
+  ![The Lines list filtered to "kill": Game.KillMutex is marked as already set, with its docs and Hub usage below](docs/images/changelog/2026-11-05-lines.png)
+- **Tips while you write.** Loading-screen-style tips under the code, and a heads-up when the code makes one relevant (each shown once). Turn them off with ×.
+- **Settings.** ⚙️ in the header: theme, text size, line wrap, symbol keys, tips and the Lines list; Advanced mode and the developer bar under Advanced.
+- **Works on phones.** A slim header with a ⋯ menu, Lines full screen, wrapped lines and symbol keys above the on-screen keyboard.
+  ![The workbench on a phone: results, the code with symbol keys, the Lines list and the ⋯ menu](docs/images/changelog/2026-11-05-phones.png)
+- **Intro page for testers.** <https://snailedlt.github.io/nucleuscoop-handler-testbench/start/>: screenshots, the install guide and a download link that always points to the newest release.
+
+### 🐛 Fixed
+
+- **The Lines scrollbar no longer hides values** on the right (Windows). Reported by Horah.
+- **Two false flags gone**, found by checking all 600 Hub handlers: a syntax error on `let x` followed by `var x`, and a Proto Input warning on 11 handlers.
 
 ## 2026-11-02
 
+### ✨ New
+
 - **The workbench on GitHub Pages**, rebuilt daily with the newest verified Hub handlers.
 - **Share links.** Copy link puts the handler (or the selected lines) in the address.
-- **splitscreen.me look**, light and dark.
-- **Nightly check.** Every verified Hub handler runs in the real Jint engine and is compared with Try it.
+- **The splitscreen.me look**, light and dark.
+- **Weekly check against the real engine.** Every verified Hub handler runs in Nucleus' script engine (Jint 2.11.58) and is compared with Try it.
 
 ## 2026-11-01
+
+### ✨ New
 
 - **First version.** Check a handler, fix it automatically, and Try it: what Nucleus sets up for each player.
