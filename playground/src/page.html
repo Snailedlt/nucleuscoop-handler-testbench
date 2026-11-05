@@ -146,6 +146,21 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 #lines-flash { padding: 6px 10px; font-size: 12px; background: var(--info-bg); color: var(--info); border-bottom: 1px solid var(--line); }
 #lines-flash[hidden] { display: none; }
 #lines-info .link { margin-top: 4px; font-size: 12px; }
+/* Tip bar: loading-screen tips, and Clippy-style heads-ups when the code makes one relevant */
+#tipbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 1.45; }
+#tipbar[hidden] { display: none; }
+#tipbar.contextual { background: var(--info-bg); border-top-color: var(--info); }
+#tipbar .tip-icon { width: 20px; height: 20px; flex: none; color: var(--brand); }
+#tipbar.contextual .tip-icon { color: var(--info); }
+#tipbar .tip-body { flex: 1; min-width: 0; }
+#tipbar #tip-label { color: var(--fg); margin-right: 2px; }
+#tipbar.contextual #tip-label { color: var(--info); }
+#tipbar code { font: 11.5px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 3px; }
+#tipbar .tip-actions { display: flex; gap: 6px; flex: none; }
+#tipbar .tip-btn { padding: 3px 9px; font-size: 12px; }
+#tipbar .tip-btn.icon { width: 26px; padding: 3px 0; }
+@media (prefers-reduced-motion: no-preference) { #tipbar.contextual { animation: tip-in .25s ease-out; } @keyframes tip-in { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } } }
+@media (max-width: 600px) { #tipbar { flex-wrap: wrap; } #tipbar .tip-actions { width: 100%; justify-content: flex-end; } }
 #lines-list .none { color: var(--muted); padding: 10px; font-family: var(--font-body); }
 #lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--fg); min-height: 3.2em; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 #lines-info .muted { color: var(--muted); }
@@ -430,6 +445,15 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <div id="lines-info" aria-live="polite"></div>
         </aside>
       </div>
+      <div id="tipbar" role="status" aria-live="polite" hidden>
+        <svg class="tip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="tip-body"><strong id="tip-label">Tip</strong> <span id="tip-text"></span></div>
+        <div class="tip-actions">
+          <button class="btn tip-btn" id="tip-action" type="button" hidden></button>
+          <button class="btn tip-btn" id="tip-next" type="button" title="Show another tip">Next tip</button>
+          <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on at the bottom of the page or in Keyboard shortcuts)" aria-label="Turn tips off">×</button>
+        </div>
+      </div>
     </section>
 
     <section class="pane side" aria-label="Analysis">
@@ -478,7 +502,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </div>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -505,6 +529,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>Z</kbd></td><td>Undo, including applied fixes</td></tr>
     <tr><td><kbd>?</kbd></td><td>This list (outside the editor)</td></tr>
   </tbody></table>
+  <p>Tips under the code: <button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button> · <button class="link" type="button" id="tips-reset">Show heads-ups again</button></p>
   <p class="muted">Links like <code>#hub-&lt;id&gt;</code>, <code>#probe-17</code> or <code>#example-mistakes</code> open that example directly.</p>
   <div class="actions"><button class="btn primary" type="button" id="help-close">Close</button></div>
 </dialog>

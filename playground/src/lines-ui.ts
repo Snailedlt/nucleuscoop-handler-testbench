@@ -270,5 +270,5 @@ export function initLines({ editor, openReference }: Deps) {
 
   showInfo(undefined);
   setOpen(open);
-  return { toggle: () => setOpen(!open, !open) };
+  return { toggle: () => setOpen(!open, !open), show: () => setOpen(true, true) };
 }

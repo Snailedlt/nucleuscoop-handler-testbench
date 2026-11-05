@@ -16,6 +16,7 @@ import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from '.
 import { fixAll } from '@core/fix';
 import { zipStore } from './zipstore';
 import { initLines } from './lines-ui';
+import { initTips } from './tips-ui';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -689,6 +690,7 @@ function entries(): OpenEntry[] {
     { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: colour mode, contrast check and other developer tools', keywords: 'dev theme colour color dark light contrast', run: () => devBar.toggle() },
     { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
     { group: 'Actions', title: 'Show or hide the list of names', sub: 'Ctrl+Shift+L: every option, Context member and enum, click to insert', keywords: 'lines list names insert pawno functions', run: () => lines.toggle() },
+    { group: 'Actions', title: 'Turn tips on or off', sub: 'Tips and heads-ups under the code', keywords: 'tips hints help clippy', run: () => tips.toggle() },
     { group: 'Actions', title: 'Copy the handler', keywords: 'clipboard', run: () => ($('#copy') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Keyboard shortcuts', keywords: 'help keys', run: () => helpDialog.showModal() },
     ...HUB_EXAMPLES.handlers.map((h, i) => ({
@@ -921,6 +923,21 @@ const lines = initLines({
     renderApi(path);
   },
 });
+
+const tips = initTips({
+  editor,
+  actions: {
+    lines: () => lines.show(),
+    new: () => ($('#new-open') as HTMLButtonElement).click(),
+    examples: () => showOpen(),
+    tryit: () => {
+      if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+      selectTab('simulate');
+    },
+    share: () => copyLink(),
+  },
+});
+$('#tips-reset').addEventListener('click', () => tips.reset());
 
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   const mod = e.ctrlKey || e.metaKey;
