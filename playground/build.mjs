@@ -200,4 +200,14 @@ ${html}
 </html>
 `,
 );
+// The intro page to share with testers and contributors: /start/ on the Pages site.
+const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
+const startDir = path.join(here, 'dist', 'pages', 'start');
+fs.mkdirSync(startDir, { recursive: true });
+fs.writeFileSync(path.join(startDir, 'index.html'), fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8').replaceAll('__BASE__', PAGES_BASE));
+for (const [dir, files] of [
+  [path.join(here, '..', 'docs', 'images'), ['check.png']],
+  [path.join(coreRepo, 'docs', 'images'), ['vscode-problems.png', 'vscode-try-it.png', 'vscode-hover.png']],
+]) for (const f of files) fs.copyFileSync(path.join(dir, f), path.join(startDir, f));
+fs.copyFileSync(path.join(startDir, 'check.png'), path.join(startDir, 'og.png'));
 console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nucleus Handler Tools</title>
+<meta name="description" content="A VS Code extension and a browser workbench for Nucleus Co-op handlers: catch what Nucleus silently ignores and see what each player gets. Beta testers wanted.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Nucleus Handler Tools: testers wanted">
+<meta property="og:description" content="VS Code extension + browser workbench for Nucleus Co-op handlers. Catch mistakes before Nucleus does, see what each player gets. 5 minutes to try.">
+<meta property="og:url" content="__BASE__start/">
+<meta property="og:image" content="__BASE__start/og.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="760">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#10a3e8">
+<style>
+:root {
+  --bg: #f5f6f7; --surface: #fff; --line: #dadde1; --fg: #1c1e21; --muted: #5c636c;
+  --accent: #0c76a5; --accent-fg: #fff; --brand: #10a3e8; --code-bg: #ebedf0;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+  --mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1b1b1d; --surface: #242526; --line: #444950; --fg: #e3e3e3; --muted: #b0b4ba;
+  --accent: #30bbf8; --accent-fg: #06131c; --code-bg: #2e3033; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #1b1b1d; --surface: #242526; --line: #444950; --fg: #e3e3e3; --muted: #b0b4ba;
+  --accent: #30bbf8; --accent-fg: #06131c; --code-bg: #2e3033; color-scheme: dark }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--font); }
+main { max-width: 980px; margin: 0 auto; padding: 32px 16px 56px; }
+a { color: var(--accent); }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.15; margin: 6px 0 12px; }
+h2 { font-size: 22px; margin: 44px 0 12px; }
+h3 { font-size: 17px; margin: 0 0 6px; }
+p { margin: 0 0 12px; }
+code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.kicker { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--brand); }
+.lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
+.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: 6.4px; font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--surface); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.btn:hover { filter: brightness(1.08); }
+.btn:focus-visible, a:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.small { font-size: 14px; color: var(--muted); }
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+figure a { display: block; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { padding: 10px 12px; font-size: 14px; color: var(--muted); }
+figcaption strong { color: var(--fg); }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.card p:last-child, .card ol:last-child { margin-bottom: 0; }
+ol, ul { margin: 0 0 12px; padding-left: 22px; }
+li { margin: 4px 0; }
+.facts { list-style: none; padding: 0; display: grid; gap: 8px; }
+.facts li { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 6px; padding: 10px 12px; margin: 0; }
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); }
+@media (max-width: 760px) { .shots, .cards { grid-template-columns: 1fr; } main { padding-top: 20px; } }
+</style>
+</head>
+<body>
+<main>
+  <span class="kicker">Beta · testers wanted</span>
+  <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
+  <p class="lede">A VS Code extension and a browser workbench that check your handler the way Nucleus runs it, explain every option as you type, and show what each player gets, without starting Nucleus or the game.</p>
+  <div class="ctas">
+    <a class="btn primary" href="../">Try it in the browser</a>
+    <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/releases">Get the VS Code extension</a>
+    <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Send feedback</a>
+  </div>
+  <p class="small">The workbench needs no install. Paste a handler, or open one of the verified Hub handlers.</p>
+
+  <h2>What it catches</h2>
+  <ul class="facts">
+    <li><strong>Lines Nucleus quietly ignores.</strong> A misspelled option or <code>Player.ProtoController5</code> (only 1–4 exist) runs without an error and does nothing. 16 verified Hub handlers have that one.</li>
+    <li><strong>Code Nucleus can't run.</strong> Its script engine (Jint 2.11.58) only takes ES5: arrow functions, template literals and <code>includes()</code> break the handler.</li>
+    <li><strong>Hub install pitfalls</strong>, <code>Context</code> used outside <code>Game.Play</code>, wrong value types, missing required fields, and more. Many have a one-click fix.</li>
+  </ul>
+  <p class="small">Every check is tested against the real Jint engine (111 probes) and against all 150 verified Hub handlers.</p>
+
+  <h2>See it</h2>
+  <div class="shots">
+    <figure><a href="vscode-problems.png"><img src="vscode-problems.png" width="1440" height="860" loading="lazy" alt="VS Code showing handler problems underlined, with the Problems panel listing them"></a>
+      <figcaption><strong>VS Code: checks as you type.</strong> Problems are underlined and listed, with quick fixes.</figcaption></figure>
+    <figure><a href="vscode-try-it.png"><img src="vscode-try-it.png" width="1440" height="860" loading="lazy" alt="VS Code Try it panel beside a handler, listing each player's window, launch arguments and file changes"></a>
+      <figcaption><strong>Try it:</strong> each player's window, launch arguments and file changes, updated as you edit.</figcaption></figure>
+    <figure><a href="vscode-hover.png"><img src="vscode-hover.png" width="1440" height="860" loading="lazy" alt="Hover documentation for a Game option in VS Code"></a>
+      <figcaption><strong>Docs on hover and completion</strong> for the whole handler API.</figcaption></figure>
+    <figure><a href="check.png"><img src="check.png" width="1280" height="760" loading="lazy" alt="The browser workbench listing problems found in a Hub handler"></a>
+      <figcaption><strong>Browser workbench:</strong> the same checks and Try it, nothing to install. Share a handler with a link.</figcaption></figure>
+  </div>
+
+  <h2>Try it in 5 minutes</h2>
+  <div class="cards">
+    <div class="card"><h3>1. Install</h3>
+      <ol><li>Download the <code>.vsix</code> from the <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">latest release</a>.</li>
+        <li>In VS Code: <kbd>Ctrl+Shift+P</kbd> → <strong>Extensions: Install from VSIX…</strong> → pick the file.</li></ol>
+      <p class="small">Or skip installing: <a href="../">open the workbench</a>.</p></div>
+    <div class="card"><h3>2. Open a handler you know</h3>
+      <p>Open your handlers folder and pick one that works in Nucleus. Read the warnings and hover over options.</p>
+      <p>Press <strong>▷</strong> in the editor's top-right corner (<strong>Nucleus: Try It</strong>) to see each player's setup.</p></div>
+    <div class="card"><h3>3. Tell us where it's wrong</h3>
+      <ul><li>A warning on code that works</li><li>A real bug it missed</li><li>Try it saying something Nucleus doesn't do</li></ul>
+      <p><a href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Feedback form</a>, or reply where you found this link.</p></div>
+  </div>
+  <p class="small">More detail: the <a href="https://github.com/Snailedlt/splitscreenme-vscode/blob/main/TESTING.md">testing guide</a>.</p>
+
+  <h2>Want to help build it?</h2>
+  <p>Handler authors know Nucleus better than any linter. Contributions are welcome, especially:</p>
+  <ul>
+    <li><strong>Option docs:</strong> better explanations and examples for <code>Game.*</code> options.</li>
+    <li><strong>New checks</strong> for mistakes you keep seeing in handlers.</li>
+    <li><strong>Jint probes:</strong> small scripts that pin down how Nucleus' engine really behaves.</li>
+  </ul>
+  <div class="ctas">
+    <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode">VS Code extension and CLI</a>
+    <a class="btn" href="https://github.com/Snailedlt/nucleuscoop-handler-testbench">Workbench and Jint testbench</a>
+  </div>
+  <p class="small">Also included: a <code>nucleus</code> command-line checker, and an optional skill for writing handlers with an AI agent (Claude Code).</p>
+
+  <footer class="small">Beta. It checks the handler script, not the game: windows, focus and input still need a real test in Nucleus. Nothing on your computer is touched.</footer>
+</main>
+</body>
+</html>
