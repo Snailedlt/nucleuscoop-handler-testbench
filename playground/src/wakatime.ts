@@ -94,15 +94,17 @@ export function initWakaTime({ editor, fileName, project, version }: Deps) {
       is_write: write,
       lines: editor.lineCount(),
       lineno: cur.line + 1,
-      cursorpos: editor.indexFromPos(cur),
+      cursorpos: cur.ch + 1, // the column, from 1 (wakatime.com/developers)
       human_line_changes: humanLines.size,
       user_agent: userAgent,
     };
     const post = (withMachine: boolean) =>
-      fetch(`${base()}/users/current/heartbeats`, {
+      // The bulk endpoint, like wakatime-cli: it reads each heartbeat's user_agent (the single one
+      // detects the editor and OS from the User-Agent header, which a page can't set).
+      fetch(`${base()}/users/current/heartbeats.bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Basic ${btoa(cfg.key.trim())}`, ...(withMachine ? { 'X-Machine-Name': machine() } : {}) },
-        body: JSON.stringify(body),
+        body: JSON.stringify([body]),
       });
     try {
       let r: Response;
