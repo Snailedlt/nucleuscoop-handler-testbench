@@ -66,7 +66,7 @@ export function initWakaTime({ editor, fileName, project, version }: Deps) {
   const base = () => (cfg.url.trim() || DEFAULT_URL).replace(/\/+$/, '');
   const machine = () => cfg.machine.trim() || `${plat.browser} on ${plat.osLabel}`;
   // wakatime-cli's format; the editor is the workbench, the plugin its WakaTime support.
-  const userAgent = `wakatime/unset (${plat.os}-unknown-${plat.arch}) browser nucleusworkbench/${version} nucleusworkbench-wakatime/${version}`;
+  const userAgent = `wakatime/unset (${plat.os}-unknown-${plat.arch}) browser Nucleus-Workbench/${version} Nucleus-Workbench-wakatime/${version}`;
 
   // Every edit made in the workbench is the person's (typing, pasting, inserting from Lines,
   // one-click fixes); loading a handler or an example isn't an edit.

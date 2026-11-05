@@ -9,12 +9,12 @@ import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
 import { vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
-import { lint, Diagnostic, RULES, lineOf } from '@core/lint';
+import { lint, Diagnostic, RULES, lineOf, pluginGlobals } from '@core/lint';
 import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
 import { search, lookup, Entry } from '@core/lookup';
 import { renderHandler, FEATURES } from '@core/templates';
-import { simulate, sessionSummary, groupIgnored } from '@core/sim';
+import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
 import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFile } from './package';
@@ -114,6 +114,11 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
   if (d.rule === 'unknown-member' && /four controllers/.test(d.message)) {
     return { title: "A controller slot Nucleus doesn't have", why: 'Nucleus and Proto Input take at most four controllers per instance (ProtoController1 to 4), so this line does nothing. Removing it is safe.' };
   }
+  if (d.rule === 'undefined-name') {
+    return /unless it's a plugin/.test(d.message)
+      ? { title: 'A name Nucleus may not know', why: "Nothing in the handler defines it. That's fine if it's one of the handler's plugins (listed in pluginsInfo.txt); otherwise Nucleus stops with an error here." }
+      : { title: "A name that doesn't exist", why: /fails to load/.test(d.message) ? 'Nothing defines it, so Nucleus stops loading the handler here. A stray word or a typo?' : 'Nothing defines it, so Nucleus stops with an error when this line runs. A stray word or a typo?' };
+  }
   if (d.rule === 'unknown-member' && /from the original Nucleus Coop/.test(d.message)) {
     return { title: 'An option from an older Nucleus', why: "The original Nucleus Coop had it; today's Nucleus doesn't read it and already does this itself. Remove the line." };
   }
@@ -127,6 +132,21 @@ const STORE_KEY = 'nucleus-workbench-draft';
 let initial = BUGGY;
 // Files that came with the opened package (besides handler.js); saved with it, and kept over a reload.
 let packageFiles: PackageFile[] = storedFiles();
+// A package's pluginsInfo.txt (in its handler folder, Game.Folder): Nucleus adds each plugin as a
+// global. Without a package the linter can't see it, and only warns on unknown `Name.Member`.
+const pluginsText = (): string | undefined => {
+  const f = packageFiles.find((x) => /(^|\/)pluginsInfo\.txt$/i.test(x.name) && x.name.split('/').length <= 2);
+  return f ? new TextDecoder().decode(f.data) : undefined;
+};
+const lintPlugins = (): string[] | undefined => {
+  if (!packageFiles.length) return undefined;
+  const t = pluginsText();
+  return t ? pluginGlobals(t) : [];
+};
+const simPlugins = () => {
+  const t = pluginsText();
+  return t ? parsePluginsInfo(t) : undefined;
+};
 try {
   initial = localStorage.getItem(STORE_KEY) || BUGGY;
 } catch {
@@ -155,8 +175,8 @@ document.documentElement.dataset.mode = mode;
 type Analysis = { diagnostics: Diagnostic[]; fixable: number };
 let worker: Worker | null = null;
 let reqId = 0;
-const pending = new Map<number, { text: string; resolve: (a: Analysis) => void }>();
-const analyzeHere = (text: string): Analysis => ({ diagnostics: lint(text), fixable: fixAll(text).applied.length });
+const pending = new Map<number, { text: string; plugins?: string[]; resolve: (a: Analysis) => void }>();
+const analyzeHere = (text: string, plugins?: string[]): Analysis => ({ diagnostics: lint(text, { plugins }), fixable: fixAll(text, { plugins }).applied.length });
 try {
   worker = new Worker((globalThis as any).__WORKER_URL);
   worker.onmessage = (e: MessageEvent<Analysis & { id: number }>) => {
@@ -168,18 +188,19 @@ try {
     worker = null;
     for (const [id, p] of pending) {
       pending.delete(id);
-      p.resolve(analyzeHere(p.text));
+      p.resolve(analyzeHere(p.text, p.plugins));
     }
   };
 } catch {
   worker = null;
 }
 function analyze(text: string): Promise<Analysis> {
-  if (!worker) return Promise.resolve(analyzeHere(text));
+  const plugins = lintPlugins();
+  if (!worker) return Promise.resolve(analyzeHere(text, plugins));
   const id = ++reqId;
   return new Promise((resolve) => {
-    pending.set(id, { text, resolve });
-    worker!.postMessage({ id, text });
+    pending.set(id, { text, plugins, resolve });
+    worker!.postMessage({ id, text, plugins });
   });
 }
 const sevClass: Record<string, string> = { error: 'error', warning: 'warning', info: 'info', hint: 'hint' };
@@ -611,7 +632,7 @@ function runSim() {
   const players = Number(($('#sim-players') as HTMLSelectElement).value);
   const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
   const kb = Number(($('#sim-kb') as HTMLSelectElement).value);
-  const r = simulate(editor.getValue(), { players, width, height, keyboardPlayer: kb });
+  const r = simulate(editor.getValue(), { players, width, height, keyboardPlayer: kb, plugins: simPlugins() });
   const out: string[] = [];
   const simple = mode === 'simple';
   if (!r.loaded) {
@@ -667,7 +688,7 @@ function testAll() {
   const code = editor.getValue();
   const box = $('#sim-matrix');
   box.hidden = false;
-  const first = simulate(code, { players: 1, width: 1920, height: 1080, keyboardPlayer: -1 });
+  const first = simulate(code, { players: 1, width: 1920, height: 1080, keyboardPlayer: -1, plugins: simPlugins() });
   if (!first.loaded) {
     box.innerHTML = `<div class="mx-head"><strong>Can't test combinations yet</strong><span class="muted">Nucleus can't load this handler. Fix the problems first.</span></div>`;
     return;
@@ -717,7 +738,7 @@ function testAll() {
       const j = jobs[done++];
       const key = `${j.players}|${j.kb}`;
       const c = cells.get(key) ?? { ok: 0, fail: [] };
-      const why = failureOf(simulate(code, jobOptions(j)));
+      const why = failureOf(simulate(code, { ...jobOptions(j), plugins: simPlugins() }));
       if (why) c.fail.push({ res: `${j.width}x${j.height}`, why });
       else c.ok++;
       cells.set(key, c);
@@ -1388,14 +1409,24 @@ aiBtn.addEventListener('click', runAiFix);
 $('#fix-all').addEventListener('click', () => {
   const base = editor.getValue();
   const before = counts(base);
-  const r = fixAll(base);
+  const r = fixAll(base, { plugins: lintPlugins() });
   aiBox.hidden = false;
+  boxShows = null;
   if (r.code === base) {
     aiBox.innerHTML = `<p>Nothing can be fixed automatically. ${before.errors + before.warnings ? 'The remaining problems need your decision; see their quick fixes below' + (sample ? ', or try Fix with AI' : '') + '.' : ''}</p>`;
     return;
   }
   const changes = [...new Set(r.applied.map((a) => `${a.title} (line ${a.line})`))];
   showProposal(base, r.code, changes, before, 'Fix all');
+});
+
+// The fix box shows a before/after of one version of the handler: once the code moves on (you keep
+// typing), it would be stale, so it closes and the list below is what counts.
+let boxShows: string | null = null;
+editor.on('change', (_cm: unknown, ch: { origin?: string }) => {
+  if (boxShows === null || ch.origin === '+ai-fix' || ch.origin === 'undo') return;
+  if (!aiBox.hidden && editor.getValue() !== boxShows) aiBox.hidden = true;
+  boxShows = null;
 });
 
 function applyCode(code: string) {
@@ -1447,6 +1478,7 @@ function showProposal(base: string, code: string, changes: string[], before: { e
 
   const showApplied = () => {
     aiBox.innerHTML = body('applied');
+    boxShows = code;
     $('#ai-undo').addEventListener('click', () => {
       if (editor.getValue() === code) {
         editor.undo();
@@ -1463,6 +1495,7 @@ function showProposal(base: string, code: string, changes: string[], before: { e
     return;
   }
   aiBox.innerHTML = body('review');
+  boxShows = editor.getValue();
   $('#ai-accept').addEventListener('click', () => {
     applyCode(code);
     showApplied();

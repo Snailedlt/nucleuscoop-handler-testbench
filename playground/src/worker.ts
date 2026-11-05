@@ -3,12 +3,12 @@
 import { lint } from '@core/lint';
 import { fixAll } from '@core/fix';
 
-self.onmessage = (e: MessageEvent<{ id: number; text: string }>) => {
-  const { id, text } = e.data;
-  const diagnostics = lint(text);
+self.onmessage = (e: MessageEvent<{ id: number; text: string; plugins?: string[] }>) => {
+  const { id, text, plugins } = e.data;
+  const diagnostics = lint(text, { plugins });
   let fixable = 0;
   try {
-    fixable = fixAll(text).applied.length;
+    fixable = fixAll(text, { plugins }).applied.length;
   } catch {
     fixable = 0;
   }
