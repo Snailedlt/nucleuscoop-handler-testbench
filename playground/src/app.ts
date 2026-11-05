@@ -19,6 +19,7 @@ import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
 import { initNews } from './news';
+import { initPanels } from './panels-ui';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -876,6 +877,7 @@ function entries(): OpenEntry[] {
     { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: colour mode, contrast check and other developer tools', keywords: 'dev theme colour color dark light contrast', run: () => devBar.toggle() },
     { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
     { group: 'Actions', title: 'Show or hide the list of names', sub: 'Ctrl+Shift+L: every option, Context member and enum, click to insert', keywords: 'lines list names insert pawno functions', run: () => lines.toggle() },
+    { group: 'Actions', title: 'Reset panel sizes', sub: 'The code, results and Lines panels back to their default sizes', keywords: 'layout resize panels reset width', run: () => panels.reset() },
     { group: 'Actions', title: "What's new", sub: 'Recent changes to the workbench', keywords: 'changelog changes news updates release notes', run: () => news.open() },
     { group: 'Actions', title: 'Settings', sub: 'Theme, editor, tips and the Lines list', keywords: 'settings preferences options theme dark light font size wrap', run: () => settings.open() },
     { group: 'Actions', title: 'Turn tips on or off', sub: 'Tips and heads-ups under the code', keywords: 'tips hints help clippy', run: () => tips.toggle() },
@@ -1138,6 +1140,8 @@ const settings = initSettings({
   toast,
 });
 const news = initNews();
+const panels = initPanels({ refresh: () => editor.refresh(), toast });
+$('#set-reset-sizes').addEventListener('click', () => panels.reset());
 const moreDialog = $('#more-dialog') as HTMLDialogElement;
 $('#more-open').addEventListener('click', () => {
   ($('#more-save') as HTMLButtonElement).hidden = ($('#save') as HTMLButtonElement).hidden;

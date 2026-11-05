@@ -24,6 +24,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Resize the panels.** Drag the edge between the code and the results, the left edge of the Lines list, or (on phones) the top of the Lines sheet. Double-click an edge to reset it, or use Settings › Reset panel sizes. Sizes are kept in your browser.
 - **Much more room on phones.** One header row, Handler and Results at the bottom like an app (hidden while you type), and Lines as a sheet over the lower part of the screen so the code stays in view.
 - **The line you type stays in view on phones.** When the on-screen keyboard opens, the workbench fits the space above it (it reads the keyboard's height): the header and the tip bar step aside, and the cursor line stays visible above the symbol keys.
 - **Tidier tips on phones.** One line with a large ×; tap it for the whole tip, back, next and Turn off.
