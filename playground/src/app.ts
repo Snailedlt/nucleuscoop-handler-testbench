@@ -1044,7 +1044,9 @@ function showOpen() {
   activeEntry = 0;
   renderOpen();
   openDialog.showModal();
-  ($('#open-q') as HTMLInputElement).focus();
+  // On touch screens, don't pop up the keyboard: most people browse the list. Tap the search to type.
+  if (!(window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && narrow()))) ($('#open-q') as HTMLInputElement).focus();
+  else (openDialog.querySelector('#open-body') as HTMLElement).scrollTop = 0;
 }
 $('#doc-switch').addEventListener('click', showOpen);
 $('#open-close').addEventListener('click', () => openDialog.close());
@@ -1691,3 +1693,11 @@ if (!openFromHash()) {
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 }
 initTouchTitles();
+// Any dialog: a tap or click outside it (on the dimmed backdrop) closes it.
+document.querySelectorAll('dialog').forEach((dl) =>
+  dl.addEventListener('click', (e: MouseEvent) => {
+    if (e.target !== dl || !e.clientX) return;
+    const r = dl.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dl.close();
+  }),
+);
