@@ -134,7 +134,7 @@ The simulation runs in the browser's JavaScript engine, not Jint. It emulates th
 
 The simulation lives in splitscreenme-vscode (`src/core/sim.ts`), where it also powers the extension's **Try it** panel and `nucleus simulate`; this page bundles the same file.
 
-`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 106. `--isolated` does the same through `nucleus simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
+`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 112. `--isolated` does the same through `nucleus simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
 
 ```bash
 cd playground && node sim-parity.mjs --core ../../splitscreenme-vscode              # and with --isolated
