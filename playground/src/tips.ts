@@ -114,7 +114,7 @@ const GUI_TIPS = ([
   { id: 'g-copy-typing', text: 'Typing on a phone? Copy… at the end of the symbol keys copies the code, or a link to just the lines you selected.' },
   { id: 'g-tree', text: 'Lines opens as a tree: tap Game, Context or System to go a level deeper, or type to search everything. Group › by object shows one long list instead.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-package-files', text: 'Open a .zip or .nc with Goldberg files, configs or DLLs: they\'re kept, and Save puts them back in the package unchanged.' },
-  { id: 'g-wakatime', text: 'Use WakaTime? Add your API key in Settings › Advanced to count your handler time. Only the file and game names are sent, never the code.' },
+  { id: 'g-wakatime', text: 'Use WakaTime? Add your API key in Settings › Advanced: writing, testing in Try it and reading the docs show up as separate categories. The code itself is never sent.' },
   { id: 'g-settings', text: 'The gear at the top has the theme, font size, line wrapping and the phone symbol bar.' },
 ] as Tip[]).map((t): Tip => ({ ...t, kind: 'gui' }));
 

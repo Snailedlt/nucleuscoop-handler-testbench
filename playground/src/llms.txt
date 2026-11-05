@@ -11,6 +11,10 @@ Run the tools yourself, on your own machine: the MCP server or the CLI below che
 - [API reference](https://raw.githubusercontent.com/Snailedlt/splitscreenme-vscode/main/plugin/skills/nucleus-handler/reference/api.md): every Game, Context, Player and Nucleus name with type, default and docs.
 - [CLI](https://github.com/Snailedlt/splitscreenme-vscode#command-line-linter): `nucleus lint <file> --json`, `nucleus api <name>`, `nucleus simulate <file>`.
 
+## Time tracking
+
+The workbench can send WakaTime heartbeats for the person using it (off by default; category `coding`, `running tests` or `researching`, `human_line_changes`, never the code). AI agents that report to WakaTime must register as agents instead: category `ai coding`, edits in `ai_line_changes`, their own agent name in the user agent, and never the workbench's.
+
 ## For people
 
 - [Workbench](https://snailedlt.github.io/nucleuscoop-handler-testbench/): check, fix and try a handler in the browser (also as one offline file: `workbench.html` in the releases).

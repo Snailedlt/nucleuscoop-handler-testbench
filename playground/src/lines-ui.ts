@@ -290,6 +290,7 @@ export function initLines({ editor, openReference }: Deps) {
         row.className = 'ln-row';
         row.append(b, i);
         i.addEventListener('click', () => {
+          document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: 'researching' }));
           const open = row.nextElementSibling?.classList.contains('ln-doc');
           list.querySelectorAll('.ln-doc').forEach((d) => d.remove());
           list.querySelectorAll('.ln-info[aria-expanded=true]').forEach((x) => x.setAttribute('aria-expanded', 'false'));

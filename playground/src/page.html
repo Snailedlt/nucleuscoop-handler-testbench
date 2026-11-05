@@ -868,9 +868,10 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <label class="set-check"><input type="checkbox" id="set-advanced"> <span>Advanced mode<small>Rule ids, filters, suggestions, recorded calls and engine probes</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-devbar"> <span>Developer bar<small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
     <div class="set-sec"><h3>WakaTime</h3>
-      <label class="set-check"><input type="checkbox" id="set-waka"> <span>Track my time in WakaTime<small>Like WakaTime's VS Code plugin: sends the handler's name, the game's name and the time, never the code. Your API key stays in this browser.</small></span></label>
+      <label class="set-check"><input type="checkbox" id="set-waka"> <span>Track my time in WakaTime<small>Like WakaTime's VS Code plugin: sends the handler's name, the game's name, the time, what you're doing (writing, testing, reading docs), line numbers and how many lines you changed. Never the code. Your API key stays in this browser.</small></span></label>
       <div class="set-fields" id="set-waka-fields">
         <label class="set-field">API key <input type="password" id="set-waka-key" autocomplete="off" spellcheck="false" placeholder="waka_…"></label>
+        <label class="set-field">This computer's name <small>How WakaTime lists this computer; empty: the browser and system</small><input type="text" id="set-waka-machine" spellcheck="false" maxlength="64"></label>
         <label class="set-field">Server <small>Leave empty for WakaTime; for Wakapi or another server, its API address</small><input type="url" id="set-waka-url" spellcheck="false" placeholder="https://api.wakatime.com/api/v1"></label>
         <div class="set-waka-row"><button class="btn" type="button" id="set-waka-test">Send a test</button><span class="muted small" id="set-waka-status" role="status"></span></div>
         <a class="small" href="https://wakatime.com/settings/api-key" target="_blank" rel="noopener">Where's my API key?</a>

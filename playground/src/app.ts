@@ -655,6 +655,7 @@ $('#sim-run').addEventListener('click', runSim);
 const MX_RES = MATRIX_RESOLUTIONS;
 let mxRun = 0;
 function testAll() {
+  document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: 'running tests' }));
   const run = ++mxRun;
   const code = editor.getValue();
   const box = $('#sim-matrix');
@@ -1147,6 +1148,7 @@ function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
+  if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
   if (id === 'probes' && !probesRendered) {
     probesRendered = true;
     renderProbes();
@@ -1777,6 +1779,7 @@ const waka = initWakaTime({
   const on = $('#set-waka') as HTMLInputElement;
   const key = $('#set-waka-key') as HTMLInputElement;
   const url = $('#set-waka-url') as HTMLInputElement;
+  const machine = $('#set-waka-machine') as HTMLInputElement;
   const fields = $('#set-waka-fields');
   const status = $('#set-waka-status');
   const sync = () => {
@@ -1784,6 +1787,8 @@ const waka = initWakaTime({
     on.checked = c.on;
     key.value = c.key;
     url.value = c.url;
+    machine.value = c.machine;
+    machine.placeholder = waka.defaultMachine();
     fields.hidden = !c.on;
     status.textContent = waka.status();
   };
@@ -1791,11 +1796,13 @@ const waka = initWakaTime({
   on.addEventListener('change', () => (waka.set({ on: on.checked }), sync()));
   key.addEventListener('change', () => waka.set({ key: key.value.trim() }));
   url.addEventListener('change', () => waka.set({ url: url.value.trim() }));
+  machine.addEventListener('change', () => waka.set({ machine: machine.value.trim() }));
   $('#set-waka-test').addEventListener('click', async () => {
-    waka.set({ key: key.value.trim(), url: url.value.trim() });
+    waka.set({ key: key.value.trim(), url: url.value.trim(), machine: machine.value.trim() });
     status.textContent = 'Sending…';
     status.textContent = await waka.test();
   });
   document.addEventListener('open-settings', sync);
+  document.addEventListener('wakatime-activity', (e) => waka.activity((e as CustomEvent).detail));
   $('#settings-open').addEventListener('click', sync);
 }
