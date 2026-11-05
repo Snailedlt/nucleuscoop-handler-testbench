@@ -573,6 +573,90 @@ function runSim() {
 $('#sim-run').addEventListener('click', runSim);
 
 // ---------------------------------------------------------------------------
+// Test all combinations: every player count (up to Game.MaxPlayers, at most 8), input setup and
+// monitor size, a few runs at a time so the page stays responsive; one cell per players × input.
+
+const MX_RES: [number, number][] = [[1920, 1080], [2560, 1440], [3840, 2160], [2560, 1080], [1366, 768]];
+let mxRun = 0;
+function testAll() {
+  const run = ++mxRun;
+  const code = editor.getValue();
+  const box = $('#sim-matrix');
+  box.hidden = false;
+  const first = simulate(code, { players: 1, width: 1920, height: 1080, keyboardPlayer: -1 });
+  if (!first.loaded) {
+    box.innerHTML = `<div class="mx-head"><strong>Can't test combinations yet</strong><span class="muted">Nucleus can't load this handler. Fix the problems first.</span></div>`;
+    return;
+  }
+  const opt = (path: string) => first.options.find((o) => o.path === path)?.value;
+  const max = Math.min(8, Math.max(1, Number(opt('Game.MaxPlayers')) || 4));
+  const multi = opt('Game.SupportsMultipleKeyboardsAndMice') === 'true';
+  const modes: { kb: number; label: string; offered: boolean }[] = [
+    { kb: -1, label: 'Controllers only', offered: true },
+    { kb: 0, label: 'Keyboard for player 1', offered: true },
+    { kb: -2, label: 'Keyboard for each player', offered: multi },
+  ];
+  type Cell = { ok: number; fail: { res: string; why: string }[] };
+  const cells = new Map<string, Cell>();
+  const jobs: [number, number, [number, number]][] = [];
+  for (let p = 1; p <= max; p++) for (const m of modes) if (m.offered) for (const r of MX_RES) jobs.push([p, m.kb, r]);
+  let done = 0;
+  const t0 = performance.now();
+  const draw = (finished: boolean) => {
+    const failed = [...cells.values()].reduce((n, c) => n + c.fail.length, 0);
+    const rows = Array.from({ length: max }, (_, i) => i + 1)
+      .map((p) => `<tr><th>${p} player${p === 1 ? '' : 's'}</th>${modes
+        .map((m) => {
+          if (!m.offered) return `<td><button class="na" type="button" disabled title="The handler doesn't set Game.SupportsMultipleKeyboardsAndMice = true">not offered</button></td>`;
+          const c = cells.get(`${p}|${m.kb}`);
+          if (!c) return '<td><button type="button" disabled>…</button></td>';
+          return `<td><button class="${c.fail.length ? 'fail' : 'ok'}" type="button" data-p="${p}" data-kb="${m.kb}" data-res="${c.fail[0]?.res ?? '1920x1080'}">${c.fail.length ? `${c.fail.length} of ${MX_RES.length} screens` : 'all screens'}</button></td>`;
+        })
+        .join('')}</tr>`)
+      .join('');
+    const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
+    box.innerHTML = `<div class="mx-head"><strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
+      <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+      ${fails.length ? `<ul class="mx-fails">${fails.slice(0, 8).map((f) => { const [p, kb] = f.k.split('|'); return `<li>${p} player${p === '1' ? '' : 's'}, ${modes.find((m) => String(m.kb) === kb)!.label.toLowerCase()}, ${f.res.replace('x', '×')}: ${esc(f.why)}</li>`; }).join('')}${fails.length > 8 ? `<li>…and ${fails.length - 8} more</li>` : ''}</ul>` : ''}
+      <p class="muted small" style="margin:6px 0 0">Pick a cell to see that run below.</p>`;
+    box.querySelector('#mx-stop')?.addEventListener('click', () => (mxRun++, draw(true)));
+    box.querySelector('#mx-close')?.addEventListener('click', () => ((mxRun++, (box.hidden = true))));
+    box.querySelectorAll<HTMLButtonElement>('button[data-p]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const players = $('#sim-players') as HTMLSelectElement;
+        if (![...players.options].some((o) => o.value === b.dataset.p)) players.append(new Option(b.dataset.p!, b.dataset.p!));
+        players.value = b.dataset.p!;
+        ($('#sim-kb') as HTMLSelectElement).value = b.dataset.kb!;
+        const res = $('#sim-res') as HTMLSelectElement;
+        if (![...res.options].some((o) => o.value === b.dataset.res)) res.append(new Option(b.dataset.res!.replace('x', '×'), b.dataset.res!));
+        res.value = b.dataset.res!;
+        runSim();
+        $('#sim-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }),
+    );
+  };
+  const step = () => {
+    if (run !== mxRun) return;
+    const until = performance.now() + 12; // a few runs per frame
+    while (done < jobs.length && performance.now() < until) {
+      const [p, kb, [w, h]] = jobs[done++];
+      const r = simulate(code, { players: p, width: w, height: h, keyboardPlayer: kb });
+      const key = `${p}|${kb}`;
+      const c = cells.get(key) ?? { ok: 0, fail: [] };
+      const bad = r.sessionEnded ? r.sessionEnded.reason : r.players.find((x) => x.error)?.error ?? r.callbacks.find((x) => x.error)?.error;
+      if (!r.loaded || bad) c.fail.push({ res: `${w}x${h}`, why: (bad ?? r.loadError ?? 'fails').split('\n')[0].slice(0, 140) });
+      else c.ok++;
+      cells.set(key, c);
+    }
+    draw(done >= jobs.length);
+    if (done < jobs.length) setTimeout(step, 0);
+  };
+  draw(false);
+  setTimeout(step, 0);
+}
+$('#sim-all').addEventListener('click', testAll);
+
+// ---------------------------------------------------------------------------
 // API search
 
 function renderApi(q: string) {
@@ -1030,6 +1114,7 @@ const lines = initLines({
 
 const tips = initTips({
   editor,
+  toast,
   actions: {
     lines: () => lines.show(),
     new: () => ($('#new-open') as HTMLButtonElement).click(),

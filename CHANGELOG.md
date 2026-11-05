@@ -19,11 +19,13 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Tap a warning next to the code.** Its problem opens right there, with Fix this. Works on phones too, where there's no hover.
 - **Problems under the code on phones.** A strip shows how many problems there are and steps through them (‹ ›), so you can fix things without switching to Results.
 - **Docs for each name in Lines.** The (i) button opens what a name does, its default and how many Hub handlers use it, with Insert and Full docs.
+- **Test all combinations in Try it.** One button runs every player count (up to the handler's maximum), input setup and monitor size, and shows which combinations fail and why. Pick a cell to see that run. It takes about half a second.
 - **Try it with a keyboard and mouse for every player.** Choose "Each player their own" under Keyboard & mouse, as in Nucleus' multiple keyboards and mice mode. Try it says so when the handler doesn't support it.
 
 ### 🛠️ Improved
 
 - **Much more room on phones.** One header row, Handler and Results at the bottom like an app (hidden while you type), and Lines as a sheet over the lower part of the screen so the code stays in view.
+- **Tidier tips on phones.** One line with a large ×; tap it for the whole tip, back, next and Turn off.
 - **The developer bar fits on phones.** One scrollable row at the top instead of three rows over the page.
 
 - **The verdict comes first.** Check opens with whether Nucleus can use the handler and the fix button; the welcome note is a short card under it, with a × to dismiss.

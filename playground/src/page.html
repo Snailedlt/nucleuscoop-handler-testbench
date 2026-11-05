@@ -187,6 +187,27 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 #lines-list .ln-doc .btn { color: var(--fg); background: var(--surface); border: 1px solid var(--line); }
 #lines-list .ln-doc .link { padding: 0; color: var(--accent); background: none; }
 
+/* Try it: every combination */
+#sim-matrix { margin: 0 0 14px; border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; }
+#sim-matrix[hidden] { display: none; }
+#sim-matrix .mx-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+#sim-matrix .mx-head strong { font-size: 14px; }
+#sim-matrix .mx-head .muted { font-size: 12.5px; }
+#sim-matrix .mx-head .btn { margin-left: auto; padding: 3px 10px; font-size: 12px; }
+#sim-matrix .mx-wrap { overflow-x: auto; }
+#sim-matrix table { border-collapse: separate; border-spacing: 4px; font-size: 12.5px; }
+#sim-matrix th { font-weight: 600; color: var(--muted); text-align: left; padding: 2px 6px; white-space: nowrap; }
+#sim-matrix td button { width: 100%; min-width: 92px; min-height: 34px; font: inherit; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); cursor: pointer; padding: 4px 8px; text-align: left; }
+#sim-matrix td button.ok { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+#sim-matrix td button.ok::before { content: "✓ "; color: var(--ok); font-weight: 700; }
+#sim-matrix td button.fail { border-color: var(--err); background: var(--err-bg); }
+#sim-matrix td button.fail::before { content: "✗ "; color: var(--err); font-weight: 700; }
+#sim-matrix td button.na { opacity: .55; }
+#sim-matrix td button.na::before { content: "– "; }
+#sim-matrix td button:focus-visible { outline: 2px solid var(--accent); }
+#sim-matrix .mx-fails { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; }
+#sim-matrix .mx-fails li { margin: 2px 0; }
+
 /* Update note and What's new */
 #updated { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--info); background: var(--info-bg); color: var(--fg); border-radius: var(--r-pane); font-size: 13px; }
 #updated[hidden] { display: none; }
@@ -247,9 +268,10 @@ body.keybar-on .app { padding-bottom: 52px; }
 #tipbar .tip-btn { padding: 3px 9px; font-size: 12px; }
 #tipbar .tip-btn.icon { width: 26px; padding: 3px 0; }
 @media (prefers-reduced-motion: no-preference) { #tipbar.contextual { animation: tip-in .25s ease-out; } @keyframes tip-in { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } } }
-@media (max-width: 600px) { #tipbar #tip-action { display: none; } #tipbar #tip-next .long { display: none; } }
+@media (max-width: 600px) { #tipbar #tip-action { display: none; } }
 #tipbar #tip-next .short { display: none; }
-@media (max-width: 600px) { #tipbar #tip-next .short { display: inline; } }
+.tip-x { display: none !important; }
+#tip-off .short { display: none; }
 #lines-list .none { color: var(--muted); padding: 10px; font-family: var(--font-body); }
 #lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--fg); min-height: 3.2em; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 #lines-info .muted { color: var(--muted); }
@@ -490,9 +512,22 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #lines-list button { padding: 7px 12px 7px 12px; }
   #lines-settings { inset: 56px 0 0 0; }
   /* tips: compact */
-  #tipbar { padding: 6px 10px; gap: 8px; font-size: 12px; }
-  #tipbar .tip-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Tips on phones: one tidy line; tap it for the whole tip, back/next and Turn off */
+  #tipbar { padding: 4px 4px 4px 10px; gap: 6px; font-size: 12.5px; flex-wrap: wrap; }
   #tipbar .tip-icon { display: none; }
+  #tipbar .tip-body { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; padding: 8px 0; }
+  #tipbar .tip-actions { display: none; }
+  #tipbar .tip-x { display: inline-grid !important; place-items: center; width: 40px; height: 40px; flex: none; font-size: 16px; color: var(--muted); background: none; border: 0; }
+  #tipbar.open .tip-body { white-space: normal; overflow: visible; }
+  #tipbar.open .tip-x { display: none !important; }
+#tip-off .short { display: none; }
+  #tipbar.open .tip-actions { display: flex; width: 100%; justify-content: flex-end; gap: 6px; padding: 0 4px 4px 0; }
+  #tipbar.open #tip-action { display: inline-block; }
+  #tipbar .tip-btn { min-height: 34px; }
+  #tipbar.open #tip-off { width: auto; padding: 3px 10px; }
+  #tipbar.open #tip-off .long { display: none; }
+  #tipbar.open #tip-off .short { display: inline; }
+  #toast { bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   header .brand { order: 0; min-width: 0; }
   header .toolbar { order: 2; }
   .switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; }
@@ -603,8 +638,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <button class="btn tip-btn" id="tip-action" type="button" hidden></button>
           <button class="btn icon tip-btn" id="tip-prev" type="button" title="Previous tip" aria-label="Previous tip">‹</button>
           <button class="btn tip-btn" id="tip-next" type="button" title="Next tip" aria-label="Next tip"><span class="long">Next tip</span><span class="short">›</span></button>
-          <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on at the bottom of the page or in Keyboard shortcuts)" aria-label="Turn tips off">×</button>
+          <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on in Settings)" aria-label="Turn tips off"><span class="long">×</span><span class="short">Turn off</span></button>
         </div>
+        <button class="tip-x" id="tip-off-2" type="button" aria-label="Turn tips off" title="Turn tips off">×</button>
       </div>
     </section>
 
@@ -643,8 +679,10 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <label>Monitor <select id="sim-res"><option value="1920x1080" selected>1920×1080</option><option value="2560x1440">2560×1440</option><option value="3840x2160">3840×2160</option></select></label>
           <label>Keyboard & mouse <select id="sim-kb"><option value="0" selected>Player 1</option><option value="1">Player 2</option><option value="-2">Each player their own</option><option value="-1">Nobody</option></select></label>
           <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
+          <button class="btn" id="sim-all" type="button" title="Every player count, input setup and monitor size">Test all combinations</button>
         </div>
         <p class="muted" style="margin:0 0 12px;max-width:65ch">Each player's window, launch arguments and file changes, as Nucleus would set them up. Simulated: nothing on your computer is touched, and the game itself still needs a test in Nucleus.<span class="dev-only"> How: the handler is loaded and <code>Game.Play</code> runs once per player in this browser, following the Jint 2.11.58 rules Nucleus uses (checked against the real engine on every probe). File, registry and process calls are recorded, not performed.</span></p>
+        <div id="sim-matrix" hidden></div>
         <div id="sim-out"></div>
       </div>
       <div role="tabpanel" id="panel-api" hidden>

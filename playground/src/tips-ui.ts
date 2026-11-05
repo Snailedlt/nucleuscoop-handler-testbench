@@ -21,10 +21,11 @@ const set = (k: string, v: string) => {
 
 interface Deps {
   editor: any;
+  toast?: (s: string) => void;
   actions: Record<NonNullable<Tip['action']>['run'], () => void>;
 }
 
-export function initTips({ editor, actions }: Deps) {
+export function initTips({ editor, actions, toast }: Deps) {
   let on = get(ON_KEY) !== '0';
   const seen = new Set<string>(JSON.parse(get(SEEN_KEY) || '[]'));
   let general = Math.floor(Math.random() * GENERAL_TIPS.length);
@@ -90,11 +91,18 @@ export function initTips({ editor, actions }: Deps) {
   $('#tip-next').addEventListener('click', () => showGeneral(1));
   $('#tip-prev').addEventListener('click', () => showGeneral(-1));
   $('#tip-off').addEventListener('click', () => setOn(false));
+  $('#tip-off-2').addEventListener('click', () => setOn(false));
+  // Phones: the tip is one line; tapping it shows all of it with back, next and Turn off.
+  const phone = () => window.matchMedia('(max-width: 860px)').matches;
+  body.parentElement!.addEventListener('click', () => {
+    if (phone()) bar.classList.toggle('open');
+  });
   act.addEventListener('click', () => currentAction?.());
   const toggles = [...document.querySelectorAll<HTMLButtonElement>('[data-tips-toggle]')];
   toggles.forEach((t) => t.addEventListener('click', () => setOn(!on)));
 
   function setOn(v: boolean) {
+    if (!v && on) toast?.('Tips are off. Turn them back on in Settings.');
     on = v;
     set(ON_KEY, v ? '1' : '0');
     bar.hidden = !v;
