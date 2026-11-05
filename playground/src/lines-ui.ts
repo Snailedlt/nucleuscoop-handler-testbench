@@ -33,7 +33,28 @@ const store = {
 export function initLines({ editor, openReference }: Deps) {
   const LINES = allLines();
   const kinds = new Set<Kind>();
-  const prefs = { group: 'object' as 'object' | 'topic', sort: 'az' as 'az' | 'used', deprecated: false };
+  const DEFAULTS = {
+    group: 'object' as 'object' | 'topic',
+    sort: 'az' as 'az' | 'used',
+    // Basic settings
+    meta: true, // type and default beside each name
+    marks: true, // mark names already in the handler, with their value
+    jump: true, // clicking a name that's already set jumps to it
+    dim: true, // dim names that don't work where the cursor is
+    wholeLine: true, // on an empty line, insert `Game.X = ;`
+    values: true, // then suggest its values
+    // Advanced settings
+    deprecated: false, // show deprecated names
+    kinds: true, // type filter buttons
+    controls: true, // group and sort controls
+    usage: true, // how many Hub handlers use each name
+    params: true, // functions insert their parameter names
+    shorthand: true, // "kmd" finds KillMutexDelay
+    info: true, // details of the hovered name at the bottom
+    wide: false, // a wider column
+  };
+  type Prefs = typeof DEFAULTS;
+  const prefs: Prefs = { ...DEFAULTS };
   try {
     Object.assign(prefs, JSON.parse(store.get(PREFS_KEY) || '{}'));
   } catch {}
@@ -56,7 +77,7 @@ export function initLines({ editor, openReference }: Deps) {
     if (l.doc) info.append(text('div', '', l.doc));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
-    if (l.used) facts.push(`Used by ${l.used} of ${USAGE_TOTAL} Hub handlers`);
+    if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${USAGE_TOTAL} Hub handlers`);
     if (l.scope === 'callback') facts.push('Only inside Game.Play and other callbacks');
     const u = scan?.uses.get(l.path);
     if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
@@ -78,19 +99,20 @@ export function initLines({ editor, openReference }: Deps) {
   // --- the list
   const list = $('#lines-list');
   function metaFor(l: Line): { text: string; cls: string } {
-    const u = scan?.uses.get(l.path);
+    const u = prefs.marks ? scan?.uses.get(l.path) : undefined;
     if (u?.assigned.length) {
       const v = u.assigned[u.assigned.length - 1].value ?? '';
       return { text: `${u.assigned.length > 1 ? `×${u.assigned.length} ` : '✓ '}${v.length > 18 ? v.slice(0, 17) + '…' : v}`, cls: u.assigned.length > 1 ? 'set twice' : 'set' };
     }
     if (u?.other.length) return { text: '✓ used', cls: 'set' };
-    if (prefs.sort === 'used') return { text: l.used ? String(l.used) : '', cls: '' };
+    if (prefs.sort === 'used' && prefs.usage) return { text: l.used ? String(l.used) : '', cls: '' };
+    if (!prefs.meta) return { text: '', cls: '' };
     const t = l.typeLabel + (l.default !== undefined && l.default.length < 12 ? ` · ${l.default}` : '');
     return { text: t, cls: '' };
   }
   function render() {
     const q = ($('#lines-q') as HTMLInputElement).value.trim().toLowerCase();
-    const shown = LINES.filter((l) => (prefs.deprecated || !l.deprecated) && (!kinds.size || kinds.has(l.kind)) && matches(l, q));
+    const shown = LINES.filter((l) => (prefs.deprecated || !l.deprecated) && (!kinds.size || kinds.has(l.kind)) && matches(l, q, prefs.shorthand));
     const groups = new Map<string, Line[]>();
     for (const l of shown) {
       const g = prefs.group === 'topic' ? l.topic : l.owner;
@@ -104,13 +126,13 @@ export function initLines({ editor, openReference }: Deps) {
     for (const g of order) {
       const items = groups.get(g)!;
       const enumGroup = g.startsWith('Nucleus.');
-      if (prefs.sort === 'used') items.sort((a, b) => b.used - a.used || a.text.localeCompare(b.text));
+      if (prefs.sort === 'used' && prefs.usage) items.sort((a, b) => b.used - a.used || a.text.localeCompare(b.text));
       else if (!enumGroup) items.sort((a, b) => a.text.localeCompare(b.text, 'en', { sensitivity: 'base' }));
       frag.append(text('div', 'grp', '// ' + g));
       for (const l of items) {
         const b = document.createElement('button');
         b.type = 'button';
-        const off = l.scope === 'callback' && !callback;
+        const off = prefs.dim && l.scope === 'callback' && !callback;
         b.className = [l.deprecated ? 'dep' : '', off ? 'off' : ''].filter(Boolean).join(' ');
         b.title = off ? `${l.sig}\nOnly works inside Game.Play and other callbacks` : l.sig;
         const name = text('span', 'nm', l.text);
@@ -130,7 +152,7 @@ export function initLines({ editor, openReference }: Deps) {
   // --- inserting
   function pick(l: Line, forceInsert: boolean) {
     const u = scan?.uses.get(l.path);
-    if (!forceInsert && u?.assigned.length) {
+    if (!forceInsert && prefs.jump && u?.assigned.length) {
       // Already set: go there instead of adding a second line (the most common Hub warning).
       const line = u.assigned[u.assigned.length - 1].line;
       editor.focus();
@@ -144,15 +166,17 @@ export function initLines({ editor, openReference }: Deps) {
     const lineText: string = editor.getLine(from.line);
     const emptyLine = !lineText.trim() && !editor.somethingSelected();
     const indent = emptyLine ? lineText : '';
-    if (emptyLine && l.assignable) {
+    if (emptyLine && l.assignable && prefs.wholeLine) {
       editor.replaceRange(`${indent}${l.path} = ;`, { line: from.line, ch: 0 }, { line: from.line, ch: lineText.length });
       editor.setCursor({ line: from.line, ch: indent.length + l.path.length + 3 });
-      if (l.values?.length) offerValues(l.values);
+      if (l.values?.length && prefs.values) offerValues(l.values);
     } else if (l.method) {
-      const call = `${l.path}(${l.params.join(', ')})${emptyLine ? ';' : ''}`;
+      const params = prefs.params ? l.params : [];
+      const call = `${l.path}(${params.join(', ')})${emptyLine ? ';' : ''}`;
       editor.replaceSelection(call);
       const start = { line: from.line, ch: from.ch + l.path.length + 1 };
-      if (l.params.length) editor.setSelection(start, { line: from.line, ch: start.ch + l.params[0].length });
+      if (!prefs.params && l.params.length) editor.setCursor(start);
+      else if (params.length) editor.setSelection(start, { line: from.line, ch: start.ch + l.params[0].length });
       else editor.setCursor({ line: from.line, ch: from.ch + call.length });
     } else {
       editor.replaceSelection(l.path);
@@ -222,14 +246,106 @@ export function initLines({ editor, openReference }: Deps) {
   }
   const groupSel = $('#lines-group') as HTMLSelectElement;
   const sortSel = $('#lines-sort') as HTMLSelectElement;
-  const depBox = $('#lines-dep') as HTMLInputElement;
   groupSel.value = prefs.group;
   sortSel.value = prefs.sort;
-  depBox.checked = prefs.deprecated;
   const savePrefs = () => store.set(PREFS_KEY, JSON.stringify(prefs));
   groupSel.addEventListener('change', () => ((prefs.group = groupSel.value as any), savePrefs(), render()));
   sortSel.addEventListener('change', () => ((prefs.sort = sortSel.value as any), savePrefs(), render()));
-  depBox.addEventListener('change', () => ((prefs.deprecated = depBox.checked), savePrefs(), render()));
+
+  // --- settings (the gear): what the list shows and does. Niche ones under Advanced.
+  const SETTINGS: { key: keyof Prefs; label: string; hint?: string; advanced?: boolean }[] = [
+    { key: 'meta', label: 'Show type and default', hint: 'Beside each name, e.g. bool · false' },
+    { key: 'marks', label: 'Mark names the handler already uses', hint: '✓ and the value it is set to' },
+    { key: 'jump', label: 'Jump to names that are already set', hint: 'Instead of adding a second line. Shift+click still inserts.' },
+    { key: 'dim', label: 'Dim names that don’t work at the cursor', hint: 'Context and Player only work inside Game.Play and other callbacks' },
+    { key: 'wholeLine', label: 'Insert whole lines', hint: 'On an empty line an option becomes Game.X = ;' },
+    { key: 'values', label: 'Suggest values after inserting', hint: 'Enum values, true / false' },
+    { key: 'deprecated', label: 'Show deprecated names', advanced: true },
+    { key: 'kinds', label: 'Type filter buttons', hint: 'bool, number, string…', advanced: true },
+    { key: 'controls', label: 'Group and sort controls', advanced: true },
+    { key: 'usage', label: 'Hub usage counts', hint: `How many of the ${USAGE_TOTAL} Hub handlers use each name`, advanced: true },
+    { key: 'params', label: 'Insert parameter names for functions', advanced: true },
+    { key: 'shorthand', label: 'Shorthand filter', hint: '"kmd" finds KillMutexDelay', advanced: true },
+    { key: 'info', label: 'Details of the hovered name', hint: 'Signature and docs at the bottom of the list', advanced: true },
+    { key: 'wide', label: 'Wider column', advanced: true },
+  ];
+  const panel = $('#lines-settings');
+  const gear = $('#lines-gear');
+  function buildSettings() {
+    panel.textContent = '';
+    const head = text('div', 'set-head', '');
+    head.append(text('strong', '', 'List settings'));
+    const done = document.createElement('button');
+    done.type = 'button';
+    done.className = 'btn';
+    done.textContent = 'Done';
+    done.addEventListener('click', () => showSettings(false));
+    head.append(done);
+    panel.append(head);
+    const row = (s: (typeof SETTINGS)[number]) => {
+      const lab = document.createElement('label');
+      lab.className = 'set-row';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.id = `lines-set-${s.key}`;
+      box.checked = !!prefs[s.key];
+      box.addEventListener('change', () => {
+        (prefs as any)[s.key] = box.checked;
+        savePrefs();
+        apply();
+      });
+      const t = text('span', '', s.label);
+      if (s.hint) t.append(text('small', '', s.hint));
+      lab.append(box, t);
+      return lab;
+    };
+    SETTINGS.filter((s) => !s.advanced).forEach((s) => panel.append(row(s)));
+    const adv = document.createElement('details');
+    adv.append(text('summary', '', 'Advanced'));
+    SETTINGS.filter((s) => s.advanced).forEach((s) => adv.append(row(s)));
+    panel.append(adv);
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'link';
+    reset.textContent = 'Reset to defaults';
+    reset.addEventListener('click', () => {
+      Object.assign(prefs, DEFAULTS);
+      savePrefs();
+      groupSel.value = prefs.group;
+      sortSel.value = prefs.sort;
+      buildSettings();
+      apply();
+    });
+    panel.append(reset);
+  }
+  function showSettings(v: boolean) {
+    panel.hidden = !v;
+    gear.setAttribute('aria-expanded', String(v));
+    if (v) panel.querySelector<HTMLInputElement>('input')?.focus();
+    else gear.focus();
+  }
+  gear.addEventListener('click', () => showSettings(panel.hidden !== false));
+  panel.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      showSettings(false);
+    }
+  });
+  /** Show or hide the parts the settings control, then redraw. */
+  function apply() {
+    $('#lines-kinds').hidden = !prefs.kinds;
+    if (!prefs.kinds && kinds.size) {
+      kinds.clear();
+      $('#lines-kinds').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    }
+    ($('.lines-opts') as HTMLElement).hidden = !prefs.controls;
+    (sortSel.querySelector('option[value=used]') as HTMLOptionElement).hidden = !prefs.usage;
+    info.hidden = !prefs.info;
+    $('#lines').classList.toggle('wide', prefs.wide);
+    editor.refresh();
+    render();
+  }
+  buildSettings();
   $('#lines-q').addEventListener('input', render);
   $('#lines-close').addEventListener('click', () => setOpen(false));
   $('#lines-toggle').addEventListener('click', () => setOpen(!open, !open));
@@ -269,6 +385,7 @@ export function initLines({ editor, openReference }: Deps) {
   }
 
   showInfo(undefined);
+  apply();
   setOpen(open);
   return { toggle: () => setOpen(!open, !open), show: () => setOpen(true, true) };
 }

@@ -213,11 +213,11 @@ export const inCallback = (scan: Scan, offset: number) => scan.functions.some(([
 
 /** Filter match: words in the name, docs or topic, or shorthand from the starts of the name's
  *  words ("km" finds KillMutex, "kmd" KillMutexDelay, "pbs" PauseBetweenStarts). */
-export function matches(l: Line, q: string): boolean {
+export function matches(l: Line, q: string, shorthand = true): boolean {
   if (!q) return true;
   const name = l.path.toLowerCase();
   if (name.includes(q) || l.doc.toLowerCase().includes(q) || l.topic.toLowerCase().includes(q)) return true;
-  if (q.length < 2 || /[\s.]/.test(q)) return false;
+  if (!shorthand || q.length < 2 || /[\s.]/.test(q)) return false;
   const last = l.path.slice(l.path.lastIndexOf('.') + 1);
   const words = last.split(/(?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z])|_/).filter(Boolean).map((w) => w.toLowerCase());
   // Each query letter continues the current word or starts the next one, in order.
