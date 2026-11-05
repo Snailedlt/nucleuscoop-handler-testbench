@@ -25,7 +25,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### 🛠️ Improved
 
 - **Much more room on phones.** One header row, Handler and Results at the bottom like an app (hidden while you type), and Lines as a sheet over the lower part of the screen so the code stays in view.
-- **The line you type stays in view on phones.** Tapping into the code scrolls that line into the top third of the editor, above where the on-screen keyboard opens (even the last lines). Where the browser reports the keyboard, the workbench also fits the space above it and the header steps aside.
+- **The line you type stays in view on phones.** When the on-screen keyboard opens, the workbench fits the space above it (it reads the keyboard's height): the header and the tip bar step aside, and the cursor line stays visible above the symbol keys.
 - **Tidier tips on phones.** One line with a large ×; tap it for the whole tip, back, next and Turn off.
 - **The developer bar fits on phones.** One scrollable row at the top instead of three rows over the page.
 

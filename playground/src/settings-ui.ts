@@ -156,25 +156,8 @@ export function initSettings(d: Deps) {
   }
   d.editor.on('focus', () => ((focused = true), placeKeybar()));
   d.editor.on('blur', () => ((focused = false), setTimeout(placeKeybar, 150)));
-  // Touch screens: keep the line being typed in the top third of the editor, above where the
-  // on-screen keyboard opens. This doesn't rely on detecting the keyboard, which a page inside a
-  // frame (like the Claude app's preview) can't see.
-  if (touch()) d.editor.setOption('scrollPastEnd', true); // so the last lines can scroll up too
-  const keepCursorHigh = () => {
-    if (!touch() || !focused) return;
-    const cm = d.editor;
-    const top = cm.charCoords(cm.getCursor(), 'local').top;
-    const view = cm.getScrollInfo();
-    const target = top - Math.max(40, view.clientHeight * 0.2);
-    const lowest = view.top + view.clientHeight * 0.35; // already high enough: leave the scroll alone
-    if (top < view.top + 8 || top > lowest) cm.scrollTo(null, Math.max(0, target));
-  };
-  d.editor.on('focus', () => {
-    keepCursorHigh();
-    setTimeout(keepCursorHigh, 350); // again once the keyboard has slid in
-  });
-  // After CodeMirror's own scroll-into-view for the move, or it would undo this.
-  d.editor.on('cursorActivity', () => requestAnimationFrame(() => (kbOpen ? d.editor.scrollIntoView(null, 60) : keepCursorHigh())));
+  // While the keyboard is open, keep the cursor in the space above it (after CodeMirror's own scroll).
+  d.editor.on('cursorActivity', () => kbOpen && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
   window.visualViewport?.addEventListener('resize', placeKeybar);
   window.visualViewport?.addEventListener('scroll', placeKeybar);
 
