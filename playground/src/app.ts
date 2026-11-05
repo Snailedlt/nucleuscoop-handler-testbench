@@ -180,6 +180,9 @@ const editor = CodeMirror($('#editor'), {
   matchBrackets: true,
   autoCloseBrackets: true,
   gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers'],
+  // Touch screens edit through the page's own text selection, which only reaches lines that are
+  // drawn: draw them all (handlers are small), so the phone's Select all, copy and delete see every line.
+  viewportMargin: window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 ? Infinity : 10,
   lint: {
     getAnnotations: (text: string) =>
       analyze(text).then((r) => {
@@ -1629,7 +1632,10 @@ function openFromHash(): boolean {
   if (!h) return false;
   if (h.startsWith(SHARE_PREFIX)) {
     decodeShare(h)
-      .then((src) => loadSource(src, { name: 'Shared handler', kind: 'example', hash: h }))
+      .then((src) => {
+        loadSource(src, { name: 'Shared handler', kind: 'example', hash: h });
+        if (narrow()) setView('code'); // after the async load, which shows the results
+      })
       .catch(() => toast('This share link is damaged or incomplete. Ask for it again, or for the file.'));
     return true;
   }
@@ -1658,8 +1664,9 @@ function openFromHash(): boolean {
   toast(`The link "#${h}" doesn't match an example in this build.`);
   return false;
 }
+// A link shares code: on phones, show the handler, not the results.
 window.addEventListener('hashchange', () => {
-  if (location.hash.slice(1) !== doc.hash) openFromHash();
+  if (location.hash.slice(1) !== doc.hash && openFromHash() && narrow()) setView('code');
 });
 
 const WELCOME_KEY = 'nucleus-workbench-welcomed';
@@ -1696,7 +1703,7 @@ try {
 if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
-}
+} else if (narrow()) setView('code');
 initTouchTitles();
 // Any dialog: a tap or click outside it (on the dimmed backdrop) closes it.
 document.querySelectorAll('dialog').forEach((dl) =>
