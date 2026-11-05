@@ -204,7 +204,28 @@ ${html}
 const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 const startDir = path.join(here, 'dist', 'pages', 'start');
 fs.mkdirSync(startDir, { recursive: true });
-fs.writeFileSync(path.join(startDir, 'index.html'), fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8').replaceAll('__BASE__', PAGES_BASE));
+// The newest extension release, pre-releases included (GitHub's /releases/latest skips those).
+let vsix = { url: 'https://github.com/Snailedlt/splitscreenme-vscode/releases', name: 'the .vsix', tag: 'latest release' };
+try {
+  const res = await fetch('https://api.github.com/repos/Snailedlt/splitscreenme-vscode/releases?per_page=10', {
+    headers: { accept: 'application/vnd.github+json', ...(process.env.GITHUB_TOKEN ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) },
+  });
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  const rel = (await res.json()).find((r) => !r.draft && r.assets.some((a) => a.name.endsWith('.vsix')));
+  const asset = rel?.assets.find((a) => a.name.endsWith('.vsix'));
+  if (asset) vsix = { url: asset.browser_download_url, name: asset.name, tag: rel.tag_name };
+} catch (e) {
+  console.warn(`start page: no release info (${e.message}), linking the releases page`);
+}
+const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+fs.writeFileSync(
+  path.join(startDir, 'index.html'),
+  fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8')
+    .replaceAll('__BASE__', PAGES_BASE)
+    .replaceAll('__VSIX_URL__', escHtml(vsix.url))
+    .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
+    .replaceAll('__VSIX_TAG__', escHtml(vsix.tag)),
+);
 for (const [dir, files] of [
   [path.join(here, '..', 'docs', 'images'), ['check.png']],
   [path.join(coreRepo, 'docs', 'images'), ['vscode-problems.png', 'vscode-try-it.png', 'vscode-hover.png']],

@@ -38,6 +38,8 @@ jobs:
         working-directory: playground
       - name: Build (fresh Hub snapshot, verified versions only)
         run: node build.mjs --core ../core --refresh-hub
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
         working-directory: playground
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
