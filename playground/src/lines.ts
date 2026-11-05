@@ -2,6 +2,7 @@
 // what the workbench knows about each: type, default, topic, how many Hub handlers use it, where it
 // belongs (top level or inside callbacks), and what clicking it inserts.
 import { api, memberSignature, ownerLabel, Member } from '@core/api';
+import { BEFORE_SESSION } from '@core/lifecycle';
 import { allEntries } from '@core/lookup';
 import { parseLikeJint } from '@core/jsparse';
 import USAGE from './usage.json';
@@ -16,7 +17,8 @@ export const KINDS: [Kind, string][] = [
   ['other', 'other'],
 ];
 /** Where a name can be used: anywhere, or only in Game.Play and other callbacks. */
-export type Scope = 'any' | 'callback';
+/** 'top': read before the session starts, so only at the top level (core/lifecycle.ts). */
+export type Scope = 'any' | 'callback' | 'top';
 
 export interface Line {
   path: string; // Game.KillMutex, Context.ModifySaveFile, Nucleus.DPIHandling.True
@@ -107,7 +109,7 @@ export function allLines(): Line[] {
       sig: memberSignature(e.owner, e.name, m)[0] ?? e.path,
       doc: firstSentence(m.deprecated ? `Deprecated. ${m.deprecated}` : m.doc || ''),
       deprecated: !!m.deprecated,
-      scope: CALLBACK_OWNERS.has(e.owner) ? 'callback' : 'any',
+      scope: CALLBACK_OWNERS.has(e.owner) ? 'callback' : BEFORE_SESSION[e.path] ? 'top' : 'any',
       assignable: !method && !m.readonly && SETTABLE_OWNERS.has(e.owner),
       params: method ? (m.overloads?.[0]?.params ?? []).map((p) => p.name) : [],
       method,

@@ -1,11 +1,13 @@
 // The "Lines" column beside the code: every name a handler can use, click to insert.
 // Beyond a plain list (Pawno's), it knows the handler being edited:
 // - names the handler already sets show their value; clicking one jumps to it (no duplicate lines);
-// - names that only work inside Game.Play and other callbacks are dimmed outside them;
+// - names that only work inside Game.Play and other callbacks are dimmed outside them, and the
+//   options Nucleus reads before the session (Game.GUID, MaxPlayers, AddOption...) inside them;
 // - on an empty line an option inserts `Game.X = ;` and offers its values (enums, true/false);
 //   a function inserts its parameter names, the first one selected;
 // - grouped by object or by topic, A–Z or by how many Hub handlers use it, keyboard friendly.
 import { allLines, KINDS, Kind, Line, matches, scanHandler, inCallback, Scan, USAGE_TOTAL } from './lines';
+import { BEFORE_SESSION } from '@core/lifecycle';
 
 interface Deps {
   editor: any; // CodeMirror 5
@@ -81,6 +83,7 @@ export function initLines({ editor, openReference }: Deps) {
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
     if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
     if (l.scope === 'callback') facts.push('Only inside Game.Play and other callbacks');
+    if (l.scope === 'top') facts.push(`Only at the top level: ${BEFORE_SESSION[l.path]}`);
     const u = scan?.uses.get(l.path);
     if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
     if (facts.length) info.append(text('div', 'muted', facts.join(' · ')));
@@ -100,6 +103,7 @@ export function initLines({ editor, openReference }: Deps) {
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
     if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
     if (l.scope === 'callback') facts.push('Only inside Game.Play and other callbacks');
+    if (l.scope === 'top') facts.push(`Only at the top level: ${BEFORE_SESSION[l.path]}`);
     const u = scan?.uses.get(l.path);
     if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
     if (facts.length) d.append(text('div', 'muted', facts.join(' · ')));
@@ -264,9 +268,9 @@ export function initLines({ editor, openReference }: Deps) {
   function rowFor(l: Line, label = l.text): HTMLElement {
         const b = document.createElement('button');
         b.type = 'button';
-        const off = prefs.dim && l.scope === 'callback' && !callback;
+        const off = prefs.dim && ((l.scope === 'callback' && !callback) || (l.scope === 'top' && callback));
         b.className = [l.deprecated ? 'dep' : '', off ? 'off' : ''].filter(Boolean).join(' ');
-        b.title = off ? `${l.sig}\nOnly works inside Game.Play and other callbacks` : l.sig;
+        b.title = off ? `${l.sig}\n${l.scope === 'top' ? `Only works at the top level: ${BEFORE_SESSION[l.path]}` : 'Only works inside Game.Play and other callbacks'}` : l.sig;
         const name = text('span', 'nm', label);
         const m = metaFor(l);
         b.append(name, text('span', 'meta ' + m.cls, m.text));
@@ -417,7 +421,7 @@ export function initLines({ editor, openReference }: Deps) {
     { key: 'meta', label: 'Show type and default', hint: 'Beside each name, e.g. bool · false' },
     { key: 'marks', label: 'Mark names the handler already uses', hint: '✓ and the value it is set to' },
     { key: 'jump', label: 'Jump to names that are already set', hint: 'Instead of adding a second line. Shift+click still inserts.' },
-    { key: 'dim', label: 'Dim names that don’t work at the cursor', hint: 'Context and Player only work inside Game.Play and other callbacks' },
+    { key: 'dim', label: 'Dim names that don’t work at the cursor', hint: 'Context and Player only work inside Game.Play and other callbacks; Game.GUID, MaxPlayers or AddOption only outside them' },
     { key: 'wholeLine', label: 'Insert whole lines', hint: 'On an empty line an option becomes Game.X = ;' },
     { key: 'values', label: 'Suggest values after inserting', hint: 'Enum values, true / false' },
     { key: 'deprecated', label: 'Show deprecated names', advanced: true },
