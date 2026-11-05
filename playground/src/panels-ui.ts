@@ -30,6 +30,21 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
     lines.style.width = sizes.lines ? `${sizes.lines}px` : '';
     lines.classList.toggle('custom-h', !!sizes.sheet);
     if (sizes.sheet) lines.style.setProperty('--sheet-h', `${sizes.sheet}vh`);
+    // Screen readers announce a focusable separator's position (a percentage of the space it divides).
+    const value = (id: string, now: number, text: string) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.setAttribute('aria-valuemin', '0');
+      el.setAttribute('aria-valuemax', '100');
+      el.setAttribute('aria-valuenow', String(Math.round(now)));
+      el.setAttribute('aria-valuetext', text);
+    };
+    const left = (sizes.main ?? 0.5) * 100;
+    value('split-main', left, `code ${Math.round(left)}%, results ${Math.round(100 - left)}%`);
+    const lw = sizes.lines ?? (lines.offsetWidth || 320);
+    value('split-lines', Math.min(100, (lw / Math.max(1, main.clientWidth)) * 100), `Lines list ${Math.round(lw)} pixels wide`);
+    const sh = sizes.sheet ?? 60;
+    value('split-sheet', sh, `list ${Math.round(sh)}% of the screen high`);
     opts.refresh();
   }
 

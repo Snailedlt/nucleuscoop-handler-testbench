@@ -182,7 +182,7 @@ const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus
 const build = { bench: rev(path.join(here, '..')), core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
 // What's new, from ../CHANGELOG.md: dated sections ("## 2026-11-05"), newest first, in emoji groups
 // ("### ✨ New"); each bullet starts with a **short summary**, and may have a screenshot under it
-// ("  ![alt](docs/images/changelog/x.png)", copied to changes/ next to the page). "Unreleased" is only
+// ("  ![alt](docs/images/changelog/x-light.png)", plus x-dark.png beside it, copied to changes/ next to the page). "Unreleased" is only
 // shown in preview builds (--preview).
 function changes() {
   const text = fs.readFileSync(path.join(here, '..', 'CHANGELOG.md'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
@@ -202,7 +202,12 @@ function changes() {
         items.push({ group, ...(m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' }) });
       } else {
         const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.png)\)/);
-        if (img && items.length) items[items.length - 1].image = { alt: img[1], file: img[2] };
+        if (img && items.length) {
+          // x-light.png with an x-dark.png beside it: What's new shows the one for the viewer's theme.
+          const dark = img[2].replace(/-light\.png$/, '-dark.png');
+          const hasDark = dark !== img[2] && fs.existsSync(path.join(here, '..', 'docs', 'images', 'changelog', dark));
+          items[items.length - 1].image = { alt: img[1], file: img[2], ...(hasDark ? { dark } : {}) };
+        }
       }
     }
     if (items.length) out.push({ id, items });
@@ -250,37 +255,68 @@ function pageHtml(inlineHub) {
     .replace('/*APP_JS*/', () => js);
 }
 const html = pageHtml(true);
-const standalone = (body) => `<!doctype html>
+// The workbench as its own page. page.html starts with what belongs in <head> (title, the theme
+// script, fonts), before its first <style>; the Claude artifact host takes it as is.
+const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
+const WB_DESC = 'Write a Nucleus Co-op handler in the browser and see what Nucleus will make of it: checks the way Nucleus runs it, one-click fixes, and what each player gets.';
+const SEO = `<link rel="canonical" href="${PAGES_BASE}">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nucleus Handler Workbench">
+<meta property="og:title" content="Nucleus Handler Workbench">
+<meta property="og:description" content="${WB_DESC}">
+<meta property="og:url" content="${PAGES_BASE}">
+<meta property="og:image" content="${PAGES_BASE}start/og.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="760">
+<meta property="og:image:alt" content="The workbench checking a verified Hub handler, each problem explained, with a one-click fix">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Nucleus Handler Workbench', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any (web browser)', browserRequirements: 'Requires JavaScript', description: WB_DESC, url: PAGES_BASE, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, isAccessibleForFree: true })}</script>`;
+const standalone = (page, seo = '') => {
+  const at = page.indexOf('<style>');
+  let head = page.slice(0, at).replace(/<meta name="claude:[^>]*>\n?/g, '');
+  // The public site's title says what it is to someone searching; the app's own stays short.
+  if (seo) head = head.replace(/<title>[^<]*<\/title>/, '<title>Nucleus Co-op Handler Workbench: write and check handlers in your browser</title>');
+  return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="description" content="Write a Nucleus Co-op handler and see what Nucleus will make of it: checks, fixes, and what each player gets.">
+<meta name="description" content="${WB_DESC}">
+<meta name="theme-color" content="#10a3e8">
+<meta name="color-scheme" content="light dark">
+${head.trim()}
+${seo}
 <style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; height: 100%; } body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }</style>
 </head>
 <body>
-${body}
+<noscript><p style="padding:16px">The Nucleus Handler Workbench checks Nucleus Co-op handlers in your browser, and needs JavaScript. See <a href="start/">what it does</a>.</p></noscript>
+${page.slice(at)}
 </body>
 </html>
 `;
+};
 
 fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
 // The same page as a standalone site (GitHub Pages): the document wrapper and base styles that the
 // Claude artifact host otherwise adds.
 fs.mkdirSync(path.join(here, 'dist', 'pages'), { recursive: true });
-fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(pageHtml(false)));
+fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(pageHtml(false), SEO));
+fs.writeFileSync(path.join(here, 'dist', 'pages', 'icon.png'), Buffer.from(fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim(), 'base64'));
+// For search engines (submit it in Search Console: a project site can't have its own robots.txt).
+fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
 // Screenshots in What's new, loaded only when it is opened.
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'changes'), { recursive: true });
-for (const c of CHANGES) for (const it of c.items) if (it.image) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', it.image.file), path.join(here, 'dist', 'pages', 'changes', it.image.file));
+for (const c of CHANGES) for (const it of c.items) for (const f of it.image ? [it.image.file, it.image.dark].filter(Boolean) : []) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
 // One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
 fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'llms.txt'), fs.readFileSync(path.join(here, 'src', 'llms.txt'), 'utf8'));
 // The intro page to share with testers and contributors: /start/ on the Pages site.
-const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 const startDir = path.join(here, 'dist', 'pages', 'start');
 fs.mkdirSync(startDir, { recursive: true });
 // The newest extension release, pre-releases included (GitHub's /releases/latest skips those).
@@ -306,11 +342,12 @@ fs.writeFileSync(
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
     .replaceAll('__PROBES__', String(probes.length)),
 );
-for (const [dir, files] of [
-  [path.join(here, '..', 'docs', 'images'), ['check.png', 'lines-tree.png']],
-  [path.join(coreRepo, 'docs', 'images'), ['vscode-problems.png', 'vscode-try-it.png', 'vscode-hover.png']],
-]) for (const f of files) fs.copyFileSync(path.join(dir, f), path.join(startDir, f));
-fs.copyFileSync(path.join(startDir, 'check.png'), path.join(startDir, 'og.png'));
+// Screenshots, each in light and dark (the page shows the viewer's theme).
+for (const [dir, names] of [
+  [path.join(here, '..', 'docs', 'images'), ['check', 'lines-tree']],
+  [path.join(coreRepo, 'docs', 'images'), ['vscode-problems', 'vscode-try-it', 'vscode-hover']],
+]) for (const n of names) for (const t of ['light', 'dark']) fs.copyFileSync(path.join(dir, `${n}-${t}.png`), path.join(startDir, `${n}-${t}.png`));
+fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).
 {

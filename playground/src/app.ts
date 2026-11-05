@@ -1,4 +1,5 @@
 import { applyTheme, initDevBar } from './devbar';
+import { watchPictures } from './themed';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
@@ -28,6 +29,7 @@ import { initWakaTime } from './wakatime';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
+watchPictures();
 declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; lint?: { errors: number; warnings: number } }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
@@ -236,6 +238,8 @@ editor.on('change', () => {
     /* ignore */
   }
 });
+// The hidden textarea CodeMirror types into is what screen readers see: name it.
+editor.getInputField().setAttribute("aria-label", "Handler code");
 
 // Completion
 function hinter(cm: any) {
@@ -738,14 +742,14 @@ function renderApi(q: string) {
     let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
     for (const e of search(q, 30)) if (!entries.some((x) => x.path === e.path)) entries.push(e);
     let head = '';
-    if (exact.kind === 'enum') head = `<article class="api"><h4>enum Nucleus.${esc(exact.name)}</h4>${md(exact.doc ?? '')}<p class="mono">${Object.entries(exact.values).map(([k, v]) => `${esc(k)} = ${v}`).join(' · ')}</p></article>`;
-    if (exact.kind === 'class') head = `<article class="api"><h4>new Nucleus.${esc(exact.name)}(${exact.params.join(', ')})</h4>${md(exact.doc)}</article>`;
+    if (exact.kind === 'enum') head = `<article class="api"><h3>enum Nucleus.${esc(exact.name)}</h3>${md(exact.doc ?? '')}<p class="mono">${Object.entries(exact.values).map(([k, v]) => `${esc(k)} = ${v}`).join(' · ')}</p></article>`;
+    if (exact.kind === 'class') head = `<article class="api"><h3>new Nucleus.${esc(exact.name)}(${exact.params.join(', ')})</h3>${md(exact.doc)}</article>`;
     if (exact.kind === 'none' && exact.didYouMean) head = `<p class="muted">"${esc(q)}" isn't part of the handler API. Did you mean <button class="link" data-q="${esc(exact.didYouMean)}">${esc(exact.didYouMean)}</button>?</p>`;
     entries = entries.slice(0, 30);
     el.innerHTML =
       head +
       (entries.length || head
-        ? entries.map((e) => `<article class="api"><h4>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h4>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
+        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
         : `<p class="empty">Nothing matches "${esc(q)}".</p>`);
   }
   el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) =>
@@ -1434,7 +1438,7 @@ function showProposal(base: string, code: string, changes: string[], before: { e
     ${changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
     ${delta}
     ${reason && (aiAuto.checked || introduced.length || bigRewrite || edited) ? `<p class="note">${esc(aiAuto.checked ? reason : reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, ''))}</p>` : ''}
-    <div class="diff-wrap"><table class="diff"><tbody>${rows}</tbody></table></div>
+    <div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>
     <div class="ai-actions">${
       state === 'applied'
         ? '<button class="btn" id="ai-undo" type="button">Undo</button><button class="btn" id="ai-close" type="button">Close</button>'

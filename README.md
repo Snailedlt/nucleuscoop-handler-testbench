@@ -7,12 +7,12 @@ Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) ga
 **Browser workbench: https://snailedlt.github.io/nucleuscoop-handler-testbench/** (from `playground/`): check a handler, fix it, and see what Nucleus sets up for each player, in the browser. Nothing to install.
 
 <p>
-  <img src="docs/images/check.png" width="49%" alt="Check: Skyrim Together Reborn, a verified Hub handler, with its five ProtoController5 to 9 lines flagged and explained">
-  <img src="docs/images/try-it.png" width="49%" alt="Try it: StardewValley with 4 players, each player's window and the settings files Nucleus would change">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/check-dark.png"><img src="docs/images/check-light.png" width="49%" alt="Check: Skyrim Together Reborn, a verified Hub handler, with its five ProtoController5 to 9 lines flagged and explained"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/try-it-dark.png"><img src="docs/images/try-it-light.png" width="49%" alt="Try it: StardewValley with 4 players, each player's window and the settings files Nucleus would change"></picture>
 </p>
 <p>
-  <img src="docs/images/fix-all.png" width="49%" alt="Fix all: the automatic fixes for a handler with common mistakes, as a list and a diff, before you accept them">
-  <img src="docs/images/phone.png" width="24%" alt="The workbench on a phone: the Check results for the example handler">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/fix-all-dark.png"><img src="docs/images/fix-all-light.png" width="49%" alt="Fix all: the automatic fixes for a handler with common mistakes, as a list and a diff, before you accept them"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/phone-dark.png"><img src="docs/images/phone-light.png" width="24%" alt="The workbench on a phone: the Check results for the example handler"></picture>
 </p>
 
 ## What it does

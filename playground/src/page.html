@@ -105,6 +105,7 @@ a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 :root[data-site="v3"] .player { border-top: 0; border-left: 3px solid var(--pc, var(--line)); padding-left: 12px; }
 .player.p1 { --pc: var(--p1); } .player.p2 { --pc: var(--p2); } .player.p3 { --pc: var(--p3); } .player.p4 { --pc: var(--p4); }
 .player.p5 { --pc: var(--p5); } .player.p6 { --pc: var(--p6); } .player.p7 { --pc: var(--p7); } .player.p8 { --pc: var(--p8); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 h1 { font: var(--display-weight) 19px/1.1 var(--font-display); font-stretch: var(--display-stretch); letter-spacing: -.01em; margin: 0; text-wrap: balance; }
 .sub { color: var(--muted); font-size: 12.5px; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; align-items: center; }
@@ -270,7 +271,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #news-body .rel-date { font-weight: 700; font-size: 14.5px; }
 #news-body .rel-count { margin-left: auto; color: var(--muted); font-size: 12px; }
 #news-body .rel-body { padding: 4px 14px 12px; }
-#news-body h4 { margin: 12px 0 4px; font-size: 13.5px; }
+#news-body h3 { margin: 12px 0 4px; font-size: 13.5px; }
 #news-body ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 #news-body ul.thanks { list-style: none; padding-left: 0; }
 #news-body li strong { display: block; }
@@ -416,7 +417,7 @@ table { border-collapse: collapse; width: 100%; }
 .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
 #api-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 12px; }
 .api { border-bottom: 1px solid var(--line); padding: 8px 0; }
-.api h4 { margin: 0 0 4px; font: 600 13px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.api h3 { margin: 0 0 4px; font: 600 13px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 dialog { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); color: var(--fg); padding: 18px; width: min(520px, calc(100vw - 32px)); box-sizing: border-box; }
 dialog::backdrop { background: rgba(10, 15, 22, .45); }
@@ -452,7 +453,7 @@ dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
 #hub-intro { margin: 0 0 10px; font-size: 12.5px; max-width: 65ch; }
 #hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .hub-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.hub-item h4 { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+.hub-item h3 { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
 .hub-meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; font-variant-numeric: tabular-nums; grid-column: 1; }
 .hub-actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; }
 .hub-lint { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -515,7 +516,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .plain-title { font-weight: 600; }
 .plain-why { margin: 2px 0 0; }
 .tech { margin-top: 4px; font-size: 12px; color: var(--muted); }
-.banner .small { font-size: 12px; margin-top: 4px; opacity: .85; overflow-wrap: anywhere; font-weight: 400; }
+.banner .small { font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; font-weight: 400; }
 .tech[open] summary { color: var(--muted); }
 .tech summary { margin: 0; font-size: 12px; }
 .fix.primary { background: var(--accent); color: var(--accent-fg); }
@@ -556,7 +557,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   header { flex-wrap: nowrap !important; align-items: center; order: 10; flex: none; }
   .app { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; }
   body.keybar-on header, body.keybar-est header { display: none !important; }
-  header .brand h1, header .brand .sub { display: none; }
+  header .brand .sub { display: none; }
+  /* still the page's heading for screen readers and search engines, just not shown */
+  header .brand h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   header .toolbar { width: auto !important; flex: none; }
   header .toolbar .btn { padding: 8px 10px; }
   /* Handler / Results in the header row, between the logo and the menus */
@@ -712,7 +715,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   </header>
 
   <div id="updated" role="status" hidden><span id="updated-text"></span> <button class="link" type="button" id="updated-open">What's new</button><button class="btn icon" type="button" id="updated-close" aria-label="Dismiss">×</button></div>
-  <div class="main" id="main" data-view="results">
+  <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
         <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Copy or download the handler" aria-label="Copy or download the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
@@ -722,7 +725,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div class="code-row">
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>
         <div id="editor"><div id="sig" hidden></div></div>
-        <aside id="lines" aria-label="Names a handler can use" hidden>
+        <section id="lines" aria-label="Names a handler can use" hidden>
           <div class="splitter" id="split-lines" role="separator" aria-orientation="vertical" aria-label="Resize the Lines list (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div>
           <div class="sheet-grip" id="split-sheet" role="separator" aria-orientation="horizontal" aria-label="Resize the list (double-click to reset)" title="Drag to resize · double-tap to reset" tabindex="0"></div>
           <div class="lines-head">
@@ -739,7 +742,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <div id="lines-flash" role="status" hidden></div>
           <div id="lines-list"></div>
           <div id="lines-info" aria-live="polite"></div>
-        </aside>
+        </section>
       </div>
       <div id="probstrip" hidden>
         <button class="btn icon" type="button" id="ps-prev" aria-label="Previous problem">‹</button>
@@ -767,7 +770,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <button role="tab" data-tab="api" type="button" title="Every option and function a handler can use">Reference</button>
         <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes"></span></button>
       </div>
-      <div role="tabpanel" id="panel-problems">
+      <div role="tabpanel" id="panel-problems"><h2 class="sr-only">Check</h2>
         <div class="verdict" id="verdict">
           <div id="status"></div>
           <div class="ai-bar" id="ai-bar">
@@ -789,7 +792,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         </div>
         <ul id="problems"></ul>
       </div>
-      <div role="tabpanel" id="panel-simulate" hidden>
+      <div role="tabpanel" id="panel-simulate" hidden><h2 class="sr-only">Try it</h2>
         <div class="panel-tools">
           <label>Players <select id="sim-players"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
           <label>Monitor <select id="sim-res"><option value="1920x1080" selected>1920×1080</option><option value="2560x1440">2560×1440</option><option value="3840x2160">3840×2160</option></select></label>
@@ -801,13 +804,13 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div id="sim-matrix" hidden></div>
         <div id="sim-out"></div>
       </div>
-      <div role="tabpanel" id="panel-api" hidden>
+      <div role="tabpanel" id="panel-api" hidden><h2 class="sr-only">Reference</h2>
         <input id="api-q" type="search" placeholder="Search the handler API: KillMutex, window title, Context.ModifySaveFile…" aria-label="Search the handler API">
         <div id="api-results"></div>
       </div>
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
-  </div>
+  </main>
   <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button></footer>
 </div>
 

@@ -3,15 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nucleus Handler Tools</title>
+<title>Nucleus Co-op Handler Tools: VS Code extension and browser workbench</title>
 <meta name="description" content="A VS Code extension and a browser workbench for Nucleus Co-op handlers: catch what Nucleus silently ignores and see what each player gets. Beta testers wanted.">
+<link rel="canonical" href="__BASE__start/">
+<link rel="icon" type="image/png" href="../icon.png">
+<link rel="apple-touch-icon" href="../icon.png">
+<meta name="color-scheme" content="light dark">
+<script>/* the workbench's theme choice (Settings → Theme), applied before first paint */
+try { var m = localStorage.getItem('nucleus-workbench-dev-mode'); if (m === 'light' || m === 'dark') document.documentElement.dataset.theme = m; } catch (e) {}</script>
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Nucleus Handler Workbench">
 <meta property="og:title" content="Nucleus Handler Tools: testers wanted">
 <meta property="og:description" content="VS Code extension + browser workbench for Nucleus Co-op handlers. Catch mistakes before Nucleus does, see what each player gets. 5 minutes to try.">
 <meta property="og:url" content="__BASE__start/">
 <meta property="og:image" content="__BASE__start/og.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="760">
+<meta property="og:image:alt" content="The Nucleus Handler Workbench checking a verified Hub handler: five controller slots Nucleus doesn't have, each explained, with a one-click fix">
+<meta name="twitter:title" content="Nucleus Handler Tools: testers wanted">
+<meta name="twitter:description" content="VS Code extension + browser workbench for Nucleus Co-op handlers. Catch mistakes before Nucleus does, see what each player gets.">
+<meta name="twitter:image" content="__BASE__start/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+{"@type":"SoftwareApplication","name":"SplitScreen.Me for VS Code","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, macOS, Linux","description":"A VS Code extension for Nucleus Co-op handlers: checks the handler the way Nucleus runs it, documents every option as you type, and shows what each player gets.","url":"https://github.com/Snailedlt/splitscreenme-vscode","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true},
+{"@type":"WebApplication","name":"Nucleus Handler Workbench","applicationCategory":"DeveloperApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","description":"Write a Nucleus Co-op handler in the browser and see what Nucleus will make of it: checks, automatic fixes, and each player's setup.","url":"__BASE__","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true}]}</script>
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#10a3e8">
 <style>
@@ -36,7 +50,7 @@ h2 { font-size: 22px; margin: 44px 0 12px; }
 h3 { font-size: 17px; margin: 0 0 6px; }
 p { margin: 0 0 12px; }
 code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
-.kicker { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--brand); }
+.kicker { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 .lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
 .ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
 .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: 6.4px; font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--surface); }
@@ -49,6 +63,7 @@ code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg
 figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 figure a { display: block; }
 figure img { display: block; width: 100%; height: auto; }
+figure a:focus-visible { outline-offset: -3px; }
 figcaption { padding: 10px 12px; font-size: 14px; color: var(--muted); }
 figcaption strong { color: var(--fg); }
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
@@ -58,13 +73,15 @@ ol, ul { margin: 0 0 12px; padding-left: 22px; }
 li { margin: 4px 0; }
 .facts { list-style: none; padding: 0; display: grid; gap: 8px; }
 .facts li { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 6px; padding: 10px 12px; margin: 0; }
-footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); }
+footer { max-width: 980px; margin: 0 auto; padding: 16px 16px 40px; border-top: 1px solid var(--line); }
+main { padding-bottom: 32px; }
 @media (max-width: 760px) { .shots, .cards { grid-template-columns: 1fr; } main { padding-top: 20px; } }
 </style>
 </head>
 <body>
 <main>
-  <span class="kicker">Beta · testers wanted</span>
+  <header>
+  <p class="kicker">Beta · testers wanted</p>
   <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
   <p class="lede">A VS Code extension and a browser workbench that check your handler the way Nucleus runs it, explain every option as you type, and show what each player gets, without starting Nucleus or the game.</p>
   <div class="ctas">
@@ -73,8 +90,10 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Send feedback</a>
   </div>
   <p class="small">The workbench needs no install. Paste a handler, or open one of the verified Hub handlers.</p>
+  </header>
 
-  <h2>What it catches</h2>
+  <section aria-labelledby="catches">
+  <h2 id="catches">What it catches</h2>
   <ul class="facts">
     <li><strong>Lines Nucleus quietly ignores.</strong> A misspelled option or <code>Player.ProtoController5</code> (only 1–4 exist) runs without an error and does nothing. 16 verified Hub handlers have that one.</li>
     <li><strong>Code Nucleus can't run.</strong> Its script engine (Jint 2.11.58) only takes ES5: arrow functions, template literals and <code>includes()</code> break the handler.</li>
@@ -83,17 +102,20 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   </ul>
   <p class="small">Every check is tested against the real Jint engine (__PROBES__ probes), and every week against the verified Hub handlers: no errors on any of them, and Try it agrees with the real engine.</p>
 
-  <h2>See it</h2>
+  </section>
+
+  <section aria-labelledby="see">
+  <h2 id="see">See it</h2>
   <div class="shots">
-    <figure><a href="vscode-problems.png"><img src="vscode-problems.png" width="1440" height="860" loading="lazy" alt="VS Code showing handler problems underlined, with the Problems panel listing them"></a>
+    <figure><a href="vscode-problems-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="vscode-problems-dark.png"><img src="vscode-problems-light.png" width="2160" height="1290" loading="lazy" alt="VS Code showing handler problems underlined, with the Problems panel listing them"></picture></a>
       <figcaption><strong>VS Code: checks as you type.</strong> Problems are underlined and listed, with quick fixes.</figcaption></figure>
-    <figure><a href="vscode-try-it.png"><img src="vscode-try-it.png" width="1440" height="860" loading="lazy" alt="VS Code Try it panel beside a handler, listing each player's window, launch arguments and file changes"></a>
+    <figure><a href="vscode-try-it-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="vscode-try-it-dark.png"><img src="vscode-try-it-light.png" width="2160" height="1290" loading="lazy" alt="VS Code Try it panel beside a handler, listing each player's window, launch arguments and file changes"></picture></a>
       <figcaption><strong>Try it:</strong> each player's window, launch arguments and file changes, updated as you edit.</figcaption></figure>
-    <figure><a href="vscode-hover.png"><img src="vscode-hover.png" width="1440" height="860" loading="lazy" alt="Hover documentation for a Game option in VS Code"></a>
+    <figure><a href="vscode-hover-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="vscode-hover-dark.png"><img src="vscode-hover-light.png" width="2160" height="1290" loading="lazy" alt="Hover documentation for a Game option in VS Code"></picture></a>
       <figcaption><strong>Docs on hover and completion</strong> for the whole handler API.</figcaption></figure>
-    <figure><a href="check.png"><img src="check.png" width="1280" height="760" loading="lazy" alt="The browser workbench listing problems found in a Hub handler"></a>
+    <figure><a href="check-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="check-dark.png"><img src="check-light.png" width="1920" height="1140" loading="lazy" alt="The browser workbench listing problems found in a Hub handler"></picture></a>
       <figcaption><strong>Browser workbench:</strong> the same checks and Try it, nothing to install. Share a handler with a link.</figcaption></figure>
-    <figure><a href="lines-tree.png"><img src="lines-tree.png" width="1600" height="800" loading="lazy" alt="The workbench's Lines list as a tree at System › IO › File, with the docs for File.Exists"></a>
+    <figure><a href="lines-tree-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="lines-tree-dark.png"><img src="lines-tree-light.png" width="1600" height="800" loading="lazy" alt="The workbench's Lines list as a tree at System › IO › File, with the docs for File.Exists"></picture></a>
       <figcaption><strong>Lines:</strong> every name a handler can use, as a tree (Game, Context, System…), with docs and how many Hub handlers use it. Click to insert.</figcaption></figure>
   </div>
   <h3 class="after-shots">Also in the workbench</h3>
@@ -104,6 +126,9 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     <li><strong>WakaTime</strong>, if you use it: your handler time in your dashboard (off by default; the code is never sent).</li>
   </ul>
 
+  </section>
+
+  <section aria-labelledby="install">
   <h2 id="install">Try it in 5 minutes</h2>
   <div class="cards">
     <div class="card"><h3>1. Install</h3>
@@ -119,7 +144,10 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   </div>
   <p class="small">More detail: the <a href="https://github.com/Snailedlt/splitscreenme-vscode/blob/main/TESTING.md">testing guide</a>.</p>
 
-  <h2>Want to help build it?</h2>
+  </section>
+
+  <section aria-labelledby="help">
+  <h2 id="help">Want to help build it?</h2>
   <p>Handler authors know Nucleus better than any linter. Contributions are welcome, especially:</p>
   <ul>
     <li><strong>Option docs:</strong> better explanations and examples for <code>Game.*</code> options.</li>
@@ -132,9 +160,20 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   </div>
   <p class="small">Also included: a <code>nucleus</code> command-line checker, and an optional skill for writing handlers with an AI agent (Claude Code).</p>
 
-  <footer class="small">Beta. It checks the handler script, not the game: windows, focus and input still need a real test in Nucleus. Nothing on your computer is touched.</footer>
+  </section>
 </main>
+<footer class="small">Beta. It checks the handler script, not the game: windows, focus and input still need a real test in Nucleus. Nothing on your computer is touched.</footer>
 <script>
+// Screenshots follow the theme: the system's, or the one picked in the workbench (src/themed.ts does
+// the same there). A click opens the full-size image that is showing.
+(function () {
+  var t = document.documentElement.dataset.theme;
+  var media = t === 'dark' ? 'all' : t === 'light' ? 'not all' : '(prefers-color-scheme: dark)';
+  document.querySelectorAll('source[data-dark]').forEach(function (s) { s.media = media; });
+  document.querySelectorAll('a[data-full]').forEach(function (a) {
+    a.addEventListener('click', function () { var i = a.querySelector('img'); if (i && i.currentSrc) a.href = i.currentSrc; });
+  });
+})();
 // The link above is the newest release when the site was built; this swaps in the newest one now
 // (pre-releases included), so a new release shows up without a rebuild. Keeps the built link on any error.
 (function () {
