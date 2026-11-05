@@ -15,7 +15,7 @@ import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
-import { zipStore } from './zipstore';
+import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
@@ -118,6 +118,8 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
 
 const STORE_KEY = 'nucleus-workbench-draft';
 let initial = BUGGY;
+// Files that came with the opened package (besides handler.js); saved with it, and kept over a reload.
+let packageFiles: PackageFile[] = storedFiles();
 try {
   initial = localStorage.getItem(STORE_KEY) || BUGGY;
 } catch {
@@ -823,6 +825,10 @@ function renderDocHead() {
   if (h) parts.push(`<span>v${h.version} by ${esc(h.owner)}</span><span class="chip ok">verified on the Hub</span><a href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a>`);
   else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
   else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
+  if (packageFiles.length) {
+    const list = packageFiles.map((f) => `${f.name} (${fileSize(f.data.length)})`).join('\n');
+    parts.push(`<span class="chip" title="${esc('Saved with the handler:\n' + list)}">+ ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'}</span>`);
+  }
   if (doc.hash || canShare()) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this handler (or just the selected lines)">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
   $('#doc-meta').querySelector('#copy-link')?.addEventListener('click', copyLink);
@@ -864,7 +870,13 @@ async function copyLink() {
   }
 }
 
+function setPackageFiles(files: PackageFile[]) {
+  packageFiles = files;
+  renderDocHead();
+}
 function loadSource(src: string, meta: DocMeta) {
+  packageFiles = [];
+  storeFiles([]);
   editor.setValue(src);
   editor.clearHistory();
   loadedText = src;
@@ -1498,58 +1510,25 @@ narrowQuery.addEventListener('change', () => editor.refresh());
 // ---------------------------------------------------------------------------
 // Open a file from the computer (picker or drag & drop): .js, or a .zip/.nc package
 
-async function readZipHandler(buf: ArrayBuffer): Promise<string | null> {
-  const v = new DataView(buf);
-  let eocd = -1;
-  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) {
-    if (v.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
-  }
-  if (eocd < 0) return null;
-  const count = v.getUint16(eocd + 10, true);
-  let p = v.getUint32(eocd + 16, true);
-  const dec = new TextDecoder();
-  let pick: { method: number; start: number; size: number; name: string } | null = null;
-  for (let i = 0; i < count; i++) {
-    const method = v.getUint16(p + 10, true);
-    const csize = v.getUint32(p + 20, true);
-    const nlen = v.getUint16(p + 28, true);
-    const xlen = v.getUint16(p + 30, true);
-    const clen = v.getUint16(p + 32, true);
-    const local = v.getUint32(p + 42, true);
-    const name = dec.decode(new Uint8Array(buf, p + 46, nlen));
-    p += 46 + nlen + xlen + clen;
-    const isRootJs = !name.includes('/') && /\.js$/i.test(name);
-    if (isRootJs && (!pick || name.toLowerCase() === 'handler.js')) {
-      const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
-      pick = { method, start, size: csize, name };
-    }
-  }
-  if (!pick) return null;
-  const data = new Uint8Array(buf, pick.start, pick.size);
-  if (pick.method === 0) return dec.decode(data);
-  if (pick.method === 8 && 'DecompressionStream' in window) {
-    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw' as CompressionFormat));
-    return await new Response(stream).text();
-  }
-  return null;
-}
-
 async function openFile(file: File) {
   try {
-    let text: string | null;
     if (/\.(zip|nc)$/i.test(file.name)) {
-      text = await readZipHandler(await file.arrayBuffer());
-      if (text === null) {
+      const pkg = await readPackage(await file.arrayBuffer());
+      if (!pkg) {
         toast(`${file.name} doesn't contain a handler.js this page can read.`);
         return;
       }
-    } else {
-      text = await file.text();
+      loadSource(pkg.handler.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name.replace(/\.(zip|nc)$/i, '.js'), kind: 'draft' });
+      // The package's other files: kept, and saved with the handler.
+      setPackageFiles(pkg.files);
+      const kept = storeFiles(pkg.files);
+      const n = pkg.files.length;
+      const lost = pkg.unreadable.length ? ` This browser couldn't unpack ${pkg.unreadable.join(', ')}, so saving won't include ${pkg.unreadable.length === 1 ? 'it' : 'them'}.` : '';
+      toast(n ? `Opened ${file.name} with ${n} other file${n === 1 ? '' : 's'}. They're saved with the handler.${kept ? '' : " They're too big to keep after a reload."}${lost}` : `Opened ${file.name}.${lost}`);
+      return;
     }
-    loadSource(text.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name.replace(/\.(zip|nc)$/i, '.js'), kind: 'draft' });
+    const text = await file.text();
+    loadSource(text.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name, kind: 'draft' });
     toast(`Opened ${file.name}.`);
   } catch {
     toast(`Couldn't read ${file.name}.`);
@@ -1627,6 +1606,9 @@ const handlerFileName = () => {
 $('#save').addEventListener('click', () => {
   const name = handlerFileName();
   $('#save-name').textContent = `${name}.zip`;
+  const extra = $('#save-files');
+  extra.hidden = !packageFiles.length;
+  extra.textContent = packageFiles.length ? `With the package's other ${packageFiles.length === 1 ? 'file' : `${packageFiles.length} files`}: ${packageFiles.map((f) => f.name).join(', ')}.` : '';
   $('#save-js').textContent = `${name}.js`;
   saveDialog.showModal();
 });
@@ -1635,7 +1617,7 @@ $('#save-go').addEventListener('click', async () => {
   const name = handlerFileName();
   const errorsLeft = current.filter((d) => d.severity === 'error').length;
   try {
-    const zip = zipStore([{ name: 'handler.js', data: new TextEncoder().encode(editor.getValue()) }]);
+    const zip = buildPackage(editor.getValue(), packageFiles);
     await downloads.save({ filename: `${name}.zip`, data: zip });
     saveDialog.close();
     toast(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
@@ -1762,6 +1744,10 @@ const codeDialog = $('#code-dialog') as HTMLDialogElement;
 $('#code-menu-open').addEventListener('click', () => {
   codeDialog.querySelectorAll<HTMLButtonElement>('.dl').forEach((b) => (b.hidden = !downloads));
   (codeDialog.querySelector('[data-code=link]') as HTMLButtonElement).hidden = !(doc.hash || canShare());
+  const withFiles = packageFiles.length ? ` · with ${packageFiles.length} other file${packageFiles.length === 1 ? '' : 's'}` : '';
+  codeDialog.querySelector('[data-code=zip] small')!.textContent = 'Drag it onto Extract handler in Nucleus Co-op' + withFiles;
+  codeDialog.querySelector('[data-code=nc] small')!.textContent = 'The same package with the extension Hub downloads use' + withFiles;
+  codeDialog.querySelector('[data-code=js] small')!.innerHTML = packageFiles.length ? 'The code only, without the package\'s other files' : 'For the <code>handlers</code> folder or your own editor';
   codeDialog.showModal();
 });
 $('#code-close').addEventListener('click', () => codeDialog.close());
@@ -1776,7 +1762,7 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
     const text = new TextEncoder().encode(editor.getValue());
     const filename = `${name}.${kind}`;
     try {
-      await downloads.save({ filename, data: kind === 'js' ? text : zipStore([{ name: 'handler.js', data: text }]) });
+      await downloads.save({ filename, data: kind === 'js' ? text : buildPackage(editor.getValue(), packageFiles) });
       toast(`Saved ${filename}.`);
     } catch (e: any) {
       if (e?.code !== 'declined') toast("Couldn't save the file here. Use Copy the code instead.");

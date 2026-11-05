@@ -1,5 +1,5 @@
 // Minimal ZIP writer (stored, no compression) for the browser: enough for a Nucleus
-// handler package, which Nucleus' "Extract handler" accepts as .zip.
+// handler package, which Nucleus' "Extract handler" accepts as .zip. A name ending in / is a folder entry.
 const TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
@@ -49,7 +49,7 @@ export function zipStore(files: { name: string; data: Uint8Array }[]): Uint8Arra
     cd.setUint32(20, f.data.length, true);
     cd.setUint32(24, f.data.length, true);
     cd.setUint16(28, name.length, true);
-    cd.setUint32(38, 0x20, true);
+    cd.setUint32(38, f.name.endsWith('/') ? 0x10 : 0x20, true); // folder or file (MS-DOS attributes)
     cd.setUint32(42, offset, true);
     central.push(new Uint8Array(cd.buffer), name);
     offset += 30 + name.length + f.data.length;

@@ -25,6 +25,10 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **One Settings window, with tabs.** General, Editor, Lines, Help and Advanced; the Lines list's ⚙️ opens it on the Lines tab, so every setting is in one place.
 - **A misspelled function is an error, not a skipped setting.** Calling a name that doesn't exist stops Nucleus, and Check now says so.
 
+### 🐛 Fixed
+
+- **Packages keep their other files.** Opening a .zip or .nc with more than handler.js (Goldberg files, configs, DLLs) and saving it again used to drop them. Now they're kept, shown as "+ 3 files" next to the name, and saved back unchanged in .zip and .nc.
+
 ### 🙏 Thanks
 
 - **messenils** for the System.IO lines and the tree idea.
