@@ -52,6 +52,7 @@ export function initLines({ editor, openReference }: Deps) {
     shorthand: true, // "kmd" finds KillMutexDelay
     info: true, // details of the hovered name at the bottom
     wide: false, // a wider column
+    tree: false, // "as a tree" in Group
   };
   type Prefs = typeof DEFAULTS;
   const prefs: Prefs = { ...DEFAULTS };
@@ -138,10 +139,10 @@ export function initLines({ editor, openReference }: Deps) {
     const t = l.typeLabel + (l.default !== undefined && l.default.length < 12 ? ` · ${l.default}` : '');
     return { text: t, cls: '' };
   }
-  // Tree (Advanced mode): Game, Context, System… one level at a time, like a file browser.
+  // Tree (a list setting, off by default): Game, Context, System… one level at a time, like a file browser.
   // Typing a filter searches everything, as a flat list.
   let treePath: string[] = [];
-  const advanced = () => document.documentElement.dataset.mode === 'dev';
+  const treeOn = () => prefs.tree;
   const ROOT_ORDER = ['Game', 'Context', 'Player', 'ProtoInput', 'System', 'Nucleus'];
   const segs = (l: Line) => l.path.replace(/^new /, '').split('.');
   function renderTree(shown: Line[]) {
@@ -199,7 +200,7 @@ export function initLines({ editor, openReference }: Deps) {
   function render() {
     const q = ($('#lines-q') as HTMLInputElement).value.trim().toLowerCase();
     const base = LINES.filter((l) => (prefs.deprecated || !l.deprecated) && (!kinds.size || kinds.has(l.kind)));
-    if (prefs.group === 'tree' && advanced() && !q) return renderTree(base);
+    if (prefs.group === 'tree' && treeOn() && !q) return renderTree(base);
     const shown = base.filter((l) => matches(l, q, prefs.shorthand));
     const groups = new Map<string, Line[]>();
     for (const l of shown) {
@@ -356,16 +357,15 @@ export function initLines({ editor, openReference }: Deps) {
   }
   const groupSel = $('#lines-group') as HTMLSelectElement;
   const sortSel = $('#lines-sort') as HTMLSelectElement;
-  // "as a tree" exists only in Advanced mode (added and removed, since some phones ignore hidden options).
+  // "as a tree" is in Group only with the Tree setting on (added and removed, since some phones ignore hidden options).
   const treeOpt = groupSel.querySelector('option[value=tree]') as HTMLOptionElement;
   const syncTreeOption = () => {
-    if (advanced()) {
+    if (treeOn()) {
       if (!treeOpt.parentElement) groupSel.append(treeOpt);
     } else treeOpt.remove();
-    groupSel.value = prefs.group === 'tree' && !advanced() ? 'object' : prefs.group;
+    groupSel.value = prefs.group === 'tree' && !treeOn() ? 'object' : prefs.group;
   };
   syncTreeOption();
-  new MutationObserver(syncTreeOption).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
   sortSel.value = prefs.sort;
   const savePrefs = () => store.set(PREFS_KEY, JSON.stringify(prefs));
   groupSel.addEventListener('change', () => ((prefs.group = groupSel.value as any), savePrefs(), render()));
@@ -386,6 +386,7 @@ export function initLines({ editor, openReference }: Deps) {
     { key: 'params', label: 'Insert parameter names for functions', advanced: true },
     { key: 'shorthand', label: 'Shorthand filter', hint: '"kmd" finds KillMutexDelay', advanced: true },
     { key: 'info', label: 'Details of the hovered name', hint: 'Signature and docs at the bottom of the list', advanced: true },
+    { key: 'tree', label: 'Tree grouping', hint: 'Adds "as a tree" to Group: browse Game, Context, System… one level at a time', advanced: true },
     { key: 'wide', label: 'Wider column', hint: '400 px instead of 310, for long names and values. You can also drag the left edge of the list.', advanced: true, wideOnly: true },
   ];
   const panel = $('#lines-settings');
@@ -461,6 +462,7 @@ export function initLines({ editor, openReference }: Deps) {
     (sortSel.querySelector('option[value=used]') as HTMLOptionElement).hidden = !prefs.usage;
     info.hidden = !prefs.info;
     $('#lines').classList.toggle('wide', prefs.wide);
+    syncTreeOption();
     editor.refresh();
     render();
   }
@@ -492,8 +494,6 @@ export function initLines({ editor, openReference }: Deps) {
       render();
     }
   });
-
-  new MutationObserver(() => open && render()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
 
   function setOpen(o: boolean, focus = false) {
     open = o;

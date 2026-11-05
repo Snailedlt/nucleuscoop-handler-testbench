@@ -111,7 +111,7 @@ const GUI_TIPS = ([
   { id: 'g-info', text: 'In Lines, the (i) next to a name shows its docs without inserting it.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-resize', text: 'Drag the bars between panels to resize them. Double-click a bar to reset it, or use Reset panel sizes in Settings.' },
   { id: 'g-copy-typing', text: 'Typing on a phone? Copy… at the end of the symbol keys copies the code, or a link to just the lines you selected.' },
-  { id: 'g-tree', text: 'In Advanced mode, Lines can be a tree: Group › as a tree, then tap Game, Context or System to go a level deeper.', action: { label: 'Show Lines', run: 'lines' } },
+  { id: 'g-tree', text: 'Lines can be a tree: turn on Tree grouping in its ⚙️ (under Advanced), pick Group › as a tree, then tap Game, Context or System to go a level deeper.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-settings', text: 'The gear at the top has the theme, font size, line wrapping and the phone symbol bar.' },
 ] as Tip[]).map((t): Tip => ({ ...t, kind: 'gui' }));
 

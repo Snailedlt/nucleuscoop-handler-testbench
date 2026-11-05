@@ -17,7 +17,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **System.IO and other .NET calls in Lines.** `System.IO.File.Copy`, `Exists`, `Delete`, `Path.Combine`, `Directory.CreateDirectory`, `Thread.Sleep` and more, with docs, completion and how many Hub handlers use them. Suggested by messenils.
-- **Lines as a tree (Advanced mode).** Group › as a tree starts at Game, Context, Player, System and Nucleus; tap one to go a level deeper (System › IO › File), and back with the path at the top. Typing a filter still searches everything. Idea: messenils.
+- **Lines as a tree.** Turn on Tree grouping in the Lines ⚙️ (under Advanced), then Group › as a tree starts at Game, Context, Player, System and Nucleus; tap one to go a level deeper (System › IO › File), and back with the path at the top. Typing a filter still searches everything. Idea: messenils.
 
 ### 🛠️ Improved
 
