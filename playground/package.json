@@ -3,10 +3,13 @@
   "private": true,
   "description": "Browser workbench for Nucleus Co-op handlers: linter, API search and a Game.Play simulator. Built from splitscreenme-vscode's core.",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "smoke": "node smoke.mjs"
   },
   "devDependencies": {
+    "axe-core": "4.10.2",
     "codemirror": "5.65.16",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0"
   }
 }

@@ -56,6 +56,11 @@ jobs:
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground
+      - name: Browser smoke test (Check, Fix all, Try it, packages, themes, keyboard, accessibility)
+        run: |
+          npx playwright install --with-deps chromium
+          node smoke.mjs
+        working-directory: playground
       - name: Anything new to deploy? (the live build.txt is the last deploy's fingerprint)
         id: changed
         run: |

@@ -94,6 +94,8 @@ const HANDLER_TIPS = ([
   { id: 'g-path-combine', text: '`System.IO.Path.Combine(Game.Folder, "file.ini")` joins paths with the right `\\` between the parts, so you don\'t have to write them by hand.' },
   { id: 'g-file-copy', text: '`System.IO.File.Copy(from, to)` throws if `to` already exists; inside `Game.Play` that ends the session. Pass `true` as a third argument to overwrite.' },
   { id: 'g-sse', text: 'Nucleus never calls `Game.SetupSse`. Put that code in `Game.Play` instead.' },
+  { id: 'h-plugins', text: 'A handler can bring its own .NET plugins: list them in pluginsInfo.txt in its folder ("#Name#MyLib.dll#MyLib.MyClass") and Nucleus adds Name as a global. Open the package so Check knows them.' },
+  { id: 'h-option-text', text: 'Give Game.AddOption text values ("Yes", "No"), not true/false or numbers: a saved profile gives every option back as text, so a comparison with true stops working.' },
 ] as Tip[]).map((t): Tip => ({ ...t, kind: 'handler' }));
 
 const GUI_TIPS = ([
@@ -114,6 +116,7 @@ const GUI_TIPS = ([
   { id: 'g-copy-typing', text: 'Typing on a phone? Copy… at the end of the symbol keys copies the code, or a link to just the lines you selected.' },
   { id: 'g-tree', text: 'Lines opens as a tree: tap Game, Context or System to go a level deeper, or type to search everything. Group › by object shows one long list instead.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-package-files', text: 'Open a .zip or .nc with Goldberg files, configs or DLLs: they\'re kept, and Save puts them back in the package unchanged.' },
+  { id: 'g-package-view', text: 'A handler opened with its package shows "+ N files" above the code: click it to see each file, where Nucleus installs it, and what\'s inside. The Fallout New Vegas Multiplayer example has some.' },
   { id: 'g-wakatime', text: 'Use WakaTime? Add your API key in Settings › Advanced: writing, testing in Try it and reading the docs show up as separate categories. The code itself is never sent.' },
   { id: 'g-settings', text: 'The gear at the top has the theme, font size, line wrapping and the phone symbol bar.' },
 ] as Tip[]).map((t): Tip => ({ ...t, kind: 'gui' }));

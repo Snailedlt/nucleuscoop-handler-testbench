@@ -34,6 +34,7 @@ declare const BUILD: { bench?: string; core: string; nucleus: string | null; jin
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; lint?: { errors: number; warnings: number } }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null };
+declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
 declare const BOT_TEMPLATES: { commit: string | null; templates: { id: string; name: string; source: string }[] };
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -114,6 +115,10 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
   if (d.rule === 'unknown-member' && /four controllers/.test(d.message)) {
     return { title: "A controller slot Nucleus doesn't have", why: 'Nucleus and Proto Input take at most four controllers per instance (ProtoController1 to 4), so this line does nothing. Removing it is safe.' };
   }
+  if (d.rule === 'guid-changed') return { title: 'A different GUID than on the Hub', why: 'Nucleus files each player\'s game and profiles under the GUID: after this update their game disappears from the list. Keep the Hub version\'s GUID.' };
+  if (d.rule === 'file-encoding') return { title: 'Not saved as UTF-8', why: 'Nucleus reads handlers as UTF-8, so accented letters arrive broken. Save the file as UTF-8 and retype them.' };
+  if (d.rule === 'type-mismatch' && /saved profile/.test(d.message)) return { title: 'Option values a profile turns into text', why: 'After players save a profile, true comes back as "True" and 2 as "2", so comparisons stop matching. Use text values.' };
+  if (d.rule === 'hub-install-parse' && /backslash/.test(d.message)) return { title: 'A backslash in the game name', why: 'The Hub install names the handler file after the game name, and a backslash makes it fail. Leave it out.' };
   if (d.rule === 'undefined-name') {
     return /unless it's a plugin/.test(d.message)
       ? { title: 'A name Nucleus may not know', why: "Nothing in the handler defines it. That's fine if it's one of the handler's plugins (listed in pluginsInfo.txt); otherwise Nucleus stops with an error here." }
@@ -175,8 +180,28 @@ document.documentElement.dataset.mode = mode;
 type Analysis = { diagnostics: Diagnostic[]; fixable: number };
 let worker: Worker | null = null;
 let reqId = 0;
-const pending = new Map<number, { text: string; plugins?: string[]; resolve: (a: Analysis) => void }>();
-const analyzeHere = (text: string, plugins?: string[]): Analysis => ({ diagnostics: lint(text, { plugins }), fixable: fixAll(text, { plugins }).applied.length });
+type Ctx = { plugins?: string[]; published?: { version?: number; guid?: string } };
+/** What the linter needs besides the code: the package's plugins and the Hub version's GUID. */
+function lintCtx(): Ctx {
+  let published: Ctx['published'];
+  try {
+    published = doc.published; // `doc` is set further down; an early lint has none yet
+  } catch {
+    published = undefined;
+  }
+  return { plugins: lintPlugins(), published };
+}
+const pending = new Map<number, { text: string; ctx: Ctx; resolve: (a: Analysis) => void }>();
+const analyzeHere = (text: string, ctx: Ctx): Analysis => ({ diagnostics: lint(text, ctx), fixable: fixAll(text, ctx).applied.length });
+/** Game.GUID's string value in a handler source. */
+const guidOf = (src: string): string | undefined => {
+  const m = src.match(/^\s*Game\.GUID\s*=\s*("(?:[^"\\\r\n]|\\.)*")/m);
+  try {
+    return m ? JSON.parse(m[1]) : undefined;
+  } catch {
+    return undefined;
+  }
+};
 try {
   worker = new Worker((globalThis as any).__WORKER_URL);
   worker.onmessage = (e: MessageEvent<Analysis & { id: number }>) => {
@@ -188,19 +213,19 @@ try {
     worker = null;
     for (const [id, p] of pending) {
       pending.delete(id);
-      p.resolve(analyzeHere(p.text, p.plugins));
+      p.resolve(analyzeHere(p.text, p.ctx));
     }
   };
 } catch {
   worker = null;
 }
 function analyze(text: string): Promise<Analysis> {
-  const plugins = lintPlugins();
-  if (!worker) return Promise.resolve(analyzeHere(text, plugins));
+  const ctx = lintCtx();
+  if (!worker) return Promise.resolve(analyzeHere(text, ctx));
   const id = ++reqId;
   return new Promise((resolve) => {
-    pending.set(id, { text, plugins, resolve });
-    worker!.postMessage({ id, text, plugins });
+    pending.set(id, { text, ctx, resolve });
+    worker!.postMessage({ id, text, ...ctx });
   });
 }
 const sevClass: Record<string, string> = { error: 'error', warning: 'warning', info: 'info', hint: 'hint' };
@@ -261,6 +286,18 @@ editor.on('change', () => {
 });
 // The hidden textarea CodeMirror types into is what screen readers see: name it.
 editor.getInputField().setAttribute("aria-label", "Handler code");
+// CodeMirror scrolls the code in a div of its own, which keyboard users reach through the editor: one
+// tab stop (the scroller) that hands focus to the editor, instead of two (WCAG 2.1.1).
+{
+  const scroller = editor.getScrollerElement();
+  scroller.tabIndex = 0;
+  scroller.setAttribute('role', 'region');
+  scroller.setAttribute('aria-label', 'Handler code');
+  editor.getInputField().tabIndex = -1;
+  scroller.addEventListener('focus', (e) => {
+    if (e.target === scroller) editor.focus();
+  });
+}
 
 // Completion
 function hinter(cm: any) {
@@ -826,7 +863,7 @@ $('#count-probes').textContent = String(PROBES.length); // becomes "agree/total"
 // ---------------------------------------------------------------------------
 // Documents: what's in the editor, where it came from, shareable #links
 
-interface DocMeta { name: string; kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new'; hash?: string; hubIndex?: number }
+interface DocMeta { name: string; kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new'; hash?: string; hubIndex?: number; /** The Hub version's GUID, for guid-changed. */ published?: { version?: number; guid?: string } }
 const META_KEY = 'nucleus-workbench-doc';
 let doc: DocMeta = { name: 'Untitled handler', kind: 'draft' };
 let loadedText = editor.getValue();
@@ -849,7 +886,7 @@ function renderDocHead() {
   else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
   if (packageFiles.length) {
     const list = packageFiles.map((f) => `${f.name} (${fileSize(f.data.length)})`).join('\n');
-    parts.push(`<span class="chip" title="${esc('Saved with the handler:\n' + list)}">+ ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'}</span>`);
+    parts.push(`<button type="button" class="chip chip-btn" id="files-open" aria-haspopup="dialog" title="${esc('Saved with the handler:\n' + list)}">+ ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'}</button>`);
   }
   if (doc.hash || canShare()) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this handler (or just the selected lines)">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
@@ -918,6 +955,53 @@ function loadSource(src: string, meta: DocMeta) {
 }
 editor.on('change', () => renderDocHead());
 
+function openExamplePackage(id: string) {
+  const e = EXAMPLE_PACKAGES.find((x) => x.id === id);
+  if (!e) return;
+  const files: PackageFile[] = e.files.map((f) => ({ name: f.name, data: Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0)) }));
+  loadSource(e.handler, { name: e.name, kind: 'example', hash: `package-${id}`, published: { guid: guidOf(e.handler) } });
+  setPackageFiles(files);
+  storeFiles(files);
+  toast(`Opened with ${files.length} other files. "+ ${files.length} files" above the code shows them.`);
+}
+
+// The package's other files, and where the Hub install puts them: the contents of each top-level
+// folder go into handlers\<GameName>\ (DownloadPrompt.ExtractHandler), which is Game.Folder.
+const filesDialog = $('#files-dialog') as HTMLDialogElement;
+function previewOf(data: Uint8Array): string | null {
+  if (data.length > 64 * 1024) return null;
+  const le = data[0] === 0xff && data[1] === 0xfe;
+  const be = data[0] === 0xfe && data[1] === 0xff;
+  try {
+    if (le || be) return new TextDecoder(le ? 'utf-16le' : 'utf-16be').decode(data.subarray(2));
+    if (data.includes(0)) return null;
+    return new TextDecoder('utf-8', { fatal: true }).decode(data).replace(/^\uFEFF/, '');
+  } catch {
+    return null;
+  }
+}
+function openFilesDialog() {
+  const m = editor.getValue().match(/^\s*Game\.GameName\s*=\s*"([^"\r\n]*)"/m);
+  const folder = m ? m[1].replace(/[\/:*?"<>|]/g, '') : '<GameName>';
+  const dest = (name: string) => `handlers\\${folder}\\${name.split('/').slice(1).join('\\')}`;
+  const rows = packageFiles
+    .map((f) => {
+      const text = previewOf(f.data);
+      const top = f.name.includes('/');
+      return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(f.data.length)}</span></summary>
+        <p class="muted small">${top ? `Installed as <code>${esc(dest(f.name))}</code>` : "At the package's top level: the Hub install keeps only handler.js there, so this file is dropped."}</p>
+        ${text !== null ? `<pre class="pkg-text">${esc(text.slice(0, 20000))}${text.length > 20000 ? '\n…' : ''}</pre>` : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
+    })
+    .join('');
+  $('#files-body').innerHTML = `<p class="muted">A package (.zip or .nc) is <code>handler.js</code> plus folders. Nucleus installs the folders' contents in the handler's folder, <code>handlers\\${esc(folder)}\\</code>, which is <code>Game.Folder</code>. They're saved with the handler.</p>
+    <div class="pkg-file pkg-js"><code>handler.js</code> <span class="muted">the code in the editor</span></div>${rows}`;
+  filesDialog.showModal();
+}
+document.addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest?.('#files-open')) openFilesDialog();
+});
+$('#files-close').addEventListener('click', () => filesDialog.close());
+
 async function openHub(i: number) {
   const h = HUB_EXAMPLES.handlers[i];
   if (h.source === undefined) {
@@ -930,7 +1014,7 @@ async function openHub(i: number) {
       return;
     }
   }
-  loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}` });
+  loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}`, published: { version: h.version, guid: guidOf(h.source) } });
   toast(`Opened ${h.title} v${h.version} from the Hub.`);
 }
 function openTemplate(id: string) {
@@ -969,6 +1053,7 @@ function entries(): OpenEntry[] {
   const list: OpenEntry[] = [
     { group: 'Start', title: 'Open a file…', sub: 'A handler .js, .zip or .nc from your device.', keywords: 'upload import file computer phone device', run: () => ($('#file-input') as HTMLInputElement).click() },
     { group: 'Start', title: 'New handler…', sub: 'Game name, executable and features; generates a handler that passes the linter.', keywords: 'create template', run: () => newDialog.showModal() },
+    ...EXAMPLE_PACKAGES.map((e) => ({ group: 'Start', title: e.title, sub: e.sub, keywords: 'example package zip nc files folder', run: () => openExamplePackage(e.id) })),
     { group: 'Start', title: 'Handler with common mistakes', sub: 'The mistakes Nucleus trips over most; most fix themselves in one click.', keywords: 'example buggy sample', run: () => loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' }) },
     ...BOT_TEMPLATES.templates.map((t) => ({
       group: 'Engine templates',
@@ -1356,7 +1441,7 @@ function aiStatus(text: string) {
 async function runAiFix() {
   if (!sample) return;
   const base = editor.getValue();
-  const before = counts(base);
+  const before = counts(base, lintCtx());
   aiCtl = new AbortController();
   aiBtn.disabled = true;
   aiBox.hidden = false;
@@ -1408,8 +1493,8 @@ aiBtn.addEventListener('click', runAiFix);
 // Fix all: the deterministic, offline fixes (the same as `nucleus lint --fix` and the extension).
 $('#fix-all').addEventListener('click', () => {
   const base = editor.getValue();
-  const before = counts(base);
-  const r = fixAll(base, { plugins: lintPlugins() });
+  const before = counts(base, lintCtx());
+  const r = fixAll(base, lintCtx());
   aiBox.hidden = false;
   boxShows = null;
   if (r.code === base) {
@@ -1435,7 +1520,7 @@ function applyCode(code: string) {
 }
 
 function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }, source: 'AI' | 'Fix all' = 'AI') {
-  const after = counts(code);
+  const after = counts(code, lintCtx());
   const edited = editor.getValue() !== base;
   const better = after.errors < before.errors || (after.errors === before.errors && after.warnings < before.warnings);
   const notWorse = after.errors <= before.errors;
@@ -1452,7 +1537,7 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   const chip = (n: number, kind: string) => `<span class="chip ${n ? kind : 'ok'}">${n} ${kind === 'error' ? 'error' : 'warning'}${n === 1 ? '' : 's'}</span>`;
   const delta = `<div class="ai-delta">Before ${chip(before.errors, 'error')} ${chip(before.warnings, 'warning')} → after ${chip(after.errors, 'error')} ${chip(after.warnings, 'warning')} <span class="muted">· +${added} −${removed} lines</span></div>`;
 
-  const introduced = newProblems(base, code);
+  const introduced = newProblems(base, code, lintCtx());
   const baseLines = base.split('\n').length;
   const bigRewrite = removed > Math.max(20, baseLines * 0.5);
   let reason = '';
@@ -1696,6 +1781,8 @@ function openFromHash(): boolean {
   } else if (h.startsWith('probe-')) {
     const i = PROBES.findIndex((p) => p.name.startsWith(h.slice(6).padStart(2, '0') + '-'));
     if (i >= 0) return openProbe(i), true;
+  } else if (h.startsWith('package-') && EXAMPLE_PACKAGES.some((e) => e.id === h.slice(8))) {
+    return openExamplePackage(h.slice(8)), true;
   } else if (h === 'example-mistakes') {
     return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
   } else if (h.startsWith('template-')) {

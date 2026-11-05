@@ -1,7 +1,7 @@
 // "Fix with AI": asks Claude (the artifact `sample` capability, on the viewer's own
 // account) for a corrected handler. Claude gets two page tools, the real linter and
 // the API lookup, so it can verify its fix before answering.
-import { lint, Diagnostic, lineOf } from '@core/lint';
+import { lint, Diagnostic, lineOf, type LintOptions } from '@core/lint';
 import { lookup, search } from '@core/lookup';
 
 export interface AiFixResult {
@@ -145,15 +145,15 @@ export function hunks(lines: DiffLine[], context = 3): (DiffLine | null)[] {
   return out;
 }
 
-export const counts = (code: string) => {
-  const d = lint(code);
+export const counts = (code: string, ctx: LintOptions = {}) => {
+  const d = lint(code, ctx);
   return { errors: d.filter((x) => x.severity === 'error').length, warnings: d.filter((x) => x.severity === 'warning').length };
 };
 
 /** Problems (errors/warnings) in `after` that `before` didn't have, by rule + message. */
-export function newProblems(before: string, after: string): string[] {
+export function newProblems(before: string, after: string, ctx: LintOptions = {}): string[] {
   const key = (d: Diagnostic) => `${d.rule}|${d.message}`;
-  const sig = (code: string) => lint(code).filter((d) => d.severity === 'error' || d.severity === 'warning');
+  const sig = (code: string) => lint(code, ctx).filter((d) => d.severity === 'error' || d.severity === 'warning');
   const old = new Set(sig(before).map(key));
   return sig(after).filter((d) => !old.has(key(d))).map((d) => `line ${lineOf(after, d.start) + 1}: ${d.message.replace(/`/g, '').replace(/\.\s*$/, '')}`);
 }

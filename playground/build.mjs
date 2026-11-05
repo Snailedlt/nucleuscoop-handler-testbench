@@ -150,6 +150,22 @@ async function hubExamples() {
   return result;
 }
 const hub = await hubExamples();
+// Example packages (examples/README.md): a verified Hub handler with the other files it ships.
+const EXAMPLE_PACKAGES = [
+  { id: 'nvmp', title: 'Fallout New Vegas Multiplayer, with its files', sub: 'A verified Hub handler (v21 by Talos91) whose package adds an NVMP folder with the scripts Game.Play runs.', name: 'Fallout New Vegas Multiplayer.js', hubId: 'vnPXYhWMJJ3FNuQuS' },
+].map((e) => {
+  const dir = path.join(here, 'examples', e.id);
+  const files = [];
+  const walk = (rel) => {
+    for (const d of fs.readdirSync(path.join(dir, rel), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const r = rel ? `${rel}/${d.name}` : d.name;
+      if (d.isDirectory()) walk(r);
+      else if (r !== 'handler.js') files.push({ name: r, b64: fs.readFileSync(path.join(dir, r)).toString('base64') });
+    }
+  };
+  walk('');
+  return { ...e, handler: fs.readFileSync(path.join(dir, 'handler.js'), 'utf8').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'), files };
+});
 
 // Engine templates: the same files the SplitScreen.Me Discord bot sends with /create
 // (SplitScreen-Me/splitscreenme-discordbot, src/handler_templates). Uses --bot <path>,
@@ -253,7 +269,7 @@ for (const h of hub.handlers) {
  *  fetches hub/<id>.js when one is opened, which keeps every visit small. */
 function pageHtml(inlineHub) {
   const handlers = inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h);
-  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
+  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
