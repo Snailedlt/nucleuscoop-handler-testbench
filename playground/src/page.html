@@ -268,6 +268,9 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .set-check small { display: block; color: var(--muted); font-size: 12px; }
 .more-list { display: flex; flex-direction: column; gap: 8px; }
 .more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
+.code-list .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.code-list .btn small { color: var(--muted); font-size: 12px; font-weight: 400; }
+#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; }
 #keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
 #keybar[hidden] { display: none; }
 #keybar button { flex: none; min-width: 40px; height: 38px; padding: 0 10px; font: 600 15px var(--font-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
@@ -589,9 +592,13 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .entry .s { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   /* More: a plain list, like a phone's share sheet */
   #more-dialog { padding-inline: 8px; }
-  #more-dialog .more-list { gap: 0; }
-  #more-dialog .more-list .btn { border: 0; border-radius: 10px; background: none; padding: 14px 12px; font-size: 16px; }
-  #more-dialog .more-list .btn:active { background: var(--surface-2); }
+  #more-dialog .more-list, #code-dialog .more-list { gap: 0; }
+  #code-dialog { padding-inline: 8px; }
+  #code-dialog h2 { padding-inline: 12px; }
+  #code-dialog .actions { display: none; }
+  .code-list .btn small { font-size: 13px; }
+  #more-dialog .more-list .btn, #code-dialog .more-list .btn { border: 0; border-radius: 10px; background: none; padding: 14px 12px; font-size: 16px; }
+  #more-dialog .more-list .btn:active, #code-dialog .more-list .btn:active { background: var(--surface-2); }
   #more-dialog .actions { display: none; }
   /* Settings: the theme as one segmented control, bigger rows, Done always in reach */
   #settings-dialog { padding-bottom: 0; }
@@ -655,7 +662,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
       <button class="btn wide-only" id="copy" type="button" title="Copy the handler source">Copy</button>
       <button class="btn icon wide-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
-      <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: open, new, save, copy">⋯</button>
+      <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: what's new, keyboard shortcuts">⋯</button>
       <button class="btn icon gear" id="settings-open" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
   </header>
@@ -664,7 +671,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Copy or download the handler" aria-label="Copy or download the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
@@ -802,12 +809,19 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="actions"><span class="muted" id="set-build" style="margin-right:auto;font-size:12px"></span><button class="btn primary" type="button" id="settings-close" autofocus>Done</button></div>
 </dialog>
 
+<dialog id="code-dialog" aria-label="Copy or download">
+  <h2>Copy or download</h2>
+  <div class="more-list code-list">
+    <button class="btn" type="button" data-code="copy"><span>Copy the code</span><small>To paste into a .js file or a message</small></button>
+    <button class="btn" type="button" data-code="link"><span>Copy a link</span><small>Opens this handler, or only the selected lines</small></button>
+    <button class="btn dl" type="button" data-code="zip"><span>Download for Nucleus (.zip)</span><small>Drag it onto Extract handler in Nucleus Co-op</small></button>
+    <button class="btn dl" type="button" data-code="js"><span>Download the code (.js)</span><small>For the <code>handlers</code> folder or your own editor</small></button>
+    <button class="btn dl" type="button" data-code="nc"><span>Download as .nc</span><small>The same package with the extension Hub downloads use</small></button>
+  </div>
+  <div class="actions"><button class="btn" type="button" id="code-close">Close</button></div>
+</dialog>
 <dialog id="more-dialog" aria-label="More">
   <div class="more-list">
-    <button class="btn" type="button" data-proxy="#file-open">Open file…</button>
-    <button class="btn" type="button" data-proxy="#new-open">New handler…</button>
-    <button class="btn" type="button" data-proxy="#save" id="more-save">Save for Nucleus</button>
-    <button class="btn" type="button" data-proxy="#copy">Copy the handler</button>
     <button class="btn" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
   </div>

@@ -21,6 +21,7 @@ import { initSettings } from './settings-ui';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
+import { initSheetDrag } from './sheets';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -914,6 +915,7 @@ const outcomeRank = (j: string) => (j === 'LOAD-FAIL' ? 0 : j === 'PLAY-FAIL' ? 
 function entries(): OpenEntry[] {
   const jintLabel: Record<string, string> = { OK: 'runs', LOADED: 'loads', 'LOAD-FAIL': "doesn't load", 'PLAY-FAIL': 'Game.Play throws' };
   const list: OpenEntry[] = [
+    { group: 'Start', title: 'Open a file…', sub: 'A handler .js, .zip or .nc from your device.', keywords: 'upload import file computer phone device', run: () => ($('#file-input') as HTMLInputElement).click() },
     { group: 'Start', title: 'New handler…', sub: 'Game name, executable and features; generates a handler that passes the linter.', keywords: 'create template', run: () => newDialog.showModal() },
     { group: 'Start', title: 'Handler with common mistakes', sub: 'The mistakes Nucleus trips over most; most fix themselves in one click.', keywords: 'example buggy sample', run: () => loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' }) },
     ...BOT_TEMPLATES.templates.map((t) => ({
@@ -1197,7 +1199,6 @@ const panels = initPanels({ refresh: () => editor.refresh(), toast });
 $('#set-reset-sizes').addEventListener('click', () => panels.reset());
 const moreDialog = $('#more-dialog') as HTMLDialogElement;
 $('#more-open').addEventListener('click', () => {
-  ($('#more-save') as HTMLButtonElement).hidden = ($('#save') as HTMLButtonElement).hidden;
   moreDialog.showModal();
 });
 $('#more-close').addEventListener('click', () => moreDialog.close());
@@ -1576,7 +1577,7 @@ let downloads: any = null;
     downloads = {
       save: async ({ filename, data }: { filename: string; data: Uint8Array }) => {
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([data as BlobPart], { type: "application/zip" }));
+        a.href = URL.createObjectURL(new Blob([data as BlobPart], { type: filename.endsWith('.js') ? 'text/javascript' : 'application/zip' }));
         a.download = filename;
         document.body.appendChild(a);
         a.click();
@@ -1701,3 +1702,32 @@ document.querySelectorAll('dialog').forEach((dl) =>
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dl.close();
   }),
 );
+
+// Copy or download, next to the code: copy, a link, and the handler as .zip (with the install
+// steps), .js or .nc.
+const codeDialog = $('#code-dialog') as HTMLDialogElement;
+$('#code-menu-open').addEventListener('click', () => {
+  codeDialog.querySelectorAll<HTMLButtonElement>('.dl').forEach((b) => (b.hidden = !downloads));
+  (codeDialog.querySelector('[data-code=link]') as HTMLButtonElement).hidden = !(doc.hash || canShare());
+  codeDialog.showModal();
+});
+$('#code-close').addEventListener('click', () => codeDialog.close());
+codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
+  b.addEventListener('click', async () => {
+    codeDialog.close();
+    const kind = b.dataset.code;
+    if (kind === 'copy') return ($('#copy') as HTMLButtonElement).click();
+    if (kind === 'link') return copyLink();
+    if (kind === 'zip') return ($('#save') as HTMLButtonElement).click();
+    const name = handlerFileName();
+    const text = new TextEncoder().encode(editor.getValue());
+    const filename = `${name}.${kind}`;
+    try {
+      await downloads.save({ filename, data: kind === 'js' ? text : zipStore([{ name: 'handler.js', data: text }]) });
+      toast(`Saved ${filename}.`);
+    } catch (e: any) {
+      if (e?.code !== 'declined') toast("Couldn't save the file here. Use Copy the code instead.");
+    }
+  }),
+);
+initSheetDrag();
