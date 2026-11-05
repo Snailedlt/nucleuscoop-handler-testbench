@@ -25,10 +25,10 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### 🛠️ Improved
 
 - **Resize the panels.** Drag the edge between the code and the results, the left edge of the Lines list, or (on phones) the top of the Lines sheet. Double-click an edge to reset it, or use Settings › Reset panel sizes. Sizes are kept in your browser.
-- **Much more room on phones.** One header row, Handler and Results at the bottom like an app (hidden while you type), and Lines as a sheet over the lower part of the screen so the code stays in view.
+- **Much more room on phones.** All the buttons share one row at the top (Handler and Results, the menu, Settings), so the code reaches the bottom of the screen, and Lines opens as a sheet over the lower part so the code stays in view.
 - **The line you type stays in view on phones.** When the on-screen keyboard opens, the workbench fits the space above it (it reads the keyboard's height): the header and the tip bar step aside, and the cursor line stays visible above the symbol keys.
 - **Tidier tips on phones.** One line with a large ×; tap it for the whole tip, back, next and Turn off.
-- **Switch handlers from the handler's name.** Click the name above the code to open an example or a Hub handler. It replaces the Examples button, so the top bar on phones has more room.
+- **Switch handlers from the handler's name.** Click the name above the code to open an example or a Hub handler. It replaces the Examples button.
 - **Docs and problems by tap on touch screens.** Tap an underlined word to see its problem and fix, or hold any name for its docs. Hold a button to read what it does without pressing it. The mouse-only pop-ups no longer get stuck on phones.
 - **More tips, on both handlers and the workbench.** Next now takes turns between a tip for writing handlers (when `Game.Play` runs, per-player launch arguments, `Game.Folder` and more) and one for the workbench (Test all combinations, resizing panels, the (i) in Lines and more).
 - **The developer bar fits on phones.** One scrollable row at the top instead of three rows over the page.
