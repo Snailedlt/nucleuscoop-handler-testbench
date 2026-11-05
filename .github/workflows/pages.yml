@@ -61,18 +61,26 @@ jobs:
           npx playwright install --with-deps chromium
           node smoke.mjs
         working-directory: playground
+      - name: A new release section? (the live release.txt is the last announced one)
+        id: release
+        run: |
+          live=$(curl -fsS https://snailedlt.github.io/nucleuscoop-handler-testbench/release.txt || true)
+          now=$(grep -m1 -oE '^## [0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2})?$' CHANGELOG.md | cut -c4- || true)
+          [ -n "$now" ] && echo "$now" > playground/dist/pages/release.txt
+          if [ -n "$now" ] && [ "$live" != "$now" ]; then echo "New: $now (live: ${live:-none})"; echo "id=$now" >> "$GITHUB_OUTPUT"; else echo "No new release section."; fi
       - name: Anything new to deploy? (the live build.txt is the last deploy's fingerprint)
         id: changed
         run: |
           live=$(curl -fsS https://snailedlt.github.io/nucleuscoop-handler-testbench/build.txt || true)
           now=$(cat playground/dist/pages/build.txt)
-          if [ "$live" = "$now" ] && [ "${{ github.event_name }}" != workflow_dispatch ]; then echo "Same as the live site: skipping the deploy."; echo "deploy=false" >> "$GITHUB_OUTPUT"; else echo "deploy=true" >> "$GITHUB_OUTPUT"; fi
+          if [ "$live" = "$now" ] && [ -z "${{ steps.release.outputs.id }}" ] && [ "${{ github.event_name }}" != workflow_dispatch ]; then echo "Same as the live site: skipping the deploy."; echo "deploy=false" >> "$GITHUB_OUTPUT"; else echo "deploy=true" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/upload-pages-artifact@v3
         if: steps.changed.outputs.deploy == 'true'
         with:
           path: playground/dist/pages
     outputs:
       deploy: ${{ steps.changed.outputs.deploy }}
+      release: ${{ steps.release.outputs.id }}
   deploy:
     needs: build
     if: needs.build.outputs.deploy == 'true'
@@ -83,3 +91,16 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+      # The release notes, once per new CHANGELOG.md section: on Discord with a DISCORD_WEBHOOKS
+      # secret (one webhook URL per line), and in the run summary to copy either way.
+      - uses: actions/checkout@v4
+        if: needs.build.outputs.release != ''
+      - name: Announce the update on Discord
+        if: needs.build.outputs.release != ''
+        env:
+          DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+          RELEASE: ${{ needs.build.outputs.release }}
+        run: |
+          node tools/release-post.mjs "$RELEASE" > post.txt
+          node tools/announce.mjs post.txt
+          { echo "### 💬 Workbench update ($RELEASE)"; echo; echo '```text'; cat post.txt; echo '```'; echo; if [ -n "${{ secrets.DISCORD_WEBHOOKS != '' && 'yes' || '' }}" ]; then echo "Posted to Discord automatically (DISCORD_WEBHOOKS)."; else echo "Not posted: add a DISCORD_WEBHOOKS secret (one webhook URL per line) to post it automatically."; fi; } >> "$GITHUB_STEP_SUMMARY"
