@@ -24,6 +24,7 @@ import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
 import { initSheetDrag } from './sheets';
+import { initWakaTime } from './wakatime';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -1611,6 +1612,7 @@ $('#save-go').addEventListener('click', async () => {
   try {
     const zip = buildPackage(editor.getValue(), packageFiles);
     await downloads.save({ filename: `${name}.zip`, data: zip });
+    waka.saved();
     saveDialog.close();
     toast(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
   } catch (e: any) {
@@ -1755,6 +1757,7 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
     const filename = `${name}.${kind}`;
     try {
       await downloads.save({ filename, data: kind === 'js' ? text : buildPackage(editor.getValue(), packageFiles) });
+      waka.saved();
       toast(`Saved ${filename}.`);
     } catch (e: any) {
       if (e?.code !== 'declined') toast("Couldn't save the file here. Use Copy the code instead.");
@@ -1762,3 +1765,37 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
   }),
 );
 initSheetDrag();
+
+// Optional WakaTime (Settings › Advanced): off until an API key is added.
+const waka = initWakaTime({
+  editor,
+  fileName: () => (/\.js$/i.test(doc.name) ? doc.name : `${handlerFileName()}.js`),
+  project: () => editor.getValue().match(/^\s*Game\.GameName\s*=\s*"([^"]*)"/m)?.[1] || 'Nucleus handler',
+  version: BUILD.bench ?? 'dev',
+});
+{
+  const on = $('#set-waka') as HTMLInputElement;
+  const key = $('#set-waka-key') as HTMLInputElement;
+  const url = $('#set-waka-url') as HTMLInputElement;
+  const fields = $('#set-waka-fields');
+  const status = $('#set-waka-status');
+  const sync = () => {
+    const c = waka.get();
+    on.checked = c.on;
+    key.value = c.key;
+    url.value = c.url;
+    fields.hidden = !c.on;
+    status.textContent = waka.status();
+  };
+  sync();
+  on.addEventListener('change', () => (waka.set({ on: on.checked }), sync()));
+  key.addEventListener('change', () => waka.set({ key: key.value.trim() }));
+  url.addEventListener('change', () => waka.set({ url: url.value.trim() }));
+  $('#set-waka-test').addEventListener('click', async () => {
+    waka.set({ key: key.value.trim(), url: url.value.trim() });
+    status.textContent = 'Sending…';
+    status.textContent = await waka.test();
+  });
+  document.addEventListener('open-settings', sync);
+  $('#settings-open').addEventListener('click', sync);
+}
