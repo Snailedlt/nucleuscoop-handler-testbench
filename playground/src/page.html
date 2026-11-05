@@ -426,6 +426,10 @@ table { border-collapse: collapse; width: 100%; }
 .pkg-file summary { cursor: pointer; }
 .pkg-file .small { font-size: 12.5px; margin: 4px 0 0; }
 .pkg-text { max-height: 280px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; background: var(--code-bg); border-radius: var(--r-ctl); font: 12px/1.45 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* The WakaTime key, masked without being a password field (browsers would offer to save it as a login). */
+input.secret:not(.shown) { -webkit-text-security: disc; text-security: disc; }
+#open-body .entry .t .keys { float: right; display: inline-flex; gap: 3px; margin-left: 12px; font-weight: 400; }
+#open-body .entry .t .keys kbd { font: 11px var(--font-mono); padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); color: var(--muted); }
 dialog { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); color: var(--fg); padding: 18px; width: min(520px, calc(100vw - 32px)); box-sizing: border-box; }
 dialog::backdrop { background: rgba(10, 15, 22, .45); }
 dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
@@ -736,7 +740,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <div class="splitter" id="split-lines" role="separator" aria-orientation="vertical" aria-label="Resize the Lines list (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div>
           <div class="sheet-grip" id="split-sheet" role="separator" aria-orientation="horizontal" aria-label="Resize the list (double-click to reset)" title="Drag to resize · double-tap to reset" tabindex="0"></div>
           <div class="lines-head">
-            <input id="lines-q" type="search" placeholder="Filter: mutex, Width…" aria-label="Filter the names">
+            <input id="lines-q" type="search" placeholder="Filter: mutex, Width…" aria-label="Filter the names" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
             <button class="btn icon" id="lines-gear" type="button" aria-label="List settings" title="List settings" aria-expanded="false" aria-controls="lines-settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <button class="btn icon" id="lines-close" type="button" aria-label="Close the list">×</button>
           </div>
@@ -781,7 +785,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div class="verdict" id="verdict">
           <div id="status"></div>
           <div class="ai-bar" id="ai-bar">
-            <button class="btn primary" id="fix-all" type="button" title="Apply every safe automatic fix (Alt+Shift+F)">Fix problems</button>
+            <button class="btn primary" id="fix-all" type="button" title="Apply every safe automatic fix (also in the command palette, Ctrl+Shift+P)">Fix problems</button>
             <button class="btn" id="ai-fix" type="button" hidden>Fix with AI</button>
             <label class="toggle" title="Apply fixes without reviewing the diff first"><input type="checkbox" id="ai-auto"> Apply without review</label>
             <input id="ai-note" type="text" placeholder="For AI: anything else to change" aria-label="Extra instructions for Claude" hidden>
@@ -812,7 +816,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div id="sim-out"></div>
       </div>
       <div role="tabpanel" id="panel-api" hidden><h2 class="sr-only">Reference</h2>
-        <input id="api-q" type="search" placeholder="Search the handler API: KillMutex, window title, Context.ModifySaveFile…" aria-label="Search the handler API">
+        <input id="api-q" type="search" placeholder="Search the handler API: KillMutex, window title, Context.ModifySaveFile…" aria-label="Search the handler API" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <div id="api-results"></div>
       </div>
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
@@ -826,7 +830,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <dialog id="open-dialog" aria-label="Open">
   <div class="open-head">
-    <input id="open-q" type="search" placeholder="Search examples, Hub handlers, engine probes and actions" aria-label="Search" autocomplete="off">
+    <input id="open-q" type="search" placeholder="Search examples, Hub handlers, engine probes and actions" aria-label="Search" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <button class="btn" type="button" id="open-close" autofocus>Close</button>
   </div>
   <div id="open-body" class="open-body" role="listbox" aria-label="Results"></div>
@@ -880,7 +884,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <div class="set-sec"><h3>WakaTime</h3>
       <label class="set-check"><input type="checkbox" id="set-waka"> <span>Track my time in WakaTime<small>Like WakaTime's VS Code plugin: sends the handler's name, the game's name, the time, what you're doing (writing, testing, reading docs), line numbers and how many lines you changed. Never the code. Your API key stays in this browser.</small></span></label>
       <div class="set-fields" id="set-waka-fields">
-        <label class="set-field">API key <input type="password" id="set-waka-key" autocomplete="off" spellcheck="false" placeholder="waka_…"></label>
+        <label class="set-field">API key <input type="text" id="set-waka-key" class="secret" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" placeholder="waka_…"></label>
         <label class="set-field">This computer's name <small>How WakaTime lists this computer; empty: the browser and system</small><input type="text" id="set-waka-machine" spellcheck="false" maxlength="64"></label>
         <label class="set-field">Server <small>Leave empty for WakaTime; for Wakapi or another server, its API address</small><input type="url" id="set-waka-url" spellcheck="false" placeholder="https://api.wakatime.com/api/v1"></label>
         <div class="set-waka-row"><button class="btn" type="button" id="set-waka-test">Send a test</button><span class="muted small" id="set-waka-status" role="status"></span></div>
@@ -929,7 +933,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl.</p>
   <table class="keys"><tbody>
     <tr class="kh"><th colspan="2">Workbench</th></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>K</kbd> · <kbd>Ctrl</kbd> <kbd>P</kbd> · <kbd>F1</kbd></td><td>Examples, Hub handlers and every action</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>P</kbd> · <kbd>F1</kbd></td><td>Command palette: every command (format, fix, try it, theme…)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>P</kbd> · <kbd>Ctrl</kbd> <kbd>K</kbd></td><td>Examples and Hub handlers (type <kbd>&gt;</kbd> for commands)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Enter</kbd></td><td>Try it (simulate the handler)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save for Nucleus</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>B</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the Lines list</td></tr>
@@ -938,7 +943,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <tr class="kh"><th colspan="2">Problems</th></tr>
     <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>.</kbd></td><td>Problems and fixes on this line</td></tr>
-    <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>F</kbd></td><td>Fix everything that can be fixed</td></tr>
+    <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>F</kbd></td><td>Format the code (indentation and spacing)</td></tr>
     <tr class="kh"><th colspan="2">Editing</th></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Suggestions (also after typing <kbd>.</kbd>)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>/</kbd></td><td>Comment or uncomment the line</td></tr>

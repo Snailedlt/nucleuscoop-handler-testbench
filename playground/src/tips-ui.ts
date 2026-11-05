@@ -39,7 +39,7 @@ export function initTips({ editor, actions, toast }: Deps) {
 
   function render(tip: Tip, contextual: boolean) {
     bar.classList.toggle('contextual', contextual);
-    label.textContent = contextual ? 'Heads up' : 'Tip';
+    label.textContent = contextual ? 'Heads up' : tip.topic ?? 'Tip';
     body.textContent = '';
     // `code` spans
     tip.text.split(/(`[^`]+`)/).forEach((part) => {

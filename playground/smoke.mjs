@@ -68,6 +68,7 @@ for (const theme of ['light', 'dark']) {
   await p.goto(BASE + '#example-mistakes');
   await p.waitForSelector('.CodeMirror');
   await p.waitForTimeout(1200);
+  check((await p.$$('input[type=password]')).length === 0, `${theme}: no password fields (browsers would offer to save a login)`);
   const before = await count(p);
   check(before > 0 && /can't use this handler/.test(await p.innerText('#panel-problems')), `${theme}: Check lists the example's problems (${before})`);
   await axe(p, `${theme}, Check`);
@@ -96,6 +97,22 @@ for (const theme of ['light', 'dark']) {
   const typed = focused && (await p.keyboard.type('// typed'), await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue().includes('// typed')));
   check(typed, `${theme}: Tab reaches the code editor, and typing goes into it`);
   await axe(p, `${theme}, Try it`);
+  // The command palette (Ctrl+Shift+P, as in VS Code) and Format document (Shift+Alt+F).
+  await p.click('.CodeMirror');
+  await p.keyboard.press('Control+Shift+P');
+  await p.waitForTimeout(300);
+  check((await p.inputValue('#open-q')) === '>' && /Format document/.test(await p.innerText('#open-body')), `${theme}: Ctrl+Shift+P opens the command palette`);
+  await p.fill('#open-q', '>format');
+  await p.waitForTimeout(200);
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(400);
+  await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setValue('Game.GUID="A";\nGame.GameName="A";\nGame.ExecutableName="a.exe";\nGame.Play=function(){\nContext.StartArguments="-w";\n};\n'));
+  await p.waitForTimeout(300);
+  await p.click('.CodeMirror');
+  await p.keyboard.press('Shift+Alt+F');
+  await p.waitForTimeout(400);
+  check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) === 'Game.GUID = "A";\nGame.GameName = "A";\nGame.ExecutableName = "a.exe";\nGame.Play = function () {\n    Context.StartArguments = "-w";\n};\n', `${theme}: Shift+Alt+F formats the code`);
+  check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
   // Dialogs
   for (const [open, name] of [['#doc-switch', 'Open'], ['#settings-open', 'Settings'], ['#news-open-2', "What's new"], ['#help-open', 'Keyboard shortcuts']]) {
     await p.click(open);

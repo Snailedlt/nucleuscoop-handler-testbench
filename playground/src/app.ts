@@ -17,6 +17,7 @@ import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
+import { formatHandler } from '@core/format';
 import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
@@ -1032,7 +1033,68 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 // ---------------------------------------------------------------------------
 // Open dialog (Ctrl+K): starters, Hub handlers, probes and actions in one searchable list
 
-interface OpenEntry { group: string; title: string; sub?: string; badges?: string; keywords?: string; run: () => void; lint?: () => string }
+interface OpenEntry { group: string; title: string; sub?: string; badges?: string; keywords?: string; run: () => void; lint?: () => string; /** A command's shortcut, shown like VS Code's palette. */ keys?: string }
+const click = (sel: string) => () => ($(sel) as HTMLElement).click();
+function commandList(): OpenEntry[] {
+  const c = (title: string, keys: string, keywords: string, run: () => void, sub?: string): OpenEntry => ({ group: 'Actions', title, keys, keywords, run, sub });
+  const list: OpenEntry[] = [
+    c('Format document', 'Shift+Alt+F', 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
+    c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
+    c('Try it: simulate the handler', 'Ctrl+Enter', 'run play simulate try', () => selectTab('simulate')),
+    c('Test all combinations', '', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
+    c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
+    c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
+    c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
+    c('Go to line…', 'Ctrl+G', 'line jump goto', () => { editor.focus(); editor.execCommand('jumpToLine'); }),
+    c('Show or hide Lines', 'Ctrl+B', 'lines list names insert sidebar', () => lines.toggle(), 'Every option, Context member and enum, click to insert'),
+    c('Search the handler API', '', 'api docs reference search', () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); }),
+    c('Open examples and Hub handlers', 'Ctrl+P', 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
+    c('Open a file…', '', 'open upload import file zip nc', click('#file-open')),
+    c('New handler…', '', 'new create template', () => newDialog.showModal()),
+    c('Copy the handler', '', 'copy clipboard code', click('#copy')),
+    c('Copy a link to this handler', '', 'share link url copy', click('[data-code=link]')),
+    c('Download for Nucleus (.zip)', 'Ctrl+S', 'save download zip nc package nucleus', click('[data-code=zip]')),
+    c('Download the code (.js)', '', 'save download js file', click('[data-code=js]')),
+    c('Theme: light', '', 'theme light colour color appearance', () => setThemeMode('light')),
+    c('Theme: dark', '', 'theme dark colour color appearance', () => setThemeMode('dark')),
+    c('Theme: follow the system', '', 'theme auto system colour color appearance', () => setThemeMode('auto')),
+    c('Settings', 'Ctrl+,', 'settings preferences options font size wrap', () => settings.open()),
+    c('Turn Advanced mode on or off', '', 'advanced mode rule details probes', click('#advanced')),
+    c('Turn tips on or off', '', 'tips hints help', () => tips.toggle()),
+    c('Reset panel sizes', '', 'layout resize panels reset width', () => panels.reset()),
+    c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
+    c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
+    c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
+  ];
+  if (packageFiles.length) list.splice(16, 0, c("Show the package's files", '', 'package files folder zip nc', openFilesDialog));
+  if (!aiBtn.hidden) list.splice(2, 0, c('Fix with AI', '', 'ai claude fix', click('#ai-fix')));
+  return list;
+}
+// Settings › Theme, from the palette.
+function setThemeMode(m: 'light' | 'dark' | 'auto') {
+  try {
+    if (m === 'auto') localStorage.removeItem('nucleus-workbench-dev-mode');
+    else localStorage.setItem('nucleus-workbench-dev-mode', m);
+  } catch {}
+  applyTheme();
+  toast(m === 'auto' ? 'The theme follows your system.' : `Theme: ${m}.`);
+}
+
+/** Format document: indentation and spacing (core/format.ts guarantees the tokens don't change). */
+function formatDocument() {
+  const text = editor.getValue();
+  const r = formatHandler(text);
+  if (!r.ok) return toast(r.reason);
+  if (!r.changed) return toast('Already formatted.');
+  const cur = editor.getCursor();
+  const top = editor.getScrollInfo().top;
+  const d = editor.getDoc();
+  d.replaceRange(r.code, d.posFromIndex(0), d.posFromIndex(text.length), '+format');
+  editor.setCursor({ line: Math.min(cur.line, editor.lineCount() - 1), ch: cur.ch });
+  editor.scrollTo(null, top);
+  toast('Formatted: indentation and spacing. Ctrl+Z undoes it.');
+}
+
 const hubLint = new Map<number, string>();
 function hubLintBadges(i: number): string {
   let html = hubLint.get(i);
@@ -1062,17 +1124,8 @@ function entries(): OpenEntry[] {
       keywords: `template engine ${t.id}`,
       run: () => openTemplate(t.id),
     })),
-    { group: 'Actions', title: 'Fix problems automatically', sub: 'Alt+Shift+F', keywords: 'fix all repair', run: () => ($('#fix-all') as HTMLButtonElement).click() },
-    { group: 'Actions', title: 'Simulate the handler', sub: 'Ctrl+Enter: launch arguments and file edits per player', keywords: 'run play simulate', run: () => selectTab('simulate') },
-    { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: colour mode, contrast check and other developer tools', keywords: 'dev theme colour color dark light contrast', run: () => devBar.toggle() },
-    { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
-    { group: 'Actions', title: 'Show or hide the list of names', sub: 'Ctrl+Shift+L: every option, Context member and enum, click to insert', keywords: 'lines list names insert pawno functions', run: () => lines.toggle() },
-    { group: 'Actions', title: 'Reset panel sizes', sub: 'The code, results and Lines panels back to their default sizes', keywords: 'layout resize panels reset width', run: () => panels.reset() },
-    { group: 'Actions', title: "What's new", sub: 'Recent changes to the workbench', keywords: 'changelog changes news updates release notes', run: () => news.open() },
-    { group: 'Actions', title: 'Settings', sub: 'Theme, editor, tips and the Lines list', keywords: 'settings preferences options theme dark light font size wrap', run: () => settings.open() },
-    { group: 'Actions', title: 'Turn tips on or off', sub: 'Tips and heads-ups under the code', keywords: 'tips hints help clippy', run: () => tips.toggle() },
-    { group: 'Actions', title: 'Copy the handler', keywords: 'clipboard', run: () => ($('#copy') as HTMLButtonElement).click() },
-    { group: 'Actions', title: 'Keyboard shortcuts', keywords: 'help keys', run: () => helpDialog.showModal() },
+    // Commands: Ctrl+Shift+P or F1 (or ">" in the search), as in VS Code.
+    ...commandList(),
     ...HUB_EXAMPLES.handlers.map((h, i) => ({
       group: 'Hub handlers',
       title: h.title,
@@ -1102,10 +1155,15 @@ let shownEntries: OpenEntry[] = [];
 let activeEntry = 0;
 
 function renderOpen() {
-  const q = ($('#open-q') as HTMLInputElement).value.trim().toLowerCase();
-  const all = entries();
+  const raw = ($('#open-q') as HTMLInputElement).value;
+  // ">" first: commands only, as in VS Code's Ctrl+Shift+P.
+  const commandMode = raw.trimStart().startsWith('>');
+  const q = (commandMode ? raw.trimStart().slice(1) : raw).trim().toLowerCase();
+  const all = commandMode ? commandList() : entries();
+  ($('#open-q') as HTMLInputElement).placeholder = commandMode ? 'Type a command: format, fix, try it, theme…' : 'Search examples, Hub handlers, engine probes and actions (> for commands)';
   let shown: OpenEntry[];
-  if (q) {
+  if (commandMode && !q) shown = all;
+  else if (q) {
     const words = q.split(/\s+/);
     shown = all
       .map((e) => {
@@ -1137,14 +1195,14 @@ function renderOpen() {
   let html = '';
   let lastGroup = '';
   shown.forEach((e, i) => {
-    const group = q ? 'Results' : e.group;
+    const group = commandMode ? 'Commands' : q ? 'Results' : e.group;
     if (group !== lastGroup) {
       if (lastGroup) html += '</div>';
-      html += `<div class="group-title">${esc(group)}${groupNote[group] ? ` <small>${groupNote[group]}</small>` : ''}</div><div class="entries${q ? ' rows' : ''}">`;
+      html += `<div class="group-title">${esc(group)}${groupNote[group] ? ` <small>${groupNote[group]}</small>` : ''}</div><div class="entries${q || commandMode ? ' rows' : ''}${commandMode ? ' commands' : ''}">`;
       lastGroup = group;
     }
     html += `<button class="entry${i === activeEntry ? ' active' : ''}" type="button" role="option" data-e="${i}" aria-selected="${i === activeEntry}">
-      ${q ? `<span class="kind">${esc(e.group)}</span>` : ''}<span class="t">${esc(e.title)}</span>${e.sub ? `<span class="s">${esc(e.sub)}</span>` : ''}
+      ${q && !commandMode ? `<span class="kind">${esc(e.group === 'Actions' ? 'Command' : e.group)}</span>` : ''}<span class="t">${esc(e.title)}${e.keys ? `<span class="keys">${e.keys.split('+').map((k) => `<kbd>${esc(k)}</kbd>`).join('')}</span>` : ''}</span>${e.sub ? `<span class="s">${esc(e.sub)}</span>` : ''}
       ${e.badges || e.lint ? `<span class="b">${e.badges ?? ''}<span data-lint="${i}"></span></span>` : ''}</button>`;
   });
   html += '</div>';
@@ -1178,8 +1236,8 @@ function moveActive(d: number) {
   });
   document.querySelector('#open-body .entry.active')?.scrollIntoView({ block: 'nearest' });
 }
-function showOpen() {
-  ($('#open-q') as HTMLInputElement).value = '';
+function showOpen(mode: 'open' | 'commands' = 'open') {
+  ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : '';
   activeEntry = 0;
   renderOpen();
   openDialog.showModal();
@@ -1187,7 +1245,7 @@ function showOpen() {
   if (!(window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && narrow()))) ($('#open-q') as HTMLInputElement).focus();
   else (openDialog.querySelector('#open-body') as HTMLElement).scrollTop = 0;
 }
-$('#doc-switch').addEventListener('click', showOpen);
+$('#doc-switch').addEventListener('click', () => showOpen());
 $('#open-close').addEventListener('click', () => openDialog.close());
 $('#open-q').addEventListener('input', () => {
   activeEntry = 0;
@@ -1354,11 +1412,14 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     lines.toggle();
     return;
   }
-  // The command palette: Ctrl+K here, and VS Code's Ctrl+P, Ctrl+Shift+P and F1.
-  if ((mod && !e.shiftKey && e.key.toLowerCase() === 'k') || (mod && e.key.toLowerCase() === 'p') || e.key === 'F1') {
+  // As in VS Code: Ctrl+Shift+P and F1 open the command palette (">"), Ctrl+P (and Ctrl+K here) the
+  // examples and Hub handlers. Pressed again, the same key closes it.
+  const commands = (mod && e.shiftKey && e.key.toLowerCase() === 'p') || e.key === 'F1';
+  if (commands || (mod && !e.shiftKey && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'p'))) {
     e.preventDefault();
-    if (openDialog.open) openDialog.close();
-    else showOpen();
+    const inCommands = ($('#open-q') as HTMLInputElement).value.trimStart().startsWith('>');
+    if (openDialog.open && inCommands === commands) openDialog.close();
+    else showOpen(commands ? 'commands' : 'open');
   } else if (mod && e.key.toLowerCase() === 's') {
     e.preventDefault(); // instead of the browser saving the page
     const save = $('#save') as HTMLButtonElement;
@@ -1374,8 +1435,8 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     e.preventDefault();
     selectTab('simulate');
   } else if (e.altKey && e.shiftKey && e.code === 'KeyF') {
-    e.preventDefault();
-    ($('#fix-all') as HTMLButtonElement).click();
+    e.preventDefault(); // VS Code: Format Document
+    formatDocument();
   } else if (e.key === 'F8') {
     e.preventDefault();
     stepProblem(e.shiftKey ? -1 : 1);
@@ -1809,7 +1870,7 @@ if (!welcomed) {
   w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
     <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span></div>`;
   w.hidden = false;
-  w.querySelector('[data-w=open]')!.addEventListener('click', showOpen);
+  w.querySelector('[data-w=open]')!.addEventListener('click', () => showOpen());
   w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
   w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
   w.querySelector('[data-w=close]')!.addEventListener('click', () => {
