@@ -37,6 +37,11 @@ jobs:
         working-directory: core
       - run: npm ci
         working-directory: playground
+      - name: Newest usage counts for Lines (the weekly check publishes them on the data branch)
+        run: |
+          git fetch -q --depth 1 origin data || exit 0
+          git show FETCH_HEAD:usage.json > "$RUNNER_TEMP/usage.json" 2>/dev/null || { echo "No usage.json on the data branch yet: keeping the committed one."; exit 0; }
+          node -e 'const u = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (!(u.handlers > 0 && u.counts)) process.exit(1)' "$RUNNER_TEMP/usage.json" && cp "$RUNNER_TEMP/usage.json" playground/src/usage.json
       - name: Keep the Hub snapshot between runs
         uses: actions/cache@v4
         with:

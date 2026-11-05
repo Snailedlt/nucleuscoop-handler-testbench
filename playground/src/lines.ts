@@ -43,10 +43,8 @@ export interface Line {
 
 export const USAGE_TOTAL: number = USAGE.handlers;
 const usage = USAGE.counts as Record<string, number>;
-const SYSTEM = (USAGE as any).system as { handlers: number; counts: Record<string, number> } | undefined;
-/** Uses and sample size for a path. */
-const usedOf = (path: string): { used: number; of: number } =>
-  path.startsWith('System.') ? { used: SYSTEM?.counts[path] ?? 0, of: SYSTEM?.handlers ?? 0 } : { used: usage[path] ?? 0, of: USAGE_TOTAL };
+/** Uses and sample size for a path (one sample for every name, System.* included: tools/usage-counts.mjs). */
+const usedOf = (path: string): { used: number; of: number } => ({ used: usage[path] ?? 0, of: USAGE_TOTAL });
 
 function kindOf(m: Member): Kind {
   if (m.kind === 'method' || m.type === 'function') return 'function';

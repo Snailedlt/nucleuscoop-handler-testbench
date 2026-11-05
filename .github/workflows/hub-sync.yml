@@ -26,12 +26,14 @@ jobs:
           node-version: 22
       - name: Read the Hub list once
         run: node tools/hub-sync.mjs "$RUNNER_TEMP/hub-index.json"
-      - name: Publish it on the data branch
+      - name: Publish it on the data branch (keeping the weekly usage counts)
         run: |
+          git fetch -q --depth 1 origin data && git show FETCH_HEAD:usage.json > "$RUNNER_TEMP/usage.json" 2>/dev/null || rm -f "$RUNNER_TEMP/usage.json"
           cd "$RUNNER_TEMP"
           git init -q -b data data && cd data
           cp ../hub-index.json .
-          printf '# Hub index\n\nThe hub.splitscreen.me handler list, synced daily by `.github/workflows/hub-sync.yml` on `main`. Read by the tools instead of the Hub API.\n' > README.md
+          [ -f ../usage.json ] && cp ../usage.json .
+          printf '# Hub index\n\nThe hub.splitscreen.me handler list, synced daily by `.github/workflows/hub-sync.yml` on `main`. Read by the tools instead of the Hub API.\n\n`usage.json`: how many verified Hub handlers use each name, counted weekly by `.github/workflows/nightly.yml` (only counts, no handler code).\n' > README.md
           git add -A
           git -c user.name='hub-sync' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -qm "Hub index $(date -u +%F)"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data

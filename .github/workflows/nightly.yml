@@ -6,6 +6,7 @@ name: Weekly check
 #      isolated, and Try it predicts the same outcome and launch arguments; none has lint errors
 #      (tools/compare-hub.mjs, also written to the run summary)
 #   4. a warning when Nucleus master has moved past the commit the stubs are pinned to
+#   5. how often each name is used in those handlers, for the workbench's Lines (data branch, usage.json)
 on:
   schedule:
     - cron: '7 3 * * 1' # Mondays: the Hub changes slowly, and a weekly check keeps our load on it low
@@ -15,7 +16,7 @@ on:
     paths: ['.github/workflows/nightly.yml', 'tools/**', 'run.sh', 'setup.sh', 'src/**', 'probes/**']
 
 permissions:
-  contents: read
+  contents: write # only to publish the usage counts on the data branch
 
 jobs:
   check:
@@ -55,6 +56,18 @@ jobs:
           restore-keys: hub-handlers-
       - name: Fetch verified Hub handlers (current verified versions only; new versions only)
         run: python3 -I tools/fetch_verified.py --limit 200
+      - name: Count how often each name is used, for the workbench's Lines (published on the data branch)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'push'
+        run: |
+          node tools/usage-counts.mjs downloads/handlers --core core --out "$RUNNER_TEMP/usage.json"
+          git fetch -q --depth 1 origin data
+          git worktree add -q --detach "$RUNNER_TEMP/data" FETCH_HEAD
+          cp "$RUNNER_TEMP/usage.json" "$RUNNER_TEMP/data/usage.json"
+          cd "$RUNNER_TEMP/data"
+          git add usage.json
+          if git diff --cached --quiet; then echo "Counts unchanged."; exit 0; fi
+          git -c user.name='weekly-check' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -qm "Usage counts $(date -u +%F)"
+          git push -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:data
       - name: Run them in real Jint (network isolated)
         run: REQUIRE_ISOLATION=1 ./run.sh --verified > jint-hub.txt
       - name: Compare with Try it, and lint
