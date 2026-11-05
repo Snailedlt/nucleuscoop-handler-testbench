@@ -32,7 +32,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Phone-friendly menus.** The menu, Settings and other dialogs rise from the bottom as sheets, as tall as their content; drag one down or tap outside to close. Settings has bigger rows, a one-tap theme switch and Done always in reach. The examples list no longer pops up the keyboard or shows keyboard hints.
 - **Tidier tips on phones.** One line with a large ×; tap it for the whole tip, back, next and Turn off.
 - **Switch handlers from the handler's name.** Click the name above the code to open an example or a Hub handler. It replaces the Examples button.
-- **Docs and problems by tap on touch screens.** Tap an underlined word to see its problem and fix, or hold any name for its docs. Hold a button to read what it does without pressing it. The mouse-only pop-ups no longer get stuck on phones.
+- **Docs and problems by tap on touch screens.** Tap an underlined word to see its problem and fix; the docs of the name under the cursor show under the code. Holding still selects text as usual. Hold a button to read what it does without pressing it. The mouse-only pop-ups no longer get stuck on phones.
 - **More tips, on both handlers and the workbench.** Next now takes turns between a tip for writing handlers (when `Game.Play` runs, per-player launch arguments, `Game.Folder` and more) and one for the workbench (Test all combinations, resizing panels, the (i) in Lines and more).
 - **The developer bar fits on phones.** One scrollable row at the top instead of three rows over the page.
 

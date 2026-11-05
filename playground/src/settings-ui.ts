@@ -243,7 +243,8 @@ export function initSettings(d: Deps) {
   d.editor.on('focus', onFocus);
   d.editor.on('blur', () => ((focused = false), clearTimeout(waitTimer), setTimeout(placeKeybar, 150)));
   // While the keyboard is open, keep the cursor in the space above it (after CodeMirror's own scroll).
-  d.editor.on('cursorActivity', () => kbOpen && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
+  // Not while selecting: dragging a selection handle scrolls by itself.
+  d.editor.on('cursorActivity', () => kbOpen && !d.editor.somethingSelected() && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
   window.visualViewport?.addEventListener('resize', placeKeybar);
   window.visualViewport?.addEventListener('scroll', placeKeybar);
 

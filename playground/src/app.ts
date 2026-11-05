@@ -297,6 +297,8 @@ function describeResolved(res: Resolved, word: string): string {
 const sig = $('#sig');
 const coarse = matchMedia('(pointer: coarse)');
 function showSignature() {
+  // While text is selected, stay out of the way of the selection handles and the copy menu.
+  if (editor.somethingSelected()) return void (sig.hidden = true);
   const text = editor.getValue();
   const c = callContextAt(text, editor.indexFromPos(editor.getCursor()));
   if (!c || (c.callee.kind !== 'member' && c.callee.kind !== 'nucleusClass')) {
@@ -471,7 +473,8 @@ editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
 
 // Touch screens have no hover: the mouse events a tap fakes would open the hover docs and the
 // problem tooltips and leave them stuck. Instead, a tap on an underlined word shows its problems
-// (and docs), and holding any name shows its docs. The keyboard and native selection still work.
+// (and docs); the docs of the name under the cursor show in the strip under the code. Holding is
+// left alone: on a phone it selects text and opens the copy menu.
 {
   const wrap = editor.getWrapperElement();
   let touchAt = 0;
@@ -490,7 +493,7 @@ editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
     if ((e.target as HTMLElement).closest('.CodeMirror-gutters, #line-pop')) return (start = undefined);
     start = { x: e.clientX, y: e.clientY, t: Date.now() };
     clearTimeout(hold);
-    hold = window.setTimeout(() => start && (popAt(start.x, start.y), (start = undefined)), 500);
+    hold = window.setTimeout(() => (start = undefined), 450); // a hold: the browser selects text
   }, true);
   wrap.addEventListener('pointermove', (e: PointerEvent) => {
     if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) (clearTimeout(hold), (start = undefined));
@@ -504,13 +507,14 @@ editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
     if (!s || e.type === 'pointercancel') return;
     // A short tap: only on an underlined (marked) word, so tapping to type stays quiet.
     const el = document.elementFromPoint(s.x, s.y);
-    if (el?.closest('.CodeMirror-lint-mark')) requestAnimationFrame(() => popAt(s.x, s.y));
+    if (el?.closest('.CodeMirror-lint-mark')) requestAnimationFrame(() => !editor.somethingSelected() && popAt(s.x, s.y));
   };
   wrap.addEventListener('pointerup', end, true);
   wrap.addEventListener('pointercancel', end, true);
 }
 editor.on('change', hideLinePop);
 editor.on('scroll', hideLinePop);
+editor.on('cursorActivity', () => editor.somethingSelected() && hideLinePop());
 
 let stripIndex = 0;
 function renderStrip() {
