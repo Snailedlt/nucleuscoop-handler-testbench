@@ -159,10 +159,16 @@ export function initSettings(d: Deps) {
   };
   // Phone keyboards (with their suggestion row) take about 35-40% of a portrait screen and about
   // half of a landscape one: lean high, so a wrong guess leaves a gap instead of hiding the keys.
+  // Inside a frame (the maintainer's preview artifact), measured on their phone: Gboard with the
+  // suggestion and number rows covers 34.4% of a portrait screen.
+  let framed = true;
+  try {
+    framed = window.self !== window.top;
+  } catch {}
   const estimate = () => {
     const tall = Math.max(screen.width, screen.height);
     const short = Math.min(screen.width, screen.height);
-    return learned() ?? Math.round(Math.min(window.innerHeight * 0.6, portrait() ? 0.42 * tall : 0.55 * short));
+    return learned() ?? Math.round(Math.min(window.innerHeight * 0.6, portrait() ? (framed ? 0.344 : 0.42) * tall : 0.55 * short));
   };
   function placeKeybar() {
     const vv = window.visualViewport;
