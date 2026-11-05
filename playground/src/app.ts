@@ -7,6 +7,7 @@ import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
 import { vscodeKeys, vscodeMouse } from './keys';
+import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf } from '@core/lint';
 import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
@@ -649,7 +650,8 @@ $('#sim-run').addEventListener('click', runSim);
 // Test all combinations: every player count (up to Game.MaxPlayers, at most 8), input setup and
 // monitor size, a few runs at a time so the page stays responsive; one cell per players × input.
 
-const MX_RES: [number, number][] = [[1920, 1080], [2560, 1440], [3840, 2160], [2560, 1080], [1366, 768]];
+// The combinations and what counts as failing come from the core, shared with the VS Code panel.
+const MX_RES = MATRIX_RESOLUTIONS;
 let mxRun = 0;
 function testAll() {
   const run = ++mxRun;
@@ -661,18 +663,9 @@ function testAll() {
     box.innerHTML = `<div class="mx-head"><strong>Can't test combinations yet</strong><span class="muted">Nucleus can't load this handler. Fix the problems first.</span></div>`;
     return;
   }
-  const opt = (path: string) => first.options.find((o) => o.path === path)?.value;
-  const max = Math.min(8, Math.max(1, Number(opt('Game.MaxPlayers')) || 4));
-  const multi = opt('Game.SupportsMultipleKeyboardsAndMice') === 'true';
-  const modes: { kb: number; label: string; offered: boolean }[] = [
-    { kb: -1, label: 'Controllers only', offered: true },
-    { kb: 0, label: 'Keyboard for player 1', offered: true },
-    { kb: -2, label: 'Keyboard for each player', offered: multi },
-  ];
+  const { max, modes, jobs } = planMatrix(first)!;
   type Cell = { ok: number; fail: { res: string; why: string }[] };
   const cells = new Map<string, Cell>();
-  const jobs: [number, number, [number, number]][] = [];
-  for (let p = 1; p <= max; p++) for (const m of modes) if (m.offered) for (const r of MX_RES) jobs.push([p, m.kb, r]);
   let done = 0;
   const t0 = performance.now();
   const draw = (finished: boolean) => {
@@ -712,12 +705,11 @@ function testAll() {
     if (run !== mxRun) return;
     const until = performance.now() + 12; // a few runs per frame
     while (done < jobs.length && performance.now() < until) {
-      const [p, kb, [w, h]] = jobs[done++];
-      const r = simulate(code, { players: p, width: w, height: h, keyboardPlayer: kb });
-      const key = `${p}|${kb}`;
+      const j = jobs[done++];
+      const key = `${j.players}|${j.kb}`;
       const c = cells.get(key) ?? { ok: 0, fail: [] };
-      const bad = r.sessionEnded ? r.sessionEnded.reason : r.players.find((x) => x.error)?.error ?? r.callbacks.find((x) => x.error)?.error;
-      if (!r.loaded || bad) c.fail.push({ res: `${w}x${h}`, why: (bad ?? r.loadError ?? 'fails').split('\n')[0].slice(0, 140) });
+      const why = failureOf(simulate(code, jobOptions(j)));
+      if (why) c.fail.push({ res: `${j.width}x${j.height}`, why });
       else c.ok++;
       cells.set(key, c);
     }
