@@ -15,6 +15,7 @@ import { simulate, sessionSummary, groupIgnored } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
 import { fixAll } from '@core/fix';
 import { zipStore } from './zipstore';
+import { buildLines, KINDS, Kind } from './lines';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -687,6 +688,7 @@ function entries(): OpenEntry[] {
     { group: 'Actions', title: 'Simulate the handler', sub: 'Ctrl+Enter: launch arguments and file edits per player', keywords: 'run play simulate', run: () => selectTab('simulate') },
     { group: 'Actions', title: 'Show or hide the dev bar', sub: 'Ctrl+Alt+D: colour mode, contrast check and other developer tools', keywords: 'dev theme colour color dark light contrast', run: () => devBar.toggle() },
     { group: 'Actions', title: 'Search the handler API', sub: 'Options, Context methods and Nucleus enums with docs', keywords: 'api docs reference', run: () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); } },
+    { group: 'Actions', title: 'Show or hide the list of names', sub: 'Ctrl+Shift+L: every option, Context member and enum, click to insert', keywords: 'lines list names insert pawno functions', run: () => setLines(!linesOpen, !linesOpen) },
     { group: 'Actions', title: 'Copy the handler', keywords: 'clipboard', run: () => ($('#copy') as HTMLButtonElement).click() },
     { group: 'Actions', title: 'Keyboard shortcuts', keywords: 'help keys', run: () => helpDialog.showModal() },
     ...HUB_EXAMPLES.handlers.map((h, i) => ({
@@ -907,8 +909,101 @@ simIds.forEach((id) =>
   }),
 );
 
+// ---------------------------------------------------------------------------
+// Lines: every name a handler can use, beside the code (like Pawno's function list)
+
+const LINES_KEY = 'nucleus-workbench-lines';
+const LINE_GROUPS = buildLines();
+const linesKinds = new Set<Kind>();
+let linesOpen = false;
+try {
+  const saved = localStorage.getItem(LINES_KEY);
+  linesOpen = saved ? saved === '1' : window.matchMedia('(min-width: 1400px)').matches;
+} catch {}
+function showLineInfo(sig: string, doc: string) {
+  const info = $('#lines-info');
+  info.textContent = '';
+  const c = document.createElement('code');
+  c.textContent = sig;
+  info.append(c, document.createTextNode(doc));
+}
+function renderLines() {
+  const q = ($('#lines-q') as HTMLInputElement).value.trim().toLowerCase();
+  const list = $('#lines-list');
+  list.textContent = '';
+  let shown = 0;
+  for (const g of LINE_GROUPS) {
+    const lines = g.lines.filter((l) => (!linesKinds.size || linesKinds.has(l.type)) && (!q || l.text.toLowerCase().includes(q) || l.doc.toLowerCase().includes(q)));
+    if (!lines.length) continue;
+    const head = document.createElement('div');
+    head.className = 'grp';
+    head.textContent = '// ' + g.title;
+    list.append(head);
+    for (const l of lines) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'listitem');
+      b.textContent = l.text;
+      b.title = l.sig;
+      if (l.deprecated) b.className = 'dep';
+      const info = () => showLineInfo(l.sig, l.doc);
+      b.addEventListener('mouseenter', info);
+      b.addEventListener('focus', info);
+      b.addEventListener('click', () => {
+        editor.focus();
+        const from = editor.getCursor('from');
+        editor.replaceSelection(l.insert);
+        if (l.caret !== undefined) editor.setCursor({ line: from.line, ch: from.ch + l.caret });
+        if (window.matchMedia('(max-width: 860px)').matches) setLines(false);
+      });
+      list.append(b);
+      shown++;
+    }
+  }
+  if (!shown) {
+    const none = document.createElement('div');
+    none.className = 'none';
+    none.textContent = 'Nothing matches.';
+    list.append(none);
+  }
+}
+function setLines(open: boolean, focus = false) {
+  linesOpen = open;
+  $('#lines').hidden = !open;
+  $('#lines-toggle').setAttribute('aria-pressed', String(open));
+  try {
+    localStorage.setItem(LINES_KEY, open ? '1' : '0');
+  } catch {}
+  editor.refresh();
+  if (open && focus) ($('#lines-q') as HTMLInputElement).focus();
+}
+for (const [k, label] of KINDS) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => {
+    if (linesKinds.has(k)) linesKinds.delete(k);
+    else linesKinds.add(k);
+    b.setAttribute('aria-pressed', String(linesKinds.has(k)));
+    renderLines();
+  });
+  $('#lines-kinds').append(b);
+}
+$('#lines-q').addEventListener('input', renderLines);
+$('#lines-toggle').addEventListener('click', () => setLines(!linesOpen, !linesOpen));
+$('#lines-close').addEventListener('click', () => setLines(false));
+showLineInfo('Click a name to insert it', ' at the cursor. Hover one to see what it is.');
+renderLines();
+setLines(linesOpen);
+
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.shiftKey && e.code === 'KeyL') {
+    e.preventDefault();
+    setLines(!linesOpen, !linesOpen);
+    return;
+  }
   if (mod && e.key.toLowerCase() === 'k') {
     e.preventDefault();
     if (openDialog.open) openDialog.close();

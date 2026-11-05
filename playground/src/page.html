@@ -116,7 +116,26 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 .pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; }
 .pane-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 40px; box-sizing: border-box; }
 #status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
-#editor { flex: 1; min-height: 0; position: relative; }
+.code-row { flex: 1; min-height: 0; display: flex; position: relative; }
+#editor { flex: 1; min-height: 0; min-width: 0; position: relative; }
+/* Lines: a Pawno-style list of every name, beside the code */
+.lines-toggle { padding: 2px 9px; font-size: 12px; margin-left: 6px; }
+.lines-toggle[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+#lines { width: 270px; flex: none; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
+#lines[hidden] { display: none; }
+.lines-head { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
+.lines-head input { flex: 1; min-width: 0; font: inherit; font-size: 13px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 5px 8px; }
+.lines-kinds { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.lines-kinds button { font: 600 11.5px var(--font-body); color: var(--muted); background: var(--surface-2); border: 1px solid transparent; border-radius: 999px; padding: 2px 9px; cursor: pointer; }
+.lines-kinds button[aria-pressed=true] { color: var(--accent-fg); background: var(--accent); }
+#lines-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 0 8px; font: 12px/1.35 var(--font-mono); }
+#lines-list .grp { color: var(--cmt); padding: 8px 10px 2px; }
+#lines-list button { display: block; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; padding: 2px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#lines-list button:hover, #lines-list button:focus-visible { background: var(--accent); color: var(--accent-fg); outline: none; }
+#lines-list button.dep { color: var(--muted); text-decoration: line-through; }
+#lines-list .none { color: var(--muted); padding: 10px; font-family: var(--font-body); }
+#lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--muted); min-height: 3.2em; }
+#lines-info code { font: 11.5px var(--font-mono); color: var(--fg); overflow-wrap: anywhere; display: block; margin-bottom: 2px; }
 #editor .CodeMirror { position: absolute; inset: 0; height: auto; font: 13px/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }
 .CodeMirror-gutters { background: var(--surface-2); border-right: 1px solid var(--line); }
 .CodeMirror-linenumber { color: var(--muted); }
@@ -313,6 +332,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .main { grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
   .main[data-view=code] .pane.side, .main[data-view=results] .pane:not(.side) { display: none; }
   #editor { flex: 1; height: auto; }
+  #lines { position: absolute; top: 0; right: 0; bottom: 0; width: min(300px, 88%); z-index: 5; box-shadow: -6px 0 18px rgba(0, 0, 0, .25); }
   .pane.side { min-height: 0; }
   .tip-line { display: none; }
   .app > footer { display: none; }
@@ -373,11 +393,22 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><span id="doc-name">Untitled handler</span><span id="doc-edited" class="muted" hidden>· edited</span></div>
+        <div class="doc-title"><span id="doc-name">Untitled handler</span><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
-      <div id="editor"><div id="sig" hidden></div></div>
+      <div class="code-row">
+        <div id="editor"><div id="sig" hidden></div></div>
+        <aside id="lines" aria-label="Names a handler can use" hidden>
+          <div class="lines-head">
+            <input id="lines-q" type="search" placeholder="Filter: mutex, Width…" aria-label="Filter the names">
+            <button class="btn icon" id="lines-close" type="button" aria-label="Close the list">×</button>
+          </div>
+          <div class="lines-kinds" role="group" aria-label="Show types" id="lines-kinds"></div>
+          <div id="lines-list" role="list"></div>
+          <div id="lines-info" aria-live="polite"></div>
+        </aside>
+      </div>
     </section>
 
     <section class="pane side" aria-label="Analysis">
@@ -449,6 +480,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <tr><td><kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>F</kbd></td><td>Fix problems automatically</td></tr>
     <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Complete (also after typing <kbd>.</kbd>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the list of names (click one to insert it)</td></tr>
     <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>Z</kbd></td><td>Undo, including applied fixes</td></tr>
     <tr><td><kbd>?</kbd></td><td>This list (outside the editor)</td></tr>
   </tbody></table>
