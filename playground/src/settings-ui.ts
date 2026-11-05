@@ -117,6 +117,9 @@ export function initSettings(d: Deps) {
   const extra: [string, string, () => void][] = [
     ['Suggest', 'Suggest names', () => d.hint()],
     ['Lines', 'Show the list of names', () => d.lines.show()],
+    // The header (with the copy/download button) steps aside while typing: reach it from here, with
+    // the selection kept, so a link to the selected lines is one tap away.
+    ['Copy…', 'Copy or download the handler, or a link to the selected lines', () => ($('#code-menu-open') as HTMLButtonElement).click()],
     ['↶', 'Undo', () => d.editor.undo()],
     ['↷', 'Redo', () => d.editor.redo()],
   ];
@@ -127,7 +130,7 @@ export function initSettings(d: Deps) {
     b.textContent = label;
     b.setAttribute('aria-label', aria);
     b.addEventListener('pointerdown', (e) => e.preventDefault());
-    b.addEventListener('click', () => (label === 'Lines' ? run() : (d.editor.focus(), run())));
+    b.addEventListener('click', () => (label === 'Lines' || label === 'Copy…' ? run() : (d.editor.focus(), run())));
     bar.append(b);
   }
   let focused = false;

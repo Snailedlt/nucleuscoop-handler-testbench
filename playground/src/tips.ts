@@ -108,6 +108,7 @@ const GUI_TIPS = ([
   { id: 'g-gutter', text: 'Click a problem marker next to a line number to see that line’s problems.' },
   { id: 'g-info', text: 'In Lines, the (i) next to a name shows its docs without inserting it.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-resize', text: 'Drag the bars between panels to resize them. Double-click a bar to reset it, or use Reset panel sizes in Settings.' },
+  { id: 'g-copy-typing', text: 'Typing on a phone? Copy… at the end of the symbol keys copies the code, or a link to just the lines you selected.' },
   { id: 'g-settings', text: 'The gear at the top has the theme, font size, line wrapping and the phone symbol bar.' },
 ] as Tip[]).map((t): Tip => ({ ...t, kind: 'gui' }));
 
