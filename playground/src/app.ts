@@ -24,7 +24,7 @@ import { initTouchTitles } from './touch-titles';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
-declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
+declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; lint?: { errors: number; warnings: number } }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null };
@@ -1232,6 +1232,7 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   }
 });
 
+$('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 
 // ---------------------------------------------------------------------------

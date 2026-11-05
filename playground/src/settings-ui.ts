@@ -141,7 +141,7 @@ export function initSettings(d: Deps) {
   let waited = false; // gave the keyboard time to open
   let measurable = false; // this page has seen the keyboard's height
   let waitTimer: number | undefined;
-  window.addEventListener('resize', () => !focused && (baseH = window.innerHeight));
+  window.addEventListener('resize', () => (focused ? placeKeybar() : (baseH = window.innerHeight)));
   const portrait = () => window.innerHeight >= window.innerWidth;
   const LEARN_KEY = 'nucleus-workbench-kb';
   const learned = (): number | undefined => {
