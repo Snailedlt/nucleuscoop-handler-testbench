@@ -69,22 +69,47 @@ export function initSettings(d: Deps) {
   $('#set-tips').addEventListener('change', (e) => d.tips.set((e.target as HTMLInputElement).checked));
   $('#set-heads').addEventListener('click', () => (d.tips.set(true), d.tips.reset(), sync(), d.toast('Heads-ups will show again.')));
   $('#set-lines').addEventListener('change', (e) => d.lines.set((e.target as HTMLInputElement).checked));
-  $('#set-lines-more').addEventListener('click', () => {
-    dlg.close();
-    if (narrow()) ($('.switch button[data-view=code]') as HTMLButtonElement)?.click();
-    d.lines.openSettings();
-  });
   $('#set-advanced').addEventListener('change', (e) => {
     d.advanced.checked = (e.target as HTMLInputElement).checked;
     d.advanced.dispatchEvent(new Event('change'));
   });
   $('#set-devbar').addEventListener('change', () => d.devBar.toggle());
   $('#settings-close').addEventListener('click', () => dlg.close());
-  const open = () => {
-    sync();
-    dlg.showModal();
+  // Tabs: General, Editor, Lines, Help, Advanced. The last one used opens next time.
+  const TAB_KEY = 'nucleus-workbench-settings-tab';
+  const tabs = [...dlg.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+  const selectTab = (id: string, focus = false) => {
+    const t = tabs.find((x) => x.dataset.st === id) ?? tabs[0];
+    for (const x of tabs) {
+      const on = x === t;
+      x.setAttribute('aria-selected', String(on));
+      x.tabIndex = on ? 0 : -1;
+      ($('#' + x.getAttribute('aria-controls')) as HTMLElement).hidden = !on;
+    }
+    put(TAB_KEY, t.dataset.st!);
+    if (focus) t.focus();
+    t.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   };
-  $('#settings-open').addEventListener('click', open);
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => selectTab(t.dataset.st!));
+    t.addEventListener('keydown', (e) => {
+      const k = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        selectTab(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.st!, true);
+      } else if (k) {
+        e.preventDefault();
+        selectTab(tabs[(i + k + tabs.length) % tabs.length].dataset.st!, true);
+      }
+    });
+  });
+  const open = (tab?: string) => {
+    sync();
+    selectTab(tab ?? get(TAB_KEY) ?? 'general');
+    if (!dlg.open) dlg.showModal();
+  };
+  $('#settings-open').addEventListener('click', () => open());
+  document.addEventListener('open-settings', (e) => open((e as CustomEvent).detail));
 
   // --- the symbol bar: keys that are hard to reach on a phone keyboard, above it
   const bar = $('#keybar');

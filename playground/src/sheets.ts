@@ -12,6 +12,7 @@ export function initSheetDrag() {
     let fromHandle = false;
     let dragging = false;
     let tracking = false;
+    let scroller: HTMLElement = dl;
     const reset = () => {
       dl.style.transition = '';
       dl.style.transform = '';
@@ -27,6 +28,14 @@ export function initSheetDrag() {
         if (!fromHandle && (e.target as HTMLElement).closest('input, select, textarea')) return (tracking = false);
         tracking = true;
         dragging = false;
+        // The part that scrolls under the finger: the sheet itself, or a scrolling area in it (Settings' tabs).
+        scroller = dl;
+        for (let el = e.target as HTMLElement | null; el && el !== dl; el = el.parentElement) {
+          if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY)) {
+            scroller = el;
+            break;
+          }
+        }
         y0 = t.clientY;
         t0 = Date.now();
         dy = 0;
@@ -39,7 +48,7 @@ export function initSheetDrag() {
         if (!tracking) return;
         dy = e.touches[0].clientY - y0;
         if (!dragging) {
-          if (dy > 6 && (fromHandle || dl.scrollTop <= 0)) dragging = true;
+          if (dy > 6 && (fromHandle || (dl.scrollTop <= 0 && scroller.scrollTop <= 0))) dragging = true;
           else if (Math.abs(dy) > 6) return (tracking = false); // a scroll
           else return;
         }

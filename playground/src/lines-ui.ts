@@ -393,15 +393,7 @@ export function initLines({ editor, openReference }: Deps) {
   const gear = $('#lines-gear');
   function buildSettings() {
     panel.textContent = '';
-    const head = text('div', 'set-head', '');
-    head.append(text('strong', '', 'List settings'));
-    const done = document.createElement('button');
-    done.type = 'button';
-    done.className = 'btn';
-    done.textContent = 'Done';
-    done.addEventListener('click', () => showSettings(false));
-    head.append(done);
-    panel.append(head);
+    panel.append(text('h3', '', 'The list'));
     const row = (s: (typeof SETTINGS)[number]) => {
       const lab = document.createElement('label');
       lab.className = s.wideOnly ? 'set-row wide-only' : 'set-row';
@@ -421,7 +413,7 @@ export function initLines({ editor, openReference }: Deps) {
     };
     SETTINGS.filter((s) => !s.advanced).forEach((s) => panel.append(row(s)));
     const adv = document.createElement('details');
-    adv.append(text('summary', '', 'Advanced'));
+    adv.append(text('summary', '', 'More list settings'));
     SETTINGS.filter((s) => s.advanced).forEach((s) => adv.append(row(s)));
     panel.append(adv);
     const reset = document.createElement('button');
@@ -438,19 +430,9 @@ export function initLines({ editor, openReference }: Deps) {
     });
     panel.append(reset);
   }
-  function showSettings(v: boolean) {
-    panel.hidden = !v;
-    gear.setAttribute('aria-expanded', String(v));
-    if (v) panel.querySelector<HTMLInputElement>('input')?.focus();
-    else gear.focus();
-  }
-  gear.addEventListener('click', () => showSettings(panel.hidden !== false));
-  panel.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      showSettings(false);
-    }
-  });
+  // The ⚙️ opens the one Settings window, on its Lines tab.
+  const showSettings = () => document.dispatchEvent(new CustomEvent('open-settings', { detail: 'lines' }));
+  gear.addEventListener('click', showSettings);
   /** Show or hide the parts the settings control, then redraw. */
   function apply() {
     $('#lines-kinds').hidden = !prefs.kinds;
@@ -516,9 +498,6 @@ export function initLines({ editor, openReference }: Deps) {
     show: () => setOpen(true, true),
     set: (o: boolean) => setOpen(o),
     isOpen: () => open,
-    openSettings: () => {
-      setOpen(true);
-      showSettings(true);
-    },
+    openSettings: showSettings,
   };
 }
