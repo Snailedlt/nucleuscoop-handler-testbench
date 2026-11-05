@@ -6,6 +6,7 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
+import 'codemirror/addon/scroll/scrollpastend';
 import { lint, Diagnostic, RULES, lineOf } from '@core/lint';
 import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
