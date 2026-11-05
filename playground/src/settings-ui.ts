@@ -171,33 +171,54 @@ export function initSettings(d: Deps) {
     const short = Math.min(screen.width, screen.height);
     return learned() ?? Math.round(Math.min(window.innerHeight * 0.6, portrait() ? (framed ? 0.344 : 0.42) * tall : 0.55 * short));
   };
+  // Chrome on Android tells exactly how tall the keyboard is, and when it closes, through the
+  // VirtualKeyboard API: let the keyboard overlay the page and size the workbench ourselves.
+  // Elsewhere the page's or the visual viewport's height has to tell.
+  const vk: any = !framed && 'virtualKeyboard' in navigator ? (navigator as any).virtualKeyboard : null;
+  let vkH = -1; // -1: not reported yet
+  if (vk) {
+    try {
+      vk.overlaysContent = true;
+      vk.addEventListener('geometrychange', () => {
+        vkH = Math.round(vk.boundingRect?.height ?? 0);
+        placeKeybar();
+      });
+    } catch {}
+  }
+  const debug = /[?&]kb\b/.test(location.search) ? document.createElement('pre') : null;
+  if (debug) {
+    debug.style.cssText = 'position:fixed;top:0;right:0;z-index:99;margin:0;padding:4px 6px;font:11px monospace;background:#000c;color:#0f0;pointer-events:none;white-space:pre';
+    document.body.append(debug);
+  }
   function placeKeybar() {
     const vv = window.visualViewport;
-    const open = !!vv && focused && touch() && vv.height < window.innerHeight - 120;
+    const byApi = vkH >= 0;
+    const visible = byApi ? window.innerHeight - vkH : vv ? vv.height : window.innerHeight;
+    const kbH = byApi ? vkH : Math.max(0, baseH - visible);
+    const seen = kbH > 120;
+    const open = focused && touch() && seen && (byApi || (!!vv && vv.height < window.innerHeight - 120));
     if (open !== kbOpen || open) {
       kbOpen = open;
       document.body.classList.toggle('kb-open', open);
-      if (open && vv) {
-        document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
-        if (vv.offsetTop || window.scrollY) window.scrollTo(0, 0); // iOS scrolls the page up instead
+      if (open) {
+        document.documentElement.style.setProperty('--vvh', `${Math.round(visible)}px`);
+        if (!byApi && vv && (vv.offsetTop || window.scrollY)) window.scrollTo(0, 0); // iOS scrolls the page up instead
       }
       d.editor.refresh();
       if (focused) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
     }
-    // The keyboard showed up as a smaller page (resizes-content) or a smaller visual viewport.
-    const visible = vv ? vv.height : window.innerHeight;
-    const seen = visible < baseH - 120;
-    if (seen && focused) learn(baseH - visible);
+    if (seen && focused) learn(kbH);
     // Once this page has seen the keyboard, it can tell: no keyboard now means it was closed (Android's
     // back gesture closes it but keeps the cursor in the code). Only guess where it never could.
-    if (seen) measurable = true;
+    if (seen || byApi) measurable = true;
     const show = focused && ed.keybar && touch() && (seen || (waited && !measurable));
     const guess = show && !seen;
     bar.hidden = !show;
     document.body.classList.toggle('keybar-on', show && seen);
     document.body.classList.toggle('keybar-est', guess);
+    if (debug) debug.textContent = `inner ${window.innerHeight} vv ${vv ? Math.round(vv.height) + '+' + Math.round(vv.offsetTop) : '-'} base ${baseH}\nvk ${vk ? vkH : 'none'} kb ${kbH} seen ${seen} meas ${measurable}\nfocus ${focused} waited ${waited} show ${show} guess ${guess}`;
     if (!show) return;
-    const bottom = seen ? (vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0) : estimate();
+    const bottom = seen ? (byApi ? vkH : vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0) : estimate();
     bar.style.bottom = `${bottom}px`;
     document.documentElement.style.setProperty('--kb-est', guess ? `${bottom}px` : '0px');
     if (guess) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
