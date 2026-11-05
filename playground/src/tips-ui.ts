@@ -109,6 +109,8 @@ export function initTips({ editor, actions }: Deps) {
   setOn(on);
   return {
     toggle: () => setOn(!on),
+    set: (v: boolean) => setOn(v),
+    isOn: () => on,
     /** Show the heads-up tips again (they are shown once each). */
     reset: () => {
       seen.clear();

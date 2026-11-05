@@ -141,9 +141,9 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 .lines-kinds { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .lines-kinds button { font: 600 11.5px var(--font-body); color: var(--muted); background: var(--surface-2); border: 1px solid transparent; border-radius: 999px; padding: 2px 9px; cursor: pointer; }
 .lines-kinds button[aria-pressed=true] { color: var(--accent-fg); background: var(--accent); }
-#lines-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 0 8px; font: 12px/1.35 var(--font-mono); }
+#lines-list { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; padding: 4px 0 8px; font: 12px/1.35 var(--font-mono); }
 #lines-list .grp { color: var(--cmt); padding: 8px 10px 2px; }
-#lines-list button { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; padding: 2px 10px; cursor: pointer; }
+#lines-list button { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; padding: 2px 12px 2px 10px; cursor: pointer; box-sizing: border-box; }
 #lines-list .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #lines-list .meta { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
 #lines-list .meta.set { color: var(--ok); }
@@ -159,6 +159,27 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 #lines-flash[hidden] { display: none; }
 #lines-info .link { margin-top: 4px; font-size: 12px; }
 /* Tip bar: loading-screen tips, and Clippy-style heads-ups when the code makes one relevant */
+/* Settings dialog, More menu, symbol keys */
+.phone-only { display: none !important; }
+#settings-open { display: inline-flex; align-items: center; justify-content: center; }
+#settings-dialog { width: min(460px, 94vw); }
+#settings-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+.set-sec { border-top: 1px solid var(--line); padding: 10px 0 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.set-sec h3 { margin: 0 0 2px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.set-sec summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+details.set-sec[open] summary { margin-bottom: 4px; }
+.set-radios { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.set-radios label, .set-line { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
+.set-check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; padding: 4px 0; cursor: pointer; }
+.set-check input { margin-top: 3px; flex: none; }
+.set-check small { display: block; color: var(--muted); font-size: 12px; }
+.more-list { display: flex; flex-direction: column; gap: 8px; }
+.more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
+#keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
+#keybar[hidden] { display: none; }
+#keybar button { flex: none; min-width: 40px; height: 38px; padding: 0 10px; font: 600 15px var(--font-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+#keybar button.kb-act { font: 600 13px var(--font-body); }
+body.keybar-on .app { padding-bottom: 52px; }
 #tipbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 1.45; }
 #tipbar[hidden] { display: none; }
 #tipbar.contextual { background: var(--info-bg); border-top-color: var(--info); }
@@ -172,12 +193,14 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 #tipbar .tip-btn { padding: 3px 9px; font-size: 12px; }
 #tipbar .tip-btn.icon { width: 26px; padding: 3px 0; }
 @media (prefers-reduced-motion: no-preference) { #tipbar.contextual { animation: tip-in .25s ease-out; } @keyframes tip-in { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } } }
-@media (max-width: 600px) { #tipbar { flex-wrap: wrap; } #tipbar .tip-actions { width: 100%; justify-content: flex-end; } }
+@media (max-width: 600px) { #tipbar #tip-action { display: none; } #tipbar #tip-next .long { display: none; } }
+#tipbar #tip-next .short { display: none; }
+@media (max-width: 600px) { #tipbar #tip-next .short { display: inline; } }
 #lines-list .none { color: var(--muted); padding: 10px; font-family: var(--font-body); }
 #lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--fg); min-height: 3.2em; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 #lines-info .muted { color: var(--muted); }
 #lines-info code { font: 11.5px var(--font-mono); color: var(--fg); overflow-wrap: anywhere; display: block; margin-bottom: 2px; }
-#editor .CodeMirror { position: absolute; inset: 0; height: auto; font: 13px/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }
+#editor .CodeMirror { position: absolute; inset: 0; height: auto; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }
 .CodeMirror-gutters { background: var(--surface-2); border-right: 1px solid var(--line); }
 .CodeMirror-linenumber { color: var(--muted); }
 .CodeMirror-cursor { border-left-color: var(--fg); }
@@ -363,7 +386,26 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .sub { display: none; }
   .toolbar { margin-left: 0; width: 100%; gap: 6px; }
   .toolbar .btn { flex: 1 1 auto; }
-  header .adv { order: 1; margin-left: auto; padding-left: 0; border-left: 0; }
+  header .adv { display: none; }
+  .wide-only { display: none !important; }
+  .phone-only { display: inline-block !important; }
+  header h1 { font-size: 17px; }
+  header .logo { width: 24px; height: 24px; }
+  .toolbar { flex-wrap: nowrap; }
+  .toolbar .btn.primary { flex: 1 1 auto; }
+  .toolbar .btn.icon { flex: none; width: 40px; }
+  #settings-open { display: inline-flex !important; }
+  .doc-head { flex-wrap: nowrap; }
+  .doc-head #doc-meta { display: none; }
+  /* Lines: a full-screen panel */
+  #lines { position: fixed !important; inset: 0 !important; width: auto !important; z-index: 60; box-shadow: none !important; border-left: 0; }
+  #lines-list { font-size: 13px; }
+  #lines-list button { padding: 7px 12px 7px 12px; }
+  #lines-settings { inset: 56px 0 0 0; }
+  /* tips: compact */
+  #tipbar { padding: 6px 10px; gap: 8px; font-size: 12px; }
+  #tipbar .tip-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #tipbar .tip-icon { display: none; }
   header .brand { order: 0; min-width: 0; }
   header .toolbar { order: 2; }
   .switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; }
@@ -418,12 +460,14 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     </label>
     <div class="toolbar">
       <button class="btn primary" id="open-open" type="button" title="Examples, Hub handlers, probes and actions (Ctrl+K)">Examples… <kbd class="dev-only">Ctrl K</kbd></button>
-      <button class="btn" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
+      <button class="btn wide-only" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
       <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
-      <button class="btn" id="new-open" type="button">New handler…</button>
-      <button class="btn" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
-      <button class="btn" id="copy" type="button" title="Copy the handler source">Copy</button>
-      <button class="btn icon" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button class="btn wide-only" id="new-open" type="button">New handler…</button>
+      <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
+      <button class="btn wide-only" id="copy" type="button" title="Copy the handler source">Copy</button>
+      <button class="btn icon wide-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: open, new, save, copy">⋯</button>
+      <button class="btn icon gear" id="settings-open" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
   </header>
 
@@ -463,7 +507,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div class="tip-body"><strong id="tip-label">Tip</strong> <span id="tip-text"></span></div>
         <div class="tip-actions">
           <button class="btn tip-btn" id="tip-action" type="button" hidden></button>
-          <button class="btn tip-btn" id="tip-next" type="button" title="Show another tip">Next tip</button>
+          <button class="btn tip-btn" id="tip-next" type="button" title="Show another tip" aria-label="Next tip"><span class="long">Next tip</span><span class="short">›</span></button>
           <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on at the bottom of the page or in Keyboard shortcuts)" aria-label="Turn tips off">×</button>
         </div>
       </div>
@@ -529,6 +573,43 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div id="open-body" class="open-body" role="listbox" aria-label="Results"></div>
   <div class="open-foot muted"><kbd>↑</kbd><kbd>↓</kbd> to move · <kbd>Enter</kbd> to open · <kbd>Esc</kbd> to close</div>
 </dialog>
+
+<dialog id="settings-dialog" aria-label="Settings">
+  <h2>Settings</h2>
+  <div class="set-sec"><h3>Appearance</h3>
+    <div class="set-radios" role="radiogroup" aria-label="Theme">
+      <label><input type="radio" name="set-theme" value="auto"> Match my device</label>
+      <label><input type="radio" name="set-theme" value="light"> Light</label>
+      <label><input type="radio" name="set-theme" value="dark"> Dark</label>
+    </div></div>
+  <div class="set-sec"><h3>Editor</h3>
+    <label class="set-line">Text size <select id="set-size"><option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option></select></label>
+    <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>Instead of scrolling sideways. On by default on phones.</small></span></label>
+    <label class="set-check"><input type="checkbox" id="set-keybar"> <span>Symbol keys on touch screens<small>A row with ; = " ( ) { } [ ], Suggest and Undo above the on-screen keyboard</small></span></label></div>
+  <div class="set-sec"><h3>Help</h3>
+    <label class="set-check"><input type="checkbox" id="set-tips"> <span>Tips under the code<small>General tips, and a heads-up when the code makes one relevant</small></span></label>
+    <button class="link" type="button" id="set-heads">Show heads-ups again</button></div>
+  <div class="set-sec"><h3>Lines</h3>
+    <label class="set-check"><input type="checkbox" id="set-lines"> <span>Show the Lines list<small>Every name a handler can use, click to insert (Ctrl+Shift+L)</small></span></label>
+    <button class="link" type="button" id="set-lines-more">List settings…</button></div>
+  <details class="set-sec"><summary>Advanced</summary>
+    <label class="set-check"><input type="checkbox" id="set-advanced"> <span>Advanced mode<small>Rule ids, filters, suggestions, recorded calls and engine probes</small></span></label>
+    <label class="set-check"><input type="checkbox" id="set-devbar"> <span>Developer bar<small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></details>
+  <div class="actions"><button class="btn primary" type="button" id="settings-close">Done</button></div>
+</dialog>
+
+<dialog id="more-dialog" aria-label="More">
+  <div class="more-list">
+    <button class="btn" type="button" data-proxy="#file-open">Open file…</button>
+    <button class="btn" type="button" data-proxy="#new-open">New handler…</button>
+    <button class="btn" type="button" data-proxy="#save" id="more-save">Save for Nucleus</button>
+    <button class="btn" type="button" data-proxy="#copy">Copy the handler</button>
+    <button class="btn" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
+  </div>
+  <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
+</dialog>
+
+<div id="keybar" role="toolbar" aria-label="Symbol keys" hidden></div>
 
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">
   <h2>Keyboard shortcuts</h2>
