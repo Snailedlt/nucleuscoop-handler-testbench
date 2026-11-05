@@ -1826,6 +1826,16 @@ function openFromHash(): boolean {
       .catch(() => toast('This share link is damaged or incomplete. Ask for it again, or for the file.'));
     return true;
   }
+  if (h === 'whats-new') {
+    // The link in the Discord update post: the workbench, with What's new open.
+    news.open();
+    try {
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch {
+      /* ignore */
+    }
+    return false;
+  }
   if (h === 'dev') {
     // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
     devBar.show();

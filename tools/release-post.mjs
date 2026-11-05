@@ -29,7 +29,7 @@ const thanks = thanksPart
   .filter(Boolean);
 const more = items.length > 3 ? ` and ${items.length - 3} more` : '';
 const lines = ['**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
-if (more) lines.push(`…${more} (What's new in the workbench lists them all)`);
-lines.push('', `<${SITE}>`);
+if (more) lines.push(`…${more}: the link opens What's new with all of them`);
+lines.push('', `<${SITE}#whats-new>`);
 if (thanks.length) lines.push(`Thanks ${thanks.join(', ')} 🙏`);
 console.log(lines.join('\n'));
