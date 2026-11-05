@@ -356,7 +356,16 @@ export function initLines({ editor, openReference }: Deps) {
   }
   const groupSel = $('#lines-group') as HTMLSelectElement;
   const sortSel = $('#lines-sort') as HTMLSelectElement;
-  groupSel.value = prefs.group;
+  // "as a tree" exists only in Advanced mode (added and removed, since some phones ignore hidden options).
+  const treeOpt = groupSel.querySelector('option[value=tree]') as HTMLOptionElement;
+  const syncTreeOption = () => {
+    if (advanced()) {
+      if (!treeOpt.parentElement) groupSel.append(treeOpt);
+    } else treeOpt.remove();
+    groupSel.value = prefs.group === 'tree' && !advanced() ? 'object' : prefs.group;
+  };
+  syncTreeOption();
+  new MutationObserver(syncTreeOption).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
   sortSel.value = prefs.sort;
   const savePrefs = () => store.set(PREFS_KEY, JSON.stringify(prefs));
   groupSel.addEventListener('change', () => ((prefs.group = groupSel.value as any), savePrefs(), render()));
@@ -421,7 +430,7 @@ export function initLines({ editor, openReference }: Deps) {
     reset.addEventListener('click', () => {
       Object.assign(prefs, DEFAULTS);
       savePrefs();
-      groupSel.value = prefs.group;
+      syncTreeOption();
       sortSel.value = prefs.sort;
       buildSettings();
       apply();

@@ -518,8 +518,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   /* Lines: a sheet over the lower part of the screen, so the code stays in view */
   #lines { position: fixed !important; left: 0 !important; right: 0 !important; bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; top: auto !important; height: min(58vh, 520px); width: auto !important; z-index: 60; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.35) !important; }
   body.keybar-on #lines { bottom: 52px !important; }
-  #lines .lines-opts, #lines #lines-info { display: none; }
-  :root[data-mode=dev] #lines .lines-opts:not([hidden]) { display: flex; } /* Group (with the tree) and Sort */
+  #lines #lines-info { display: none; }
+  /* Group (with the tree in Advanced mode) and Sort: one compact row */
+  #lines .lines-opts { flex-wrap: nowrap; padding: 4px 8px; }
+  #lines .lines-opts select { font-size: 14px; padding: 2px 4px; }
   /* One row at the bottom, in thumb reach: logo, Handler / Results, More, Settings */
   header { flex-wrap: nowrap !important; align-items: center; order: 10; flex: none; }
   .app { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; }
