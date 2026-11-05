@@ -6,7 +6,7 @@ What changed in the browser workbench (<https://snailedlt.github.io/nucleuscoop-
 How to write it (people and AI agents read this, and the workbench shows it):
 - Add each user-visible change under "## Unreleased", in one of these groups, biggest change first:
   ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently) · ### 🙏 Thanks
-- 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". Credit them inline too ("Reported by Horah.").
+- 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". When it came through GitHub (an issue, a pull request, a review), link their profile: "- **[name](https://github.com/name)** for …". Credit them inline too ("Reported by Horah.").
 - One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
 - A screenshot for big, visible changes, indented under its line: `  ![What it shows](docs/images/changelog/<date>-<name>.png)` (≈700–1000 px wide).
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>". A `---` line separates releases.
