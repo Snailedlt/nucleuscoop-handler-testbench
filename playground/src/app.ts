@@ -1813,3 +1813,17 @@ const waka = initWakaTime({
   document.addEventListener('wakatime-activity', (e) => waka.activity((e as CustomEvent).detail));
   $('#settings-open').addEventListener('click', sync);
 }
+
+// The logo opens the start page. The single file (a release download, the Claude artifact) links to
+// the live site's; where a start page is served next to it (the artifact, a copy of the site), it
+// opens that one, so a preview stays a preview.
+{
+  const brand = document.querySelector<HTMLAnchorElement>('a.brand');
+  if (brand && /^https?:/.test(location.protocol) && /^https:/.test(brand.getAttribute('href') ?? '')) {
+    fetch('start/', { method: 'HEAD', cache: 'no-store' })
+      .then((r) => {
+        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) brand.href = 'start/';
+      })
+      .catch(() => {});
+  }
+}

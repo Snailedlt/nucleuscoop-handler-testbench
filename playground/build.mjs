@@ -12,6 +12,13 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 
+const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
+// A preview build (the Claude artifact, the raw.githack test address) is served somewhere else: its
+// links are relative, so they stay in that environment, it names no canonical address, and asks not
+// to be indexed. Only the Pages deploy (no --preview) uses absolute links to the live site.
+const PREVIEW = process.argv.includes('--preview');
+const NOINDEX = PREVIEW ? '<meta name="robots" content="noindex, nofollow">\n' : '';
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const argCore = process.argv.indexOf('--core');
 const coreRepo = path.resolve(argCore > 0 ? process.argv[argCore + 1] : process.env.SPLITSCREENME_VSCODE ?? path.join(here, '..', '..', 'splitscreenme-vscode'));
@@ -249,6 +256,8 @@ function pageHtml(inlineHub) {
   const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
+    // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
+    .replace(/(<a class="brand" href=")[^"]*"/, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
     .replace('/*CODEMIRROR_CSS*/', () => css)
     .replace('/*PROBES_AND_BUILD*/', () => data)
@@ -257,22 +266,20 @@ function pageHtml(inlineHub) {
 const html = pageHtml(true);
 // The workbench as its own page. page.html starts with what belongs in <head> (title, the theme
 // script, fonts), before its first <style>; the Claude artifact host takes it as is.
-const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 const WB_DESC = 'Write a Nucleus Co-op handler in the browser and see what Nucleus will make of it: checks the way Nucleus runs it, one-click fixes, and what each player gets.';
-const SEO = `<link rel="canonical" href="${PAGES_BASE}">
+const SEO = `${NOINDEX}${PREVIEW ? '' : `<link rel="canonical" href="${PAGES_BASE}">\n`}
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nucleus Handler Workbench">
 <meta property="og:title" content="Nucleus Handler Workbench">
 <meta property="og:description" content="${WB_DESC}">
-<meta property="og:url" content="${PAGES_BASE}">
-<meta property="og:image" content="${PAGES_BASE}start/og.png">
+${PREVIEW ? '' : `<meta property="og:url" content="${PAGES_BASE}">\n`}<meta property="og:image" content="${PREVIEW ? '' : PAGES_BASE}start/og.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="760">
 <meta property="og:image:alt" content="The workbench checking a verified Hub handler, each problem explained, with a one-click fix">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Nucleus Handler Workbench', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any (web browser)', browserRequirements: 'Requires JavaScript', description: WB_DESC, url: PAGES_BASE, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, isAccessibleForFree: true })}</script>`;
+<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Nucleus Handler Workbench', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any (web browser)', browserRequirements: 'Requires JavaScript', description: WB_DESC, ...(PREVIEW ? {} : { url: PAGES_BASE }), offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, isAccessibleForFree: true })}</script>`;
 const standalone = (page, seo = '') => {
   const at = page.indexOf('<style>');
   let head = page.slice(0, at).replace(/<meta name="claude:[^>]*>\n?/g, '');
@@ -306,7 +313,8 @@ fs.mkdirSync(path.join(here, 'dist', 'pages'), { recursive: true });
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(pageHtml(false), SEO));
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'icon.png'), Buffer.from(fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim(), 'base64'));
 // For search engines (submit it in Search Console: a project site can't have its own robots.txt).
-fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+if (PREVIEW) fs.rmSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), { force: true });
+else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
 // Screenshots in What's new, loaded only when it is opened.
@@ -315,7 +323,9 @@ for (const c of CHANGES) for (const it of c.items) for (const f of it.image ? [i
 // One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
 fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).
-fs.writeFileSync(path.join(here, 'dist', 'pages', 'llms.txt'), fs.readFileSync(path.join(here, 'src', 'llms.txt'), 'utf8'));
+// Its links are absolute on the live site, relative in a preview (llms.txt sits at the site's root).
+const llms = fs.readFileSync(path.join(here, 'src', 'llms.txt'), 'utf8');
+fs.writeFileSync(path.join(here, 'dist', 'pages', 'llms.txt'), PREVIEW ? llms.replaceAll(`(${PAGES_BASE})`, '(./)').replaceAll(PAGES_BASE, '') : llms);
 // The intro page to share with testers and contributors: /start/ on the Pages site.
 const startDir = path.join(here, 'dist', 'pages', 'start');
 fs.mkdirSync(startDir, { recursive: true });
@@ -336,7 +346,12 @@ const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;',
 fs.writeFileSync(
   path.join(startDir, 'index.html'),
   fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8')
-    .replaceAll('__BASE__', PAGES_BASE)
+    // __BASE__ is the site's root: absolute on the live site; in a preview, relative to start/ (and
+    // the lines that only make sense with an absolute address are left out).
+    .replace(/^.*__BASE__(?:start\/)?".*\n/gm, (l) => (PREVIEW && /rel="canonical"|og:url/.test(l) ? '' : l))
+    .replace('<meta name="viewport"', `${NOINDEX}<meta name="viewport"`)
+    .replaceAll('__BASE__start/', PREVIEW ? '' : `${PAGES_BASE}start/`)
+    .replaceAll('__BASE__', PREVIEW ? '../' : PAGES_BASE)
     .replaceAll('__VSIX_URL__', escHtml(vsix.url))
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
