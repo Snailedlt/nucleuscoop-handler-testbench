@@ -372,7 +372,7 @@ export function initLines({ editor, openReference }: Deps) {
   sortSel.addEventListener('change', () => ((prefs.sort = sortSel.value as any), savePrefs(), render()));
 
   // --- settings (the gear): what the list shows and does. Niche ones under Advanced.
-  const SETTINGS: { key: keyof Prefs; label: string; hint?: string; advanced?: boolean }[] = [
+  const SETTINGS: { key: keyof Prefs; label: string; hint?: string; advanced?: boolean; /** Not on phones, where the list is full width. */ wideOnly?: boolean }[] = [
     { key: 'meta', label: 'Show type and default', hint: 'Beside each name, e.g. bool · false' },
     { key: 'marks', label: 'Mark names the handler already uses', hint: '✓ and the value it is set to' },
     { key: 'jump', label: 'Jump to names that are already set', hint: 'Instead of adding a second line. Shift+click still inserts.' },
@@ -386,7 +386,7 @@ export function initLines({ editor, openReference }: Deps) {
     { key: 'params', label: 'Insert parameter names for functions', advanced: true },
     { key: 'shorthand', label: 'Shorthand filter', hint: '"kmd" finds KillMutexDelay', advanced: true },
     { key: 'info', label: 'Details of the hovered name', hint: 'Signature and docs at the bottom of the list', advanced: true },
-    { key: 'wide', label: 'Wider column', advanced: true },
+    { key: 'wide', label: 'Wider column', hint: '400 px instead of 310, for long names and values. You can also drag the left edge of the list.', advanced: true, wideOnly: true },
   ];
   const panel = $('#lines-settings');
   const gear = $('#lines-gear');
@@ -403,7 +403,7 @@ export function initLines({ editor, openReference }: Deps) {
     panel.append(head);
     const row = (s: (typeof SETTINGS)[number]) => {
       const lab = document.createElement('label');
-      lab.className = 'set-row';
+      lab.className = s.wideOnly ? 'set-row wide-only' : 'set-row';
       const box = document.createElement('input');
       box.type = 'checkbox';
       box.id = `lines-set-${s.key}`;
