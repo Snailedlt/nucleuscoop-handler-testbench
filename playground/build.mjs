@@ -61,16 +61,31 @@ async function hubExamples() {
     const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
     if (cached.handlers.length >= hubCount) return { ...cached, handlers: cached.handlers.slice(0, hubCount) };
   }
+  // A refresh fetches the list, then only versions the last snapshot doesn't have (a version never
+  // changes), naming the tool in its User-Agent.
+  const previous = new Map();
+  try {
+    for (const h of JSON.parse(fs.readFileSync(cachePath, 'utf8')).handlers) previous.set(`${h.id}-v${h.version}`, h);
+  } catch {}
   const get = async (url) => {
-    const r = await fetch(url);
+    const r = await fetch(url, { headers: { 'user-agent': 'nucleus-handler-workbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)' } });
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     return r.json();
   };
   const listing = (await get(`${HUB}/api/v1/allhandlers`)).Handlers.sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0));
   const handlers = [];
   const rejected = [];
+  let reused = 0;
+  let lookedUp = 0;
   for (const h of listing) {
     if (handlers.length >= hubCount) break;
+    const known = previous.get(`${h._id}-v${h.currentVersion}`);
+    if (known) {
+      handlers.push({ ...known, downloads: h.downloadCount ?? known.downloads });
+      reused++;
+      continue;
+    }
+    lookedUp++;
     let meta;
     try {
       meta = (await get(`${HUB}/api/v1/package/${h.currentPackage}`)).packages?.[0]?.meta;
@@ -101,6 +116,7 @@ async function hubExamples() {
       source: meta.jsContent.replace(/\r\n/g, '\n'),
     });
   }
+  console.log(`Hub snapshot: ${reused} handler(s) unchanged since the last one, ${lookedUp} looked up.`);
   const result = { takenAt: new Date().toISOString(), handlers, rejected };
   fs.writeFileSync(cachePath, JSON.stringify(result));
   return result;
@@ -143,6 +159,27 @@ if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handle
 
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
 const build = { core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
+// What's new, from ../CHANGELOG.md: dated sections ("## 2026-11-05"), newest first; each bullet
+// starts with a **short summary**. "Unreleased" is only shown in preview builds (--preview).
+function changes() {
+  const text = fs.readFileSync(path.join(here, '..', 'CHANGELOG.md'), 'utf8');
+  const out = [];
+  for (const part of text.split(/^## /m).slice(1)) {
+    const [head, ...rest] = part.split('\n');
+    const id = head.trim();
+    if (id === 'Unreleased' && !process.argv.includes('--preview')) continue;
+    if (id !== 'Unreleased' && !/^\d{4}-\d{2}-\d{2}$/.test(id)) continue;
+    const items = rest
+      .filter((l) => l.startsWith('- '))
+      .map((l) => {
+        const m = l.match(/^- \*\*(.+?)\*\*\s*(.*)$/);
+        return m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' };
+      });
+    if (items.length) out.push({ id, items });
+  }
+  return out;
+}
+const CHANGES = changes();
 
 // One bundle for the page and its lint worker (src/main.ts picks which to run), so the
 // linter and the API model ship once.
@@ -174,7 +211,7 @@ for (const h of hub.handlers) {
  *  fetches hub/<id>.js when one is opened, which keeps every visit small. */
 function pageHtml(inlineHub) {
   const handlers = inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h);
-  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};`.replace(/<\/script/gi, '<\\/script');
+  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())

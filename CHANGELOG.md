@@ -4,6 +4,8 @@ The browser workbench (<https://snailedlt.github.io/nucleuscoop-handler-testbenc
 
 ## Unreleased
 
+- **What's new, in the workbench.** After an update, a short note says what changed, with a link to this list (also in the footer, the ⋯ menu, Settings and Ctrl+K). It can be turned off in Settings.
+- **Easier on the Hub.** The site's Hub snapshot only fetches handler versions it doesn't have yet, and the full Hub check runs weekly instead of nightly.
 - **Loads about half as much.** A visit downloads about 235 KB instead of 433 KB: Hub examples load when you open one, and the checker is no longer sent twice.
 - **The workbench as one offline file.** `workbench.html` in the extension's releases (or `nucleus workbench`) is the whole workbench in a single file, to open locally or host yourself.
 - **Previous tip.** The tip bar has ‹ and › to go back and forth.

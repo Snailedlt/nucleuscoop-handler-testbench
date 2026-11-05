@@ -36,8 +36,14 @@ jobs:
         working-directory: core
       - run: npm ci
         working-directory: playground
-      - name: Build (fresh Hub snapshot, verified versions only)
-        run: node build.mjs --core ../core --refresh-hub
+      - name: Keep the Hub snapshot between runs
+        uses: actions/cache@v4
+        with:
+          path: playground/hub-cache.json
+          key: hub-snapshot-${{ github.run_id }}
+          restore-keys: hub-snapshot-
+      - name: Build (Hub snapshot refreshed on the daily run only; unchanged versions reused)
+        run: node build.mjs --core ../core ${{ github.event_name == 'schedule' && '--refresh-hub' || '' }}
         env:
           GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
         working-directory: playground

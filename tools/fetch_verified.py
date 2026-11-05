@@ -27,8 +27,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'downloads')
 
 
+# Name the tool, so the Hub's maintainers can see who is asking (and reach us).
+UA = 'nucleus-handler-testbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)'
+
+
 def get(url, binary=False):
-    with urllib.request.urlopen(url, timeout=120) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA}), timeout=120) as r:
         data = r.read()
     return data if binary else json.loads(data)
 
@@ -55,11 +59,22 @@ def main():
     os.makedirs(os.path.join(OUT, 'handlers'), exist_ok=True)
     manifest_path = os.path.join(OUT, 'verified-manifest.json')
     manifest = {e['file']: e for e in json.load(open(manifest_path))} if os.path.exists(manifest_path) else {}
-    admitted = rejected = 0
+    # Only the handlers asked for this time end up in the manifest. A version already admitted earlier
+    # (downloads/ is kept between CI runs) is reused without asking the Hub again: a version never changes.
+    current = {}
+    admitted = rejected = reused = 0
 
     for h in handlers:
         hid, version, package = h['_id'], h['currentVersion'], h['currentPackage']
         name = f'{hid}-v{version}.js'
+
+        cached = manifest.get(name)
+        if cached and os.path.exists(os.path.join(OUT, 'handlers', name)):
+            with open(os.path.join(OUT, 'handlers', name), 'rb') as f:
+                if hashlib.sha256(f.read()).hexdigest() == cached['sha256']:
+                    current[name] = cached
+                    reused += 1
+                    continue
 
         def reject(reason):
             nonlocal rejected
@@ -108,16 +123,25 @@ def main():
             os.makedirs(os.path.dirname(target), exist_ok=True)
             with open(target, 'wb') as f:
                 f.write(z.read(n))
-        manifest[name] = {
+        current[name] = {
             'file': name, 'handlerId': hid, 'version': version, 'package': package, 'title': h.get('title'),
             'sha256': hashlib.sha256(js).hexdigest(),
         }
         admitted += 1
         print(f'OK     {hid} v{version} ({h.get("title")})')
 
+    if not args.id:
+        # Older versions are no longer current: drop their files.
+        for stale in set(manifest) - set(current):
+            try:
+                os.remove(os.path.join(OUT, 'handlers', stale))
+            except FileNotFoundError:
+                pass
+    else:
+        current = {**manifest, **current}
     with open(manifest_path, 'w') as f:
-        json.dump(sorted(manifest.values(), key=lambda e: e['file']), f, indent=1)
-    print(f'\n{admitted} admitted, {rejected} rejected. Manifest: {manifest_path}')
+        json.dump(sorted(current.values(), key=lambda e: e['file']), f, indent=1)
+    print(f'\n{admitted} downloaded, {reused} reused (already had that version), {rejected} rejected. Manifest: {manifest_path}')
     return 0
 
 

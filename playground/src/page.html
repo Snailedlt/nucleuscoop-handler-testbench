@@ -159,6 +159,20 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 #lines-flash[hidden] { display: none; }
 #lines-info .link { margin-top: 4px; font-size: 12px; }
 /* Tip bar: loading-screen tips, and Clippy-style heads-ups when the code makes one relevant */
+/* Update note and What's new */
+#updated { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--info); background: var(--info-bg); color: var(--fg); border-radius: var(--r-pane); font-size: 13px; }
+#updated[hidden] { display: none; }
+#updated #updated-text { flex: 1; min-width: 0; }
+#updated .btn.icon { width: 26px; padding: 2px 0; }
+#news-dialog { width: min(560px, 94vw); }
+#news-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+#news-body { max-height: 60vh; overflow: auto; }
+#news-body h3 { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+#news-body h3 .chip { margin-left: 6px; text-transform: none; letter-spacing: 0; }
+#news-body ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+#news-body li strong { display: block; }
+#news-body li span { color: var(--muted); font-size: 13px; }
+#news-body code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 3px; }
 /* Settings dialog, More menu, symbol keys */
 .phone-only { display: none !important; }
 #settings-open { display: inline-flex; align-items: center; justify-content: center; }
@@ -471,6 +485,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     </div>
   </header>
 
+  <div id="updated" role="status" hidden><span id="updated-text"></span> <button class="link" type="button" id="updated-open">What's new</button><button class="btn icon" type="button" id="updated-close" aria-label="Dismiss">×</button></div>
   <div class="switch" role="group" aria-label="Show">
     <button type="button" data-view="code" aria-pressed="false">Handler</button>
     <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
@@ -560,7 +575,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </div>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -589,7 +604,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <label class="set-check"><input type="checkbox" id="set-keybar"> <span>Symbol keys on touch screens<small>A row with ; = " ( ) { } [ ], Suggest and Undo above the on-screen keyboard</small></span></label></div>
   <div class="set-sec"><h3>Help</h3>
     <label class="set-check"><input type="checkbox" id="set-tips"> <span>Tips under the code<small>General tips, and a heads-up when the code makes one relevant</small></span></label>
-    <button class="link" type="button" id="set-heads">Show heads-ups again</button></div>
+    <button class="link" type="button" id="set-heads">Show heads-ups again</button>
+    <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
+    <button class="link" type="button" id="set-news-open">What's new</button></div>
   <div class="set-sec"><h3>Lines</h3>
     <label class="set-check"><input type="checkbox" id="set-lines"> <span>Show the Lines list<small>Every name a handler can use, click to insert (Ctrl+Shift+L)</small></span></label>
     <button class="link" type="button" id="set-lines-more">List settings…</button></div>
@@ -606,8 +623,16 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <button class="btn" type="button" data-proxy="#save" id="more-save">Save for Nucleus</button>
     <button class="btn" type="button" data-proxy="#copy">Copy the handler</button>
     <button class="btn" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
+    <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
   </div>
   <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
+</dialog>
+
+<dialog id="news-dialog" aria-label="What's new">
+  <h2>What's new</h2>
+  <div id="news-body"></div>
+  <p class="muted small">All changes: <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/blob/main/CHANGELOG.md" target="_blank" rel="noopener">workbench</a> · <a href="https://github.com/Snailedlt/splitscreenme-vscode/blob/main/CHANGELOG.md" target="_blank" rel="noopener">VS Code extension</a></p>
+  <div class="actions"><button class="btn primary" type="button" id="news-close">Close</button></div>
 </dialog>
 
 <div id="keybar" role="toolbar" aria-label="Symbol keys" hidden></div>

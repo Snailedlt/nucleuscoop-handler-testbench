@@ -1,5 +1,5 @@
-name: Nightly check
-# Real Jint vs Try it, every night, against splitscreenme-vscode's main branch:
+name: Weekly check
+# Real Jint vs Try it, every week (and on pushes that touch the harness), against splitscreenme-vscode's main branch:
 #   1. engine probes still give the recorded Jint 2.11.58 results (test-probes.sh)
 #   2. Try it predicts the same outcome on every probe, directly and isolated (sim-parity.mjs)
 #   3. every verified Hub handler (current version, sha256-checked) runs in real Jint, network
@@ -8,7 +8,7 @@ name: Nightly check
 #   4. a warning when Nucleus master has moved past the commit the stubs are pinned to
 on:
   schedule:
-    - cron: '7 3 * * *'
+    - cron: '7 3 * * 1' # Mondays: the Hub changes slowly, and a weekly check keeps our load on it low
   workflow_dispatch:
   push:
     branches: [main]
@@ -47,7 +47,13 @@ jobs:
           npm ci
           node sim-parity.mjs --core ../core
           node sim-parity.mjs --core ../core --isolated
-      - name: Fetch verified Hub handlers (current verified versions only)
+      - name: Keep downloaded Hub handlers between runs (each version is fetched once)
+        uses: actions/cache@v4
+        with:
+          path: downloads
+          key: hub-handlers-${{ github.run_id }}
+          restore-keys: hub-handlers-
+      - name: Fetch verified Hub handlers (current verified versions only; new versions only)
         run: python3 -I tools/fetch_verified.py --limit 200
       - name: Run them in real Jint (network isolated)
         run: REQUIRE_ISOLATION=1 ./run.sh --verified > jint-hub.txt
