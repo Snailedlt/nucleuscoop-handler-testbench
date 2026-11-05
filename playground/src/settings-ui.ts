@@ -137,6 +137,8 @@ export function initSettings(d: Deps) {
   // don't say how tall the keyboard is: then the symbol keys go where the keyboard most likely ends,
   // a height learned on this device or a generous estimate, so they sit on top of it, never under.
   let kbOpen = false;
+  let lastVisible = 0;
+  let wasGuess = false;
   let baseH = window.innerHeight; // the page's height without a keyboard
   let waited = false; // gave the keyboard time to open
   let measurable = false; // this page has seen the keyboard's height
@@ -197,7 +199,11 @@ export function initSettings(d: Deps) {
     const kbH = byApi ? vkH : Math.max(0, baseH - visible);
     const seen = kbH > 120;
     const open = focused && touch() && seen && (byApi || (!!vv && vv.height < window.innerHeight - 120));
-    if (open !== kbOpen || open) {
+    // Re-fit only when the keyboard opens, closes or changes height: these events also fire while
+    // scrolling, and scrolling the cursor back into view then would undo the scroll.
+    const changed = open !== kbOpen || (open && Math.abs(visible - lastVisible) > 2);
+    lastVisible = visible;
+    if (changed) {
       kbOpen = open;
       document.body.classList.toggle('kb-open', open);
       if (open) {
@@ -217,11 +223,12 @@ export function initSettings(d: Deps) {
     document.body.classList.toggle('keybar-on', show && seen);
     document.body.classList.toggle('keybar-est', guess);
     if (debug) debug.textContent = `inner ${window.innerHeight} vv ${vv ? Math.round(vv.height) + '+' + Math.round(vv.offsetTop) : '-'} base ${baseH}\nvk ${vk ? vkH : 'none'} kb ${kbH} seen ${seen} meas ${measurable}\nfocus ${focused} waited ${waited} show ${show} guess ${guess}`;
-    if (!show) return;
+    if (!show) return void (wasGuess = false);
     const bottom = seen ? (byApi ? vkH : vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0) : estimate();
     bar.style.bottom = `${bottom}px`;
     document.documentElement.style.setProperty('--kb-est', guess ? `${bottom}px` : '0px');
-    if (guess) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
+    if (guess && !wasGuess) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
+    wasGuess = guess;
   }
   const onFocus = () => {
     focused = true;
