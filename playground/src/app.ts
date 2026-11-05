@@ -20,6 +20,7 @@ import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
+import { initTouchTitles } from './touch-titles';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -409,16 +410,25 @@ function renderProblems(text: string) {
 // code steps through the problems, so writing code doesn't mean switching to Results.
 
 const linePop = $('#line-pop');
-function lineProblems(line: number): Diagnostic[] {
+function lineProblems(line: number, all = false): Diagnostic[] {
   const text = editor.getValue();
-  const simple = mode === 'simple';
+  const simple = mode === 'simple' && !all;
   return current.filter((d) => lineOf(text, d.start) === line && (simple ? d.severity === 'error' || d.severity === 'warning' : d.severity !== 'hint'));
 }
-function showLineProblems(line: number) {
-  const list = lineProblems(line);
-  if (!list.length) return hideLinePop();
+/** The problems on a line, or with `at`, only those covering that spot plus the docs of the name
+ *  there (touch screens: tap a marked word, or hold any name). */
+function showLineProblems(line: number, at?: number) {
+  const list = lineProblems(line, at !== undefined).filter((d) => at === undefined || (d.start <= at && at <= Math.max(d.end, d.start + 1)));
+  let doc = '';
+  if (at !== undefined) {
+    const text = editor.getValue();
+    const r = resolveAt(text, at);
+    doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+  }
+  if (!list.length && !doc) return hideLinePop();
   linePop.innerHTML =
     `<button class="btn icon lp-close" type="button" aria-label="Close">×</button>` +
+    (doc ? `<div class="lp-doc">${doc}</div>` : '') +
     list
       .map((d, i) => {
         const plain = plainFor(d);
@@ -457,6 +467,47 @@ function hideLinePop() {
   linePop.hidden = true;
 }
 editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
+
+// Touch screens have no hover: the mouse events a tap fakes would open the hover docs and the
+// problem tooltips and leave them stuck. Instead, a tap on an underlined word shows its problems
+// (and docs), and holding any name shows its docs. The keyboard and native selection still work.
+{
+  const wrap = editor.getWrapperElement();
+  let touchAt = 0;
+  let start: { x: number; y: number; t: number } | undefined;
+  let hold: number | undefined;
+  const indexAt = (x: number, y: number) => editor.indexFromPos(editor.coordsChar({ left: x, top: y }, 'window'));
+  const popAt = (x: number, y: number) => {
+    const i = indexAt(x, y);
+    showLineProblems(editor.posFromIndex(i).line, i);
+  };
+  for (const type of ['mouseover', 'mousemove', 'mouseout']) wrap.addEventListener(type, (e: Event) => Date.now() - touchAt < 1000 && e.stopPropagation(), true);
+  wrap.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (e.pointerType !== 'touch') return;
+    touchAt = Date.now();
+    tip.hidden = true;
+    if ((e.target as HTMLElement).closest('.CodeMirror-gutters, #line-pop')) return (start = undefined);
+    start = { x: e.clientX, y: e.clientY, t: Date.now() };
+    clearTimeout(hold);
+    hold = window.setTimeout(() => start && (popAt(start.x, start.y), (start = undefined)), 500);
+  }, true);
+  wrap.addEventListener('pointermove', (e: PointerEvent) => {
+    if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) (clearTimeout(hold), (start = undefined));
+  }, true);
+  const end = (e: PointerEvent) => {
+    if (e.pointerType !== 'touch') return;
+    touchAt = Date.now();
+    clearTimeout(hold);
+    const s = start;
+    start = undefined;
+    if (!s || e.type === 'pointercancel') return;
+    // A short tap: only on an underlined (marked) word, so tapping to type stays quiet.
+    const el = document.elementFromPoint(s.x, s.y);
+    if (el?.closest('.CodeMirror-lint-mark')) requestAnimationFrame(() => popAt(s.x, s.y));
+  };
+  wrap.addEventListener('pointerup', end, true);
+  wrap.addEventListener('pointercancel', end, true);
+}
 editor.on('change', hideLinePop);
 editor.on('scroll', hideLinePop);
 
@@ -1638,3 +1689,4 @@ if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 }
+initTouchTitles();
