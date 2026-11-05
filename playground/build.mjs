@@ -303,10 +303,11 @@ fs.writeFileSync(
     .replaceAll('__BASE__', PAGES_BASE)
     .replaceAll('__VSIX_URL__', escHtml(vsix.url))
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
-    .replaceAll('__VSIX_TAG__', escHtml(vsix.tag)),
+    .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
+    .replaceAll('__PROBES__', String(probes.length)),
 );
 for (const [dir, files] of [
-  [path.join(here, '..', 'docs', 'images'), ['check.png']],
+  [path.join(here, '..', 'docs', 'images'), ['check.png', 'lines-tree.png']],
   [path.join(coreRepo, 'docs', 'images'), ['vscode-problems.png', 'vscode-try-it.png', 'vscode-hover.png']],
 ]) for (const f of files) fs.copyFileSync(path.join(dir, f), path.join(startDir, f));
 fs.copyFileSync(path.join(startDir, 'check.png'), path.join(startDir, 'og.png'));
