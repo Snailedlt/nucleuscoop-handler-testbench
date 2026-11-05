@@ -109,6 +109,9 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
   if (d.rule === 'unknown-member' && /four controllers/.test(d.message)) {
     return { title: "A controller slot Nucleus doesn't have", why: 'Nucleus and Proto Input take at most four controllers per instance (ProtoController1 to 4), so this line does nothing. Removing it is safe.' };
   }
+  if (d.rule === 'unknown-member' && /calling it throws/.test(d.message)) {
+    return { title: "A function that doesn't exist", why: "Calling it is an error, so Nucleus stops here. It's usually a typo." };
+  }
   return PLAIN[d.rule] ?? { title: d.rule, why: '' };
 }
 
