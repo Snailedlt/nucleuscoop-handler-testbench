@@ -8,7 +8,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
   ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently) · ### 🙏 Thanks
 - 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". When it came through GitHub (an issue, a pull request, a review), link their profile: "- **[name](https://github.com/name)** for …". Credit them inline too ("Reported by Horah.").
 - One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
-- A screenshot for big, visible changes, indented under its line: `  ![What it shows](docs/images/changelog/<date>-<name>-light.png)` (≈700–1000 px wide), with `<date>-<name>-dark.png` beside it: What's new shows the one for the viewer's theme (`tools/screenshots.cjs` takes both).
+- A screenshot (or other media) for big, visible changes, folded away in a `<details><summary>Screenshot</summary>` block indented under its line, with a blank line before and after the image and the closing `  </details>`; the image line: `  ![What it shows](docs/images/changelog/<date>-<name>-light.png)` (≈700–1000 px wide), with `<date>-<name>-dark.png` beside it: What's new shows the one for the viewer's theme (`tools/screenshots.cjs` takes both).
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
@@ -16,7 +16,13 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Numbered releases in What's new.** Each release shows its number, with a link to its notes on GitHub, and screenshots open only when you click Screenshot.
 - **Toasts that stack and close.** Notes such as "Fixed" or "Link copied" stack at the bottom right (above the bottom bar on phones), show whether they're good news or a problem, close with ×, and stay while you hover them. "Fixed" and "Formatted" ones have an Undo button.
+  <details><summary>Screenshot</summary>
+
+  ![Three toasts stacked: a link that matches nothing, a fix with Undo, and Formatted with Undo](docs/images/changelog/toasts-light.png)
+
+  </details>
 
 ---
 
@@ -25,9 +31,19 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **Command palette, as in VS Code.** Ctrl+Shift+P (or F1) lists every command with its shortcut: format, fix, Try it, Test all, go to line, download, theme, settings and more. Ctrl+P still opens the examples and Hub handlers, and typing `>` there switches to commands.
+  <details><summary>Screenshot</summary>
+
+  ![The command palette: Format document, Fix problems automatically, Try it and more, each with its shortcut](docs/images/changelog/2026-11-05-palette-light.png)
+
+  </details>
 - **Format document.** Shift+Alt+F (or the command palette) tidies indentation and spacing. No line moves and no token changes, so Nucleus reads the handler exactly as before.
 - **Tips for handler authors.** About 60 tips in five kinds, each labelled: best practices, common pitfalls, shortcuts, settings and features. Plus heads-ups for `Game.GUID`, `Game.AddOption` and `Game.CustomHotkeys` lines.
 - **See what's in a package.** The "+ N files" next to the handler's name lists the package's other files, where Nucleus installs each one (`handlers\<GameName>\…`) and what's in the text files. To try it, open **Fallout New Vegas Multiplayer, with its files**, a verified Hub handler whose package adds the scripts its `Game.Play` runs.
+  <details><summary>Screenshot</summary>
+
+  ![Files in this package: each file of the Fallout New Vegas Multiplayer package, where Nucleus installs it, and a script's contents](docs/images/changelog/2026-11-05-package-files-light.png)
+
+  </details>
 - **More checks from the Nucleus source.** Check warns when `Game.GUID` changed from the Hub version (players would lose the game and their profiles), when option values are `true`/`false` or numbers (a saved profile turns them into text), when the file isn't UTF-8, and when `Game.GameName` has a backslash (the Hub install fails).
 - **Names that don't exist.** Check now catches a stray word or a typo of a variable (`"system.cfg", sdfsdf`), which stops Nucleus from loading the handler. Before, only Try it noticed. Plugins listed in a package's `pluginsInfo.txt` count as defined, in Check and in Try it.
 - **System.IO and other .NET calls in Lines.** `System.IO.File.Copy`, `Exists`, `Delete`, `Path.Combine`, `Directory.CreateDirectory`, `Thread.Sleep` and more, with docs, completion and how many Hub handlers use them. Suggested by messenils.
@@ -70,9 +86,19 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **Tap a warning next to the code.** Its problem opens right there, with Fix this. Works on phones too, where there's no hover.
+  <details><summary>Screenshot</summary>
+
+  ![The problem on line 20 opened from its marker next to the code, with Fix this](docs/images/changelog/2026-11-05-line-problems-light.png)
+
+  </details>
 - **Problems under the code on phones.** A strip shows how many problems there are and steps through them (‹ ›), so you can fix things without switching to Results.
 - **Docs for each name in Lines.** The (i) button opens what a name does, its default and how many Hub handlers use it, with Insert and Full docs.
 - **Test all combinations in Try it.** One button runs every player count (up to the handler's maximum), input setup and monitor size, and shows which combinations fail and why. Pick a cell to see that run. It takes about half a second.
+  <details><summary>Screenshot</summary>
+
+  ![Try it after Test all combinations: a table of player counts by input setup, every cell green](docs/images/changelog/2026-11-05-test-all-light.png)
+
+  </details>
 - **Copy or download right next to the code.** The new button beside Lines copies the code or a link, or downloads the handler as a .zip for Nucleus, a plain .js or an .nc package. Open a file from your device straight from the handler's name. While typing on a phone, Copy… in the symbol keys does the same. On phones, a link opens on the handler, and the phone's own Select all, copy and delete reach every line.
 - **Try it with a keyboard and mouse for every player.** Choose "Each player their own" under Keyboard & mouse, as in Nucleus' multiple keyboards and mice mode. Try it says so when the handler doesn't support it.
 
@@ -100,7 +126,11 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **What's new, in the workbench.** After an update, a short note says what changed, with a link to this list (also in the footer, the ⋯ menu, Settings and Ctrl+K). Turn it off in Settings.
+  <details><summary>Screenshot</summary>
+
   ![The What's new window, listing the latest changes by date](docs/images/changelog/whats-new-light.png)
+
+  </details>
 - **The workbench as one offline file.** `workbench.html` in the extension's releases (or `nucleus workbench`) is the whole workbench in a single file: open it locally or host it yourself.
 - **`llms.txt` for AI agents.** It tells agents where to find the MCP server, the agent skill and the API reference, and asks them to run the tools themselves instead of using this site.
 
@@ -120,11 +150,19 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **Lines list beside the code.** Every name a handler can use, click to insert. It shows what the handler already sets (and jumps there instead of adding a second line), dims names that don't work where the cursor is, suggests values, and sorts by how many of the 600 Hub handlers use each name. Its ⚙️ has the list settings. Idea: messenils.
+  <details><summary>Screenshot</summary>
+
   ![The Lines list filtered to "kill": Game.KillMutex is marked as already set, with its docs and Hub usage below](docs/images/changelog/2026-11-05-lines-light.png)
+
+  </details>
 - **Tips while you write.** Loading-screen-style tips under the code, and a heads-up when the code makes one relevant (each shown once). Turn them off with ×.
 - **Settings.** ⚙️ in the header: theme, text size, line wrap, symbol keys, tips and the Lines list; Advanced mode and the developer bar under Advanced.
 - **Works on phones.** A slim header with a ⋯ menu, Lines full screen, wrapped lines and symbol keys above the on-screen keyboard.
+  <details><summary>Screenshot</summary>
+
   ![The workbench on a phone: results, the code with symbol keys, the Lines list and the ⋯ menu](docs/images/changelog/2026-11-05-phones-light.png)
+
+  </details>
 - **Intro page for testers.** [The intro page](https://snailedlt.github.io/nucleuscoop-handler-testbench/start/) has screenshots, the install guide and a download link that always points to the newest release.
 
 ### 🐛 Fixed

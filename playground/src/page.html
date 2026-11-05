@@ -269,6 +269,11 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #news-body .release > summary::before { content: "▸"; color: var(--muted); width: 10px; }
 #news-body .release[open] > summary::before { content: "▾"; }
 #news-body .rel-date { font-weight: 700; font-size: 14.5px; }
+#news-body .rel-num { font: 600 11.5px var(--font-mono); color: var(--accent); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+#news-body .rel-link { margin: 12px 0 0; font-size: 13px; }
+#news-body details.shot { margin-top: 6px; }
+#news-body details.shot > summary { cursor: pointer; color: var(--accent); font-size: 12.5px; width: max-content; }
+#news-body details.shot img { display: block; margin-top: 6px; max-width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); }
 #news-body .rel-count { margin-left: auto; color: var(--muted); font-size: 12px; }
 #news-body .rel-body { padding: 4px 14px 12px; }
 #news-body h3 { margin: 12px 0 4px; font-size: 13.5px; }

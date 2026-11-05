@@ -235,6 +235,9 @@ function changes() {
     }
     if (items.length) out.push({ id, items });
   }
+  // Each dated release gets a number (the oldest is 1), shown in What's new with a link to its notes.
+  const dated = out.filter((c) => c.id !== 'Unreleased');
+  dated.forEach((c, i) => (c.n = dated.length - i));
   return out;
 }
 const CHANGES = changes();

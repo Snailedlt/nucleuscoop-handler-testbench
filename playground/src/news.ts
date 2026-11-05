@@ -1,7 +1,9 @@
 // What's new: the workbench's CHANGELOG.md, inside the workbench. After an update, a short note says
 // what changed (not on a first visit), with a link to the full list. Can be turned off in Settings.
 import { picture, syncPictures } from './themed';
-declare const CHANGES: { id: string; items: { group: string; summary: string; details: string; image?: { alt: string; file: string; dark?: string } }[] }[];
+
+const REPO = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench';
+declare const CHANGES: { id: string; n?: number; items: { group: string; summary: string; details: string; image?: { alt: string; file: string; dark?: string } }[] }[];
 
 const SEEN_KEY = 'nucleus-workbench-news-seen';
 const ON_KEY = 'nucleus-workbench-news';
@@ -39,14 +41,18 @@ export function initNews() {
   const latest = CHANGES[0]?.id;
   const open = () => {
     const item = (it: (typeof CHANGES)[number]['items'][number]) =>
-      `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}${it.image ? picture(`changes/${esc(it.image.file)}`, it.image.dark && `changes/${esc(it.image.dark)}`, esc(it.image.alt), ' loading="lazy"') : ''}</li>`;
+      `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}${it.image ? `<details class="shot"><summary>Screenshot</summary>${picture(`changes/${esc(it.image.file)}`, it.image.dark && `changes/${esc(it.image.dark)}`, esc(it.image.alt), ' loading="lazy"')}</details>` : ''}</li>`;
     // One card per release so they don't run into each other: the newest open, older ones folded.
     $('#news-body').innerHTML = CHANGES.map((c, i) => {
       const groups = [...new Set(c.items.map((it) => it.group))];
       const changes = c.items.filter((it) => !it.group.includes('🙏')).length;
-      const badge = c.id === 'Unreleased' ? '<span class="chip info">preview</span>' : i === 0 ? '<span class="chip ok">latest</span>' : '';
+      const badge = c.id === 'Unreleased' ? '<span class="chip info">preview</span>' : c === CHANGES.find((x) => x.id !== 'Unreleased') ? '<span class="chip ok">latest</span>' : '';
       const body = groups.map((g) => `${g ? `<h3>${esc(g)}</h3>` : ''}<ul class="${g.includes('🙏') ? 'thanks' : ''}">${c.items.filter((it) => it.group === g).map(item).join('')}</ul>`).join('');
-      return `<details class="release"${i < 1 || (i === 1 && CHANGES[0].id === 'Unreleased') ? ' open' : ''}><summary><span class="rel-date">${esc(when(c.id))}</span>${badge}<span class="rel-count">${changes} change${changes === 1 ? '' : 's'}</span></summary><div class="rel-body">${body}</div></details>`;
+      // Its number, and its notes on GitHub (the CHANGELOG.md heading's anchor).
+      const anchor = c.id.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-');
+      const num = c.n ? `<span class="rel-num">Release ${c.n}</span>` : '';
+      const link = c.n ? `<p class="rel-link"><a href="${REPO}/blob/main/CHANGELOG.md#${anchor}" target="_blank" rel="noopener">Release ${c.n} on GitHub</a></p>` : '';
+      return `<details class="release"${i < 1 || (i === 1 && CHANGES[0].id === 'Unreleased') ? ' open' : ''}><summary>${num}<span class="rel-date">${esc(when(c.id))}</span>${badge}<span class="rel-count">${changes} change${changes === 1 ? '' : 's'}</span></summary><div class="rel-body">${body}${link}</div></details>`;
     }).join('');
     // No screenshots in the single offline file: drop the ones that don't load.
     $('#news-body').querySelectorAll('img').forEach((img) => img.addEventListener('error', () => (img.closest('picture') ?? img).remove()));

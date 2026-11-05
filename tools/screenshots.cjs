@@ -4,7 +4,7 @@
 // Needs Python with Pillow for the phone collage. Writes docs/images/<name>-light.png and <name>-dark.png (changelog images under docs/images/changelog/).
 const path = require('path');
 const { chromium, devices } = require('playwright');
-const BASE = process.argv[2] || 'http://127.0.0.1:8765/';
+const BASE = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://127.0.0.1:8765/';
 const IMG = path.join(__dirname, '..', 'docs', 'images');
 const CH = path.join(IMG, 'changelog');
 const SKYRIM = 'PPct546raDXfjRLGw';
@@ -56,7 +56,8 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
 (async () => {
   const b = await chromium.launch();
   const desk = { viewport: { width: 1280, height: 760 }, deviceScaleFactor: 2 };
-  for (const t of ['light', 'dark']) {
+  // --release-shots: only the release-note screenshots below (the README and start page ones stay).
+  if (!process.argv.includes('--release-shots')) for (const t of ['light', 'dark']) {
     // README + /start: Check on a verified Hub handler.
     let { ctx, p } = await open(b, t, desk, 'hub-' + SKYRIM);
     await cmTop(p, 179);
@@ -135,6 +136,56 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     require('fs').writeFileSync(path.join(CH, `.phones-${t}.json`), JSON.stringify(parts.map((x) => x.toString('base64'))));
     await ctx.close();
   }
+  // Release-note screenshots (CHANGELOG.md), light and dark, ≈900 px wide.
+  const CHW = { viewport: { width: 1280, height: 760 }, deviceScaleFactor: 1 };
+  const shot = async (p, file, sel, pad = 0) => {
+    const r = sel ? await box(p, sel) : null;
+    await p.screenshot({ path: path.join(CH, file), ...(r ? { clip: { x: Math.max(0, r.x - pad), y: Math.max(0, r.y - pad), width: r.width + pad * 2, height: r.height + pad * 2 } } : {}) });
+  };
+  for (const t of ['light', 'dark']) {
+    // 18:33: Test all combinations.
+    let { ctx, p } = await open(b, t, CHW, 'hub-' + STARDEW);
+    await p.click('[role=tab][data-tab=simulate]');
+    await p.click('#sim-all');
+    await p.waitForTimeout(3000);
+    await shot(p, `2026-11-05-test-all-${t}.png`, '.pane.side');
+    await ctx.close();
+    // 18:33: tap a warning next to the code.
+    ({ ctx, p } = await open(b, t, { viewport: { width: 900, height: 600 }, deviceScaleFactor: 1 }, 'example-mistakes'));
+    // What a click on the marker of line 20 does (CodeMirror's gutterClick).
+    await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.constructor.signal(cm, 'gutterClick', cm, 19, 'CodeMirror-lint-markers', new MouseEvent('mousedown')); });
+    await p.waitForTimeout(500);
+    await shot(p, `2026-11-05-line-problems-${t}.png`, '.pane:not(.side)');
+    await ctx.close();
+    // 23:00: the command palette.
+    ({ ctx, p } = await open(b, t, CHW, 'example-mistakes'));
+    await p.click('.CodeMirror');
+    await p.keyboard.press('Control+Shift+P');
+    await p.mouse.move(2, 2);
+    await p.waitForTimeout(400);
+    await shot(p, `2026-11-05-palette-${t}.png`, '#open-dialog');
+    await ctx.close();
+    // 23:00: a package's files.
+    ({ ctx, p } = await open(b, t, CHW, 'package-nvmp'));
+    await p.click('#files-open');
+    await p.click('#files-body details:nth-of-type(1) summary');
+    await p.waitForTimeout(300);
+    await shot(p, `2026-11-05-package-files-${t}.png`, '#files-dialog');
+    await ctx.close();
+    // Unreleased: stacked toasts.
+    ({ ctx, p } = await open(b, t, CHW, 'example-mistakes'));
+    await p.addStyleTag({ content: '#toasts { display: flex !important; }' });
+    await p.evaluate(() => (location.hash = '#nope'));
+    await p.waitForTimeout(200);
+    await p.click('.problem button:has-text("Fix this")').catch(() => {});
+    await p.waitForTimeout(200);
+    await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setValue('Game.GUID="Demo";\nGame.GameName="Demo";\nGame.ExecutableName="demo.exe";\n'));
+    await p.click('.CodeMirror');
+    await p.keyboard.press('Shift+Alt+F');
+    await p.waitForTimeout(500);
+    await shot(p, `toasts-${t}.png`, '#toasts', 12);
+    await ctx.close();
+  }
   await b.close();
-  require('child_process').execFileSync('python3', ['-I', path.join(__dirname, 'compose-images.py'), CH], { stdio: 'inherit' });
+  if (!process.argv.includes('--release-shots')) require('child_process').execFileSync('python3', ['-I', path.join(__dirname, 'compose-images.py'), CH], { stdio: 'inherit' });
 })();

@@ -21,7 +21,7 @@ const ICONS: Record<ToastKind, string> = {
 
 /** The kind a message reads as. */
 export function kindOf(text: string): ToastKind {
-  if (/^(couldn'?t|can'?t|this browser can'?t|nothing matches|failed|error)\b|doesn't (contain|match)|damaged|isn't available/i.test(text)) return 'error';
+  if (/^(couldn'?t|can'?t|this browser can'?t|nothing matches|failed|error)\b|doesn't (contain|match)|can'?t be read|damaged|isn't available|would have (changed|broken|moved)/i.test(text)) return 'error';
   if (/still has \d+ error|may not|too big|no longer safe|not formatted|would have/i.test(text)) return 'warning';
   if (/^(fixed|copied|saved|formatted|created|opened|link copied|undone|applied|selected|already formatted)\b/i.test(text)) return 'success';
   return 'info';
