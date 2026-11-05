@@ -131,17 +131,32 @@ export function initSettings(d: Deps) {
     bar.append(b);
   }
   let focused = false;
+  // The on-screen keyboard shrinks the visible area (the visual viewport), not the page: size the
+  // workbench to what's visible, so the line being typed stays above the keyboard and the symbol keys.
+  let kbOpen = false;
   function placeKeybar() {
+    const vv = window.visualViewport;
+    const open = !!vv && focused && touch() && vv.height < window.innerHeight - 120;
+    if (open !== kbOpen || open) {
+      kbOpen = open;
+      document.body.classList.toggle('kb-open', open);
+      if (open && vv) {
+        document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
+        if (vv.offsetTop || window.scrollY) window.scrollTo(0, 0); // iOS scrolls the page up instead
+      }
+      d.editor.refresh();
+      if (focused) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
+    }
     const show = focused && ed.keybar && touch();
     bar.hidden = !show;
     document.body.classList.toggle('keybar-on', show);
     if (!show) return;
-    const vv = window.visualViewport;
     const bottom = vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0;
     bar.style.bottom = `${bottom}px`;
   }
   d.editor.on('focus', () => ((focused = true), placeKeybar()));
   d.editor.on('blur', () => ((focused = false), setTimeout(placeKeybar, 150)));
+  d.editor.on('cursorActivity', () => kbOpen && d.editor.scrollIntoView(null, 60));
   window.visualViewport?.addEventListener('resize', placeKeybar);
   window.visualViewport?.addEventListener('scroll', placeKeybar);
 
