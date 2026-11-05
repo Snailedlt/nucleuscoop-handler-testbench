@@ -96,7 +96,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   <h2 id="install">Try it in 5 minutes</h2>
   <div class="cards">
     <div class="card"><h3>1. Install</h3>
-      <ol><li>Download <a href="__VSIX_URL__"><strong>__VSIX_NAME__</strong></a> (__VSIX_TAG__, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
+      <ol><li>Download <a id="vsix" href="__VSIX_URL__"><strong id="vsix-name">__VSIX_NAME__</strong></a> (<span id="vsix-tag">__VSIX_TAG__</span>, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
         <li>In VS Code: <kbd>Ctrl+Shift+P</kbd> → <strong>Extensions: Install from VSIX…</strong> → pick the file.</li></ol>
       <p class="small">Or skip installing: <a href="../">open the workbench</a>.</p></div>
     <div class="card"><h3>2. Open a handler you know</h3>
@@ -123,5 +123,30 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 
   <footer class="small">Beta. It checks the handler script, not the game: windows, focus and input still need a real test in Nucleus. Nothing on your computer is touched.</footer>
 </main>
+<script>
+// The link above is the newest release when the site was built; this swaps in the newest one now
+// (pre-releases included), so a new release shows up without a rebuild. Keeps the built link on any error.
+(function () {
+  if (!window.fetch) return;
+  fetch('https://api.github.com/repos/Snailedlt/splitscreenme-vscode/releases?per_page=10', { headers: { accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (list) {
+      if (!Array.isArray(list)) return;
+      for (var i = 0; i < list.length; i++) {
+        var rel = list[i];
+        if (rel.draft) continue;
+        for (var j = 0; j < rel.assets.length; j++) {
+          var a = rel.assets[j];
+          if (!/\.vsix$/.test(a.name) || !/^https:\/\/github\.com\//.test(a.browser_download_url)) continue;
+          document.getElementById('vsix').href = a.browser_download_url;
+          document.getElementById('vsix-name').textContent = a.name;
+          document.getElementById('vsix-tag').textContent = rel.tag_name;
+          return;
+        }
+      }
+    })
+    .catch(function () {});
+})();
+</script>
 </body>
 </html>
