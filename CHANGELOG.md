@@ -27,7 +27,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ⚡ Faster
 
 - **Loads about half as much.** A visit downloads about 235 KB instead of 433 KB: Hub examples load when you open one, and the checker is no longer sent twice.
-- **Easier on the Hub.** The site's Hub snapshot only fetches handler versions it doesn't have yet, and the full Hub check runs weekly instead of nightly.
+- **Easier on the Hub.** One daily job is the only thing that reads the Hub's list; everything else (the site, the weekly check, people's tools) reads our copy of it. Only new handler versions are downloaded, the full Hub check runs weekly, and the site is only redeployed when something changed.
 
 ## 2026-11-05
 

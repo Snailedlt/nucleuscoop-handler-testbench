@@ -14,6 +14,9 @@ runs Hub handlers listed in that manifest with a matching hash.
 Usage: python3 -I tools/fetch_verified.py [--limit N] [--id HANDLER_ID ...]
 """
 import argparse
+import datetime
+import gzip
+import time
 import hashlib
 import io
 import json
@@ -31,10 +34,29 @@ OUT = os.path.join(ROOT, 'downloads')
 UA = 'nucleus-handler-testbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)'
 
 
+INDEX = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json'
+
+
 def get(url, binary=False):
-    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA}), timeout=120) as r:
+    req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept-Encoding': 'gzip'})
+    with urllib.request.urlopen(req, timeout=120) as r:
         data = r.read()
+        if r.headers.get('Content-Encoding') == 'gzip':
+            data = gzip.decompress(data)
     return data if binary else json.loads(data)
+
+
+def listing():
+    """The handler list from our daily index (tools/hub-sync.mjs), not the Hub; the Hub only if it's missing."""
+    try:
+        idx = get(INDEX)
+        age = time.time() - datetime.datetime.fromisoformat(idx['syncedAt'].replace('Z', '+00:00')).timestamp()
+        if age > 3 * 86400:
+            raise ValueError('index older than 3 days')
+        return idx['handlers']
+    except Exception as e:  # noqa: BLE001
+        print(f'Hub index unavailable ({e}); reading the Hub list instead.')
+        return get(f'{HUB}/api/v1/allhandlers')['Handlers']
 
 
 def norm(text):
@@ -47,14 +69,14 @@ def main():
     ap.add_argument('--id', action='append', default=[], help='specific handler id(s) instead of the top N')
     args = ap.parse_args()
 
-    listing = get(f'{HUB}/api/v1/allhandlers')['Handlers']
+    listing_ = listing()
     if args.id:
-        handlers = [h for h in listing if h['_id'] in set(args.id)]
+        handlers = [h for h in listing_ if h['_id'] in set(args.id)]
         missing = set(args.id) - {h['_id'] for h in handlers}
         for m in sorted(missing):
             print(f'REJECT {m}: not in the public listing')
     else:
-        handlers = sorted(listing, key=lambda h: -h.get('downloadCount', 0))[: args.limit]
+        handlers = sorted(listing_, key=lambda h: -h.get('downloadCount', 0))[: args.limit]
 
     os.makedirs(os.path.join(OUT, 'handlers'), exist_ok=True)
     manifest_path = os.path.join(OUT, 'verified-manifest.json')

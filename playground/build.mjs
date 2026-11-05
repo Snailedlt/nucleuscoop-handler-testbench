@@ -6,6 +6,7 @@
 // The core is imported from a checkout of splitscreenme-vscode (src/core), so the
 // page always runs the same linter as the extension.
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -72,7 +73,17 @@ async function hubExamples() {
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     return r.json();
   };
-  const listing = (await get(`${HUB}/api/v1/allhandlers`)).Handlers.sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0));
+  // The list comes from our daily index (tools/hub-sync.mjs), not the Hub; the Hub only if it's missing.
+  let listing;
+  try {
+    const idx = await get('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
+    if (Date.now() - Date.parse(idx.syncedAt) > 3 * 86400_000) throw new Error('index older than 3 days');
+    listing = idx.handlers;
+  } catch (e) {
+    console.warn(`Hub index unavailable (${e.message}); reading the Hub's list instead.`);
+    listing = (await get(`${HUB}/api/v1/allhandlers`)).Handlers;
+  }
+  listing.sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0));
   const handlers = [];
   const rejected = [];
   let reused = 0;
@@ -81,7 +92,7 @@ async function hubExamples() {
     if (handlers.length >= hubCount) break;
     const known = previous.get(`${h._id}-v${h.currentVersion}`);
     if (known) {
-      handlers.push({ ...known, downloads: h.downloadCount ?? known.downloads });
+      handlers.push(known); // as in the last snapshot (download counts too), so an unchanged Hub gives an identical page
       reused++;
       continue;
     }
@@ -116,8 +127,18 @@ async function hubExamples() {
       source: meta.jsContent.replace(/\r\n/g, '\n'),
     });
   }
+  // Ordered by the snapshot's own counts, so day-to-day swaps in live counts don't change the page.
+  handlers.sort((a, b) => b.downloads - a.downloads || a.id.localeCompare(b.id));
   console.log(`Hub snapshot: ${reused} handler(s) unchanged since the last one, ${lookedUp} looked up.`);
-  const result = { takenAt: new Date().toISOString(), handlers, rejected };
+  // Keep the snapshot's date unless a handler changed, so an unchanged Hub gives an identical page
+  // (and the deploy is skipped).
+  let takenAt = new Date().toISOString();
+  try {
+    const prev = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    const key = (hs) => hs.map((h) => `${h.id}-v${h.version}`).join(',');
+    if (prev.takenAt && key(prev.handlers) === key(handlers)) takenAt = prev.takenAt;
+  } catch {}
+  const result = { takenAt, handlers, rejected };
   fs.writeFileSync(cachePath, JSON.stringify(result));
   return result;
 }
@@ -288,4 +309,14 @@ for (const [dir, files] of [
   [path.join(coreRepo, 'docs', 'images'), ['vscode-problems.png', 'vscode-try-it.png', 'vscode-hover.png']],
 ]) for (const f of files) fs.copyFileSync(path.join(dir, f), path.join(startDir, f));
 fs.copyFileSync(path.join(startDir, 'check.png'), path.join(startDir, 'og.png'));
+// Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
+// compares it with the live build.txt).
+{
+  const files = [];
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : files.push(path.join(d, e.name))));
+  walk(path.join(here, 'dist', 'pages'));
+  const h = crypto.createHash('sha256');
+  for (const f of files.filter((f) => !f.endsWith('build.txt')).sort()) h.update(path.relative(path.join(here, 'dist', 'pages'), f) + '\0').update(fs.readFileSync(f));
+  fs.writeFileSync(path.join(here, 'dist', 'pages', 'build.txt'), h.digest('hex') + '\n');
+}
 console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

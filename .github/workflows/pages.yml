@@ -1,7 +1,8 @@
 name: Workbench (GitHub Pages)
 # Publishes the browser workbench to https://snailedlt.github.io/nucleuscoop-handler-testbench/
 # Built from this repo plus splitscreenme-vscode's main branch (the linter and Try it), with a fresh
-# snapshot of verified Hub handlers and the Discord bot's templates. Rebuilt daily so both stay current.
+# snapshot of verified Hub handlers (from our daily Hub index; only new versions are looked up) and
+# the Discord bot's templates. Built daily, but deployed only when the result differs from the live site.
 # One-time setup: Settings > Pages > Build and deployment > Source: "GitHub Actions".
 on:
   push:
@@ -50,11 +51,21 @@ jobs:
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground
+      - name: Anything new to deploy? (the live build.txt is the last deploy's fingerprint)
+        id: changed
+        run: |
+          live=$(curl -fsS https://snailedlt.github.io/nucleuscoop-handler-testbench/build.txt || true)
+          now=$(cat playground/dist/pages/build.txt)
+          if [ "$live" = "$now" ] && [ "${{ github.event_name }}" != workflow_dispatch ]; then echo "Same as the live site: skipping the deploy."; echo "deploy=false" >> "$GITHUB_OUTPUT"; else echo "deploy=true" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/upload-pages-artifact@v3
+        if: steps.changed.outputs.deploy == 'true'
         with:
           path: playground/dist/pages
+    outputs:
+      deploy: ${{ steps.changed.outputs.deploy }}
   deploy:
     needs: build
+    if: needs.build.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

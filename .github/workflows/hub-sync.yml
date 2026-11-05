@@ -1,0 +1,37 @@
+name: Hub sync
+# Once a day: the only place our tools read the Hub's handler list. The index goes to the `data`
+# branch (one commit, replaced each time), and the CLI, MCP server, VS Code, the workbench build and the
+# weekly check read it from there:
+#   https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json
+# so people using the tools add no load to hub.splitscreen.me's API.
+on:
+  schedule:
+    - cron: '17 4 * * *' # before the workbench's daily build (04:41)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hub-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read the Hub list once
+        run: node tools/hub-sync.mjs "$RUNNER_TEMP/hub-index.json"
+      - name: Publish it on the data branch
+        run: |
+          cd "$RUNNER_TEMP"
+          git init -q -b data data && cd data
+          cp ../hub-index.json .
+          printf '# Hub index\n\nThe hub.splitscreen.me handler list, synced daily by `.github/workflows/hub-sync.yml` on `main`. Read by the tools instead of the Hub API.\n' > README.md
+          git add -A
+          git -c user.name='hub-sync' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -qm "Hub index $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data
