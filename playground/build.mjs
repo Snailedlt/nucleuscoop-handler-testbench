@@ -191,7 +191,7 @@ function changes() {
     const [head, ...rest] = part.split('\n');
     const id = head.trim();
     if (id === 'Unreleased' && !process.argv.includes('--preview')) continue;
-    if (id !== 'Unreleased' && !/^\d{4}-\d{2}-\d{2}$/.test(id)) continue;
+    if (id !== 'Unreleased' && !/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(id)) continue;
     const items = [];
     let group = '';
     for (const l of rest) {

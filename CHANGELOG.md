@@ -9,10 +9,10 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". When it came through GitHub (an issue, a pull request, a review), link their profile: "- **[name](https://github.com/name)** for …". Credit them inline too ("Reported by Horah.").
 - One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
 - A screenshot for big, visible changes, indented under its line: `  ![What it shows](docs/images/changelog/<date>-<name>.png)` (≈700–1000 px wide).
-- When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>". A `---` line separates releases.
+- When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
-## Unreleased
+## 2026-11-05 15:43
 
 ### ✨ New
 

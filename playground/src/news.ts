@@ -25,7 +25,13 @@ const inline = (s: string) =>
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
     .replace(/&lt;(https:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-const when = (id: string) => (id === 'Unreleased' ? 'In this preview' : new Date(id + 'T12:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }));
+const when = (id: string) => {
+  if (id === 'Unreleased') return 'In this preview';
+  const [d, t] = id.split(' '); // "2026-11-05" or "2026-11-05 15:30" (UTC) for a second release that day
+  const date = new Date(`${d}T${t ?? '12:00'}:00Z`);
+  const day = date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  return t ? `${day}, ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : day;
+};
 
 export function initNews() {
   const dlg = $('#news-dialog') as HTMLDialogElement;
