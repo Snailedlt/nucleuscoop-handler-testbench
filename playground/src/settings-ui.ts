@@ -139,6 +139,7 @@ export function initSettings(d: Deps) {
   let kbOpen = false;
   let baseH = window.innerHeight; // the page's height without a keyboard
   let waited = false; // gave the keyboard time to open
+  let measurable = false; // this page has seen the keyboard's height
   let waitTimer: number | undefined;
   window.addEventListener('resize', () => !focused && (baseH = window.innerHeight));
   const portrait = () => window.innerHeight >= window.innerWidth;
@@ -187,7 +188,10 @@ export function initSettings(d: Deps) {
     const visible = vv ? vv.height : window.innerHeight;
     const seen = visible < baseH - 120;
     if (seen && focused) learn(baseH - visible);
-    const show = focused && ed.keybar && touch() && (seen || waited);
+    // Once this page has seen the keyboard, it can tell: no keyboard now means it was closed (Android's
+    // back gesture closes it but keeps the cursor in the code). Only guess where it never could.
+    if (seen) measurable = true;
+    const show = focused && ed.keybar && touch() && (seen || (waited && !measurable));
     const guess = show && !seen;
     bar.hidden = !show;
     document.body.classList.toggle('keybar-on', show && seen);
