@@ -1046,7 +1046,7 @@ function showOpen() {
   openDialog.showModal();
   ($('#open-q') as HTMLInputElement).focus();
 }
-$('#open-open').addEventListener('click', showOpen);
+$('#doc-switch').addEventListener('click', showOpen);
 $('#open-close').addEventListener('click', () => openDialog.close());
 $('#open-q').addEventListener('input', () => {
   activeEntry = 0;

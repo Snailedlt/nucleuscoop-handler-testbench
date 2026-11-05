@@ -419,6 +419,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .doc-head { justify-content: space-between; }
 .doc-title { font-weight: 600; display: flex; gap: 6px; align-items: baseline; min-width: 0; }
 #doc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#doc-switch { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; font: inherit; font-weight: 600; color: var(--fg); background: none; border: 1px solid transparent; border-radius: var(--r-ctl); padding: 3px 8px; margin-left: -8px; cursor: pointer; }
+#doc-switch:hover, #doc-switch:focus-visible { background: var(--surface-2); border-color: var(--line); }
+#doc-switch .chev { flex: none; color: var(--muted); }
+#doc-switch kbd { font-weight: 400; }
 #doc-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .verdict { display: flex; flex-direction: column; gap: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface-2); }
 .verdict #status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
@@ -502,7 +506,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   /* One header row: logo, Examples, More, Settings */
   header { flex-wrap: nowrap !important; align-items: center; }
   header .brand h1, header .brand .sub { display: none; }
-  header .toolbar { width: auto !important; flex: 1; }
+  header .toolbar { width: auto !important; flex: 1; justify-content: flex-end; }
   header .toolbar .btn { padding: 8px 10px; }
   /* Handler / Results at the bottom, like an app's tab bar (hidden while typing, when the symbol keys show) */
   .switch { position: fixed; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 50; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
@@ -606,7 +610,6 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <input type="checkbox" id="advanced" role="switch"><span class="track" aria-hidden="true"></span>Advanced mode
     </label>
     <div class="toolbar">
-      <button class="btn primary" id="open-open" type="button" title="Examples, Hub handlers, probes and actions (Ctrl+K)">Examples… <kbd class="dev-only">Ctrl K</kbd></button>
       <button class="btn wide-only" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
       <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
       <button class="btn wide-only" id="new-open" type="button">New handler…</button>
@@ -626,7 +629,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><span id="doc-name">Untitled handler</span><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
