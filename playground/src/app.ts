@@ -451,7 +451,7 @@ function runSim() {
   const simple = mode === 'simple';
   if (!r.loaded) {
     out.push(
-      `<div class="banner error"><strong>${esc(sessionSummary(r))}</strong> Fix the problems in <button class="link" type="button" id="sim-check">Check</button> first.<div class="mono small">${esc(r.loadError ?? '')}</div></div>`,
+      `<div class="banner error"><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
     );
   } else {
     out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
@@ -480,6 +480,10 @@ function runSim() {
   }
   $('#sim-out').innerHTML = out.join('');
   $('#sim-out').querySelector('#sim-check')?.addEventListener('click', () => selectTab('problems'));
+  $('#sim-out').querySelector('#sim-fix')?.addEventListener('click', () => {
+    selectTab('problems');
+    ($('#fix-all') as HTMLButtonElement).click();
+  });
 }
 $('#sim-run').addEventListener('click', runSim);
 
@@ -1434,13 +1438,8 @@ try {
 }
 if (!welcomed) {
   const w = $('#welcome');
-  w.innerHTML = `<h3>Check a Nucleus Co-op handler before you play</h3>
-    <p class="muted" style="margin:0 0 4px">A handler is the small file that tells Nucleus Co-op how to run a game split-screen. It lives in the <code>handlers</code> folder inside your Nucleus Co-op folder.</p>
-    <ol><li><button class="link" type="button" data-w="file">Open your handler file</button>, drop it here, or <button class="link" type="button" data-w="open">start from an example</button> (engine templates and Hub handlers).</li>
-    <li>Fix what Nucleus would reject. Most problems fix themselves with one click.</li>
-    <li><button class="link" type="button" data-w="sim">Try it</button> to see what each player gets.</li>
-    <li>Save it for Nucleus, or copy it back into your handler file.</li></ol>
-    <button class="btn" type="button" data-w="close">Got it</button>`;
+  w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
+    <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span></div>`;
   w.hidden = false;
   w.querySelector('[data-w=open]')!.addEventListener('click', showOpen);
   w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());

@@ -12,6 +12,17 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## Unreleased
+
+### 🛠️ Improved
+
+- **The verdict comes first.** Check opens with whether Nucleus can use the handler and the fix button; the welcome note is a short card under it, with a × to dismiss.
+- **Try it helps when the handler doesn't load.** Fix the problems from there with one click, or jump to them.
+- **More room for the code.** The Lines list opens by default only on very wide screens (1680 px and up), and the code gets more of the width while it's open.
+- **A shorter Try it intro.** One sentence instead of a paragraph.
+
+---
+
 ## 2026-11-05 15:43
 
 ### ✨ New

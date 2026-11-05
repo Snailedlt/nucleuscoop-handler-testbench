@@ -59,7 +59,7 @@ export function initLines({ editor, openReference }: Deps) {
     Object.assign(prefs, JSON.parse(store.get(PREFS_KEY) || '{}'));
   } catch {}
   const saved = store.get(LINES_KEY);
-  let open = saved ? saved === '1' : window.matchMedia('(min-width: 1400px)').matches;
+  let open = saved ? saved === '1' : window.matchMedia('(min-width: 1680px)').matches;
   let scan: Scan | undefined;
   let callback = false;
   let current: Line | undefined;

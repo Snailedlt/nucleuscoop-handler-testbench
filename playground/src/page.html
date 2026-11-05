@@ -113,6 +113,7 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 12px; }
+.main:has(#lines:not([hidden])) { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
 .pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; }
 .pane-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 40px; box-sizing: border-box; }
 #status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
@@ -364,9 +365,15 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .tip-line { font-size: 11.5px; margin-left: auto; }
 .problem.current { outline: 2px solid var(--accent); outline-offset: 1px; }
 .fixable { font-size: 11px; color: var(--ok); font-weight: 600; }
-#welcome { border: 1px solid var(--accent); border-radius: var(--r-pane); padding: 10px 12px; margin-bottom: 10px; }
-#welcome h3 { margin: 0 0 4px; }
-#welcome ol { margin: 4px 0 8px; padding-left: 20px; }
+#welcome { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r-pane); padding: 8px 10px; margin-bottom: 10px; font-size: 13px; }
+#welcome[hidden] { display: none; }
+#welcome .w-head { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+#welcome .w-head > span { flex: 1; min-width: 0; }
+#welcome .w-head strong { color: var(--fg); }
+#welcome .w-head .btn.icon { width: 26px; padding: 2px 0; flex: none; }
+#welcome .w-steps { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
+#welcome .w-steps b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 11px; margin-right: 2px; }
+.banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 90; background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: var(--r-pane); font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: calc(100vw - 32px); }
 #open-dialog { width: min(860px, calc(100vw - 24px)); max-height: min(80vh, 760px); padding: 0; display: none; flex-direction: column; overflow: hidden; }
 #open-dialog[open] { display: flex; }
@@ -549,7 +556,6 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes"></span></button>
       </div>
       <div role="tabpanel" id="panel-problems">
-        <div id="welcome" hidden></div>
         <div class="verdict" id="verdict">
           <div id="status"></div>
           <div class="ai-bar" id="ai-bar">
@@ -559,6 +565,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
             <input id="ai-note" type="text" placeholder="For AI: anything else to change" aria-label="Extra instructions for Claude" hidden>
           </div>
         </div>
+        <div id="welcome" hidden></div>
         <div id="ai-box" hidden></div>
         <div class="filters dev-only" role="group" aria-label="Show problems">
           <button class="filter" type="button" data-filter="all" aria-pressed="true">All <span id="f-all"></span></button>
@@ -577,7 +584,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <label>Keyboard & mouse <select id="sim-kb"><option value="0" selected>Player 1</option><option value="1">Player 2</option><option value="-1">Nobody</option></select></label>
           <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
         </div>
-        <p class="muted" style="margin:0 0 12px;max-width:65ch">What Nucleus would set up for each player: where its window goes, how the game is started, and which settings files it changes. Nothing on your computer is touched. Whether the game actually plays well still needs a real test in Nucleus.<span class="dev-only"> How: the handler is loaded and <code>Game.Play</code> runs once per player in this browser, following the Jint 2.11.58 rules Nucleus uses (checked against the real engine on every probe). File, registry and process calls are recorded, not performed.</span></p>
+        <p class="muted" style="margin:0 0 12px;max-width:65ch">Each player's window, launch arguments and file changes, as Nucleus would set them up. Simulated: nothing on your computer is touched, and the game itself still needs a test in Nucleus.<span class="dev-only"> How: the handler is loaded and <code>Game.Play</code> runs once per player in this browser, following the Jint 2.11.58 rules Nucleus uses (checked against the real engine on every probe). File, registry and process calls are recorded, not performed.</span></p>
         <div id="sim-out"></div>
       </div>
       <div role="tabpanel" id="panel-api" hidden>
