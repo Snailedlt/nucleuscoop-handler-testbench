@@ -200,6 +200,8 @@ ${html}
 </html>
 `,
 );
+// llms.txt: where AI agents find the tools (https://llmstxt.org).
+fs.writeFileSync(path.join(here, 'dist', 'pages', 'llms.txt'), fs.readFileSync(path.join(here, 'src', 'llms.txt'), 'utf8'));
 // The intro page to share with testers and contributors: /start/ on the Pages site.
 const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 const startDir = path.join(here, 'dist', 'pages', 'start');
