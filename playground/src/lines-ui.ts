@@ -145,9 +145,10 @@ export function initLines({ editor, openReference }: Deps) {
   const treeOn = () => prefs.tree;
   const ROOT_ORDER = ['Game', 'Context', 'Player', 'ProtoInput', 'System', 'Nucleus'];
   const segs = (l: Line) => l.path.replace(/^new /, '').split('.');
-  function renderTree(shown: Line[]) {
-    const depth = treePath.length;
-    const here = treePath.join('.');
+  /** The folders and names directly under `path`. */
+  function levelAt(shown: Line[], path: string[]) {
+    const depth = path.length;
+    const here = path.join('.');
     const nodes = new Map<string, number>();
     const leaves: Line[] = [];
     for (const l of shown) {
@@ -156,6 +157,35 @@ export function initLines({ editor, openReference }: Deps) {
       if (sg.length === depth + 1) leaves.push(l);
       else if (sg.length > depth + 1) nodes.set(sg[depth], (nodes.get(sg[depth]) ?? 0) + 1);
     }
+    const rank = (n: string) => (depth ? 0 : ROOT_ORDER.includes(n) ? ROOT_ORDER.indexOf(n) : ROOT_ORDER.length);
+    const names = [...nodes.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    if (prefs.sort === 'used' && prefs.usage) leaves.sort((a, b) => (b.of ? b.used / b.of : 0) - (a.of ? a.used / a.of : 0) || a.text.localeCompare(b.text));
+    else leaves.sort((a, b) => a.text.localeCompare(b.text, 'en', { sensitivity: 'base' }));
+    return { names, counts: nodes, leaves };
+  }
+  function nodeRow(path: string[], n: string, count: number, current = false) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ln ln-node';
+    b.title = `${[...path, n].join('.')}: ${count} names`;
+    if (current) b.setAttribute('aria-current', 'true');
+    b.append(text('span', 'nm', n), text('span', 'meta', `${count} ›`));
+    b.addEventListener('click', () => {
+      treePath = [...path, n];
+      render();
+      (list.querySelector(current ? `.ln-node[aria-current]` : '.ln-col:last-child .ln, .ln') as HTMLElement | null)?.focus();
+    });
+    const row = document.createElement('div');
+    row.className = 'ln-row';
+    row.append(b);
+    return row;
+  }
+  // Wide enough (the Wider column setting, or the list dragged wider): two columns, like a file
+  // browser: the level above on the left (where you are highlighted), what's in it on the right.
+  const TWO_COLUMNS = 460;
+  function renderTree(shown: Line[]) {
+    const depth = treePath.length;
+    const cur = levelAt(shown, treePath);
     list.textContent = '';
     const frag = document.createDocumentFragment();
     const crumbs = document.createElement('nav');
@@ -172,30 +202,36 @@ export function initLines({ editor, openReference }: Deps) {
       crumbs.append(c);
     });
     frag.append(crumbs);
-    const rank = (n: string) => (depth ? 0 : ROOT_ORDER.includes(n) ? ROOT_ORDER.indexOf(n) : ROOT_ORDER.length);
-    for (const n of [...nodes.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'ln ln-node';
-      b.title = `${[...treePath, n].join('.')}: ${nodes.get(n)} names`;
-      b.append(text('span', 'nm', n), text('span', 'meta', `${nodes.get(n)} ›`));
-      b.addEventListener('click', () => {
-        treePath = [...treePath, n];
-        render();
-        (list.querySelector('.ln') as HTMLElement | null)?.focus();
-      });
-      const row = document.createElement('div');
-      row.className = 'ln-row';
-      row.append(b);
-      frag.append(row);
-    }
-    if (prefs.sort === 'used' && prefs.usage) leaves.sort((a, b) => (b.of ? b.used / b.of : 0) - (a.of ? a.used / a.of : 0) || a.text.localeCompare(b.text));
-    else leaves.sort((a, b) => a.text.localeCompare(b.text, 'en', { sensitivity: 'base' }));
-    for (const l of leaves) frag.append(rowFor(l, segs(l).pop()! + (l.method ? '()' : '')));
-    if (!nodes.size && !leaves.length) frag.append(text('div', 'none', 'Nothing here.'));
+    const here = document.createDocumentFragment();
+    for (const n of cur.names) here.append(nodeRow(treePath, n, cur.counts.get(n)!));
+    for (const l of cur.leaves) here.append(rowFor(l, segs(l).pop()! + (l.method ? '()' : '')));
+    if (!cur.names.length && !cur.leaves.length) here.append(text('div', 'none', 'Nothing here.'));
+    twoColumns = depth > 0 && list.clientWidth >= TWO_COLUMNS;
+    if (twoColumns) {
+      const parent = treePath.slice(0, -1);
+      const up = levelAt(shown, parent);
+      const cols = document.createElement('div');
+      cols.className = 'ln-cols';
+      const left = document.createElement('div');
+      left.className = 'ln-col';
+      left.setAttribute('aria-label', parent.length ? parent.join('.') : 'All');
+      for (const n of up.names) left.append(nodeRow(parent, n, up.counts.get(n)!, n === treePath[depth - 1]));
+      const right = document.createElement('div');
+      right.className = 'ln-col';
+      right.setAttribute('aria-label', treePath.join('.'));
+      right.append(here);
+      cols.append(left, right);
+      frag.append(cols);
+    } else frag.append(here);
     list.append(frag);
-    $('#lines-count').textContent = `${nodes.size + leaves.length} here`;
+    $('#lines-count').textContent = `${cur.names.length + cur.leaves.length} here`;
   }
+  // Switch between one and two columns when the list is resized.
+  let twoColumns = false;
+  new ResizeObserver(() => {
+    if (prefs.group !== 'tree' || !treeOn() || !treePath.length) return;
+    if ((list.clientWidth >= TWO_COLUMNS) !== twoColumns) render();
+  }).observe(list);
 
   function render() {
     const q = ($('#lines-q') as HTMLInputElement).value.trim().toLowerCase();
@@ -387,7 +423,7 @@ export function initLines({ editor, openReference }: Deps) {
     { key: 'shorthand', label: 'Shorthand filter', hint: '"kmd" finds KillMutexDelay', advanced: true },
     { key: 'info', label: 'Details of the hovered name', hint: 'Signature and docs at the bottom of the list', advanced: true },
     { key: 'tree', label: 'Tree grouping', hint: 'Adds "as a tree" to Group: browse Game, Context, System… one level at a time', advanced: true },
-    { key: 'wide', label: 'Wider column', hint: '400 px instead of 310, for long names and values. You can also drag the left edge of the list.', advanced: true, wideOnly: true },
+    { key: 'wide', label: 'Wider column', hint: '520 px instead of 310: room for long names and values, and two columns in the tree. You can also drag the left edge of the list.', advanced: true, wideOnly: true },
   ];
   const panel = $('#lines-settings');
   const gear = $('#lines-gear');
