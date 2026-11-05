@@ -112,7 +112,7 @@ const GUI_TIPS = ([
   { id: 'g-info', text: 'In Lines, the (i) next to a name shows its docs without inserting it.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-resize', text: 'Drag the bars between panels to resize them. Double-click a bar to reset it, or use Reset panel sizes in Settings.' },
   { id: 'g-copy-typing', text: 'Typing on a phone? Copy… at the end of the symbol keys copies the code, or a link to just the lines you selected.' },
-  { id: 'g-tree', text: 'Lines can be a tree: pick Group › as a tree, then tap Game, Context or System to go a level deeper.', action: { label: 'Show Lines', run: 'lines' } },
+  { id: 'g-tree', text: 'Lines opens as a tree: tap Game, Context or System to go a level deeper, or type to search everything. Group › by object shows one long list instead.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-package-files', text: 'Open a .zip or .nc with Goldberg files, configs or DLLs: they\'re kept, and Save puts them back in the package unchanged.' },
   { id: 'g-wakatime', text: 'Use WakaTime? Add your API key in Settings › Advanced to count your handler time. Only the file and game names are sent, never the code.' },
   { id: 'g-settings', text: 'The gear at the top has the theme, font size, line wrapping and the phone symbol bar.' },

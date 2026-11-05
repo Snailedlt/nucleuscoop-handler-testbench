@@ -34,7 +34,7 @@ export function initLines({ editor, openReference }: Deps) {
   const LINES = allLines();
   const kinds = new Set<Kind>();
   const DEFAULTS = {
-    group: 'object' as 'object' | 'topic' | 'tree',
+    group: 'tree' as 'object' | 'topic' | 'tree',
     sort: 'az' as 'az' | 'used',
     // Basic settings
     meta: true, // type and default beside each name
