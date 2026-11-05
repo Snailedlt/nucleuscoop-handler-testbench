@@ -346,6 +346,7 @@ function renderProblems(text: string) {
     .sort((a, b) => rank[a.severity] - rank[b.severity] || a.start - b.start);
   shownProblems = list;
   problemIndex = -1;
+  queueMicrotask(renderStrip);
   const serious = counts.error + counts.warning;
   $('#count-problems').textContent = String(serious);
   $('#count-switch').textContent = String(serious);
@@ -402,6 +403,88 @@ function renderProblems(text: string) {
   el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
 }
 
+// ---------------------------------------------------------------------------
+// Problems on one line: tap (or click) a marker next to the code. On phones, a strip under the
+// code steps through the problems, so writing code doesn't mean switching to Results.
+
+const linePop = $('#line-pop');
+function lineProblems(line: number): Diagnostic[] {
+  const text = editor.getValue();
+  const simple = mode === 'simple';
+  return current.filter((d) => lineOf(text, d.start) === line && (simple ? d.severity === 'error' || d.severity === 'warning' : d.severity !== 'hint'));
+}
+function showLineProblems(line: number) {
+  const list = lineProblems(line);
+  if (!list.length) return hideLinePop();
+  linePop.innerHTML =
+    `<button class="btn icon lp-close" type="button" aria-label="Close">×</button>` +
+    list
+      .map((d, i) => {
+        const plain = plainFor(d);
+        const about = d.message.match(/`([^`]+)`/)?.[1];
+        const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes?.[0];
+        return `<div class="lp-item ${sevClass[d.severity]}"><div class="lp-title">Line ${line + 1}: ${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div><div class="lp-why">${esc(plain.why)}</div><div class="lp-actions">${fix ? `<button class="btn primary" type="button" data-lp-fix="${i}">${fix.preferred ? 'Fix this' : esc(fix.title.replace(/`/g, ''))}</button>` : ''}<button class="link" type="button" data-lp-more>More in Check</button></div></div>`;
+      })
+      .join('');
+  // Under the line, or above it near the bottom of the editor.
+  const top = editor.charCoords({ line, ch: 0 }, 'local').bottom - editor.getScrollInfo().top;
+  const h = $('#editor').clientHeight;
+  linePop.style.top = top + 8 < h * 0.55 ? `${top + 8}px` : '';
+  linePop.style.bottom = top + 8 < h * 0.55 ? '' : `${Math.max(8, h - top + 28)}px`;
+  linePop.hidden = false;
+  linePop.querySelector('.lp-close')!.addEventListener('click', hideLinePop);
+  linePop.querySelectorAll<HTMLButtonElement>('[data-lp-fix]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const d = list[Number(b.dataset.lpFix)];
+      const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes![0];
+      editor.operation(() => {
+        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+      });
+      hideLinePop();
+      toast(`Fixed: ${fix.title.replace(/`/g, '')}. Ctrl+Z undoes it.`);
+    }),
+  );
+  linePop.querySelectorAll('[data-lp-more]').forEach((b) =>
+    b.addEventListener('click', () => {
+      hideLinePop();
+      if (narrow()) setView('results');
+      selectTab('problems');
+    }),
+  );
+}
+function hideLinePop() {
+  linePop.hidden = true;
+}
+editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
+editor.on('change', hideLinePop);
+editor.on('scroll', hideLinePop);
+
+let stripIndex = 0;
+function renderStrip() {
+  const strip = $('#probstrip');
+  const list = shownProblems;
+  strip.hidden = !list.length;
+  if (!list.length) return;
+  stripIndex = Math.min(stripIndex, list.length - 1);
+  const d = list[stripIndex];
+  const errors = list.filter((x) => x.severity === 'error').length;
+  const line = lineOf(editor.getValue(), d.start) + 1;
+  $('#ps-text').innerHTML = `<span class="ps-count">${errors ? `<span class="e">✖ ${errors}</span>` : ''}${list.length - errors ? `<span class="w">⚠ ${list.length - errors}</span>` : ''}</span><span class="ps-msg">Line ${line}: ${esc(plainFor(d).title)}</span>`;
+}
+function stripStep(dir: number) {
+  if (!shownProblems.length) return;
+  stripIndex = (stripIndex + dir + shownProblems.length) % shownProblems.length;
+  renderStrip();
+  const d = shownProblems[stripIndex];
+  const p = editor.posFromIndex(d.start);
+  editor.scrollIntoView(p, 80);
+  editor.setCursor(p);
+  showLineProblems(p.line);
+}
+$('#ps-prev').addEventListener('click', () => stripStep(-1));
+$('#ps-next').addEventListener('click', () => stripStep(1));
+$('#ps-text').addEventListener('click', () => stripStep(0));
+
 function jumpTo(offset: number) {
   if (narrow()) setView('code');
   const p = editor.posFromIndex(offset);
@@ -455,14 +538,16 @@ function runSim() {
     );
   } else {
     out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
+    if (r.inputNote) out.push(`<p class="note">${esc(r.inputNote)}</p>`);
   }
   if (r.ignored.length) {
     const uniq = groupIgnored(r.ignored);
     out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
   }
   for (const p of r.players) {
-    const role = p.index === kb ? 'keyboard & mouse' : 'controller';
-    out.push(`<section class="player p${(p.index % 8) + 1}"><h3>Player ${p.index + 1} <span class="chip ${p.index === kb ? 'info' : ''}">${role}</span></h3>
+    const ownKb = p.index === kb || kb === -2; // -2: each player their own keyboard and mouse
+    const role = ownKb ? 'keyboard & mouse' : 'controller';
+    out.push(`<section class="player p${(p.index % 8) + 1}"><h3>Player ${p.index + 1} <span class="chip ${ownKb ? 'info' : ''}">${role}</span></h3>
       ${p.error ? `<div class="banner error">Setting up this player fails here, and Nucleus ends the session.<div class="mono small">${esc(p.error)}</div></div>` : ''}
       ${p.note ? `<p class="muted">${esc(p.note)}</p>` : ''}
       <dl><dt>Window</dt><dd>${esc(p.window)}</dd>

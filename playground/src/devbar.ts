@@ -100,6 +100,7 @@ export function initDevBar(opts: { build: string; toast: (text: string) => void 
 
   function render() {
     bar.hidden = !on;
+    document.body.classList.toggle("devbar-on", on);
     bar.classList.toggle('min', min);
     if (!on) return closePanel();
     if (min) {

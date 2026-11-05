@@ -89,6 +89,33 @@ export function initLines({ editor, openReference }: Deps) {
     docs.addEventListener('click', () => openReference(l.path.replace(/^new /, '')));
     info.append(docs);
   }
+  /** The docs of one name, shown under its row by the (i) button. */
+  function details(l: Line): HTMLElement {
+    const d = text('div', 'ln-doc', '');
+    d.append(text('code', '', l.sig));
+    if (l.doc) d.append(text('div', '', l.doc));
+    const facts: string[] = [];
+    if (l.default !== undefined) facts.push(`Default: ${l.default}`);
+    if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${USAGE_TOTAL} Hub handlers`);
+    if (l.scope === 'callback') facts.push('Only inside Game.Play and other callbacks');
+    const u = scan?.uses.get(l.path);
+    if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
+    if (facts.length) d.append(text('div', 'muted', facts.join(' · ')));
+    const actions = text('div', 'ln-doc-actions', '');
+    const ins = document.createElement('button');
+    ins.type = 'button';
+    ins.className = 'btn';
+    ins.textContent = u?.assigned.length && prefs.jump ? 'Go to it' : 'Insert';
+    ins.addEventListener('click', () => pick(l, false));
+    const docs = document.createElement('button');
+    docs.type = 'button';
+    docs.className = 'link';
+    docs.textContent = 'Full docs';
+    docs.addEventListener('click', () => openReference(l.path.replace(/^new /, '')));
+    actions.append(ins, docs);
+    d.append(actions);
+    return d;
+  }
   function text(tag: string, cls: string, s: string) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -138,10 +165,31 @@ export function initLines({ editor, openReference }: Deps) {
         const name = text('span', 'nm', l.text);
         const m = metaFor(l);
         b.append(name, text('span', 'meta ' + m.cls, m.text));
+        b.classList.add('ln');
         b.addEventListener('mouseenter', () => showInfo(l));
         b.addEventListener('focus', () => showInfo(l));
         b.addEventListener('click', (e) => pick(l, e.altKey || e.shiftKey));
-        frag.append(b);
+        // (i): the docs right under the row, for touch screens (no hover) and anyone who wants more.
+        const i = document.createElement('button');
+        i.type = 'button';
+        i.className = 'ln-info';
+        i.textContent = 'i';
+        i.title = `About ${l.text}`;
+        i.setAttribute('aria-label', `About ${l.text}`);
+        i.setAttribute('aria-expanded', 'false');
+        const row = document.createElement('div');
+        row.className = 'ln-row';
+        row.append(b, i);
+        i.addEventListener('click', () => {
+          const open = row.nextElementSibling?.classList.contains('ln-doc');
+          list.querySelectorAll('.ln-doc').forEach((d) => d.remove());
+          list.querySelectorAll('.ln-info[aria-expanded=true]').forEach((x) => x.setAttribute('aria-expanded', 'false'));
+          if (open) return;
+          i.setAttribute('aria-expanded', 'true');
+          row.after(details(l));
+          showInfo(l);
+        });
+        frag.append(row);
       }
     }
     if (!shown.length) frag.append(text('div', 'none', 'Nothing matches.'));
@@ -181,7 +229,6 @@ export function initLines({ editor, openReference }: Deps) {
     } else {
       editor.replaceSelection(l.path);
     }
-    if (window.matchMedia('(max-width: 860px)').matches) setOpen(false);
   }
   function offerValues(values: string[]) {
     editor.showHint({
@@ -203,7 +250,7 @@ export function initLines({ editor, openReference }: Deps) {
 
   // --- keyboard: arrows move, Enter inserts (Shift+Enter: insert even if set), Esc back to the code
   list.addEventListener('keydown', (e: KeyboardEvent) => {
-    const items = [...list.querySelectorAll<HTMLButtonElement>('button')];
+    const items = [...list.querySelectorAll<HTMLButtonElement>('button.ln')];
     const i = items.indexOf(document.activeElement as HTMLButtonElement);
     const go = (j: number) => items[Math.max(0, Math.min(items.length - 1, j))]?.focus();
     if (e.key === 'ArrowDown') go(i + 1);
@@ -218,7 +265,7 @@ export function initLines({ editor, openReference }: Deps) {
     e.preventDefault();
   });
   $('#lines-q').addEventListener('keydown', (e: KeyboardEvent) => {
-    const first = list.querySelector<HTMLButtonElement>('button');
+    const first = list.querySelector<HTMLButtonElement>('button.ln');
     if (e.key === 'ArrowDown' && first) {
       e.preventDefault();
       first.focus();
@@ -377,6 +424,9 @@ export function initLines({ editor, openReference }: Deps) {
   function setOpen(o: boolean, focus = false) {
     open = o;
     $('#lines').hidden = !o;
+    document.body.classList.toggle('lines-open', o);
+    const pop = document.getElementById('line-pop');
+    if (o && pop) pop.hidden = true;
     $('#lines-toggle').setAttribute('aria-pressed', String(o));
     store.set(LINES_KEY, o ? '1' : '0');
     editor.refresh();
