@@ -28,6 +28,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Much more room on phones.** One header row, Handler and Results at the bottom like an app (hidden while you type), and Lines as a sheet over the lower part of the screen so the code stays in view.
 - **The line you type stays in view on phones.** When the on-screen keyboard opens, the workbench fits the space above it (it reads the keyboard's height): the header and the tip bar step aside, and the cursor line stays visible above the symbol keys.
 - **Tidier tips on phones.** One line with a large ×; tap it for the whole tip, back, next and Turn off.
+- **More tips, on both handlers and the workbench.** Next now takes turns between a tip for writing handlers (when `Game.Play` runs, per-player launch arguments, `Game.Folder` and more) and one for the workbench (Test all combinations, resizing panels, the (i) in Lines and more).
 - **The developer bar fits on phones.** One scrollable row at the top instead of three rows over the page.
 
 - **The verdict comes first.** Check opens with whether Nucleus can use the handler and the fix button; the welcome note is a short card under it, with a × to dismiss.

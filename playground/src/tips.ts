@@ -1,6 +1,8 @@
 // Tips: a loading-screen-style tip bar under the code, plus Clippy-style tips that react to what
 // is being edited (each shown once). Every claim here is verified (see splitscreenme-vscode's
 // AGENTS.md "Facts the code relies on" and the testbench probes). Can be turned off.
+// Keep both kinds of general tips: `handler` (writing handlers: Nucleus and Jint behaviour) and
+// `gui` (using this workbench). Add a `gui` tip with every new workbench feature. Next alternates them.
 
 export interface TipContext {
   text: string;
@@ -10,6 +12,8 @@ export interface TipContext {
 export interface Tip {
   id: string;
   text: string; // plain text; `code` in backticks
+  /** General tips: about writing handlers, or about using the workbench. */
+  kind?: 'handler' | 'gui';
   /** Clippy-style: shown once, when this is true. */
   when?: (c: TipContext) => boolean;
   /** Optional action button. */
@@ -74,7 +78,7 @@ export const CONTEXT_TIPS: Tip[] = [
   },
 ];
 
-export const GENERAL_TIPS: Tip[] = [
+const HANDLER_TIPS = ([
   { id: 'g-case', text: 'Only the first letter of a name ignores case: `Game.killMutex` works, `Game.KillMUTEX` is silently ignored.' },
   { id: 'g-typos', text: 'Nucleus ignores misspelled options without an error. The Check tab and the ✓ marks in Lines show what Nucleus will really use.' },
   { id: 'g-context', text: '`Context` only exists inside `Game.Play` and other callbacks. At the top of the handler it stops Nucleus from loading it.' },
@@ -83,6 +87,14 @@ export const GENERAL_TIPS: Tip[] = [
   { id: 'g-letconst', text: '`let` and `const` work, but Nucleus treats them like `var`: they belong to the whole function, not the block.' },
   { id: 'g-args', text: 'Functions need every argument, even ones that look optional in the docs: Nucleus doesn’t fill in defaults.' },
   { id: 'g-exe', text: 'Set `Game.ExecutableName` even when you use `Game.ExecutableNames`: Nucleus’ "Search disks" needs it.' },
+  { id: 'g-play-when', text: '`Game.Play` runs after Nucleus sets up each instance (Goldberg, XInput and so on) and before the game starts. `Game.GamePlayBeforeGameSetup` or `Game.GamePlayAfterLaunch` moves it.' },
+  { id: 'g-startargs', text: 'Nucleus reads `Context.StartArguments` after `Game.Play`, so setting it there gives each player their own launch arguments.' },
+  { id: 'g-copied', text: 'Each player’s `Context` starts with a copy of the `Game` fields of the same name, so `Game.Play` can change one for a single player.' },
+  { id: 'g-folder', text: '`Game.Folder` is the handler’s own folder (`handlers/<file name without .js>/`). Extra files packed with the handler end up there.' },
+  { id: 'g-sse', text: 'Nucleus never calls `Game.SetupSse`. Put that code in `Game.Play` instead.' },
+] as Tip[]).map((t): Tip => ({ ...t, kind: 'handler' }));
+
+const GUI_TIPS = ([
   { id: 'g-lines', text: 'The Lines list has every name a handler can use. Click one to insert it; names already in the handler show their value.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'g-ctrlk', text: 'Press Ctrl+K (⌘K on a Mac) to open examples, Hub handlers and every action.' },
   { id: 'g-hover', text: 'Hover any name in the code for its docs. Type `.` or press Ctrl+Space for suggestions.' },
@@ -91,4 +103,13 @@ export const GENERAL_TIPS: Tip[] = [
   { id: 'g-tryit', text: 'Try it shows what each player gets: window position, launch arguments and file changes.', action: { label: 'Try it', run: 'tryit' } },
   { id: 'g-hub', text: 'Stuck? A Hub handler for a game on the same engine is often the fastest way to see what works.', action: { label: 'Examples', run: 'examples' } },
   { id: 'g-save', text: 'Save for Nucleus makes a .zip that Nucleus Co-op can install.' },
-];
+  { id: 'g-testall', text: 'Test all combinations in Try it runs every player count, input setup and monitor size in one go.', action: { label: 'Try it', run: 'tryit' } },
+  { id: 'g-kbm', text: 'Testing several keyboards and mice? In Try it, set Keyboard & mouse to Each player their own.', action: { label: 'Try it', run: 'tryit' } },
+  { id: 'g-gutter', text: 'Click a problem marker next to a line number to see that line’s problems.' },
+  { id: 'g-info', text: 'In Lines, the (i) next to a name shows its docs without inserting it.', action: { label: 'Show Lines', run: 'lines' } },
+  { id: 'g-resize', text: 'Drag the bars between panels to resize them. Double-click a bar to reset it, or use Reset panel sizes in Settings.' },
+  { id: 'g-settings', text: 'The gear at the top has the theme, font size, line wrapping and the phone symbol bar.' },
+] as Tip[]).map((t): Tip => ({ ...t, kind: 'gui' }));
+
+/** Handler and workbench tips taking turns, so Next alternates between them. */
+export const GENERAL_TIPS: Tip[] = Array.from({ length: Math.max(HANDLER_TIPS.length, GUI_TIPS.length) }, (_, i) => [HANDLER_TIPS[i], GUI_TIPS[i]]).flat().filter(Boolean);
