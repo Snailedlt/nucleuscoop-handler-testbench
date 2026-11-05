@@ -88,6 +88,7 @@ export function initTips({ editor, actions }: Deps) {
   editor.on('change', later);
 
   $('#tip-next').addEventListener('click', () => showGeneral(1));
+  $('#tip-prev').addEventListener('click', () => showGeneral(-1));
   $('#tip-off').addEventListener('click', () => setOn(false));
   act.addEventListener('click', () => currentAction?.());
   const toggles = [...document.querySelectorAll<HTMLButtonElement>('[data-tips-toggle]')];
