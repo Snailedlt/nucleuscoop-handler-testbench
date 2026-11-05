@@ -1,5 +1,6 @@
 import { applyTheme, initDevBar } from './devbar';
 import { watchPictures } from './themed';
+import { initToasts, toast as showToast, type ToastOptions } from './toast';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
@@ -486,7 +487,7 @@ function renderProblems(text: string) {
       editor.operation(() => {
         for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
       });
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}. Ctrl+Z undoes it.`);
+      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction });
     }),
   );
   el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
@@ -539,7 +540,7 @@ function showLineProblems(line: number, at?: number) {
         for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
       });
       hideLinePop();
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}. Ctrl+Z undoes it.`);
+      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction });
     }),
   );
   linePop.querySelectorAll('[data-lp-more]').forEach((b) =>
@@ -1092,7 +1093,7 @@ function formatDocument() {
   d.replaceRange(r.code, d.posFromIndex(0), d.posFromIndex(text.length), '+format');
   editor.setCursor({ line: Math.min(cur.line, editor.lineCount() - 1), ch: cur.ch });
   editor.scrollTo(null, top);
-  toast('Formatted: indentation and spacing. Ctrl+Z undoes it.');
+  toast('Formatted: indentation and spacing.', { kind: 'success', action: undoAction });
 }
 
 const hubLint = new Map<number, string>();
@@ -1296,19 +1297,15 @@ $('#copy').addEventListener('click', async () => {
   }
 });
 
-let toastTimer: number | undefined;
 const devBar = initDevBar({
   build: `core ${BUILD.core} · Nucleus ${String(BUILD.nucleus ?? '?').slice(0, 7)} · Jint ${BUILD.jint ?? '?'}`,
   toast: (t) => toast(t),
 });
 
-function toast(text: string) {
-  const el = $('#toast');
-  el.textContent = text;
-  el.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => (el.hidden = true), 3200);
-}
+// Toasts: src/toast.ts (stacked, closeable, Undo where it helps).
+const toast = (text: string, opts?: ToastOptions) => showToast(text, opts);
+initToasts();
+const undoAction = { label: 'Undo', run: () => editor.undo() };
 
 $('#help-open').addEventListener('click', () => helpDialog.showModal());
 $('#help-open-2').addEventListener('click', () => helpDialog.showModal());

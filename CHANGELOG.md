@@ -12,6 +12,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## Unreleased
+
+### 🛠️ Improved
+
+- **Toasts that stack and close.** Notes such as "Fixed" or "Link copied" stack at the bottom right (above the bottom bar on phones), show whether they're good news or a problem, close with ×, and stay while you hover them. "Fixed" and "Formatted" ones have an Undo button.
+
+---
+
 ## 2026-11-05 23:00
 
 ### ✨ New

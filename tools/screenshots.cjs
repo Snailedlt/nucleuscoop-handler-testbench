@@ -43,10 +43,10 @@ async function open(b, theme, opts, hash) {
   await p.waitForSelector('.CodeMirror');
   await p.waitForTimeout(1500);
   await p.evaluate(() => {
-    for (const s of ['#tipbar', '#updated', '#toast']) { const e = document.querySelector(s); if (e) e.hidden = true; }
+    for (const s of ['#tipbar', '#updated']) { const e = document.querySelector(s); if (e) e.hidden = true; }
     document.querySelectorAll('.toast').forEach((e) => e.remove());
   });
-  await p.addStyleTag({ content: '#toast { display: none !important; }' });
+  await p.addStyleTag({ content: '#toasts { display: none !important; }' });
   return { ctx, p };
 }
 const cmTop = (p, line) => p.evaluate((l) => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.scrollTo(null, cm.heightAtLine(l, 'local')); }, line);
