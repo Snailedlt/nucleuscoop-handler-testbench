@@ -102,5 +102,6 @@ jobs:
           RELEASE: ${{ needs.build.outputs.release }}
         run: |
           node tools/release-post.mjs "$RELEASE" > post.txt
-          node tools/announce.mjs post.txt
+          node tools/release-post.mjs "$RELEASE" --json > post.json
+          node tools/announce.mjs post.json
           { echo "### 💬 Workbench update ($RELEASE)"; echo; echo '```text'; cat post.txt; echo '```'; echo; if [ -n "${{ secrets.DISCORD_WEBHOOKS != '' && 'yes' || '' }}" ]; then echo "Posted to Discord automatically (DISCORD_WEBHOOKS)."; else echo "Not posted: add a DISCORD_WEBHOOKS secret (one webhook URL per line) to post it automatically."; fi; } >> "$GITHUB_STEP_SUMMARY"

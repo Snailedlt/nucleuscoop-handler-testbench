@@ -1,14 +1,15 @@
 // The Discord post for a workbench update, from CHANGELOG.md (the newest dated section, or the one
 // named): a heading, up to three highlights (the bold summaries), the link and the thanks. The same
 // shape as the extension's (splitscreenme-vscode scripts/release-notes.mjs --discord).
-//   node tools/release-post.mjs [<section id, e.g. "2026-11-05 23:00">]
+//   node tools/release-post.mjs [<section id, e.g. "2026-11-05 23:00">] [--json]
+// --json prints the webhook payload (a rich embed) instead of the text.
 // pages.yml runs it after a deploy whose newest section the live site didn't have yet.
 import fs from 'node:fs';
 
 const SITE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 const text = fs.readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 const parts = text.split(/^## /m).slice(1);
-const wanted = process.argv[2];
+const wanted = process.argv.slice(2).find((a) => !a.startsWith('--'));
 const part = parts.find((p) => {
   const id = p.split('\n')[0].trim();
   return wanted ? id === wanted : /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(id);
@@ -27,6 +28,35 @@ const thanks = thanksPart
   .split('\n')
   .map((l) => l.match(/^- \*\*(.+?)\*\*/)?.[1]?.replace(/^\[([^\]]+)\]\([^)]+\)$/, '$1'))
   .filter(Boolean);
+if (process.argv.includes('--json')) {
+  // A rich embed, so the workbench's posts look different from the extension's
+  // (splitscreenme-vscode scripts/release-notes.mjs --discord --json): its own name, icon, colour.
+  const shown = items.slice(0, 5);
+  const description = [
+    ...shown.map((s) => `• ${s}`),
+    ...(items.length > shown.length ? [`…and ${items.length - shown.length} more in What's new`] : []),
+    '',
+    `[Open What's new](${SITE}#whats-new) · [Open the workbench](${SITE}) · [Intro](${SITE}start/)`,
+  ].join('\n');
+  console.log(
+    JSON.stringify({
+      username: 'Nucleus Tools · Browser workbench',
+      avatar_url: `${SITE}icon.png`,
+      embeds: [
+        {
+          author: { name: 'Browser workbench', url: SITE, icon_url: `${SITE}icon.png` },
+          title: '🌐 The Nucleus Handler Workbench is updated',
+          url: `${SITE}#whats-new`,
+          description,
+          color: 0x3ba55c, // green: the extension's posts are VS Code blue
+          ...(thanks.length ? { fields: [{ name: 'Thanks', value: `${thanks.join(', ')} 🙏` }] } : {}),
+          footer: { text: `Nucleus handler tools · Browser workbench · ${part.split('\n')[0].trim()} UTC` },
+        },
+      ],
+    }),
+  );
+  process.exit(0);
+}
 const more = items.length > 3 ? ` and ${items.length - 3} more` : '';
 const lines = ['**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
 if (more) lines.push(`…${more}: the link opens What's new with all of them`);
