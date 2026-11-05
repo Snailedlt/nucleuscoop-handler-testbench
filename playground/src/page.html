@@ -175,6 +175,14 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 .lines-opts { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .lines-opts select { font-size: 12px; padding: 2px 4px; color: var(--fg); }
 #lines-count { margin-left: auto; }
+.ln-crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px 10px; font-size: 13px; position: sticky; top: 0; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
+.ln-crumbs .sep { color: var(--muted); }
+#lines-list .ln-crumbs button { display: inline; width: auto; padding: 4px 4px; font-family: var(--font-body); color: var(--accent); text-decoration: underline; border-radius: 4px; }
+#lines-list .ln-crumbs button:hover, #lines-list .ln-crumbs button:focus-visible { background: var(--surface-2); color: var(--accent); }
+#lines-list .ln-crumbs button[aria-current] { color: var(--fg); font-weight: 600; text-decoration: none; }
+@media (max-width: 860px) { #doc-switch kbd { display: none; } }
+.ln-crumbs [aria-current] { color: var(--fg); font-weight: 600; text-decoration: none; }
+.ln-node .nm { font-weight: 600; }
 #lines-flash { padding: 6px 10px; font-size: 12px; background: var(--info-bg); color: var(--info); border-bottom: 1px solid var(--line); }
 #lines-flash[hidden] { display: none; }
 #lines-info .link { margin-top: 4px; font-size: 12px; }
@@ -510,6 +518,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #lines { position: fixed !important; left: 0 !important; right: 0 !important; bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; top: auto !important; height: min(58vh, 520px); width: auto !important; z-index: 60; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.35) !important; }
   body.keybar-on #lines { bottom: 52px !important; }
   #lines .lines-opts, #lines #lines-info { display: none; }
+  :root[data-mode=dev] #lines .lines-opts:not([hidden]) { display: flex; } /* Group (with the tree) and Sort */
   /* One row at the bottom, in thumb reach: logo, Handler / Results, More, Settings */
   header { flex-wrap: nowrap !important; align-items: center; order: 10; flex: none; }
   .app { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; }
@@ -689,7 +698,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           </div>
           <div class="lines-kinds" role="group" aria-label="Show types" id="lines-kinds"></div>
           <div class="lines-opts">
-            <label>Group <select id="lines-group"><option value="object">by object</option><option value="topic">by topic</option></select></label>
+            <label>Group <select id="lines-group"><option value="object">by object</option><option value="topic">by topic</option><option value="tree" class="dev-only">as a tree</option></select></label>
             <label>Sort <select id="lines-sort"><option value="az">A–Z</option><option value="used">most used</option></select></label>
             <span id="lines-count" class="muted"></span>
           </div>

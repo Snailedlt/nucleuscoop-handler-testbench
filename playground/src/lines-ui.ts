@@ -34,7 +34,7 @@ export function initLines({ editor, openReference }: Deps) {
   const LINES = allLines();
   const kinds = new Set<Kind>();
   const DEFAULTS = {
-    group: 'object' as 'object' | 'topic',
+    group: 'object' as 'object' | 'topic' | 'tree',
     sort: 'az' as 'az' | 'used',
     // Basic settings
     meta: true, // type and default beside each name
@@ -78,7 +78,7 @@ export function initLines({ editor, openReference }: Deps) {
     if (l.doc) info.append(text('div', '', l.doc));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
-    if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${USAGE_TOTAL} Hub handlers`);
+    if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
     if (l.scope === 'callback') facts.push('Only inside Game.Play and other callbacks');
     const u = scan?.uses.get(l.path);
     if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
@@ -97,7 +97,7 @@ export function initLines({ editor, openReference }: Deps) {
     if (l.doc) d.append(text('div', '', l.doc));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
-    if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${USAGE_TOTAL} Hub handlers`);
+    if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
     if (l.scope === 'callback') facts.push('Only inside Game.Play and other callbacks');
     const u = scan?.uses.get(l.path);
     if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
@@ -138,12 +138,72 @@ export function initLines({ editor, openReference }: Deps) {
     const t = l.typeLabel + (l.default !== undefined && l.default.length < 12 ? ` · ${l.default}` : '');
     return { text: t, cls: '' };
   }
+  // Tree (Advanced mode): Game, Context, System… one level at a time, like a file browser.
+  // Typing a filter searches everything, as a flat list.
+  let treePath: string[] = [];
+  const advanced = () => document.documentElement.dataset.mode === 'dev';
+  const ROOT_ORDER = ['Game', 'Context', 'Player', 'ProtoInput', 'System', 'Nucleus'];
+  const segs = (l: Line) => l.path.replace(/^new /, '').split('.');
+  function renderTree(shown: Line[]) {
+    const depth = treePath.length;
+    const here = treePath.join('.');
+    const nodes = new Map<string, number>();
+    const leaves: Line[] = [];
+    for (const l of shown) {
+      const sg = segs(l);
+      if (depth && sg.slice(0, depth).join('.') !== here) continue;
+      if (sg.length === depth + 1) leaves.push(l);
+      else if (sg.length > depth + 1) nodes.set(sg[depth], (nodes.get(sg[depth]) ?? 0) + 1);
+    }
+    list.textContent = '';
+    const frag = document.createDocumentFragment();
+    const crumbs = document.createElement('nav');
+    crumbs.className = 'ln-crumbs';
+    crumbs.setAttribute('aria-label', 'Where you are in the tree');
+    ['All', ...treePath].forEach((name, i) => {
+      if (i) crumbs.append(text('span', 'sep', '›'));
+      const c = document.createElement('button');
+      c.type = 'button';
+      c.className = 'link';
+      c.textContent = name;
+      if (i === depth) c.setAttribute('aria-current', 'location');
+      c.addEventListener('click', () => ((treePath = treePath.slice(0, i)), render()));
+      crumbs.append(c);
+    });
+    frag.append(crumbs);
+    const rank = (n: string) => (depth ? 0 : ROOT_ORDER.includes(n) ? ROOT_ORDER.indexOf(n) : ROOT_ORDER.length);
+    for (const n of [...nodes.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ln ln-node';
+      b.title = `${[...treePath, n].join('.')}: ${nodes.get(n)} names`;
+      b.append(text('span', 'nm', n), text('span', 'meta', `${nodes.get(n)} ›`));
+      b.addEventListener('click', () => {
+        treePath = [...treePath, n];
+        render();
+        (list.querySelector('.ln') as HTMLElement | null)?.focus();
+      });
+      const row = document.createElement('div');
+      row.className = 'ln-row';
+      row.append(b);
+      frag.append(row);
+    }
+    if (prefs.sort === 'used' && prefs.usage) leaves.sort((a, b) => (b.of ? b.used / b.of : 0) - (a.of ? a.used / a.of : 0) || a.text.localeCompare(b.text));
+    else leaves.sort((a, b) => a.text.localeCompare(b.text, 'en', { sensitivity: 'base' }));
+    for (const l of leaves) frag.append(rowFor(l, segs(l).pop()! + (l.method ? '()' : '')));
+    if (!nodes.size && !leaves.length) frag.append(text('div', 'none', 'Nothing here.'));
+    list.append(frag);
+    $('#lines-count').textContent = `${nodes.size + leaves.length} here`;
+  }
+
   function render() {
     const q = ($('#lines-q') as HTMLInputElement).value.trim().toLowerCase();
-    const shown = LINES.filter((l) => (prefs.deprecated || !l.deprecated) && (!kinds.size || kinds.has(l.kind)) && matches(l, q, prefs.shorthand));
+    const base = LINES.filter((l) => (prefs.deprecated || !l.deprecated) && (!kinds.size || kinds.has(l.kind)));
+    if (prefs.group === 'tree' && advanced() && !q) return renderTree(base);
+    const shown = base.filter((l) => matches(l, q, prefs.shorthand));
     const groups = new Map<string, Line[]>();
     for (const l of shown) {
-      const g = prefs.group === 'topic' ? l.topic : l.owner;
+      const g = prefs.group === 'topic' ? l.topic : l.owner; // a tree outside Advanced mode: by object
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(l);
     }
@@ -154,16 +214,23 @@ export function initLines({ editor, openReference }: Deps) {
     for (const g of order) {
       const items = groups.get(g)!;
       const enumGroup = g.startsWith('Nucleus.');
-      if (prefs.sort === 'used' && prefs.usage) items.sort((a, b) => b.used - a.used || a.text.localeCompare(b.text));
+      if (prefs.sort === 'used' && prefs.usage) items.sort((a, b) => (b.of ? b.used / b.of : 0) - (a.of ? a.used / a.of : 0) || a.text.localeCompare(b.text));
       else if (!enumGroup) items.sort((a, b) => a.text.localeCompare(b.text, 'en', { sensitivity: 'base' }));
       frag.append(text('div', 'grp', '// ' + g));
-      for (const l of items) {
+      for (const l of items) frag.append(rowFor(l));
+    }
+    if (!shown.length) frag.append(text('div', 'none', 'Nothing matches.'));
+    list.append(frag);
+    $('#lines-count').textContent = `${shown.length} of ${LINES.length}`;
+  }
+
+  function rowFor(l: Line, label = l.text): HTMLElement {
         const b = document.createElement('button');
         b.type = 'button';
         const off = prefs.dim && l.scope === 'callback' && !callback;
         b.className = [l.deprecated ? 'dep' : '', off ? 'off' : ''].filter(Boolean).join(' ');
         b.title = off ? `${l.sig}\nOnly works inside Game.Play and other callbacks` : l.sig;
-        const name = text('span', 'nm', l.text);
+        const name = text('span', 'nm', label);
         const m = metaFor(l);
         b.append(name, text('span', 'meta ' + m.cls, m.text));
         b.classList.add('ln');
@@ -190,12 +257,7 @@ export function initLines({ editor, openReference }: Deps) {
           row.after(details(l));
           showInfo(l);
         });
-        frag.append(row);
-      }
-    }
-    if (!shown.length) frag.append(text('div', 'none', 'Nothing matches.'));
-    list.append(frag);
-    $('#lines-count').textContent = `${shown.length} of ${LINES.length}`;
+        return row;
   }
 
   // --- inserting
@@ -421,6 +483,8 @@ export function initLines({ editor, openReference }: Deps) {
       render();
     }
   });
+
+  new MutationObserver(() => open && render()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
 
   function setOpen(o: boolean, focus = false) {
     open = o;

@@ -37,10 +37,16 @@ export interface Line {
   /** Values offered after `path = ` (enum values, true/false). */
   values?: string[];
   used: number; // Hub handlers using it
+  /** Out of how many Hub handlers (System.* comes from a separate, smaller sample). */
+  of: number;
 }
 
 export const USAGE_TOTAL: number = USAGE.handlers;
 const usage = USAGE.counts as Record<string, number>;
+const SYSTEM = (USAGE as any).system as { handlers: number; counts: Record<string, number> } | undefined;
+/** Uses and sample size for a path. */
+const usedOf = (path: string): { used: number; of: number } =>
+  path.startsWith('System.') ? { used: SYSTEM?.counts[path] ?? 0, of: SYSTEM?.handlers ?? 0 } : { used: usage[path] ?? 0, of: USAGE_TOTAL };
 
 function kindOf(m: Member): Kind {
   if (m.kind === 'method' || m.type === 'function') return 'function';
@@ -108,7 +114,7 @@ export function allLines(): Line[] {
       params: method ? (m.overloads?.[0]?.params ?? []).map((p) => p.name) : [],
       method,
       values: enumName && api.enums[enumName] ? Object.keys(api.enums[enumName].values).map((v) => `Nucleus.${enumName}.${v}`) : m.type === 'boolean' ? ['true', 'false'] : undefined,
-      used: usage[e.path] ?? 0,
+      ...usedOf(e.path),
     });
   }
   for (const [name, c] of Object.entries(api.nucleusClasses)) {
@@ -117,17 +123,17 @@ export function allLines(): Line[] {
         if (m.internal) continue;
         const method = m.kind === 'method';
         const path = `Nucleus.${name}.${mn}`;
-        out.push({ path, text: path + (method ? '()' : ''), owner: 'Nucleus', topic: 'Nucleus values', kind: kindOf(m), typeLabel: typeLabel(m), sig: memberSignature(c.statics, mn, m)[0] ?? path, doc: firstSentence(m.doc || ''), scope: 'any', assignable: false, params: method ? (m.overloads?.[0]?.params ?? []).map((p) => p.name) : [], method, used: usage[path] ?? 0 });
+        out.push({ path, text: path + (method ? '()' : ''), owner: 'Nucleus', topic: 'Nucleus values', kind: kindOf(m), typeLabel: typeLabel(m), sig: memberSignature(c.statics, mn, m)[0] ?? path, doc: firstSentence(m.doc || ''), scope: 'any', assignable: false, params: method ? (m.overloads?.[0]?.params ?? []).map((p) => p.name) : [], method, used: usage[path] ?? 0, of: USAGE_TOTAL });
       }
       continue;
     }
     const path = `new Nucleus.${name}`;
-    out.push({ path, text: `${path}()`, owner: 'Nucleus', topic: 'Nucleus values', kind: 'other', typeLabel: 'class', sig: `${path}(${c.params.join(', ')})`, doc: firstSentence(c.doc || ''), scope: 'any', assignable: false, params: c.params, method: true, used: 0 });
+    out.push({ path, text: `${path}()`, owner: 'Nucleus', topic: 'Nucleus values', kind: 'other', typeLabel: 'class', sig: `${path}(${c.params.join(', ')})`, doc: firstSentence(c.doc || ''), scope: 'any', assignable: false, params: c.params, method: true, used: 0, of: USAGE_TOTAL });
   }
   for (const [name, e] of Object.entries(api.enums)) {
     for (const [v, n] of Object.entries(e.values)) {
       const path = `Nucleus.${name}.${v}`;
-      out.push({ path, text: path, owner: `Nucleus.${name}`, topic: 'Nucleus values', kind: 'number', typeLabel: String(n), sig: `${path} = ${n}`, doc: firstSentence(e.doc || ''), scope: 'any', assignable: false, params: [], method: false, used: usage[path] ?? 0 });
+      out.push({ path, text: path, owner: `Nucleus.${name}`, topic: 'Nucleus values', kind: 'number', typeLabel: String(n), sig: `${path} = ${n}`, doc: firstSentence(e.doc || ''), scope: 'any', assignable: false, params: [], method: false, used: usage[path] ?? 0, of: USAGE_TOTAL });
     }
   }
   return (cache = out);
