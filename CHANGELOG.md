@@ -28,11 +28,12 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **Lines writes functions as functions.** Clicking Game.Play, Game.OnStop and other callbacks inserts `Game.Play = function () { … };` with the cursor inside, instead of `Game.Play = ;`. Reported by messenils.
 - **Packages keep their other files.** Opening a .zip or .nc with more than handler.js (Goldberg files, configs, DLLs) and saving it again used to drop them. Now they're kept, shown as "+ 3 files" next to the name, and saved back unchanged in .zip and .nc.
 
 ### 🙏 Thanks
 
-- **messenils** for the System.IO lines and the tree idea.
+- **messenils** for the System.IO lines, the tree idea and reporting how Lines inserted Game.Play.
 
 ---
 

@@ -314,7 +314,12 @@ export function initLines({ editor, openReference }: Deps) {
     const lineText: string = editor.getLine(from.line);
     const emptyLine = !lineText.trim() && !editor.somethingSelected();
     const indent = emptyLine ? lineText : '';
-    if (emptyLine && l.assignable && prefs.wholeLine) {
+    if (emptyLine && l.assignable && prefs.wholeLine && l.kind === 'function') {
+      // Game.Play, Game.OnStop, Game.ProtoInput.OnInputLocked…: a function, with the cursor inside.
+      const body = indent + '  ';
+      editor.replaceRange(`${indent}${l.path} = function () {\n${body}\n${indent}};`, { line: from.line, ch: 0 }, { line: from.line, ch: lineText.length });
+      editor.setCursor({ line: from.line + 1, ch: body.length });
+    } else if (emptyLine && l.assignable && prefs.wholeLine) {
       editor.replaceRange(`${indent}${l.path} = ;`, { line: from.line, ch: 0 }, { line: from.line, ch: lineText.length });
       editor.setCursor({ line: from.line, ch: indent.length + l.path.length + 3 });
       if (l.values?.length && prefs.values) offerValues(l.values);
