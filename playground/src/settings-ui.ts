@@ -133,7 +133,13 @@ export function initSettings(d: Deps) {
   let focused = false;
   // The on-screen keyboard shrinks the visible area (the visual viewport), not the page: size the
   // workbench to what's visible, so the line being typed stays above the keyboard and the symbol keys.
+  // Some browsers, and pages shown inside a frame, can't tell how tall the keyboard is: then the
+  // symbol keys sit at the top of the screen, where the keyboard can't cover them.
   let kbOpen = false;
+  let baseH = window.innerHeight; // the page's height without a keyboard
+  let waited = false; // gave the keyboard time to open
+  let waitTimer: number | undefined;
+  window.addEventListener('resize', () => !focused && (baseH = window.innerHeight));
   function placeKeybar() {
     const vv = window.visualViewport;
     const open = !!vv && focused && touch() && vv.height < window.innerHeight - 120;
@@ -147,15 +153,30 @@ export function initSettings(d: Deps) {
       d.editor.refresh();
       if (focused) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
     }
-    const show = focused && ed.keybar && touch();
+    // The keyboard showed up as a smaller page (resizes-content) or a smaller visual viewport.
+    const seen = (vv ? vv.height : window.innerHeight) < baseH - 120;
+    const show = focused && ed.keybar && touch() && (seen || waited);
     bar.hidden = !show;
-    document.body.classList.toggle('keybar-on', show);
+    document.body.classList.toggle('keybar-on', show && seen);
+    document.body.classList.toggle('keybar-top', show && !seen);
     if (!show) return;
-    const bottom = vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0;
-    bar.style.bottom = `${bottom}px`;
+    if (seen) {
+      bar.style.top = '';
+      bar.style.bottom = `${vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0}px`;
+    } else {
+      bar.style.bottom = 'auto';
+      bar.style.top = `${vv ? vv.offsetTop : 0}px`;
+    }
   }
-  d.editor.on('focus', () => ((focused = true), placeKeybar()));
-  d.editor.on('blur', () => ((focused = false), setTimeout(placeKeybar, 150)));
+  const onFocus = () => {
+    focused = true;
+    waited = false;
+    clearTimeout(waitTimer);
+    waitTimer = window.setTimeout(() => ((waited = true), placeKeybar()), 700);
+    placeKeybar();
+  };
+  d.editor.on('focus', onFocus);
+  d.editor.on('blur', () => ((focused = false), clearTimeout(waitTimer), setTimeout(placeKeybar, 150)));
   // While the keyboard is open, keep the cursor in the space above it (after CodeMirror's own scroll).
   d.editor.on('cursorActivity', () => kbOpen && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
   window.visualViewport?.addEventListener('resize', placeKeybar);

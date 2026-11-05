@@ -271,6 +271,8 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 #keybar button { flex: none; min-width: 40px; height: 38px; padding: 0 10px; font: 600 15px var(--font-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 #keybar button.kb-act { font: 600 13px var(--font-body); }
 body.keybar-on .app { padding-bottom: 52px; }
+body.keybar-top #keybar { padding: calc(6px + env(safe-area-inset-top, 0px)) 6px 6px; border-top: 0; border-bottom: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+body.keybar-top .app { padding-top: 56px; }
 #tipbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 1.45; }
 #tipbar[hidden] { display: none; }
 #tipbar.contextual { background: var(--info-bg); border-top-color: var(--info); }
