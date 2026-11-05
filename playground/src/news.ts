@@ -19,7 +19,12 @@ const set = (k: string, v: string) => {
 };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** `code` and plain text only (the changelog is ours, but keep it inert). */
-const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '$1');
+const inline = (s: string) =>
+  esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/&lt;(https:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 const when = (id: string) => (id === 'Unreleased' ? 'In this preview' : new Date(id + 'T12:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }));
 
 export function initNews() {
@@ -28,11 +33,13 @@ export function initNews() {
   const open = () => {
     const item = (it: (typeof CHANGES)[number]['items'][number]) =>
       `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}${it.image ? `<img src="changes/${esc(it.image.file)}" alt="${esc(it.image.alt)}" loading="lazy">` : ''}</li>`;
+    // One card per release so they don't run into each other: the newest open, older ones folded.
     $('#news-body').innerHTML = CHANGES.map((c, i) => {
       const groups = [...new Set(c.items.map((it) => it.group))];
-      return `<h3>${esc(when(c.id))}${i === 0 && c.id !== 'Unreleased' ? ' <span class="chip ok">latest</span>' : ''}</h3>${groups
-        .map((g) => `${g ? `<h4>${esc(g)}</h4>` : ''}<ul>${c.items.filter((it) => it.group === g).map(item).join('')}</ul>`)
-        .join('')}`;
+      const changes = c.items.filter((it) => !it.group.includes('🙏')).length;
+      const badge = c.id === 'Unreleased' ? '<span class="chip info">preview</span>' : i === 0 ? '<span class="chip ok">latest</span>' : '';
+      const body = groups.map((g) => `${g ? `<h4>${esc(g)}</h4>` : ''}<ul class="${g.includes('🙏') ? 'thanks' : ''}">${c.items.filter((it) => it.group === g).map(item).join('')}</ul>`).join('');
+      return `<details class="release"${i < 1 || (i === 1 && CHANGES[0].id === 'Unreleased') ? ' open' : ''}><summary><span class="rel-date">${esc(when(c.id))}</span>${badge}<span class="rel-count">${changes} change${changes === 1 ? '' : 's'}</span></summary><div class="rel-body">${body}</div></details>`;
     }).join('');
     // No screenshots in the single offline file: drop the ones that don't load.
     $('#news-body').querySelectorAll('img').forEach((img) => img.addEventListener('error', () => img.remove()));
@@ -55,7 +62,7 @@ export function initNews() {
   if (!latest) return { open };
   if (!last) set(SEEN_KEY, latest);
   else if (last !== latest && get(ON_KEY) !== '0') {
-    const newer = CHANGES.slice(0, Math.max(1, CHANGES.findIndex((c) => c.id === last))).flatMap((c) => c.items.map((i) => i.summary));
+    const newer = CHANGES.slice(0, Math.max(1, CHANGES.findIndex((c) => c.id === last))).flatMap((c) => c.items.filter((i) => !i.group.includes('🙏')).map((i) => i.summary));
     const list = newer.slice(0, 3).join(', ') + (newer.length > 3 ? ` and ${newer.length - 3} more` : '');
     $('#updated-text').innerHTML = `<strong>Updated:</strong> ${inline(list)}.`;
     $('#updated').hidden = false;

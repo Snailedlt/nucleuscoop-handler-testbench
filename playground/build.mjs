@@ -198,6 +198,7 @@ function changes() {
       if (l.startsWith('### ')) group = l.slice(4).trim();
       else if (l.startsWith('- ')) {
         const m = l.match(/^- \*\*(.+?)\*\*\s*(.*)$/);
+        if (m && !group.includes('🙏') && !/[.!?]$/.test(m[1])) console.warn(`CHANGELOG.md: end the bold summary with a full stop and start the details as a sentence: ${l.slice(0, 70)}`);
         items.push({ group, ...(m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' }) });
       } else {
         const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.png)\)/);

@@ -166,14 +166,24 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 #updated .btn.icon { width: 26px; padding: 2px 0; }
 #news-dialog { width: min(560px, 94vw); }
 #news-dialog h2 { margin: 0 0 6px; font-size: 18px; }
-#news-body { max-height: 60vh; overflow: auto; }
-#news-body h3 { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
-#news-body h3 .chip { margin-left: 6px; text-transform: none; letter-spacing: 0; }
+#news-body { max-height: 62vh; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+#news-body .release { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
+#news-body .release[open] { border-color: var(--accent); }
+#news-body .release > summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; list-style: none; background: var(--surface-2); border-radius: var(--r-pane); }
+#news-body .release[open] > summary { border-bottom: 1px solid var(--line); border-radius: var(--r-pane) var(--r-pane) 0 0; }
+#news-body .release > summary::-webkit-details-marker { display: none; }
+#news-body .release > summary::before { content: "▸"; color: var(--muted); width: 10px; }
+#news-body .release[open] > summary::before { content: "▾"; }
+#news-body .rel-date { font-weight: 700; font-size: 14.5px; }
+#news-body .rel-count { margin-left: auto; color: var(--muted); font-size: 12px; }
+#news-body .rel-body { padding: 4px 14px 12px; }
+#news-body h4 { margin: 12px 0 4px; font-size: 13.5px; }
 #news-body ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+#news-body ul.thanks { list-style: none; padding-left: 0; }
 #news-body li strong { display: block; }
+#news-body ul.thanks li strong { display: inline; }
 #news-body li span { color: var(--muted); font-size: 13px; }
-#news-body h4 { margin: 10px 0 4px; font-size: 13.5px; }
-#news-body img { display: block; max-width: 100%; height: auto; margin-top: 6px; border: 1px solid var(--line); border-radius: 6px; }
+#news-body ul.thanks li span { color: var(--fg); font-size: 13.5px; margin-left: 4px; }
 #news-body code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 3px; }
 /* Settings dialog, More menu, symbol keys */
 .phone-only { display: none !important; }

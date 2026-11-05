@@ -5,10 +5,11 @@ What changed in the browser workbench (<https://snailedlt.github.io/nucleuscoop-
 <!--
 How to write it (people and AI agents read this, and the workbench shows it):
 - Add each user-visible change under "## Unreleased", in one of these groups, biggest change first:
-  ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently)
+  ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently) · ### 🙏 Thanks
+- 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". Credit them inline too ("Reported by Horah.").
 - One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
 - A screenshot for big, visible changes, indented under its line: `  ![What it shows](docs/images/changelog/<date>-<name>.png)` (≈700–1000 px wide).
-- When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>".
+- When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>". A `---` line separates releases.
 -->
 
 ## Unreleased
@@ -29,6 +30,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Loads about half as much.** A visit downloads about 235 KB instead of 433 KB: Hub examples load when you open one, and the checker is no longer sent twice.
 - **Easier on the Hub.** One daily job is the only thing that reads the Hub's list; everything else (the site, the weekly check, people's tools) reads our copy of it. Only new handler versions are downloaded, the full Hub check runs weekly, and the site is only redeployed when something changed.
 
+---
+
 ## 2026-11-05
 
 ### ✨ New
@@ -39,21 +42,30 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Settings.** ⚙️ in the header: theme, text size, line wrap, symbol keys, tips and the Lines list; Advanced mode and the developer bar under Advanced.
 - **Works on phones.** A slim header with a ⋯ menu, Lines full screen, wrapped lines and symbol keys above the on-screen keyboard.
   ![The workbench on a phone: results, the code with symbol keys, the Lines list and the ⋯ menu](docs/images/changelog/2026-11-05-phones.png)
-- **Intro page for testers.** <https://snailedlt.github.io/nucleuscoop-handler-testbench/start/>: screenshots, the install guide and a download link that always points to the newest release.
+- **Intro page for testers.** [The intro page](https://snailedlt.github.io/nucleuscoop-handler-testbench/start/) has screenshots, the install guide and a download link that always points to the newest release.
 
 ### 🐛 Fixed
 
-- **The Lines scrollbar no longer hides values** on the right (Windows). Reported by Horah.
-- **Two false flags gone**, found by checking all 600 Hub handlers: a syntax error on `let x` followed by `var x`, and a Proto Input warning on 11 handlers.
+- **The Lines scrollbar no longer hides values.** On Windows it covered the values on the right. Reported by Horah.
+- **Two false flags gone.** Found by checking all 600 Hub handlers: a syntax error on `let x` followed by `var x`, and a Proto Input warning on 11 handlers.
+
+### 🙏 Thanks
+
+- **messenils** for the idea of a list of every name, like Pawno's.
+- **Horah** for reporting the scrollbar that hid values.
+
+---
 
 ## 2026-11-02
 
 ### ✨ New
 
-- **The workbench on GitHub Pages**, rebuilt daily with the newest verified Hub handlers.
+- **The workbench on GitHub Pages.** Rebuilt daily with the newest verified Hub handlers.
 - **Share links.** Copy link puts the handler (or the selected lines) in the address.
-- **The splitscreen.me look**, light and dark.
+- **The splitscreen.me look.** Light and dark.
 - **Weekly check against the real engine.** Every verified Hub handler runs in Nucleus' script engine (Jint 2.11.58) and is compared with Try it.
+
+---
 
 ## 2026-11-01
 
