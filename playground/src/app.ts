@@ -1705,6 +1705,25 @@ if (!openFromHash()) {
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 } else if (narrow()) setView('code');
 initTouchTitles();
+
+// The phone's own "Select all" selects the whole editable area. CodeMirror then redraws that same
+// selection in its own form, and the phone takes the redraw as a new selection by the page and
+// closes its Copy / Cut / Select all menu. When everything is selected already, leave the
+// phone's selection alone.
+{
+  const input: any = (editor as any).display?.input;
+  if (input?.showPrimarySelection) {
+    const draw = input.showPrimarySelection.bind(input);
+    input.showPrimarySelection = () => {
+      const dom = window.getSelection();
+      const lines = (editor as any).display.lineDiv as HTMLElement;
+      const r = editor.listSelections();
+      const all = r.length === 1 && editor.indexFromPos(r[0].from()) === 0 && editor.indexFromPos(r[0].to()) === editor.getValue().length && editor.getValue().length > 0;
+      if (all && dom && !dom.isCollapsed && lines.contains(dom.anchorNode) && lines.contains(dom.focusNode)) return;
+      return draw();
+    };
+  }
+}
 // Any dialog: a tap or click outside it (on the dimmed backdrop) closes it.
 document.querySelectorAll('dialog').forEach((dl) =>
   dl.addEventListener('click', (e: MouseEvent) => {
