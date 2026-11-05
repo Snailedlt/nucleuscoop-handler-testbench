@@ -1,0 +1,28 @@
+# Nucleus Co-op handler tools
+
+> Tools for writing Nucleus Co-op game handlers: the JavaScript files Nucleus Co-op uses to run several copies of a PC game split-screen. Handlers run in Jint 2.11.58: ES5 only (no arrow functions, template literals or classes; `let`/`const` act like `var`), and Nucleus silently ignores option names it doesn't know. Check a handler before trusting it.
+
+## For AI agents
+
+Run the tools yourself, on your own machine: the MCP server or the CLI below check, fix and simulate handlers locally. Don't drive or scrape the hosted workbench; send the user a workbench link only to show them a result. For a workbench of your own, `node nucleus.js workbench` saves the whole page as one offline HTML file (also attached to every release as `workbench.html`); open it locally or publish it, for example as a Claude artifact.
+
+- [MCP server](https://github.com/Snailedlt/splitscreenme-vscode#mcp-server-claude-desktop-cursor-vs-code-copilot-): `node nucleus.js mcp` (download `nucleus.js` from the releases). Tools: nucleus_lint, nucleus_fix, nucleus_simulate, nucleus_api, nucleus_api_search, nucleus_new_handler, nucleus_hub_search, nucleus_hub_handler.
+- [Agent skill](https://github.com/Snailedlt/splitscreenme-vscode/tree/main/plugin/skills/nucleus-handler): the rules, workflow and recipes for writing handlers (SKILL.md), with a bundled CLI.
+- [API reference](https://raw.githubusercontent.com/Snailedlt/splitscreenme-vscode/main/plugin/skills/nucleus-handler/reference/api.md): every Game, Context, Player and Nucleus name with type, default and docs.
+- [CLI](https://github.com/Snailedlt/splitscreenme-vscode#command-line-linter): `nucleus lint <file> --json`, `nucleus api <name>`, `nucleus simulate <file>`.
+
+## Time tracking
+
+The workbench can send WakaTime heartbeats for the person using it (off by default; category `coding`, `running tests` or `researching`, `human_line_changes`, never the code). AI agents that report to WakaTime must register as agents instead: category `ai coding`, edits in `ai_line_changes`, their own agent name in the user agent, and never the workbench's.
+
+## For people
+
+- [Workbench](./): check, fix and try a handler in the browser (also as one offline file: `workbench.html` in the releases).
+- [Intro and install](start/)
+- [VS Code extension](https://github.com/Snailedlt/splitscreenme-vscode/releases)
+- [Jint testbench](https://github.com/Snailedlt/nucleuscoop-handler-testbench): runs handlers in the real Jint 2.11.58; probes of engine behaviour.
+
+## Optional
+
+- [Hub](https://hub.splitscreen.me/): published handlers, the best examples for a game's engine.
+- [Nucleus Co-op handler docs](https://www.splitscreen.me/docs/create-handlers)
