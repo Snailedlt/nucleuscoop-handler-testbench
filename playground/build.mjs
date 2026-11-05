@@ -144,8 +144,10 @@ if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handle
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
 const build = { core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
 
+// One bundle for the page and its lint worker (src/main.ts picks which to run), so the
+// linter and the API model ship once.
 const result = await esbuild.build({
-  entryPoints: [path.join(here, 'src', 'app.ts')],
+  entryPoints: [path.join(here, 'src', 'main.ts')],
   bundle: true,
   format: 'iife',
   platform: 'browser',
@@ -157,36 +159,31 @@ const result = await esbuild.build({
   logLevel: 'warning',
 });
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
-// The linter also runs in a Web Worker (from a blob: URL), so typing never waits on it.
-const workerBuild = await esbuild.build({
-  entryPoints: [path.join(here, 'src', 'worker.ts')],
-  bundle: true,
-  format: 'iife',
-  platform: 'browser',
-  target: 'es2020',
-  minify: true,
-  write: false,
-  alias: { '@core': path.join(coreRepo, 'src', 'core') },
-  nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
-  logLevel: 'warning',
-});
-const workerSrc = workerBuild.outputFiles[0].text;
 
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
 const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css')].join('\n');
 
-const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers: hub.handlers })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar WORKER_SRC = ${JSON.stringify(workerSrc)};`.replace(/<\/script/gi, '<\\/script');
-let html = fs.readFileSync(path.join(here, 'src', 'page.html'), 'utf8');
-html = html.replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim()).replace('/*CODEMIRROR_CSS*/', () => css).replace('/*PROBES_AND_BUILD*/', () => data).replace('/*APP_JS*/', () => js);
-
-fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
-fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
-// The same page as a standalone site (GitHub Pages): the document wrapper and base styles that the
-// Claude artifact host otherwise adds.
-fs.mkdirSync(path.join(here, 'dist', 'pages'), { recursive: true });
-fs.writeFileSync(
-  path.join(here, 'dist', 'pages', 'index.html'),
-  `<!doctype html>
+// Each Hub example's problem counts, worked out here so the Open list needs no handler sources.
+const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning' });
+const { lint: lintHandler } = await import('data:text/javascript;base64,' + Buffer.from(lintMod.outputFiles[0].text).toString('base64'));
+for (const h of hub.handlers) {
+  const d = lintHandler(h.source);
+  h.lint = { errors: d.filter((x) => x.severity === 'error').length, warnings: d.filter((x) => x.severity === 'warning').length };
+}
+/** The page. inlineHub: Hub example sources in the page (one self-contained file); otherwise the page
+ *  fetches hub/<id>.js when one is opened, which keeps every visit small. */
+function pageHtml(inlineHub) {
+  const handlers = inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h);
+  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};`.replace(/<\/script/gi, '<\\/script');
+  return fs
+    .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
+    .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
+    .replace('/*CODEMIRROR_CSS*/', () => css)
+    .replace('/*PROBES_AND_BUILD*/', () => data)
+    .replace('/*APP_JS*/', () => js);
+}
+const html = pageHtml(true);
+const standalone = (body) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -195,11 +192,21 @@ fs.writeFileSync(
 <style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; height: 100%; } body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }</style>
 </head>
 <body>
-${html}
+${body}
 </body>
 </html>
-`,
-);
+`;
+
+fs.mkdirSync(path.join(here, 'dist'), { recursive: true });
+fs.writeFileSync(path.join(here, 'dist', 'workbench.html'), html);
+// The same page as a standalone site (GitHub Pages): the document wrapper and base styles that the
+// Claude artifact host otherwise adds.
+fs.mkdirSync(path.join(here, 'dist', 'pages'), { recursive: true });
+fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(pageHtml(false)));
+fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
+for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
+// One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
+fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'llms.txt'), fs.readFileSync(path.join(here, 'src', 'llms.txt'), 'utf8'));
 // The intro page to share with testers and contributors: /start/ on the Pages site.

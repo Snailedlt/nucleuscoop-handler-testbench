@@ -4,8 +4,10 @@ The browser workbench (<https://snailedlt.github.io/nucleuscoop-handler-testbenc
 
 ## Unreleased
 
+- **Loads about half as much.** A visit downloads about 235 KB instead of 433 KB: Hub examples load when you open one, and the checker is no longer sent twice.
+- **The workbench as one offline file.** `workbench.html` in the extension's releases (or `nucleus workbench`) is the whole workbench in a single file, to open locally or host yourself.
 - **Previous tip.** The tip bar has ‹ and › to go back and forth.
-- **`llms.txt` for AI agents.** The site lists where agents find the MCP server, the agent skill and the API reference.
+- **`llms.txt` for AI agents.** The site lists where agents find the MCP server, the agent skill and the API reference, and asks them to run the tools themselves instead of using the hosted workbench.
 
 ## 2026-11-05
 

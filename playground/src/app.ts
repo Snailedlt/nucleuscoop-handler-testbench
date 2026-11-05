@@ -22,9 +22,9 @@ import { initSettings } from './settings-ui';
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
 declare const BUILD: { core: string; nucleus: string | null; jint: string | null };
-interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source: string }
-declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[] };
-declare const WORKER_SRC: string;
+interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; lint?: { errors: number; warnings: number } }
+/** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
+declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null };
 declare const BOT_TEMPLATES: { commit: string | null; templates: { id: string; name: string; source: string }[] };
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -141,7 +141,7 @@ let reqId = 0;
 const pending = new Map<number, { text: string; resolve: (a: Analysis) => void }>();
 const analyzeHere = (text: string): Analysis => ({ diagnostics: lint(text), fixable: fixAll(text).applied.length });
 try {
-  worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+  worker = new Worker((globalThis as any).__WORKER_URL);
   worker.onmessage = (e: MessageEvent<Analysis & { id: number }>) => {
     const p = pending.get(e.data.id);
     pending.delete(e.data.id);
@@ -639,8 +639,18 @@ function loadSource(src: string, meta: DocMeta) {
 }
 editor.on('change', () => renderDocHead());
 
-function openHub(i: number) {
+async function openHub(i: number) {
   const h = HUB_EXAMPLES.handlers[i];
+  if (h.source === undefined) {
+    try {
+      const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`);
+      if (!r.ok) throw new Error(String(r.status));
+      h.source = await r.text();
+    } catch {
+      toast(`Couldn't load ${h.title}. Check your connection and try again.`);
+      return;
+    }
+  }
   loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}` });
   toast(`Opened ${h.title} v${h.version} from the Hub.`);
 }
@@ -664,9 +674,10 @@ const hubLint = new Map<number, string>();
 function hubLintBadges(i: number): string {
   let html = hubLint.get(i);
   if (html === undefined) {
-    const d = lint(HUB_EXAMPLES.handlers[i].source);
-    const e = d.filter((x) => x.severity === 'error').length;
-    const w = d.filter((x) => x.severity === 'warning').length;
+    const h = HUB_EXAMPLES.handlers[i];
+    const d = h.lint ? undefined : lint(h.source ?? '');
+    const e = h.lint ? h.lint.errors : d!.filter((x) => x.severity === 'error').length;
+    const w = h.lint ? h.lint.warnings : d!.filter((x) => x.severity === 'warning').length;
     html = e ? `<span class="chip error">${e} error${e === 1 ? '' : 's'}</span>` : w ? `<span class="chip warning">${w} warning${w === 1 ? '' : 's'}</span>` : '<span class="chip ok">clean</span>';
     hubLint.set(i, html);
   }
@@ -1394,7 +1405,7 @@ function openFromHash(): boolean {
   }
   if (h.startsWith('hub-')) {
     const i = HUB_EXAMPLES.handlers.findIndex((x) => x.id === h.slice(4));
-    if (i >= 0) return openHub(i), true;
+    if (i >= 0) return void openHub(i), true;
   } else if (h.startsWith('probe-')) {
     const i = PROBES.findIndex((p) => p.name.startsWith(h.slice(6).padStart(2, '0') + '-'));
     if (i >= 0) return openProbe(i), true;
