@@ -270,7 +270,8 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
 .code-list .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .code-list .btn small { color: var(--muted); font-size: 12px; font-weight: 400; }
-#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; }
+#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; padding: 2px 9px; align-self: stretch; }
+.lines-toggle { align-self: stretch; }
 #keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
 #keybar[hidden] { display: none; }
 #keybar button { flex: none; min-width: 40px; height: 38px; padding: 0 10px; font: 600 15px var(--font-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
@@ -423,7 +424,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .btn.icon { width: 32px; padding: 6px 0; text-align: center; font-weight: 600; }
 .btn:disabled { opacity: .55; cursor: default; }
 .doc-head { justify-content: space-between; }
-.doc-title { font-weight: 600; display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.doc-title { font-weight: 600; display: flex; gap: 6px; align-items: center; min-width: 0; }
 #doc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #doc-switch { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; font: inherit; font-weight: 600; color: var(--fg); background: none; border: 1px solid transparent; border-radius: var(--r-ctl); padding: 3px 8px; margin-left: -8px; cursor: pointer; }
 #doc-switch:hover, #doc-switch:focus-visible { background: var(--surface-2); border-color: var(--line); }
