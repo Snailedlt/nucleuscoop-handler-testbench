@@ -52,7 +52,7 @@ export function initLines({ editor, openReference }: Deps) {
     shorthand: true, // "kmd" finds KillMutexDelay
     info: true, // details of the hovered name at the bottom
     wide: false, // a wider column
-    tree: false, // "as a tree" in Group
+    tree: true, // "as a tree" in Group
   };
   type Prefs = typeof DEFAULTS;
   const prefs: Prefs = { ...DEFAULTS };
