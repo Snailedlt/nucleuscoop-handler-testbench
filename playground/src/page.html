@@ -121,7 +121,7 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 /* Lines: a Pawno-style list of every name, beside the code */
 .lines-toggle { padding: 2px 9px; font-size: 12px; margin-left: 6px; }
 .lines-toggle[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
-#lines { width: 270px; flex: none; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
+#lines { width: 310px; flex: none; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
 #lines[hidden] { display: none; }
 .lines-head { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
 .lines-head input { flex: 1; min-width: 0; font: inherit; font-size: 13px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 5px 8px; }
@@ -130,11 +130,25 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 .lines-kinds button[aria-pressed=true] { color: var(--accent-fg); background: var(--accent); }
 #lines-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 0 8px; font: 12px/1.35 var(--font-mono); }
 #lines-list .grp { color: var(--cmt); padding: 8px 10px 2px; }
-#lines-list button { display: block; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; padding: 2px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#lines-list button { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; padding: 2px 10px; cursor: pointer; }
+#lines-list .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lines-list .meta { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+#lines-list .meta.set { color: var(--ok); }
+#lines-list .meta.twice { color: var(--warn); }
 #lines-list button:hover, #lines-list button:focus-visible { background: var(--accent); color: var(--accent-fg); outline: none; }
-#lines-list button.dep { color: var(--muted); text-decoration: line-through; }
+#lines-list button:hover .meta, #lines-list button:focus-visible .meta { color: inherit; }
+#lines-list button.off .nm { opacity: .5; }
+#lines-list button.dep .nm { text-decoration: line-through; }
+.lines-opts { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.lines-opts select { font-size: 12px; padding: 2px 4px; color: var(--fg); }
+.lines-opts .dep-opt { display: inline-flex; gap: 4px; align-items: center; }
+#lines-count { margin-left: auto; }
+#lines-flash { padding: 6px 10px; font-size: 12px; background: var(--info-bg); color: var(--info); border-bottom: 1px solid var(--line); }
+#lines-flash[hidden] { display: none; }
+#lines-info .link { margin-top: 4px; font-size: 12px; }
 #lines-list .none { color: var(--muted); padding: 10px; font-family: var(--font-body); }
-#lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--muted); min-height: 3.2em; }
+#lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--fg); min-height: 3.2em; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+#lines-info .muted { color: var(--muted); }
 #lines-info code { font: 11.5px var(--font-mono); color: var(--fg); overflow-wrap: anywhere; display: block; margin-bottom: 2px; }
 #editor .CodeMirror { position: absolute; inset: 0; height: auto; font: 13px/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }
 .CodeMirror-gutters { background: var(--surface-2); border-right: 1px solid var(--line); }
@@ -405,7 +419,14 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
             <button class="btn icon" id="lines-close" type="button" aria-label="Close the list">×</button>
           </div>
           <div class="lines-kinds" role="group" aria-label="Show types" id="lines-kinds"></div>
-          <div id="lines-list" role="list"></div>
+          <div class="lines-opts">
+            <label>Group <select id="lines-group"><option value="object">by object</option><option value="topic">by topic</option></select></label>
+            <label>Sort <select id="lines-sort"><option value="az">A–Z</option><option value="used">most used</option></select></label>
+            <label class="dep-opt"><input type="checkbox" id="lines-dep"> deprecated</label>
+            <span id="lines-count" class="muted"></span>
+          </div>
+          <div id="lines-flash" role="status" hidden></div>
+          <div id="lines-list"></div>
           <div id="lines-info" aria-live="polite"></div>
         </aside>
       </div>
