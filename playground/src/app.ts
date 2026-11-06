@@ -28,8 +28,9 @@ import { initSettings } from './settings-ui';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
-import { mascot } from './mascots';
+import { mascot, mascotsOn } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
+import { codeNote } from './codenote';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 
@@ -503,7 +504,7 @@ function renderProblems(text: string) {
           for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
         }),
       );
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction, mascot: 'n-ok' });
+      codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
     }),
   );
   el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
@@ -558,7 +559,7 @@ function showLineProblems(line: number, at?: number) {
         }),
       );
       hideLinePop();
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction, mascot: 'n-ok' });
+      codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
     }),
   );
   linePop.querySelectorAll('[data-lp-more]').forEach((b) =>
@@ -656,7 +657,7 @@ function jumpTo(offset: number) {
 /** F8 / Shift+F8: move through the problems shown in the list. */
 function stepProblem(dir: 1 | -1) {
   if (!shownProblems.length) {
-    toast('No problems to go to.');
+    codeNote(editor, editor.getCursor().line, 'No problems to go to.', { mood: 'info' });
     return;
   }
   selectTab('problems');
@@ -694,11 +695,11 @@ function runSim() {
   const simple = mode === 'simple';
   if (!r.loaded) {
     out.push(
-      `<div class="banner error masc-banner">${mascot('oops', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
+      `<div class="banner error masc-banner">${mascot('n-bad', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
     );
   } else {
-    // Duo, pleased when every player starts; worried when the session ends.
-    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'} masc-banner">${mascot(r.sessionEnded ? 'oops' : 'joy', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong></div></div>`);
+    // Nucli, pleased when every player starts; worried when the session ends.
+    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'} masc-banner">${mascot(r.sessionEnded ? 'n-bad' : 'n-ok', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong></div></div>`);
     if (r.inputNote) out.push(`<p class="note">${esc(r.inputNote)}</p>`);
   }
   if (r.ignored.length) {
@@ -770,7 +771,7 @@ function testAll() {
       .join('');
     const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
     // Nucli runs the relay while it tests, then shows how it went.
-    const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc' });
+    const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc', busy: !finished });
     box.innerHTML = `<div class="mx-head">${nuc}<strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
       ${finished ? '' : `<div class="mx-bar" role="progressbar" aria-label="Combinations tested" aria-valuemin="0" aria-valuemax="${jobs.length}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, jobs.length)) * 100)}%"></i></div>`}
       <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
@@ -883,7 +884,7 @@ function renderApi(q: string) {
       head +
       (entries.length || head
         ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
-        : `<p class="empty masc-empty">${mascot('think', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
+        : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
   }
   wireApiLinks(el);
 }
@@ -1078,8 +1079,8 @@ $('#files-close').addEventListener('click', () => filesDialog.close());
 async function openHub(i: number) {
   const h = HUB_EXAMPLES.handlers[i];
   if (h.source === undefined) {
-    // On a slow connection, Duo spins while the handler downloads.
-    const slow = setTimeout(() => notice(`Getting ${h.title}…`, { kind: 'info', mascot: 'roll' }), 300);
+    // On a slow connection, Nucli spins while the handler downloads.
+    const slow = setTimeout(() => notice(`Getting ${h.title}…`, { kind: 'info', mascot: 'n-spin' }), 300);
     try {
       const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`);
       if (!r.ok) throw new Error(String(r.status));
@@ -1202,14 +1203,14 @@ function formatDocument() {
   const text = editor.getValue();
   const r = formatHandler(text);
   if (!r.ok) return notice(r.reason, { kind: 'error' });
-  if (!r.changed) return toast('Already formatted.', { mascot: 'n-ok' });
+  if (!r.changed) return codeNote(editor, editor.getCursor().line, 'Already formatted.');
   const cur = editor.getCursor();
   const top = editor.getScrollInfo().top;
   const d = editor.getDoc();
   d.replaceRange(r.code, d.posFromIndex(0), d.posFromIndex(text.length), '+format');
   editor.setCursor({ line: Math.min(cur.line, editor.lineCount() - 1), ch: cur.ch });
   editor.scrollTo(null, top);
-  toast('Formatted: indentation and spacing.', { kind: 'success', action: undoAction });
+  codeNote(editor, editor.getCursor().line, 'Formatted: indentation and spacing.', { action: undoAction });
 }
 
 const hubLint = new Map<number, string>();
@@ -1312,7 +1313,7 @@ function renderOpen() {
   activeEntry = Math.min(activeEntry, Math.max(0, shown.length - 1));
   const body = $('#open-body');
   if (!shown.length) {
-    body.innerHTML = `<p class="empty masc-empty">${mascot('search', { size: 72, zoom: 1.2 })}<span>Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</span></p>`;
+    body.innerHTML = `<p class="empty masc-empty">${mascot('n-scan', { size: 72 })}<span>Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</span></p>`;
     return;
   }
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
@@ -1447,7 +1448,7 @@ $('#new-form').addEventListener('submit', (e) => {
   const features = FEATURES.filter((f) => ($(`#feat-${f.id}`) as HTMLInputElement).checked).map((f) => f.id);
   newDialog.close();
   loadSource(renderHandler({ gameName: name, executableName: exe, steamId: steam || undefined, features }), { name: `${name}.js`, kind: 'new' });
-  notice('Created. It passes Check; next, try it per player or adjust the options.', { kind: 'success', mascot: 'joy', action: { label: 'Try it', run: () => selectTab('simulate') } });
+  notice('Created. It passes Check; next, try it per player or adjust the options.', { kind: 'success', mascot: 'n-ok', action: { label: 'Try it', run: () => selectTab('simulate') } });
 });
 $('#new-open').addEventListener('click', () => newDialog.showModal());
 $('#new-cancel').addEventListener('click', () => newDialog.close());
@@ -1567,7 +1568,7 @@ const settings = initSettings({
 });
 const news = initNews();
 const panels = initPanels({ refresh: () => editor.refresh(), toast });
-$('#set-reset-sizes').addEventListener('click', () => panels.reset());
+$('#set-reset-sizes').addEventListener('click', () => (panels.reset(), confirmOn($('#set-reset-sizes'), 'Back to defaults ✓', 'Panel sizes are back to their defaults.')));
 const moreDialog = $('#more-dialog') as HTMLDialogElement;
 $('#more-open').addEventListener('click', () => {
   moreDialog.showModal();
@@ -1681,7 +1682,8 @@ async function runAiFix() {
   aiCtl = new AbortController();
   aiBtn.disabled = true;
   aiBox.hidden = false;
-  aiBox.innerHTML = `<div class="ai-status"><span class="spinner" aria-hidden="true"></span><span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
+  // Nucli reads the code while Claude works on it (a spinner when mascots are off).
+  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
   $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
 
   const limits = await sample.limits().catch(() => null);
@@ -1976,8 +1978,8 @@ $('#save-go').addEventListener('click', async () => {
     await downloads.save({ filename: `${name}.zip`, data: zip });
     waka.saved();
     saveDialog.close();
-    // What to do next, above the code (with Duo holding the package) rather than a note that goes away.
-    notice(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`, errorsLeft ? { kind: 'warning' } : { kind: 'success', mascot: 'get' });
+    // What to do next, above the code rather than a note that goes away.
+    notice(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`, errorsLeft ? { kind: 'warning' } : { kind: 'success', mascot: 'n-ok' });
   } catch (e: any) {
     saveDialog.close();
     if (e?.code === 'declined') return;
@@ -2173,7 +2175,7 @@ const waka = initWakaTime({
   machine.addEventListener('change', () => waka.set({ machine: machine.value.trim() }));
   $('#set-waka-test').addEventListener('click', async () => {
     waka.set({ key: key.value.trim(), url: url.value.trim(), machine: machine.value.trim() });
-    status.textContent = 'Sending…';
+    status.innerHTML = `${mascot('n-spin', { size: 22, busy: true })} Sending…`;
     status.textContent = await waka.test();
   });
   document.addEventListener('open-settings', sync);

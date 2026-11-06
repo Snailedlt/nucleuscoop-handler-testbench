@@ -239,11 +239,11 @@ export function notice(text: string, opts: { kind?: ToastKind; action?: { label:
   el.className = kind;
   el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
   (el.querySelector('.notice-icon') as SVGElement).innerHTML = ICONS[kind];
-  // Something didn't load: Duo, cracked and worried, says so instead of the icon.
+  // Something didn't load: Nucli, worried, says so instead of the icon.
   el.querySelector('.notice-masc')?.remove();
-  const m = mascotsOn() ? (opts.mascot ?? (kind === 'error' ? 'oops' : null)) : null;
+  const m = mascotsOn() ? (opts.mascot ?? (kind === 'error' ? 'n-bad' : null)) : null;
   (el.querySelector('.notice-icon') as SVGElement).style.display = m ? 'none' : '';
-  if (m) el.querySelector('.notice-icon')!.insertAdjacentHTML('afterend', mascot(m, { size: 40, className: 'notice-masc' }));
+  if (m) el.querySelector('.notice-icon')!.insertAdjacentHTML('afterend', mascot(m, { size: 40, className: 'notice-masc', busy: m === 'n-spin' }));
   (el.querySelector('.notice-text') as HTMLElement).textContent = text;
   const act = el.querySelector('.notice-action') as HTMLButtonElement;
   act.hidden = !opts.action;
@@ -280,7 +280,7 @@ export function confirmOn(btn: HTMLElement | null | undefined, label: string, to
 
 /** Says something to screen readers only (a label that changes isn't read out by itself). */
 let sr: HTMLElement | null = null;
-function announce(text: string) {
+export function announce(text: string) {
   if (!sr) {
     sr = document.createElement('div');
     sr.className = 'sr-only';

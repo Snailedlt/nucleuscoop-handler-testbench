@@ -120,7 +120,6 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
       sizes = {};
       save();
       apply();
-      opts.toast('Panel sizes are back to their defaults.');
     },
   };
 }

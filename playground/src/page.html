@@ -384,6 +384,13 @@ a { color: var(--accent); }
 .masc-empty .masc { margin: -6px 0; }
 .masc-banner { display: flex; align-items: center; gap: 10px; }
 .masc-banner { overflow: visible; }
+/* A note under the line it's about (src/codenote.ts) */
+.code-note { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 4px 6px 4px 8px; width: max-content; max-width: calc(100% - 16px); font: 13px/1.4 var(--font, system-ui), sans-serif; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid #55d137; border-radius: 8px; box-shadow: var(--sh-1, 0 2px 8px rgba(0,0,0,.12)); }
+.code-note.info { border-left-color: var(--accent); }
+.code-note .masc { margin: -6px -2px -6px -4px; }
+.code-note .cn-x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+.code-note .cn-x:hover { color: var(--fg); background: var(--surface-2); }
+@media (prefers-reduced-motion: no-preference) { :root:not([data-motion-ui="off"]) .code-note { animation: cn-in .22s var(--spring, ease-out); } @keyframes cn-in { from { opacity: 0; transform: translateY(-4px); } } }
 /* Settings → Theme → Motion → Moving interface off (src/motion.ts): the workbench's own transitions and animations stop. */
 :root[data-motion-ui="off"] *:not(.masc, .masc *, .fx-layer *), :root[data-motion-ui="off"] *::before, :root[data-motion-ui="off"] *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 /* Nucli fixing the code (src/fixfx.ts) */
@@ -398,6 +405,7 @@ a { color: var(--accent); }
 #sim-matrix .mx-head { position: relative; padding-left: 50px; min-height: 40px; align-items: center; }
 #sim-matrix .mx-masc { position: absolute; left: 0; top: 50%; translate: 0 -50%; }
 .toast-masc { margin: -6px 0 -6px -4px; }
+.ai-status .ai-masc { margin: -10px 0; }
 #notice .notice-masc { margin: -10px 2px -10px 0; }
 
 #problems { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -725,21 +733,22 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 :root[data-site="alpha8"] .pane, :root[data-site="alpha8"] .problem, :root[data-site="alpha8"] .player { box-shadow: none; }
 :root[data-site="alpha8"] *, :root[data-site="alpha8"] *::before, :root[data-site="alpha8"] *::after, :root[data-site="alpha8"] *::backdrop { animation: none !important; transition: none !important; }
 
-/* ---- Motion (inspired by BSManager): springy dialogs, a glow on the main button, icons that answer the
+/* ---- Motion (inspired by BSManager): springy dialogs, a glow on AI buttons, icons that answer the
    pointer, actions that slide in on a row, a tab marker that glides. Never under reduced motion, never in
    the alpha 8 look. ---- */
 :root { --spring: cubic-bezier(.34, 1.4, .64, 1); }
 @media (prefers-reduced-motion: no-preference) {
   /* The main button: a slow ribbon of the player colours around it while the pointer is on it (not in v3,
      whose rule is that colour means a player, nor alpha 8). */
-  .btn.primary { position: relative; isolation: isolate; }
-  .btn.primary::after { content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit; background: linear-gradient(90deg, var(--p1), var(--p3), var(--p4), var(--p7), var(--p2), var(--p6), var(--p5), var(--p1)); background-size: 400% 100%; filter: blur(7px); opacity: 0; transition: opacity .25s ease; animation: glow-ribbon 8s linear infinite paused; pointer-events: none; }
-  .btn.primary:hover::after, .btn.primary:focus-visible::after { opacity: .55; animation-play-state: running; }
+  /* The colour glow is for AI features only (Fix with AI), not everyday buttons. */
+  .btn.ai { position: relative; isolation: isolate; }
+  .btn.ai::after { content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit; background: linear-gradient(90deg, var(--p1), var(--p3), var(--p4), var(--p7), var(--p2), var(--p6), var(--p5), var(--p1)); background-size: 400% 100%; filter: blur(7px); opacity: 0; transition: opacity .25s ease; animation: glow-ribbon 8s linear infinite paused; pointer-events: none; }
+  .btn.ai:hover::after, .btn.ai:focus-visible::after { opacity: .55; animation-play-state: running; }
   /* and it widens a little under the pointer, with a soft overshoot (bsmanager.io's download button) */
   .btn.primary { transition: background-color .12s, border-color .12s, filter .12s, padding .3s cubic-bezier(.3, 1, .7, 1); }
   .btn.primary:hover { padding-inline: 18px; }
   :root[data-site="alpha8"] .btn.primary:hover { padding-inline: 12px; }
-  :root[data-site="v3"] .btn.primary::after, :root[data-site="alpha8"] .btn.primary::after { display: none; }
+  :root[data-site="v3"] .btn.ai::after, :root[data-site="alpha8"] .btn.ai::after { display: none; }
   @keyframes glow-ribbon { to { background-position: 400% 0; } }
   /* Icon buttons: a little turn under the pointer, a kick back when pressed */
   .btn.icon svg, #settings-open svg { transition: transform .18s var(--spring); }
@@ -1080,7 +1089,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <div id="status"></div>
           <div class="ai-bar" id="ai-bar">
             <button class="btn primary" id="fix-all" type="button" title="Apply every safe automatic fix (also in the command palette, Ctrl+Shift+P)">Fix problems</button>
-            <button class="btn" id="ai-fix" type="button" hidden>Fix with AI</button>
+            <button class="btn ai" id="ai-fix" type="button" hidden>Fix with AI</button>
             <label class="toggle" title="Apply fixes without reviewing the diff first"><input type="checkbox" id="ai-auto"> Apply without review</label>
             <input id="ai-note" type="text" placeholder="For AI: anything else to change" aria-label="Extra instructions for Claude" hidden>
           </div>

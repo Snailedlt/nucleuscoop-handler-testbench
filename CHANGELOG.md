@@ -16,7 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
-- **Duo and Nucli move in.** Nucli, the tools' quiet atom, dozes in Check until there's code, cheers when there's nothing to fix, runs Test all and pops up on the "Fixed" note. Duo, splitscreen.me's split-screen ball, spins while a Hub handler downloads on a slow connection and looks worried when something won't load. Both greet you on the start page. They stand still if your device asks for less motion, and stay out of the Nucleus Co-op alpha 8 look.
+- **Duo and Nucli move in.** Nucli, the tools' quiet atom, is the workbench's: he dozes in Check until there's code, cheers when there's nothing to fix, runs Test all, reads along while Fix with AI works, spins while a Hub handler downloads, frets when something won't load and tells you how Try it went. Every spinner and loading state is his now. Duo, splitscreen.me's split-screen ball, greets you with him on the start page. Both follow Settings → Theme → Motion and stay out of the Nucleus Co-op alpha 8 look.
 
   <details><summary>Animation</summary>
 
@@ -26,7 +26,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
   </details>
 - **What's new can show animations.** An item can carry a GIF, a short video or an SVG (animated or not) as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
-- **Choose how much moves.** Settings → Theme → Motion: a preset (All, Default, Calm, Still, Off) and its switches: a moving interface, Duo and Nucli (lively, play once then rest, still or off), Nucli editing the code during fixes, and What's new playing animations by itself. Default keeps out anything that slows you down or covers the code; reduced motion on your device caps it at Still. Duo and Nucli also turned up in more places: Duo cheers in Try it when every player starts (and frets when the session ends), searches when Open finds nothing and holds up the package when you save for Nucleus; Nucli wonders when Reference finds nothing.
+- **Choose how much moves.** Settings → Theme → Motion: a preset (All, Default, Calm, Still, Off) and its switches: a moving interface, Duo and Nucli (lively, play once then rest, still or off), Nucli editing the code during fixes, and What's new playing animations by itself. Default keeps out anything that slows you down or covers the code; reduced motion on your device caps it at Still.
 
   <details><summary>Animation</summary>
 
@@ -34,7 +34,12 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
   </details>
 - **Nucli can fix it in front of you.** Turn on Settings → Theme → Motion → Nucli edits the code: when a quick fix, Fix all or Fix with AI changes the code, Nucli flies to each changed line and zaps it: the old text flashes red and shrinks away, the new text glows green. The edit itself happens at once, so typing and Undo are never held up. Off by default (it briefly covers the code): the changed lines just light up.
-- **Fewer notes that vanish.** What to do next stays where you can read it: saving the .zip, or creating a new handler, says so above the code (with a Try it button), and confirmations show on the button you pressed.
+- **Messages where it happened.** A quick fix, Format and F8 say what they did in a small note right under the line in the code, with Undo there too, instead of a note in the corner. Saving the .zip or creating a handler says what's next above the code (with a Try it button), and confirmations show on the button you pressed.
+
+
+### 🛠️ Improved
+
+- **The colour glow is for AI only.** Pointing at an everyday button no longer makes it glow; only Fix with AI does.
 
 ---
 

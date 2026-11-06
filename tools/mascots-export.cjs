@@ -9,7 +9,8 @@ const path = require('path');
 const SHEET = path.join(__dirname, '..', 'design', 'mascots', 'index.html');
 const OUT = path.join(__dirname, '..', 'playground', 'src', 'mascots.gen.ts');
 // The scenes the workbench shows, by the sheet's ids.
-const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 'idle', 'roll', 'oops', 'search', 'joy', 'get', 'think'];
+// Nucli is the workbench's (Duo is for the app; his idle pose is only on the start page, beside Nucli).
+const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 'n-scan', 'n-calc', 'idle'];
 
 (async () => {
   const b = await chromium.launch();
@@ -19,6 +20,7 @@ const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 
   const out = await p.evaluate((IDS) => {
     const scenes = {};
     const used = new Set();
+    const svgVars = new Set();
     for (const id of IDS) {
       const src = document.querySelector(`svg.s-${id}`);
       if (!src) throw new Error('no scene ' + id);
@@ -43,6 +45,7 @@ const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 
       html = html.replace(/^<svg[^>]*>/, (tag) => tag.replace(/\s(width|height)="[^"]*"/g, '').replace(/\saria-label="[^"]*"/, '').replace(/\srole="img"/, ''));
       scenes[id] = html.replace(/<svg /, '<svg aria-hidden="true" ');
       for (const el of [svg, ...svg.querySelectorAll('[class]')]) for (const c of el.classList || []) used.add(c);
+      for (const m of html.matchAll(/var\((--[\w-]+)/g)) svgVars.add(m[1]); // colours set in the drawing itself
     }
     // CSS: rules naming one of these scenes, and the general rules for classes inside them (none for other scenes).
     const wantSel = (sel) => {
@@ -51,7 +54,7 @@ const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 
       // Every class it names must be in these drawings (so the app concept's rules, say, stay out).
       return sel.split(',').some((part) => { const cl = [...part.matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]); return cl.length && cl.every((c) => used.has(c)); });
     };
-    const rules = [], kf = {}, names = new Set(), vars = new Set();
+    const rules = [], kf = {}, names = new Set(), vars = new Set(svgVars);
     const walk = (list, media) => {
       for (const r of list) {
         if (r.type === CSSRule.MEDIA_RULE) walk(r.cssRules, r.conditionText);
