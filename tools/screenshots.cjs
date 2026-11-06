@@ -182,7 +182,11 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setValue('Game.GUID="Demo";\nGame.GameName="Demo";\nGame.ExecutableName="demo.exe";\n'));
     await p.click('.CodeMirror');
     await p.keyboard.press('Shift+Alt+F');
-    await p.waitForTimeout(500);
+    await p.waitForTimeout(900);
+    // Fanned out, as when the pointer is on the stack.
+    const tb = await box(p, '#toasts');
+    await p.mouse.move(tb.x + tb.width / 2, tb.y + tb.height - 20, { steps: 6 });
+    await p.waitForTimeout(800);
     await shot(p, `toasts-${t}.png`, '#toasts', 12);
     await ctx.close();
   }

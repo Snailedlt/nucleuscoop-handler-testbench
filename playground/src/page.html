@@ -506,22 +506,24 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 #welcome .w-steps { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
 #welcome .w-steps b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 11px; margin-right: 2px; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-/* Toasts (src/toast.ts): a stack at the bottom right (above the bottom bar on phones). */
-#toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; width: min(420px, calc(100vw - 32px)); pointer-events: none; }
-.toast { pointer-events: auto; width: 100%; box-sizing: border-box; display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px 10px 12px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-left: 3px solid var(--tk); border-radius: var(--r-pane); box-shadow: 0 10px 30px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12); font-size: 13.5px; line-height: 1.4; animation: toast-in .18s ease-out; }
+/* Toasts (src/toast.ts): a deck at the bottom right (above the bottom bar on phones). JS places
+   each toast (transform, height) and the deck's own height; hovering fans it out. */
+#toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 90; width: min(400px, calc(100vw - 32px)); height: 0; pointer-events: none; transition: height .35s cubic-bezier(.21,1.02,.73,1); }
+#toasts.expanded { pointer-events: auto; } /* the gaps between fanned-out toasts keep it open */
+.toast { position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; overflow: hidden; pointer-events: auto; transform-origin: center top; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 8px 24px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1); font-size: 13.5px; line-height: 1.4; transition: transform .4s cubic-bezier(.21,1.02,.73,1), opacity .3s ease, height .35s cubic-bezier(.21,1.02,.73,1); }
+.toast.entering { transition: none; }
+.toast-inner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px 10px 12px; transition: opacity .2s ease; }
+.toast.behind .toast-inner { opacity: 0; }
 .toast.info { --tk: var(--info); } .toast.success { --tk: var(--ok); } .toast.warning { --tk: var(--warn); } .toast.error { --tk: var(--err); }
 .toast-icon { flex: none; width: 18px; height: 18px; margin-top: 1px; fill: none; stroke: var(--tk); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .toast-text { flex: 1; min-width: 0; overflow-wrap: anywhere; padding-top: 1px; }
 .toast-action { flex: none; font: inherit; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 2px 6px; border-radius: var(--r-ctl); cursor: pointer; }
 .toast-action:hover { background: var(--surface-2); }
-.toast-close { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin: -3px 0 -3px 0; padding: 0; background: none; border: 0; border-radius: var(--r-ctl); color: var(--muted); cursor: pointer; }
+.toast-close { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin: -3px 0; padding: 0; background: none; border: 0; border-radius: var(--r-ctl); color: var(--muted); cursor: pointer; }
 .toast-close:hover { background: var(--surface-2); color: var(--fg); }
 .toast-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .toast-action:focus-visible, .toast-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.toast.leaving { animation: toast-out .16s ease-in forwards; }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
-@keyframes toast-out { to { opacity: 0; transform: translateX(16px); } }
-@media (prefers-reduced-motion: reduce) { .toast, .toast.leaving { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #toasts, .toast, .toast-inner { transition: none; } }
 #open-dialog { width: min(860px, calc(100vw - 24px)); max-height: min(80vh, 760px); padding: 0; display: none; flex-direction: column; overflow: hidden; }
 #open-dialog[open] { display: flex; }
 .open-head { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
@@ -694,7 +696,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .set-sec .link { padding: 6px 0; font-size: 14px; }
   #settings-dialog .actions { position: sticky; bottom: 0; margin: 4px -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); }
   .entries { grid-template-columns: minmax(0, 1fr); }
-  #toasts { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; width: auto; align-items: stretch; }
+  #toasts { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; width: auto; }
 }
 @media (pointer: coarse) {
   .btn, select, .filter, .fix, .mode button, [role=tab], .loc { min-height: 40px; }

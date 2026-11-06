@@ -1,5 +1,7 @@
-// Toasts: short notes that stack (newest at the bottom, at most three), close by themselves after
-// a few seconds (paused while hovered or focused) or with ×, and can carry one action (Undo).
+// Toasts, stacked like a deck: the newest in front, up to two older ones peeking out above it
+// (slightly smaller, their text faded). Hovering the stack, or moving the keyboard into it, fans
+// them out into a list and pauses every timer; leaving folds them back. Each closes by itself
+// after a few seconds, or with ×, and can carry one action (Undo).
 // The kind (info, success, warning, error) is guessed from the wording when it isn't given, so
 // every existing toast("…") call gets the right look.
 
@@ -11,7 +13,12 @@ export interface ToastOptions {
   duration?: number;
 }
 
-const MAX = 3;
+const MAX = 5; // kept; older ones are closed
+const PEEK = 2; // older toasts visible behind the newest one, folded
+const PEEK_OFFSET = 10; // px each one peeks out above the one in front
+const SCALE_STEP = 0.05;
+const GAP = 8; // px between toasts, fanned out
+
 const ICONS: Record<ToastKind, string> = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   success: '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 10"/>',
@@ -27,7 +34,16 @@ export function kindOf(text: string): ToastKind {
   return 'info';
 }
 
+interface Entry {
+  el: HTMLElement;
+  height: number; // its own height, unfolded
+  pause(): void;
+  resume(): void;
+}
+const entries: Entry[] = []; // oldest first
 let host: HTMLElement | null = null;
+let expanded = false;
+
 function container(): HTMLElement {
   if (host && document.body.contains(host)) return host;
   host = document.createElement('div');
@@ -35,35 +51,87 @@ function container(): HTMLElement {
   host.setAttribute('role', 'region');
   host.setAttribute('aria-label', 'Notifications');
   host.setAttribute('aria-live', 'polite'); // exists from the start, so the first toast is announced too
+  // Fanned out while the pointer or the keyboard is on the stack (the stack's own box covers the
+  // gaps between toasts, so moving from one to the next doesn't fold them).
+  const setExpanded = (v: boolean) => {
+    if (expanded === v) return;
+    expanded = v;
+    for (const e of entries) v ? e.pause() : e.resume();
+    layout();
+  };
+  host.addEventListener('mouseenter', () => setExpanded(true));
+  host.addEventListener('mouseleave', () => setExpanded(host!.contains(document.activeElement)));
+  host.addEventListener('focusin', () => setExpanded(true));
+  host.addEventListener('focusout', (e) => {
+    if (!host!.contains(e.relatedTarget as Node | null) && !host!.matches(':hover')) setExpanded(false);
+  });
   document.body.appendChild(host);
   return host;
 }
 
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-function remove(el: HTMLElement) {
-  if (el.dataset.leaving) return;
-  el.dataset.leaving = '1';
-  if (reduced()) return el.remove();
+/** Places every toast: folded into a deck, or fanned out into a list (newest at the bottom). */
+function layout() {
+  if (!host) return;
+  host.classList.toggle('expanded', expanded);
+  const front = entries[entries.length - 1];
+  let offset = 0;
+  for (let k = 0; k < entries.length; k++) {
+    const { el, height } = entries[entries.length - 1 - k]; // k = 0: the newest
+    el.style.zIndex = String(100 - k);
+    if (expanded) {
+      el.style.height = `${height}px`;
+      el.style.transform = `translateY(${-offset}px)`;
+      el.style.opacity = '1';
+      el.classList.remove('behind');
+      offset += height + GAP;
+    } else {
+      // Behind the front one: as tall as it, a little higher and smaller, contents faded.
+      el.style.height = `${k === 0 ? height : front.height}px`;
+      el.style.transform = `translateY(${-k * PEEK_OFFSET}px) scale(${1 - k * SCALE_STEP})`;
+      el.style.opacity = k <= PEEK ? '1' : '0';
+      el.classList.toggle('behind', k > 0);
+    }
+    el.inert = !expanded && k > 0; // folded away: not reachable by keyboard or screen reader
+  }
+  const h = entries.length ? (expanded ? offset - GAP : front.height + Math.min(PEEK, entries.length - 1) * PEEK_OFFSET) : 0;
+  host.style.height = `${h}px`;
+}
+
+function remove(entry: Entry) {
+  const i = entries.indexOf(entry);
+  if (i < 0) return;
+  entries.splice(i, 1);
+  const el = entry.el;
+  el.inert = true;
   el.classList.add('leaving');
-  el.addEventListener('animationend', () => el.remove(), { once: true });
-  setTimeout(() => el.remove(), 400); // in case the animation doesn't run
+  el.style.opacity = '0';
+  el.style.transform += ' translateX(24px)';
+  if (!entries.length) {
+    expanded = false; // the last one closed: next time the stack starts folded
+  }
+  layout();
+  setTimeout(() => el.remove(), reduced() ? 0 : 250);
 }
 
 export function toast(text: string, opts: ToastOptions = {}): void {
   const kind = opts.kind ?? kindOf(text);
   const box = container();
-  // The same message again: show the one that's there afresh instead of stacking a copy.
-  const same = [...box.querySelectorAll<HTMLElement>('.toast:not(.leaving)')].find((t) => t.dataset.text === text);
+  // The same message again: the one that's there comes to the front afresh instead of a copy.
+  const same = entries.find((e) => e.el.dataset.text === text);
   if (same) {
-    same.remove();
+    entries.splice(entries.indexOf(same), 1);
+    same.el.remove();
   }
   const el = document.createElement('div');
-  el.className = `toast ${kind}`;
+  el.className = `toast ${kind} entering`;
   el.dataset.text = text;
   if (kind === 'error') el.setAttribute('role', 'alert');
-  el.innerHTML = `<svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg><div class="toast-text"></div>`;
+  el.innerHTML = `<div class="toast-inner"><svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg><div class="toast-text"></div></div>`;
+  const inner = el.firstElementChild as HTMLElement;
   (el.querySelector('.toast-text') as HTMLElement).textContent = text;
+  let entry: Entry;
   if (opts.action) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -72,9 +140,9 @@ export function toast(text: string, opts: ToastOptions = {}): void {
     const run = opts.action.run;
     b.addEventListener('click', () => {
       run();
-      remove(el);
+      remove(entry);
     });
-    el.appendChild(b);
+    inner.appendChild(b);
   }
   const close = document.createElement('button');
   close.type = 'button';
@@ -82,38 +150,47 @@ export function toast(text: string, opts: ToastOptions = {}): void {
   close.setAttribute('aria-label', 'Dismiss');
   close.title = 'Dismiss';
   close.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-  close.addEventListener('click', () => remove(el));
-  el.appendChild(close);
+  close.addEventListener('click', () => remove(entry));
+  inner.appendChild(close);
   box.appendChild(el);
 
-  // Older ones make room: at most MAX at a time.
-  const live = [...box.querySelectorAll<HTMLElement>('.toast:not(.leaving)')];
-  for (const old of live.slice(0, Math.max(0, live.length - MAX))) remove(old);
-
-  // Closes by itself, unless the pointer or the keyboard is on it.
+  // Closes by itself after a while; the clock stops while the stack is fanned out.
   const ms = opts.duration ?? (kind === 'error' ? 8000 : opts.action ? 7000 : Math.min(8000, 3500 + text.length * 25));
   let left = ms;
   let started = Date.now();
-  let timer = window.setTimeout(() => remove(el), left);
-  const pause = () => {
-    clearTimeout(timer);
-    left -= Date.now() - started;
-  };
-  const resume = () => {
+  let timer = 0;
+  const start = () => {
     started = Date.now();
     clearTimeout(timer);
-    timer = window.setTimeout(() => remove(el), Math.max(1200, left));
+    timer = window.setTimeout(() => remove(entry), Math.max(1200, left));
   };
-  el.addEventListener('mouseenter', pause);
-  el.addEventListener('mouseleave', resume);
-  el.addEventListener('focusin', pause);
-  el.addEventListener('focusout', resume);
+  entry = {
+    el,
+    height: el.offsetHeight,
+    pause: () => {
+      clearTimeout(timer);
+      left -= Date.now() - started;
+    },
+    resume: start,
+  };
+  entries.push(entry);
+  if (expanded) entry.pause();
+  else start();
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
-      remove(el);
+      remove(entry);
     }
   });
+
+  // Older ones make room: at most MAX at a time.
+  while (entries.length > MAX) remove(entries[0]);
+  // In from below, then into place.
+  el.style.transform = 'translateY(100%)';
+  el.style.opacity = '0';
+  void el.offsetHeight;
+  el.classList.remove('entering');
+  layout();
 }
 
 /** Creates the (empty) live region early: screen readers only announce changes to one they know. */
@@ -121,7 +198,11 @@ export function initToasts() {
   container();
 }
 
-/** Closes every toast (e.g. before a screenshot). */
+/** Closes every toast at once (e.g. before a screenshot). */
 export function clearToasts() {
-  host?.querySelectorAll<HTMLElement>('.toast').forEach((t) => t.remove());
+  for (const e of [...entries]) {
+    entries.splice(entries.indexOf(e), 1);
+    e.el.remove();
+  }
+  layout();
 }

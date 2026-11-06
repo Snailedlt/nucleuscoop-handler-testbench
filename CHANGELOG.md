@@ -17,10 +17,10 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### 🛠️ Improved
 
 - **Numbered releases in What's new.** Each release shows its number, with a link to its notes on GitHub, and screenshots open only when you click Screenshot.
-- **Toasts that stack and close.** Notes such as "Fixed" or "Link copied" stack at the bottom right (above the bottom bar on phones), show whether they're good news or a problem, close with ×, and stay while you hover them. "Fixed" and "Formatted" ones have an Undo button.
+- **Toasts in a stack.** Notes such as "Fixed" or "Link copied" pile up at the bottom right (above the bottom bar on phones): the newest in front, older ones peeking out behind it. Hover the stack to fan it out (it waits while you read), close one with ×, and use Undo on "Fixed" and "Formatted". Each shows whether it's good news or a problem.
   <details><summary>Screenshot</summary>
 
-  ![Three toasts stacked: a link that matches nothing, a fix with Undo, and Formatted with Undo](docs/images/changelog/toasts-light.png)
+  ![Three toasts fanned out while the pointer is on the stack: a link that matches nothing, a fix with Undo, and Formatted with Undo](docs/images/changelog/toasts-light.png)
 
   </details>
 
