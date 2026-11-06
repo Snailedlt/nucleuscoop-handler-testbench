@@ -947,7 +947,7 @@ function nucli(o = {}) {
   const one = ([k, ph, ci], trail) => {
     const dur = n1(d * (1 + k * .18)), sh = o.dev ? `<g transform="rotate(${-ORB3[k]})">${devShape(DEV[ci], ACC[ci], false, m)}</g>` : eDot(ACC[ci], m);
     if (o.still) { const t = (ph * 2 + .15) * Math.PI; return `<g transform="translate(${n1(60 + 52 * Math.cos(t))} ${n1(60 + 15.5 * Math.sin(t))})">${sh}</g>`; }
-    const tr = trail && !m ? [1, 2, 3].map((q) => `<circle r="${3.6 - q * .7}" fill="${ACC[ci]}" opacity="${.34 - q * .08}"><animateMotion dur="${dur}s" begin="${n1(q * .07 - ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`).join('') : '';
+    const tr = trail && !m ? [1, 2, 3].map((q) => `<circle r="${3.6 - q * .7}" fill="${ACC[ci]}" opacity="${.34 - q * .08}"><animateMotion dur="${dur}s" begin="${n1(q * .07 - ph * dur - dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`).join('') : '';
     return `${tr}<g><animateMotion dur="${dur}s" begin="-${n1(ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/>${sh}</g>`;
   };
   const list = EL.filter((_, i) => i !== o.skip);
