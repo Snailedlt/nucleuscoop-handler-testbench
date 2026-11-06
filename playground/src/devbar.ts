@@ -5,7 +5,7 @@
 // It switches the site theme (splitscreen.me / v3.splitscreen.me), the colour mode, and checks WCAG contrast
 // of the theme tokens. The theme choice applies whether or not the bar is shown.
 
-type Site = 'www' | 'v3';
+type Site = string; // a built-in look (themes.json)
 type Mode = 'auto' | 'light' | 'dark';
 
 const KEY = (k: string) => `nucleus-workbench-dev-${k}`;
@@ -25,24 +25,22 @@ const set = (k: string, v: string | null) => {
   }
 };
 import { PAIRS } from './themekit';
+import THEMES from './themes.json';
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
-export const SITES: { id: Site; label: string; title: string }[] = [
-  { id: 'www', label: 'splitscreen.me', title: 'The current site (Docusaurus): brand blue, system fonts, light and dark' },
-  { id: 'v3', label: 'v3.splitscreen.me', title: 'The new site ("Bezel"): monochrome, Archivo, light and dark; colour means a player' },
-];
+export const SITES: { id: Site; label: string; title: string }[] = Object.entries(THEMES.looks as Record<string, { name: string; about?: string }>).map(([id, l]) => ({ id, label: l.name, title: l.about ?? l.name }));
 
 
 
 const root = document.documentElement;
 const hostTheme = root.dataset.theme; // the viewer's own choice, restored by "Auto"
 
-export const site = (): Site => (get('site') === 'v3' ? 'v3' : 'www');
+export const site = (): Site => { const s = get('site'); return s && s in THEMES.looks ? s : THEMES.default; };
 const mode = (): Mode => (get('mode') as Mode) || 'auto';
 
 /** Applies the stored site theme and colour mode. Safe to call before the page renders. */
 export function applyTheme() {
-  if (site() === 'v3') root.dataset.site = 'v3';
+  if (site() !== THEMES.default) root.dataset.site = site();
   else delete root.dataset.site;
   const m = mode();
   if (m === 'auto') {

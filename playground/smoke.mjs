@@ -109,7 +109,7 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(200);
   const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
   check(acc === (theme === 'dark' ? '#ffb4a8' : '#7a1f2b') && /Left out: light\.bg/.test(await p.innerText('#ct-msg')) && (await p.isVisible('body')), `${theme}: a custom theme file applies, and unsafe values are left out`);
-  check((await p.$$('#set-looks .look-card:not(.look-add)')).length === 3 && !!(await p.$('#set-looks .look-card.on .lc-remove')), `${theme}: the loaded theme is listed with the built-in looks, and is on`);
+  check((await p.$$('#set-looks .look-card .lc-remove')).length === 1 && (await p.$$('#set-looks .look-card:not(.look-add)')).length >= 5 && !!(await p.$('#set-looks .look-card.on .lc-remove')), `${theme}: the loaded theme is listed with the built-in looks, and is on`);
   await p.click('#set-looks .look-card.on .lc-remove', { force: true });
   await p.keyboard.press('Escape');
   await p.waitForTimeout(200);

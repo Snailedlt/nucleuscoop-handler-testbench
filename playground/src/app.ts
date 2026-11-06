@@ -1322,8 +1322,10 @@ function renderOpen() {
     const art = e.mono ? monogram(e.mono, e.cover) : e.icon ? `<span class="ic" aria-hidden="true">${svgIcon(e.icon)}</span>` : '';
     const keys = e.keys ? `<span class="keys">${e.keys.split('+').map((k) => `<kbd>${esc(k)}</kbd>`).join('')}</span>` : '';
     const sub = e.sub ? (lay === 'chips' ? `<span class="sr-only">${esc(e.sub)}</span>` : `<span class="s">${highlight(e.sub, words)}</span>`) : '';
-    const side = e.meta || e.badges || e.lint || keys ? `<span class="meta">${e.meta ?? ''}${e.badges ?? ''}${e.lint ? `<span data-lint="${i}"></span>` : ''}${keys}</span>` : '';
-    html += `<button class="entry${i === activeEntry ? ' active' : ''}" type="button" role="option" data-e="${i}" aria-selected="${i === activeEntry}"${lay === 'chips' && e.sub ? ` title="${esc(e.sub)}"` : ''}>${art}<span class="main"><span class="t">${highlight(e.title, words)}</span>${sub}</span>${side}</button>`;
+    // Rows get an "Open" (or "Run") that slides in under the pointer, as in BSManager's lists.
+    const go = lay === 'rows' ? `<span class="go" aria-hidden="true">${e.group === 'Actions' || commandMode ? 'Run' : 'Open'}<svg viewBox="0 0 24 24"><path d="M5 12h13m-5-5 5 5-5 5"/></svg></span>` : '';
+    const side = e.meta || e.badges || e.lint || keys || go ? `<span class="meta">${e.meta ?? ''}${e.badges ?? ''}${e.lint ? `<span data-lint="${i}"></span>` : ''}${keys}${go}</span>` : '';
+    html += `<button class="entry${i === activeEntry ? ' active' : ''}" type="button" role="option" data-e="${i}"${i < 24 ? ` style="--i:${i}"` : ''} aria-selected="${i === activeEntry}"${lay === 'chips' && e.sub ? ` title="${esc(e.sub)}"` : ''}>${art}<span class="main"><span class="t">${highlight(e.title, words)}</span>${sub}</span>${side}</button>`;
   });
   html += '</div></section>';
   body.innerHTML = html;
@@ -1376,6 +1378,10 @@ function showOpen(mode: 'open' | 'commands' = 'open') {
   ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : '';
   activeEntry = 0;
   renderOpen();
+  // The first rows arrive one after another, only as the dialog opens (not while typing).
+  const body = $('#open-body');
+  body.classList.add('stagger');
+  setTimeout(() => body.classList.remove('stagger'), 800);
   openDialog.showModal();
   // On touch screens, don't pop up the keyboard: most people browse the list. Tap the search to type.
   if (!(window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && narrow()))) ($('#open-q') as HTMLInputElement).focus();
@@ -1451,6 +1457,7 @@ $('#help-close').addEventListener('click', () => helpDialog.close());
 const TAB_KEY = 'nucleus-workbench-tab';
 function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+  requestAnimationFrame(placeInk);
   document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
   if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
@@ -2147,6 +2154,42 @@ const waka = initWakaTime({
   $('#settings-open').addEventListener('click', sync);
 }
 
+// The tab marker that glides between the results tabs (BSManager's nav bar does the same).
+function placeInk() {
+  const list = document.querySelector<HTMLElement>('.pane-head[role=tablist]');
+  const tab = list?.querySelector<HTMLElement>('[role=tab][aria-selected=true]');
+  if (!list || !tab) return;
+  let ink = list.querySelector<HTMLElement>('.tab-ink');
+  if (!ink) {
+    ink = document.createElement('span');
+    ink.className = 'tab-ink';
+    ink.setAttribute('aria-hidden', 'true');
+    list.append(ink);
+    list.classList.add('has-ink');
+  }
+  const a = tab.getBoundingClientRect();
+  const b = list.getBoundingClientRect();
+  ink.style.width = `${a.width}px`;
+  ink.style.transform = `translateX(${a.left - b.left}px)`;
+}
+window.addEventListener('resize', () => requestAnimationFrame(placeInk));
+requestAnimationFrame(placeInk);
+// The Mac style's wall of game covers (behind the panes), from the Hub covers this page has.
+function fillBackdrop() {
+  const wall = document.getElementById('backdrop');
+  if (!wall || wall.childElementCount || document.documentElement.dataset.site !== 'mac') return;
+  const covers = HUB_EXAMPLES.handlers.map((h) => h.cover).filter((c): c is string => !!c).slice(0, 80);
+  for (let k = 0; k < 160 && covers.length; k++) {
+    const img = document.createElement('img');
+    img.src = covers[k % covers.length];
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    wall.append(img);
+  }
+}
+new MutationObserver(fillBackdrop).observe(document.documentElement, { attributes: true, attributeFilter: ['data-site'] });
+fillBackdrop();
 // The logo is home: the start of the Open dialog (new handler, open a file, examples). A middle click
 // or Ctrl+click still opens the workbench fresh in a new tab.
 document.querySelector<HTMLAnchorElement>('a.brand')?.addEventListener('click', (e) => {

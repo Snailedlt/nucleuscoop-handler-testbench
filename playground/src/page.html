@@ -638,6 +638,64 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .ct-msg { padding: 6px 10px; border-radius: var(--r-ctl); background: var(--surface-2); }
 .ct-msg.warn { background: var(--warn-bg); color: var(--warn); }
 .ct-msg.error { background: var(--err-bg); color: var(--err); }
+/* ---- What the looks need beyond their tokens (themes.json) ---- */
+/* Mac style (vlxst's theme for Nucleus Co-op): a dim wall of game covers behind see-through panes, and
+   traffic lights on each pane. #backdrop is filled by app.ts with the Hub covers. */
+#backdrop { display: none; }
+:root[data-site="mac"] #backdrop { display: grid; position: fixed; inset: -8vh -6vw; z-index: -1; pointer-events: none; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; padding: 10px; transform: rotate(-8deg) scale(1.15); opacity: .34; filter: saturate(.85); }
+:root[data-site="mac"] #backdrop img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 8px; }
+:root[data-site="mac"][data-theme="light"] #backdrop { opacity: .2; }
+@media (prefers-color-scheme: light) { :root[data-site="mac"]:not([data-theme="dark"]) #backdrop { opacity: .2; } }
+:root[data-site="mac"] body { background: radial-gradient(120% 90% at 50% 0%, transparent, var(--bg) 85%), var(--bg); }
+:root[data-site="mac"] .pane, :root[data-site="mac"] dialog, :root[data-site="mac"] .toast { -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4); }
+:root[data-site="mac"] .pane > .pane-head::before { content: ""; flex: none; width: 52px; height: 12px; margin-right: 2px; background: radial-gradient(circle at 6px 6px, #ff5f57 5.5px, transparent 6px), radial-gradient(circle at 26px 6px, #febc2e 5.5px, transparent 6px), radial-gradient(circle at 46px 6px, #28c840 5.5px, transparent 6px); }
+:root[data-site="mac"] .btn.primary { border-radius: 999px; }
+/* Nucleus Co-op alpha 8: flat and square, white-bordered buttons, and nothing moves. */
+:root[data-site="alpha8"] .btn, :root[data-site="alpha8"] select { background: transparent; border-color: var(--fg); box-shadow: none; }
+:root[data-site="alpha8"] .btn:hover, :root[data-site="alpha8"] select:hover { background: var(--surface-2); border-color: var(--fg); }
+:root[data-site="alpha8"] .btn.primary { background: transparent; color: var(--fg); border: 2px solid var(--fg); }
+:root[data-site="alpha8"] .btn.primary:hover { background: var(--surface-2); }
+:root[data-site="alpha8"] .pane, :root[data-site="alpha8"] .problem, :root[data-site="alpha8"] .player { box-shadow: none; }
+:root[data-site="alpha8"] *, :root[data-site="alpha8"] *::before, :root[data-site="alpha8"] *::after, :root[data-site="alpha8"] *::backdrop { animation: none !important; transition: none !important; }
+
+/* ---- Motion (inspired by BSManager): springy dialogs, a glow on the main button, icons that answer the
+   pointer, actions that slide in on a row, a tab marker that glides. Never under reduced motion, never in
+   the alpha 8 look. ---- */
+:root { --spring: cubic-bezier(.34, 1.4, .64, 1); }
+@media (prefers-reduced-motion: no-preference) {
+  /* The main button: a slow ribbon of the player colours around it while the pointer is on it (not in v3,
+     whose rule is that colour means a player, nor alpha 8). */
+  .btn.primary { position: relative; isolation: isolate; }
+  .btn.primary::after { content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit; background: linear-gradient(90deg, var(--p1), var(--p3), var(--p4), var(--p7), var(--p2), var(--p6), var(--p5), var(--p1)); background-size: 400% 100%; filter: blur(7px); opacity: 0; transition: opacity .25s ease; animation: glow-ribbon 8s linear infinite paused; pointer-events: none; }
+  .btn.primary:hover::after, .btn.primary:focus-visible::after { opacity: .55; animation-play-state: running; }
+  :root[data-site="v3"] .btn.primary::after, :root[data-site="alpha8"] .btn.primary::after { display: none; }
+  @keyframes glow-ribbon { to { background-position: 400% 0; } }
+  /* Icon buttons: a little turn under the pointer, a kick back when pressed */
+  .btn.icon svg, #settings-open svg { transition: transform .18s var(--spring); }
+  .btn.icon:hover svg, #settings-open:hover svg { transform: rotate(14deg); }
+  .btn.icon:active svg, #settings-open:active svg { transform: rotate(-18deg) scale(.92); transition-duration: .08s; }
+  .btn:active { transform: translateY(1px); }
+  /* Dialogs rise with a spring; on phones, sheets come up from the bottom edge */
+  dialog[open] { animation: dialog-spring .34s var(--spring); }
+  @keyframes dialog-spring { from { opacity: 0; transform: translateY(22px) scale(.96); } 60% { opacity: 1; } }
+  /* Open: the first rows arrive one after another */
+  #open-body.stagger .entry { animation: row-in .32s var(--ease) both; animation-delay: calc(var(--i, 0) * 16ms); }
+  @keyframes row-in { from { opacity: 0; transform: translateY(6px); } }
+  /* Check cards and Look cards lift a little */
+  .problem { transition: box-shadow .15s, transform .15s var(--ease); }
+  .problem:hover { box-shadow: var(--sh-2); transform: translateY(-1px); }
+}
+/* Open rows: "Open" slides in from the right on the row under the pointer (or the keyboard) */
+.entry .go { display: inline-flex; align-items: center; gap: 2px; color: var(--accent); font-size: 12px; font-weight: 600; opacity: 0; transform: translateX(-8px); transition: opacity .15s, transform .2s var(--spring); white-space: nowrap; }
+.entry:hover .go, .entry.active .go { opacity: 1; transform: none; }
+.entry .go svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+@media (pointer: coarse) { .entry .go { display: none; } }
+/* The tab marker glides between Check, Try it and Reference (app.ts places it) */
+[role=tablist].has-ink { position: relative; }
+[role=tablist].has-ink [role=tab][aria-selected=true] { border-bottom-color: transparent; }
+.tab-ink { position: absolute; bottom: -1px; left: 0; height: 2px; width: 0; border-radius: 2px; background: var(--accent); pointer-events: none; transition: transform .38s var(--spring), width .38s var(--spring); }
+@media (prefers-reduced-motion: reduce) { .tab-ink { transition: none; } }
+
 /* Reference with nothing typed: what's in it */
 .api-home { display: flex; flex-direction: column; gap: 6px; }
 .api-home > p { margin: 0; }
@@ -848,6 +906,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
+<div id="backdrop" aria-hidden="true"></div>
 <div class="app">
   <header>
     <a class="brand" href="./" aria-label="Nucleus Handler Workbench: home" title="Home: start a handler, open one or pick an example">
