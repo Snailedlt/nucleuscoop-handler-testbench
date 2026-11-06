@@ -61,6 +61,9 @@ which are not saved here.
     at the top, take turns hitting the bar and roll back; nothing vanishes. `20-…`
 21. **The white is the seam**: each piece of Duo is white underneath and its blue stops short of every cut edge,
     so the stripe can't vanish or break up at any screen size or zoom; the four-player Duo carries a cross. `21-…`
+22. **Duos in the app concept**: the players demo's Duos live under the player-setup screen. Joining splits a Duo
+    off, leaving merges (into a neighbour, and the rest renumber), each Duo holds its player's devices (a touchscreen
+    too) and hops on input. `22-…`
 
 ## Lessons we kept
 
