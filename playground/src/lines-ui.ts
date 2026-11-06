@@ -543,7 +543,8 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     store.set(LINES_KEY, o ? '1' : '0');
     editor.refresh();
     if (o) update();
-    if (o && focus) ($('#lines-q') as HTMLInputElement).focus();
+    // On a touch screen the on-screen keyboard would cover the list: focus the filter only with a real keyboard.
+    if (o && focus && !matchMedia('(pointer: coarse)').matches) ($('#lines-q') as HTMLInputElement).focus();
   }
 
   showInfo(undefined);

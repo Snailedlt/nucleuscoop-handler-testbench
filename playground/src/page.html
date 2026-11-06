@@ -427,6 +427,10 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 /* Shortcut hints (keyhints.ts). */
 .keyhint { position: fixed; z-index: 90; display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 12px; pointer-events: none; white-space: nowrap; }
 .keyhint[hidden] { display: none; }
+#ai-bar:not(:has(> .btn:not([hidden]))) { display: none; }
+@media (pointer: coarse) { .no-touch { display: none !important; } }
+/* Problem cards: the text starts at the same place whatever the line number. */
+.problem .loc { min-width: 7ch; }
 .keyhint .kh-keys { display: flex; gap: 3px; }
 .keyhint kbd { font: 11px var(--font-mono); background: var(--surface-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
 .doc-code, #tip pre { background: var(--surface-2); border-radius: 5px; padding: 6px 8px; font: 12px/1.45 var(--font-mono); margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -1096,7 +1100,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
       <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
     </div>
-    <label class="adv" title="Show rule details, filters, the API reference, engine probes and keyboard shortcuts">
+    <label class="adv" title="Show rule details, filters, engine probes and more keyboard shortcuts">
       <input type="checkbox" id="advanced" role="switch"><span class="track" aria-hidden="true"></span>Advanced mode
     </label>
     <div class="toolbar">
@@ -1104,7 +1108,6 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
       <button class="btn wide-only" id="new-open" type="button">New handler…</button>
       <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install, or copy the code" aria-haspopup="dialog">Save for Nucleus…</button>
-      <button class="btn wide-only" id="copy" type="button" title="Copy the handler source">Copy</button>
       <button class="btn icon wide-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
       <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: what's new, keyboard shortcuts">⋯</button>
       <button class="btn icon gear" id="settings-open" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1328,7 +1331,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 </dialog>
 <dialog id="more-dialog" aria-label="More">
   <div class="more-list">
-    <button class="btn" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
+    <button class="btn no-touch" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
     <button class="btn" type="button" data-proxy="a.start-link">About these tools</button>
   </div>
@@ -1350,17 +1353,18 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="actions"><button class="btn primary" type="button" id="files-close">Close</button></div>
 </dialog>
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">
-  <h2>Keyboard shortcuts</h2>
+  <h2 tabindex="-1" autofocus>Keyboard shortcuts</h2>
   <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl.</p>
   <table class="keys"><tbody>
     <tr class="kh"><th colspan="2">Workbench</th></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>P</kbd> · <kbd>F1</kbd></td><td>Command palette: every command (format, fix, try it, theme…)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>P</kbd> · <kbd>Ctrl</kbd> <kbd>K</kbd></td><td>Examples and Hub handlers (type <kbd>&gt;</kbd> for commands)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Enter</kbd></td><td>Try it (simulate the handler)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save for Nucleus</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save or copy (the .zip for Nucleus, the code, a link)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>B</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the Lines list</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>,</kbd></td><td>Settings</td></tr>
     <tr><td><kbd>?</kbd></td><td>This list (outside the editor)</td></tr>
+    <tr><td><kbd>Esc</kbd> then <kbd>Tab</kbd></td><td>Leave the code editor (Tab alone indents)</td></tr>
     <tr class="kh"><th colspan="2">Problems</th></tr>
     <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>.</kbd></td><td>Problems and fixes on this line</td></tr>
@@ -1390,9 +1394,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 <dialog id="new-dialog">
   <form id="new-form">
     <h2>New handler</h2>
-    <div class="field"><label for="new-name">Game name</label><input id="new-name" required value="Deep Rock Galactic"><small>Shown in Nucleus. Also used for <code>Game.GUID</code> (letters, digits and spaces only).</small></div>
-    <div class="field"><label for="new-exe">Executable</label><input id="new-exe" required pattern="[^\\/:*?&quot;&lt;&gt;|]+\.exe" value="FSD-Win64-Shipping.exe"></div>
-    <div class="field"><label for="new-steam">Steam app ID <span class="muted">(optional)</span></label><input id="new-steam" inputmode="numeric" pattern="\d*" value="548430"></div>
+    <div class="field"><label for="new-name">Game name</label><input id="new-name" required placeholder="e.g. Deep Rock Galactic"><small>Shown in Nucleus. Also used for <code>Game.GUID</code> (letters, digits and spaces only).</small></div>
+    <div class="field"><label for="new-exe">Executable</label><input id="new-exe" required pattern="[^\\/:*?&quot;&lt;&gt;|]+\.exe" placeholder="e.g. FSD-Win64-Shipping.exe"></div>
+    <div class="field"><label for="new-steam">Steam app ID <span class="muted">(optional)</span></label><input id="new-steam" inputmode="numeric" pattern="\d*" placeholder="e.g. 548430"></div>
     <div id="feature-list"></div>
     <div class="actions"><button class="btn" type="button" id="new-cancel">Cancel</button><button class="btn primary" type="submit">Create</button></div>
   </form>

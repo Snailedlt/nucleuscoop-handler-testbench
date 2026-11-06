@@ -60,7 +60,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
-- **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog: saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.
+- **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog (the separate Copy and Copy link buttons are gone): saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.
 - **Nicer docs on hover.** The signature is coloured (name, parameters, types), defaults and categories are small labels, and docs written by Claude say so at the bottom, with what they're based on. 150 more names have docs now.
 - **Shortcuts where you look.** Hover a button (or reach it with Tab) to see its keyboard shortcut, also outside Advanced mode.
 - **Tips point at the real button.** A tip about Lines, Try it or Save or copy highlights that button while it shows; the tip's own arrows are both ‹ and ›.
@@ -77,6 +77,9 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **Settings no longer empties the results.** Switching tabs in Settings left Check blank until you picked a tab again.
+- **Keyboard users can leave the editor.** Tab still indents; Esc then Tab moves on to the rest of the page. Esc also closes a line's problem list, and Ctrl+. puts you on its Fix button.
+- **Smaller fixes.** New handler starts empty (with examples as hints) instead of filled with Deep Rock Galactic; Try it offers up to your handler's `Game.MaxPlayers` players; Test all waits until the handler loads; the AI review's Accept and Reject sit above the changes; the shortcuts list opens at the top; no Fix button when there's nothing to fix; problem texts line up; on phones Lines no longer pops up the keyboard and the ⋯ menu skips keyboard shortcuts.
 - **Red squiggles are back.** Problems are underlined again exactly where they are in the code (a thin VS Code-style wave: red for errors, yellow for warnings; dotted for tips); the style that drew them had stopped working.
 - **A typo no longer hides every other problem.** While a line doesn't parse yet (say you're halfway through `player.`), the rest is still checked, and the error sits on the unfinished code instead of on the next line.
 

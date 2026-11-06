@@ -284,11 +284,33 @@ const editor = CodeMirror($('#editor'), {
       const c = cm.getCursor();
       showLineProblems(c.line, cm.indexFromPos(c));
       if (linePop.hidden) showLineProblems(c.line);
+      // From the keyboard: straight to its first button (Fix this), Esc goes back to the code.
+      if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
     }),
     'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
+    // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
     Tab: (cm: any) => cm.execCommand('insertSoftTab'),
+    'Shift-Tab': (cm: any) => cm.execCommand('indentLess'),
   },
 } as any);
+let escThenTab = false;
+editor.on('keydown', (_cm: any, e: KeyboardEvent) => {
+  if (e.key === 'Escape') escThenTab = true;
+  else if (e.key === 'Tab' && escThenTab) {
+    // Leave the editor: focus the next (Shift: previous) control on the page.
+    (e as any).codemirrorIgnore = true;
+    e.preventDefault();
+    const wrap = editor.getWrapperElement();
+    const all = [...document.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter((x) => !wrap.contains(x) && !x.closest('[hidden], dialog:not([open])') && x.offsetParent !== null && !(x as HTMLButtonElement).disabled);
+    const after = (x: HTMLElement) => !!(wrap.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const next = e.shiftKey ? all.filter((x) => !after(x)).pop() : all.find(after);
+    next?.focus();
+    escThenTab = false;
+  }
+  else if (e.key !== 'Shift') escThenTab = false;
+});
+editor.on('blur', () => (escThenTab = false));
 
 function posAt(text: string, offset: number) {
   const line = lineOf(text, offset);
@@ -663,9 +685,13 @@ function showLineProblems(line: number, at?: number) {
   );
 }
 function hideLinePop() {
+  const had = linePop.contains(document.activeElement);
   linePop.hidden = true;
+  if (had) editor.focus();
 }
-editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
+editor.on('gutterClick', (_cm: any, line: number) => ((tip.hidden = true), showLineProblems(line)));
+linePop.addEventListener('keydown', (e: KeyboardEvent) => e.key === 'Escape' && (e.preventDefault(), hideLinePop()));
+editor.on('keydown', (_cm: any, e: KeyboardEvent) => e.key === 'Escape' && !linePop.hidden && hideLinePop());
 
 // Touch screens have no hover: the mouse events a tap fakes would open the hover docs and the
 // problem tooltips and leave them stuck. Instead, a tap on an underlined word shows its problems
@@ -771,23 +797,39 @@ document.querySelectorAll<HTMLButtonElement>('.filter').forEach((b) => b.addEven
 // "Fix problems" shows how many it can fix (counted in the worker along with the lint).
 function setFixCount(n: number) {
   const btn = $('#fix-all') as HTMLButtonElement;
-  btn.disabled = n === 0;
-  btn.textContent = n ? `Fix ${n} problem${n === 1 ? '' : 's'} automatically` : 'Nothing to fix automatically';
+  // Nothing to fix: no button (the bar goes too unless Fix with AI is there; CSS :has).
+  btn.hidden = n === 0;
+  btn.textContent = `Fix ${n} problem${n === 1 ? '' : 's'} automatically`;
 }
 
 // ---------------------------------------------------------------------------
 // Simulate
 
+// Players to try: 1 up to the handler's Game.MaxPlayers (at least 4, at most Nucleus' 32).
+function syncPlayerChoices() {
+  const sel = $('#sim-players') as HTMLSelectElement;
+  const m = editor.getValue().match(/^\s*Game\.MaxPlayers\s*=\s*(\d+)/m);
+  const max = Math.min(32, Math.max(4, m ? Number(m[1]) : 4, Number(sel.value) || 0));
+  if (sel.options.length === max) return;
+  const v = sel.value;
+  sel.replaceChildren(...Array.from({ length: max }, (_, i) => new Option(String(i + 1), String(i + 1))));
+  sel.value = Number(v) <= max ? v : String(max);
+}
 function runSim() {
+  syncPlayerChoices();
   const players = Number(($('#sim-players') as HTMLSelectElement).value);
   const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
   const kb = Number(($('#sim-kb') as HTMLSelectElement).value);
   const r = simulate(editor.getValue(), { players, width, height, keyboardPlayer: kb, plugins: simPlugins() });
   const out: string[] = [];
   const simple = mode === 'simple';
+  // Test all needs a handler that loads: until then the banner below says what to fix.
+  const all = $('#sim-all') as HTMLButtonElement;
+  all.disabled = !r.loaded;
+  all.title = r.loaded ? 'Every player count, input setup and monitor size' : 'Fix the problems first: the handler has to load before it can be tried';
   if (!r.loaded) {
     out.push(
-      `<div class="banner error masc-banner">${mascot('n-bad', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
+      `<div class="banner error masc-banner">${mascot('n-bad', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.${r.loadError ? `<details class="small"><summary>Technical details</summary><div class="mono">${esc(r.loadError)}</div></details>` : ''}<div class="banner-actions">${($('#fix-all') as HTMLButtonElement).hidden ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
     );
   } else {
     // Nucli, pleased when every player starts; worried when the session ends.
@@ -1051,10 +1093,7 @@ function renderDocHead() {
     const list = packageFiles.map((f) => `${f.name} (${fileSize(f.data.length)})`).join('\n');
     parts.push(`<button type="button" class="chip chip-btn" id="files-open" aria-haspopup="dialog" title="${esc('Saved with the handler:\n' + list)}">+ ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'}</button>`);
   }
-  if (doc.hash || canShare()) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this handler (or just the selected lines)">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
-  const linkBtn = $('#doc-meta').querySelector<HTMLElement>('#copy-link');
-  linkBtn?.addEventListener('click', () => copyLink(linkBtn));
 }
 
 /**
@@ -1260,7 +1299,7 @@ function commandList(): OpenEntry[] {
     c('Open examples and Hub handlers', 'Ctrl+P', 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
     c('Open a file…', '', 'open upload import file zip nc', click('#file-open')),
     c('New handler…', '', 'new create template', () => newDialog.showModal()),
-    c('Copy the handler', '', 'copy clipboard code', click('#copy')),
+    c('Copy the handler', '', 'copy clipboard code', () => copyCode()),
     c('Copy a link to this handler', '', 'share link url copy', click('[data-code=link]')),
     c('Download for Nucleus (.zip)', 'Ctrl+S', 'save download zip nc package nucleus', click('[data-code=zip]')),
     c('Download the code (.js)', '', 'save download js file', click('[data-code=js]')),
@@ -1548,16 +1587,17 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 // ---------------------------------------------------------------------------
 // Copy, toast, help, tabs, shortcuts
 
-$('#copy').addEventListener('click', async () => {
+// Copy the code (from Save or copy, or the command palette): confirmed on the button next to the code.
+async function copyCode() {
   try {
     await navigator.clipboard.writeText(editor.getValue());
-    confirmOn($('#copy'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
+    confirmOn($('#code-menu-open'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
     editor.focus();
     notice('The browser didn\'t let this page copy. The whole handler is selected: press Ctrl+C.', { kind: 'info' });
   }
-});
+}
 
 const devBar = initDevBar({
   build: `core ${BUILD.core} · Nucleus ${String(BUILD.nucleus ?? '?').slice(0, 7)} · Jint ${BUILD.jint ?? '?'}`,
@@ -1575,9 +1615,9 @@ $('#help-close').addEventListener('click', () => helpDialog.close());
 
 const TAB_KEY = 'nucleus-workbench-tab';
 function selectTab(id: string) {
-  document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+  document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   requestAnimationFrame(placeInk);
-  document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
+  document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
   if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
   if (id === 'probes' && !probesRendered) {
@@ -1591,7 +1631,7 @@ function selectTab(id: string) {
     /* ignore */
   }
 }
-document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
+document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
 
 const SIM_KEY = 'nucleus-workbench-sim';
 const simIds = ['sim-players', 'sim-res', 'sim-kb'];
@@ -1900,12 +1940,12 @@ function showProposal(base: string, code: string, changes: string[], before: { e
     ${changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
     ${delta}
     ${reason && (aiAuto.checked || introduced.length || bigRewrite || edited) ? `<p class="note">${esc(aiAuto.checked ? reason : reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, ''))}</p>` : ''}
-    <div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>
     <div class="ai-actions">${
       state === 'applied'
         ? '<button class="btn" id="ai-undo" type="button">Undo</button><button class="btn" id="ai-close" type="button">Close</button>'
         : '<button class="btn primary" id="ai-accept" type="button">Accept</button><button class="btn" id="ai-reject" type="button">Reject</button>'
-    }</div>`;
+    }</div>
+    <div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>`;
 
   const showApplied = () => {
     aiBox.innerHTML = body('applied');
@@ -1927,9 +1967,11 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   }
   aiBox.innerHTML = body('review');
   boxShows = editor.getValue();
+  aiBox.scrollIntoView({ block: 'nearest' });
   $('#ai-accept').addEventListener('click', () => {
     applyCode(code);
     showApplied();
+    $('#ai-undo').focus(); // keep the keyboard where the result is
   });
   $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
 }
@@ -2211,8 +2253,8 @@ $('#code-close').addEventListener('click', () => codeDialog.close());
 codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
   b.addEventListener('click', async () => {
     const kind = b.dataset.code;
-    if (kind === 'copy') return (codeDialog.close(), ($('#copy') as HTMLButtonElement).click());
-    if (kind === 'link') return (codeDialog.close(), copyLink());
+    if (kind === 'copy') return (codeDialog.close(), copyCode());
+    if (kind === 'link') return (codeDialog.close(), copyLink($('#code-menu-open')));
     const name = handlerFileName();
     const filename = `${name}.${kind}`;
     try {
