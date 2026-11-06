@@ -105,6 +105,7 @@ for (const theme of ['light', 'dark']) {
   // A custom theme file: applied, unsafe values left out, removable.
   await p.click('#settings-open');
   await p.waitForTimeout(300);
+  await p.click('#st-theme');
   await p.setInputFiles('#ct-file', { name: 't.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ name: 'T', light: { accent: '#7a1f2b', bg: 'red;}body{display:none' }, dark: { accent: '#ffb4a8' } })) });
   await p.waitForTimeout(200);
   const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
