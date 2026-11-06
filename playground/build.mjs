@@ -356,7 +356,11 @@ function pageHtml(inlineHub) {
     return { ...rest, cover: inlineHub ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : `covers/${h.cover}.jpg` };
   };
   const handlers = (inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
-  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/', ...(hub.all ? { all: true } : {}) })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
+  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/', ...(hub.all ? { all: true } : {}) })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`
+    .replace(/<\/script/gi, '<\\/script')
+    // A few Hub handlers carry U+FFFD (text that was already broken when uploaded): written as the
+    // escape inside these JSON strings, the same character, but no raw replacement character in the page.
+    .replace(/�/g, '\\ufffd');
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
