@@ -199,6 +199,27 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     await p.waitForTimeout(400);
     await shot(p, `open-${t}.png`, '#open-dialog');
     await ctx.close();
+    // The Theme tab: the looks and the code colours.
+    ({ ctx, p } = await open(b, t, { viewport: { width: 1280, height: 1000 }, deviceScaleFactor: 1 }, 'example-mistakes'));
+    await p.evaluate(() => document.querySelector('#settings-open').click());
+    await p.waitForTimeout(400);
+    await p.click('#st-theme');
+    await p.addStyleTag({ content: '#settings-dialog[open] { height: auto !important; max-height: none !important; }' }); // the whole tab, no scroll
+    await p.mouse.move(2, 2);
+    await p.waitForTimeout(400);
+    await shot(p, `theme-tab-${t}.png`, '#settings-dialog');
+    await ctx.close();
+    // The two new looks, a whole window each.
+    for (const look of ['mac', 'alpha8']) {
+      ({ ctx, p } = await open(b, t, CHW, 'example-mistakes'));
+      await p.evaluate((look) => { localStorage.setItem('nucleus-workbench-dev-site', look); }, look);
+      await p.reload();
+      await p.waitForSelector('.CodeMirror');
+      await p.waitForTimeout(1200);
+      await p.mouse.move(2, 2);
+      await p.screenshot({ path: path.join(CH, `look-${look}-${t}.png`) });
+      await ctx.close();
+    }
   }
   await b.close();
   if (!process.argv.includes('--release-shots')) require('child_process').execFileSync('python3', ['-I', path.join(__dirname, 'compose-images.py'), CH], { stdio: 'inherit' });

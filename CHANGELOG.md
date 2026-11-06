@@ -17,9 +17,24 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **Two looks from Nucleus Co-op's past, and code colours of your choice.** **Mac style** looks like macOS, after vlxst's Mac style for Nucleus Co-op: panes as windows with traffic lights, a frosted toolbar over a wallpaper, segmented tabs, push buttons and system blue. **Nucleus Co-op alpha 8** is the original 2019 app: flat greys, square corners, white-bordered buttons and no animation. Both come in light and dark. Code colours are now their own choice, under the looks: the look's own, GitHub, VS Code, Xcode, One, Monokai or Dracula, each shown as a few lines of handler. All of it now has its own Theme tab in Settings.
+
+  <details><summary>Screenshot</summary>
+
+  ![Mac style: panes as windows with traffic lights over a wallpaper](docs/images/changelog/look-mac-light.png)
+
+  ![Nucleus Co-op alpha 8: flat greys, square corners and bordered buttons](docs/images/changelog/look-alpha8-light.png)
+
+  </details>
 - **Livelier motion.** Inspired by BSManager: dialogs rise with a little spring, the main button glows in the player colours when you point at it, icons turn under the pointer, Open's rows show "Open →" as you move over them and arrive one after another, the marker under Check, Try it and Reference glides between tabs, and main buttons widen a little under the pointer. The start page fades in with a glow and its buttons widen too, after bsmanager.io. None of it plays if your device asks for less motion.
+- **Feedback you can see and touch.** After the BSManager app: Test all shows a progress bar while it runs and the logo beats until it's done, a toast can be swiped away to the right (a short drag springs back), and a notice slides in at the top of the code instead of just appearing.
 - **Every Hub handler, not just 40.** Open (Ctrl+K) lists all of the Hub's handlers, about 600, most downloaded first, each with its cover, players, downloads and a clean or warning badge; search finds any of them. They come from our own daily copy, so opening one never waits on the Hub, and the Hub only sees a few requests a day however many people use the workbench.
 - **Pick a look, or make your own.** Settings → Theme → Look shows splitscreen.me, v3.splitscreen.me and your own theme files (JSON) as cards, each with a small picture of the workbench in its colours; "Add a theme file" is the last card. A theme builds on one of the built-in looks and only lists what it changes: colours for light and dark, plus corners, shadows and fonts for both; tiles, borders and status colours follow the colours it sets. "Download this look as a theme file" gives you a file to start from, and the workbench says which values it left out and which text gets hard to read. Keep as many as you like.
+
+  <details><summary>Screenshot</summary>
+
+  ![Settings, Theme tab: light or dark, the look cards and the code colour cards](docs/images/changelog/theme-tab-light.png)
+
+  </details>
 - **Reference shows what's in it.** With nothing typed, the Reference tab lists what you can look up: Game, Game.Hook, Context, Player, ProtoInput and .NET, each with a count (click one for all its names), the names Hub handlers use most, the Nucleus enums, and a few searches to try.
 
 ### 🛠️ Improved

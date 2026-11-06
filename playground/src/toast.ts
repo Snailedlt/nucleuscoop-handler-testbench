@@ -183,6 +183,36 @@ export function toast(text: string, opts: ToastOptions = {}): void {
     }
   });
 
+  // Swipe it away to the right (as in BSManager): it follows the pointer, a little stiffly; let go
+  // past 60px, or with a flick, and it's gone; otherwise it springs back.
+  let x0 = -1;
+  let t0 = 0;
+  el.addEventListener('pointerdown', (e) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    x0 = e.clientX;
+    t0 = performance.now();
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('dragging');
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (x0 < 0) return;
+    const dx = e.clientX - x0;
+    el.style.translate = `${dx > 0 ? dx : dx / 4}px 0`;
+  });
+  const release = (e: PointerEvent) => {
+    if (x0 < 0) return;
+    const dx = e.clientX - x0;
+    const v = dx / Math.max(1, performance.now() - t0); // px per ms
+    x0 = -1;
+    el.classList.remove('dragging');
+    if (dx > 60 || (dx > 20 && v > 0.5)) {
+      el.style.translate = '110% 0';
+      remove(entry);
+    } else el.style.translate = '';
+  };
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+
   // Older ones make room: at most MAX at a time.
   while (entries.length > MAX) remove(entries[0]);
   // In from below, then into place.

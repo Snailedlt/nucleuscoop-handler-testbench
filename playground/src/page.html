@@ -522,6 +522,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 #toasts.expanded { pointer-events: auto; } /* the gaps between fanned-out toasts keep it open */
 .toast { position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; overflow: hidden; pointer-events: auto; transform-origin: center top; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 8px 24px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.1); font-size: 13.5px; line-height: 1.4; transition: transform .4s cubic-bezier(.21,1.02,.73,1), opacity .3s ease, height .35s cubic-bezier(.21,1.02,.73,1); }
 .toast.entering { transition: none; }
+.toast { touch-action: pan-y; translate: 0 0; } /* swiped away to the right (toast.ts) */
+@media (prefers-reduced-motion: no-preference) { .toast:not(.dragging) { transition: transform .4s cubic-bezier(.21,1.02,.73,1), opacity .3s ease, height .35s cubic-bezier(.21,1.02,.73,1), translate .3s var(--spring, ease); } }
+.toast.dragging { cursor: grabbing; }
 .toast-inner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px 10px 12px; transition: opacity .2s ease; }
 .toast.behind .toast-inner { opacity: 0; }
 .toast.info { --tk: var(--info); } .toast.success { --tk: var(--ok); } .toast.warning { --tk: var(--warn); } .toast.error { --tk: var(--err); }
@@ -678,11 +681,14 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 :root[data-site="mac"] .btn.primary::after { display: none; }
 :root[data-site="mac"] :focus-visible { outline: 3.5px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 0; }
 /* the selected row: solid system blue, as in Finder */
+/* (only with a mouse: on touch screens no row is shown as selected) */
+@media (pointer: fine) {
 :root[data-site="mac"] .entry.active { background: var(--accent); color: var(--accent-fg); box-shadow: none; }
 :root[data-site="mac"] .entry.active .s, :root[data-site="mac"] .entry.active .meta, :root[data-site="mac"] .entry.active .go { color: color-mix(in srgb, var(--accent-fg) 85%, transparent); }
 :root[data-site="mac"] .entry.active mark { background: rgba(255, 255, 255, .28); }
-:root[data-site="mac"][data-theme="dark"] :is(a, .link) { color: #5eb0ff; }
-@media (prefers-color-scheme: dark) { :root[data-site="mac"]:not([data-theme="light"]) :is(a, .link) { color: #5eb0ff; } }
+}
+:root[data-site="mac"][data-theme="dark"] :is(a, .link, .loc) { color: #5eb0ff; }
+@media (prefers-color-scheme: dark) { :root[data-site="mac"]:not([data-theme="light"]) :is(a, .link, .loc) { color: #5eb0ff; } }
 :root[data-site="mac"] * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fg) 30%, transparent) transparent; }
 /* Nucleus Co-op alpha 8: flat and square, white-bordered buttons, and nothing moves. */
 :root[data-site="alpha8"] .btn, :root[data-site="alpha8"] select { background: transparent; border-color: var(--fg); box-shadow: none; }
@@ -728,6 +734,18 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .entry:hover .go, .entry.active .go { opacity: 1; transform: none; }
 .entry .go svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 @media (pointer: coarse) { .entry .go { display: none; } }
+/* More after BSManager: the logo kicks when clicked and beats while Test all runs; notices slide
+   in from above; Test all fills a progress bar. */
+@media (prefers-reduced-motion: no-preference) {
+  a.brand .logo { transition: transform .25s var(--spring); }
+  a.brand:active .logo { transform: rotate(-12deg) scale(.94); transition-duration: .08s; }
+  html.busy a.brand .logo { animation: logo-beat .55s ease-in-out infinite; }
+  @keyframes logo-beat { 50% { transform: scale(1.08); } }
+  #notice:not([hidden]) { animation: notice-in .35s var(--spring); }
+  @keyframes notice-in { from { opacity: 0; transform: translateY(-10px); } }
+}
+.mx-bar { height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: -2px 0 10px; }
+.mx-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width .2s ease; }
 /* The tab marker glides between Check, Try it and Reference (app.ts places it) */
 [role=tablist].has-ink { position: relative; }
 [role=tablist].has-ink [role=tab][aria-selected=true] { border-bottom-color: transparent; }

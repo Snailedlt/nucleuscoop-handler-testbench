@@ -14,6 +14,14 @@ node ../tools/screenshots.cjs     # retake the workbench screenshots, light and 
 
 The Pages build uses splitscreenme-vscode's `main`: merge that first when the workbench needs new core code.
 
+## Where things are (playground/src)
+
+- Looks are data: `themes.json` (`looks`: www, v3, mac, alpha8; `codeThemes`). `themekit.ts` (no DOM; also run by `build.mjs`) resolves a look's `base` and derived tokens and writes the CSS that replaces `/*THEMES*/` in `page.html`. Look-specific rules beyond tokens (Mac windows, alpha 8's flat buttons) are in `page.html` under `[data-site="…"]`.
+- `customtheme.ts`: theme files (JSON) people add, validated by `parseTheme` (known tokens only, no `url()`), the list in localStorage, code colours (`pickCodeTheme`). `settings-ui.ts` draws the Theme tab's cards.
+- `keyboard.ts`: on-screen keyboard height for every text field (`html.kb-up`, `--kb`, `--vvh`).
+- `toast.ts`: the toast stack (swipe to dismiss) and the code-pane notice.
+- Hub list: `build.mjs --hub-data <dir>` reads the data branch's mirror (`hub/<id>.js`, `hub/packages.json`, `covers/`), which `tools/hub-mirror.mjs` keeps (scheduled in `hub-sync.yml`, only new versions, one request at a time). Without it the build uses the 40-handler snapshot. The single-file build inlines only the top 40 covers.
+
 ## Releasing
 
 1. Every user-visible change adds a line under `## Unreleased` in `CHANGELOG.md` (format in the comment at its top). Every new workbench feature also gets a tip (`playground/src/tips.ts`).
