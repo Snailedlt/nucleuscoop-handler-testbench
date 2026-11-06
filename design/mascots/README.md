@@ -1,0 +1,50 @@
+# Duo and Nucli: how we got here
+
+The raw material for a future "design process" page (see the issue linked below). Each file in `history/` is the
+concept sheet as it was at that step, self-contained: open it in a browser. The live sheet is the claude.ai artifact
+"Duo and Nucli" (https://claude.ai/artifact/RuXCS7RfrHpR2VERCthExM); its version history also has steps 1 and 2,
+which are not saved here.
+
+## Timeline (2026-11-06)
+
+1. **Six ideas.** Prompted by BSManager's mascot. Three for splitscreen.me (Duo, a split window; Cushy, a couch;
+   Pip & Pod, twins) and three for the tools (Nucli, an atom; Nab, a bug-catcher; Padd, a gamepad). Player colours.
+2. **Palettes.** The same six in colours from the splitscreen.me logo, v3.splitscreen.me, the Nucleus Co-op app
+   (`theme.ini`: black, white, green `#01b342`) and the player colours; animations and Discord emoji added.
+3. `history/03-six-concepts-palettes-emoji.html`: the state before the owner asked for one opinionated direction.
+4. **Two mascots, one look each.** Duo (the logo's split window) and Nucli; the others dropped (none read at 16 px,
+   Nab's tone, Padd too generic). An animation library, loaders, product states, emoji. `04-…`
+5. **Players: split and merge.** One Duo per player (1 to 8), splitting with effort and merging with a crash; Nucli
+   pops out an electron per player; present / assigned / active.
+6. **A physics rig.** Gravity, springs for squash and stretch, arms and feet that lag, eyes that follow the action.
+   Nucli amber with drawn shading. `06-…`
+7. **Nucli as the Nucleus Co-op logo** (red nucleus, green ribbons). Judged "overfitted". `07-…`
+8. **Nucli violet, his own thing**, borrowing from Nucleus Co-op (woven orbits), splitscreen.me (electron colours),
+   ProtoInput (a hook) and USS (device-shaped electrons). `08-…`
+9. **Devices per player, white eyes with pupils, personalities** (Nucli attentive, Duo the fun one), Duos in sync,
+   faster split/merge. `09-…`
+10. **Nucli as one body**: a single tilted ring, hands, the hook as an antenna; heads turn; hop wave; loader
+    experiments (wave, carousel, twirl, hop-in, ping-pong). Judged "a toy". `10-…`
+11. **Nucli: proton cluster and a jeweller's loupe.** Judged "making too much of himself". `11-…`
+12. **Quiet Nucli**: one calm nucleus, three faint orbits, comet-trail electrons, a status light, shy; a hula-hoop
+    scene; pixel sparkles for game feel. `12-…`
+13. **3D**: Duo turns as a ball (face and seam go round the back), the carousel as a ring in depth; calm, legible
+    joins with player tags; controllers drawn as gamepads; an archive section. `13-…`
+14. **Quality pass 1**: an audit of every animation; impact frames; Nucli firm (a basketball), Duo bouncy;
+    a fake-out gag; a kaleidoscope loader; "drawn on twos". Reference study: Marc'll'n's *Animation exercises*
+    (bounce, materials, pendulum, hammer), Telepurte's *Calleidoscope* (contraction then burst, solid/thin
+    contrast), a Japanese costume contest (silhouette, staging, reveal). Then reading on impact: hit stop, spacing,
+    holds, smear frames, small smooth shake, strong poses. `14-…`
+15. **Loaders round 2 and a setup screen**: ball bounce, a two-movement kaleidoscope and one for Nucli, hop-in that
+    clicks in with a check, a better twirl, a fixed carousel, a punchier wave; Duo hops on his player's input,
+    devices and electrons jiggle on input; a working player-setup example (controllers, keyboards, mice, both).
+    `15-…`
+
+## Lessons we kept
+
+- One mascot per job: Duo is the fun one (splitscreen.me), Nucli the quiet technician (the tools).
+- Colours come from the splitscreen.me logo; Nucli's violet is its blue meeting Nucleus Co-op's red.
+- Duo is a bouncy ball, Nucli a basketball. Stretch only when fast, round at the top of an arc.
+- Impact comes from contrast: a long hold, then a snap; hit stop and an impact frame on the big hit.
+- Characters are 3D even when drawn flat: outlines stay round, features travel round the body.
+- Nothing is deleted: earlier versions stay in the archive.

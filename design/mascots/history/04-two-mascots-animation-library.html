@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duo and Nucli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f3f6fb; --card: #ffffff; --tile: #eef3fa; --ink: #14203a; --muted: #4f5b74; --line: #dbe3ef; --accent: #1462d8;
+  --track: #dfe9f7; --panel: #ffffff; --panel-line: #d3e0f2; --code: #b6c8e4; --pick-bg: #e3f0ff; --pick: #0d4fb5;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1220; --card: #151c2e; --tile: #1c2539; --ink: #eaf0fb; --muted: #a7b3cb; --line: #29334a; --accent: #6fb7ff;
+    --track: #2a3550; --panel: #212b42; --panel-line: #34415f; --code: #4b5b7e; --pick-bg: #16325a; --pick: #a9d2ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1220; --card: #151c2e; --tile: #1c2539; --ink: #eaf0fb; --muted: #a7b3cb; --line: #29334a; --accent: #6fb7ff;
+  --track: #2a3550; --panel: #212b42; --panel-line: #34415f; --code: #4b5b7e; --pick-bg: #16325a; --pick: #a9d2ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1140px; margin: 0 auto; padding: 28px 16px 64px; }
+h1, h2, h3 { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(30px, 6vw, 46px); }
+h2 { font-size: 27px; margin: 52px 0 6px; }
+h3 { font-size: 21px; }
+p { margin: 6px 0; }
+.lead { color: var(--muted); max-width: 72ch; font-size: 16px; }
+.muted { color: var(--muted); }
+.top { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.ctl { display: flex; gap: 8px; flex-wrap: wrap; }
+.ctl button { font: inherit; font-size: 13px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.ctl button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.meet { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 14px; margin-top: 22px; }
+.hero { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 20px; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 18px; align-items: center; }
+@media (max-width: 520px) { .hero { grid-template-columns: minmax(0, 1fr); } .hero .big { max-width: 200px; margin: 0 auto; } }
+.hero .big { background: var(--tile); border-radius: 18px; aspect-ratio: 1; display: grid; place-items: center; }
+.hero .big svg { width: 92%; height: auto; }
+.role { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); }
+.hero ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+.sw { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.sw span { display: inline-flex; align-items: center; gap: 5px; font: 11.5px ui-monospace, Consolas, monospace; color: var(--muted); }
+.sw i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); }
+.faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-top: 12px; }
+.faces figure { margin: 0; text-align: center; }
+.faces svg { width: 100%; height: auto; background: var(--tile); border-radius: 10px; }
+.faces figcaption { font-size: 11px; color: var(--muted); }
+.lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-top: 14px; }
+.scene { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px; }
+.scene .stage { background: var(--tile); border-radius: 12px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
+.scene .stage svg { width: 88%; height: auto; overflow: visible; }
+.scene b { display: block; margin-top: 8px; font-family: Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 16px; }
+.scene span { font-size: 12.5px; color: var(--muted); }
+.ui { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 14px; }
+.box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.box h3 { font-size: 15px; margin-bottom: 10px; font-family: system-ui, sans-serif; font-weight: 600; color: var(--muted); }
+.row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.row figure { margin: 0; text-align: center; }
+.row figcaption { font-size: 11px; color: var(--muted); }
+.fbtn { display: inline-flex; gap: 8px; align-items: center; background: var(--accent); color: #fff; border-radius: 10px; padding: 8px 14px; font-weight: 600; font-size: 14px; }
+:root[data-theme="dark"] .fbtn { color: #06142b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fbtn { color: #06142b; } }
+.fbtn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.state { display: flex; gap: 14px; align-items: center; }
+.state svg { flex: none; }
+.state b { display: block; font-size: 15px; }
+.toastm { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; box-shadow: 0 6px 20px rgba(10, 30, 70, .12); }
+.toastm .u { margin-left: auto; color: var(--accent); font-weight: 600; font-size: 13px; }
+.wide svg { width: 100%; height: auto; }
+.emo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 14px; }
+@media (max-width: 800px) { .emo { grid-template-columns: minmax(0, 1fr); } }
+.emo-set { background: #313338; border-radius: 14px; padding: 12px; color: #f2f3f5; --tile: #313338; }
+.emo-set h4 { margin: 4px 0 8px; font-size: 12px; font-weight: 600; color: #b5bac1; text-transform: uppercase; letter-spacing: .04em; }
+.emo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; }
+.emo-grid figure { margin: 0; text-align: center; padding: 6px 2px; border-radius: 8px; }
+.emo-grid figure:hover { background: #2b2d31; }
+.emo-grid svg { width: 48px; height: 48px; display: block; margin: 0 auto 4px; overflow: visible; }
+.emo-grid figcaption { font: 11px/1.3 ui-monospace, Consolas, monospace; color: #dbdee1; overflow-wrap: anywhere; }
+.gif { display: inline-block; font: 600 9px/1 system-ui, sans-serif; background: #5865f2; color: #fff; border-radius: 3px; padding: 2px 3px; margin-left: 3px; vertical-align: 1px; }
+.dc { border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; }
+.dc.dark { background: #313338; color: #dbdee1; --tile: #313338; }
+.dc.light { background: #ffffff; color: #313338; border: 1px solid #e3e5e8; --tile: #ffffff; }
+.dc .who { font-weight: 600; font-size: 14px; }
+.dc.dark .who { color: #f2f3f5; } .dc.light .who { color: #060607; }
+.dc .line { font-size: 15px; line-height: 1.5; }
+.dc .line svg { width: 22px; height: 22px; vertical-align: -5px; overflow: visible; }
+.dc .jumbo svg { width: 48px; height: 48px; overflow: visible; }
+.dc .reacts { display: flex; gap: 4px; flex-wrap: wrap; }
+.dc .rx { display: inline-flex; gap: 4px; align-items: center; border-radius: 8px; padding: 2px 6px; font-size: 13px; font-weight: 600; }
+.dc.dark .rx { background: #2b2d31; color: #b5bac1; } .dc.dark .rx.me { background: #373a53; outline: 1px solid #5865f2; color: #dee0fc; }
+.dc.light .rx { background: #f2f3f5; color: #4e5058; } .dc.light .rx.me { background: #e7e9fd; outline: 1px solid #5865f2; color: #4752c4; }
+.dc .rx svg { width: 16px; height: 16px; overflow: visible; }
+.sizes { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; background: var(--tile); border-radius: 12px; padding: 12px 14px; }
+.sizes figure { margin: 0; text-align: center; }
+.sizes figcaption { font-size: 11px; color: var(--muted); }
+.mono { color: var(--ink); }
+.note { font-size: 13px; color: var(--muted); }
+ol.next { color: var(--muted); padding-left: 20px; }
+ol.next li { margin: 4px 0; }
+footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
+
+/* ---------- Motion ---------- */
+:root { --spring: cubic-bezier(.34, 1.56, .64, 1); --bsm: cubic-bezier(.46, -.55, .49, 1.52); --soft: cubic-bezier(.45, 0, .55, 1); }
+svg :is(.d-shadow, .d-jump, .d-body, .d-hl, .d-hr, .d-arm-l, .d-arm-r, .q1, .q2, .q3, .q4, .d-fl, .d-fr, .d-seam, .look, .n-float, .n-orbits, .n-core, .chase, .rider, .walker, .fill, .scan, .rogue, .zap, .box, .run) { transform-box: view-box; }
+svg .d-shadow { transform-origin: 60px 105px; }
+svg .d-jump, svg .d-body { transform-origin: 60px 100px; }
+svg .d-hl, svg .d-hr { transform-origin: 60px 96px; }
+svg .d-arm-l { transform-origin: 30px 66px; }
+svg .d-arm-r { transform-origin: 90px 66px; }
+svg :is(.q1, .q2, .q3, .q4) { transform-origin: 60px 62px; }
+svg .d-fl { transform-origin: 48px 99px; } svg .d-fr { transform-origin: 72px 99px; }
+svg :is(.n-float, .n-orbits, .chase, .rider) { transform-origin: 60px 60px; }
+svg .n-core { transform-origin: 60px 83px; }
+svg .fill { transform-origin: 8px 0; }
+svg :is(.eye, .conf, .sp, .badge, .sym, .zz, .sf, .dot, .chip) { transform-box: fill-box; transform-origin: center; }
+svg .fb { opacity: 0; }
+html.paused * { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .blink .eye { animation: blink 4.6s infinite; }
+  .blink .look-r .eye { animation-delay: .03s; }
+
+  /* Duo: idle */
+  .s-idle .d-body { animation: breathe 3.2s var(--soft) infinite; }
+  .s-idle .look { animation: lookaround 7s var(--soft) infinite; }
+  .s-idle .d-arm-l { animation: sway-l 3.2s var(--soft) infinite; }
+  .s-idle .d-arm-r { animation: sway-r 3.2s var(--soft) infinite; }
+  /* hello */
+  .s-hello .d-arm-r { animation: wave 2.8s infinite; }
+  .s-hello .d-body { animation: tilt 2.8s var(--spring) infinite; }
+  .s-hello .d-jump { animation: hop1 2.8s infinite; }
+  /* joy */
+  .s-joy .d-jump { animation: jump 2.6s infinite; }
+  .s-joy .d-body { animation: squash 2.6s infinite; }
+  .s-joy .d-shadow { animation: shad 2.6s infinite; }
+  .s-joy .d-arm-l { animation: armsup-l 2.6s var(--spring) infinite; }
+  .s-joy .d-arm-r { animation: armsup-r 2.6s var(--spring) infinite; }
+  .s-joy .d-fl { animation: kick-l 2.6s infinite; } .s-joy .d-fr { animation: kick-r 2.6s infinite; }
+  .s-joy .conf { animation: conf 2.6s cubic-bezier(.2, .7, .4, 1) infinite; }
+  /* split */
+  .s-split .d-hl { animation: spl-l 2.4s infinite; }
+  .s-split .d-hr { animation: spl-r 2.4s infinite; }
+  .s-split .d-seam { animation: seam 2.4s infinite; }
+  .s-split .d-body { animation: pre 2.4s infinite; }
+  .s-split .d-fl { animation: foot-l 2.4s var(--spring) infinite; } .s-split .d-fr { animation: foot-r 2.4s var(--spring) infinite; }
+  .s-split .look-l { animation: look-in-l 2.4s infinite; } .s-split .look-r { animation: look-in-r 2.4s infinite; }
+  /* four */
+  .s-four .q1 { animation: q1 2.6s infinite; } .s-four .q2 { animation: q2 2.6s infinite; }
+  .s-four .q3 { animation: q3 2.6s infinite; } .s-four .q4 { animation: q4 2.6s infinite; }
+  .s-four .d-seam { animation: seam4 2.6s infinite; }
+  .s-four .chip { animation: chip 2.6s var(--spring) infinite; }
+  .s-four .d-body { animation: pre4 2.6s infinite; }
+  /* loading bar */
+  .s-load .walker { animation: walk 3.8s infinite; }
+  .s-load .fill { animation: fill 3.8s infinite; }
+  .s-load .done { animation: done 3.8s infinite; }
+  .s-load .d-body { animation: waddle .38s ease-in-out infinite alternate; }
+  .s-load .d-fl { animation: step .38s ease-in-out infinite alternate; }
+  .s-load .d-fr { animation: step .38s ease-in-out -.38s infinite alternate; }
+  .s-load .d-jump { animation: endhop 3.8s infinite; }
+  /* roll spinner (BSManager's wind-up spin) */
+  .s-roll .d-body { transform-origin: 60px 62px; animation: roll 1.9s infinite; }
+  .s-roll .d-shadow { animation: rollshadow 1.9s infinite; }
+  /* download */
+  .s-get .box { animation: drop 3.4s infinite; }
+  .s-get .d-body { animation: catch 3.4s infinite; }
+  .s-get .d-jump { animation: gethop 3.4s infinite; }
+  .s-get .look { animation: lookup 3.4s infinite; }
+  .s-get .sp { animation: spark 3.4s infinite; }
+  /* search */
+  .s-search .d-arm-r { animation: sweep 3s var(--soft) infinite; }
+  .s-search .d-body { animation: lean 3s var(--soft) infinite; }
+  .s-search .look { animation: scanlook 3s var(--soft) infinite; }
+  /* think */
+  .s-think .d-body { animation: breathe 3s var(--soft) infinite; }
+  .s-think .dot { animation: dotb 1.2s ease-in-out infinite; animation-delay: calc(var(--i) * .16s); }
+  .s-think .look { transform: translate(2.4px, -2.6px); }
+  .s-think .d-arm-l { animation: tap 1.2s ease-in-out infinite; }
+  /* sleep */
+  .s-sleep .d-body, .s-n-sleep .n-core { animation: breathe 4.4s var(--soft) infinite; }
+  .s-sleep .zz, .s-n-sleep .zz { animation: zz 4.4s ease-out infinite; animation-delay: calc(var(--i) * -1.45s); }
+  /* oops */
+  .s-oops .d-hl { animation: crack-l 3s infinite; } .s-oops .d-hr { animation: crack-r 3s infinite; }
+  .s-oops .d-seam { animation: seamc 3s infinite; }
+  .s-oops .d-jump { animation: shake 3s infinite; }
+  .s-oops .drop { animation: sweat 3s infinite; }
+
+  /* Nucli */
+  .s-n-idle .n-float { animation: float 3.4s var(--soft) infinite; }
+  .s-n-spin .chase { animation: chase 1.5s cubic-bezier(.62, .06, .38, .94) infinite; animation-delay: calc(var(--i) * -.085s); }
+  .s-n-spin .look { animation: eyesround 1.5s linear infinite; }
+  .s-n-spin .n-core { animation: corepulse 1.5s var(--soft) infinite; }
+  .s-n-ring .arc { animation: arc 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
+  .s-n-ring .rider { animation: rider 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
+  .s-n-ring .sp { animation: spark2 3.6s infinite; }
+  .s-n-ring .n-core { animation: ringhop 3.6s infinite; }
+  .s-n-calc .sym { animation: symb 2.4s ease-out infinite; animation-delay: calc(var(--i) * -.4s); }
+  .s-n-calc .n-core { animation: think 2.4s var(--soft) infinite; }
+  .s-n-calc .look { transform: translate(0, -2.4px); }
+  .s-n-test .sf0 { animation: sf0 4s var(--spring) infinite; } .s-n-test .sf1 { animation: sf1 4s var(--spring) infinite; }
+  .s-n-test .sf2 { animation: sf2 4s var(--spring) infinite; } .s-n-test .sf3 { animation: sf3 4s var(--spring) infinite; }
+  .s-n-test .n-core { animation: testhop 4s infinite; }
+  .s-n-scan .scan { animation: scan 3.4s infinite; }
+  .s-n-scan .badge { animation: badge 3.4s infinite; }
+  .s-n-scan .look { animation: lookscan 3.4s infinite; }
+  .s-n-fix .zap { animation: zap 3.4s infinite; }
+  .s-n-fix .bad { animation: bad 3.4s infinite; }
+  .s-n-fix .good { animation: good 3.4s infinite; }
+  .s-n-fix .sp { animation: spark3 3.4s infinite; }
+  .s-n-ok .n-orbits { animation: collapse 3s infinite; }
+  .s-n-ok .n-core { animation: okhop 3s infinite; }
+  .s-n-ok .sp { animation: burst 3s cubic-bezier(.2, .7, .3, 1) infinite; }
+  .s-n-ok .badge { animation: okbadge 3s infinite; }
+  .s-n-bad .rogue { animation: rogue 3.4s infinite; }
+  .s-n-bad .badge { animation: badbadge 3.4s infinite; }
+  .s-n-bad .n-core { animation: wobble 3.4s infinite; }
+  .s-n-sleep .n-orbits { transform: rotate(10deg); }
+  .run { animation: run 1.7s cubic-bezier(.65, 0, .35, 1) infinite; animation-delay: calc(var(--i) * .12s); }
+}
+@keyframes blink { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.08); } }
+@keyframes breathe { 50% { transform: scale(1.03, .97); } }
+@keyframes lookaround { 0%, 30% { transform: none; } 36%, 52% { transform: translate(-2.6px, .4px); } 58%, 74% { transform: translate(2.6px, -.6px); } 80%, 100% { transform: none; } }
+@keyframes sway-l { 50% { transform: rotate(8deg); } }
+@keyframes sway-r { 50% { transform: rotate(-8deg); } }
+@keyframes wave { 0%, 100% { transform: rotate(0); } 8% { transform: rotate(-150deg); } 16% { transform: rotate(-120deg); } 24% { transform: rotate(-160deg); } 32% { transform: rotate(-120deg); } 40% { transform: rotate(-160deg); } 48% { transform: rotate(-130deg); } 62% { transform: rotate(0); } }
+@keyframes tilt { 0%, 70%, 100% { transform: none; } 10%, 52% { transform: rotate(-7deg); } }
+@keyframes hop1 { 0%, 100% { transform: none; } 4% { transform: translateY(-7px); } 9% { transform: none; } }
+@keyframes jump {
+  0%, 12% { transform: none; animation-timing-function: cubic-bezier(.15, .7, .3, 1); }
+  26% { transform: translateY(-36px); animation-timing-function: cubic-bezier(.6, 0, .9, .45); }
+  38% { transform: none; } 46% { transform: translateY(-6px); } 52%, 100% { transform: none; } }
+@keyframes squash { 0% { transform: none; } 10% { transform: scale(1.16, .82); } 15% { transform: scale(.86, 1.16); } 26% { transform: scale(.96, 1.05); } 38% { transform: scale(1.2, .8); } 44% { transform: scale(.95, 1.06); } 52% { transform: scale(1.03, .97); } 58%, 100% { transform: none; } }
+@keyframes shad { 0%, 12% { transform: none; } 26% { transform: scale(.5); opacity: .06; } 38%, 100% { transform: none; } }
+@keyframes armsup-l { 0%, 10%, 60%, 100% { transform: none; } 18%, 40% { transform: rotate(135deg); } }
+@keyframes armsup-r { 0%, 10%, 60%, 100% { transform: none; } 18%, 40% { transform: rotate(-135deg); } }
+@keyframes kick-l { 0%, 14%, 36%, 100% { transform: none; } 22%, 30% { transform: translate(-3px, -2px) rotate(-18deg); } }
+@keyframes kick-r { 0%, 14%, 36%, 100% { transform: none; } 22%, 30% { transform: translate(3px, -2px) rotate(18deg); } }
+@keyframes conf { 0%, 20% { transform: translate(0, 0) scale(0) rotate(0); opacity: 0; } 24% { opacity: 1; } 40% { transform: translate(var(--x), var(--y)) scale(1) rotate(calc(var(--r) * .5)); opacity: 1; } 75% { transform: translate(calc(var(--x) * 1.2), calc(var(--y) + 46px)) scale(.9) rotate(var(--r)); opacity: 1; } 85%, 100% { transform: translate(calc(var(--x) * 1.2), calc(var(--y) + 54px)) scale(.8) rotate(var(--r)); opacity: 0; } }
+@keyframes pre { 0%, 6%, 20%, 100% { transform: none; } 12% { transform: scale(1.1, .9); } }
+@keyframes spl-l { 0%, 10% { transform: none; } 15% { transform: translateX(2px); animation-timing-function: cubic-bezier(.2, .9, .3, 1.35); } 32%, 58% { transform: translateX(-18px) rotate(-12deg); animation-timing-function: var(--bsm); } 74% { transform: none; } 100% { transform: none; } }
+@keyframes spl-r { 0%, 10% { transform: none; } 15% { transform: translateX(-2px); animation-timing-function: cubic-bezier(.2, .9, .3, 1.35); } 32%, 58% { transform: translateX(18px) rotate(12deg); animation-timing-function: var(--bsm); } 74% { transform: none; } 100% { transform: none; } }
+@keyframes seam { 0%, 14%, 76%, 100% { opacity: 1; } 20%, 70% { opacity: 0; } }
+@keyframes foot-l { 0%, 12%, 74%, 100% { transform: none; } 30%, 58% { transform: translateX(-12px); } }
+@keyframes foot-r { 0%, 12%, 74%, 100% { transform: none; } 30%, 58% { transform: translateX(12px); } }
+@keyframes look-in-l { 0%, 26%, 66%, 100% { transform: none; } 34%, 58% { transform: translate(3px, .5px); } }
+@keyframes look-in-r { 0%, 26%, 66%, 100% { transform: none; } 34%, 58% { transform: translate(-3px, .5px); } }
+@keyframes pre4 { 0%, 6%, 20%, 62%, 74%, 100% { transform: none; } 12% { transform: scale(1.1, .9); } 68% { transform: scale(1.06, .94); } }
+@keyframes q1 { 0%, 12% { transform: none; animation-timing-function: cubic-bezier(.2, .9, .3, 1.4); } 30%, 56% { transform: translate(-12px, -12px) rotate(-14deg); animation-timing-function: var(--bsm); } 70%, 100% { transform: none; } }
+@keyframes q2 { 0%, 13% { transform: none; animation-timing-function: cubic-bezier(.2, .9, .3, 1.4); } 31%, 57% { transform: translate(12px, -12px) rotate(14deg); animation-timing-function: var(--bsm); } 71%, 100% { transform: none; } }
+@keyframes q3 { 0%, 14% { transform: none; animation-timing-function: cubic-bezier(.2, .9, .3, 1.4); } 32%, 58% { transform: translate(-12px, 10px) rotate(10deg); animation-timing-function: var(--bsm); } 72%, 100% { transform: none; } }
+@keyframes q4 { 0%, 15% { transform: none; animation-timing-function: cubic-bezier(.2, .9, .3, 1.4); } 33%, 59% { transform: translate(12px, 10px) rotate(-10deg); animation-timing-function: var(--bsm); } 73%, 100% { transform: none; } }
+@keyframes seam4 { 0%, 14%, 72%, 100% { opacity: 1; } 20%, 66% { opacity: 0; } }
+@keyframes chip { 0%, 22%, 66%, 100% { transform: scale(0); opacity: 0; } 30%, 58% { transform: scale(1); opacity: 1; } }
+@keyframes walk { 0% { transform: translateX(0); opacity: 0; } 4% { opacity: 1; transform: translateX(0); } 78% { transform: translateX(var(--walk, 86px)); } 92% { transform: translateX(var(--walk, 86px)); opacity: 1; } 97%, 100% { transform: translateX(var(--walk, 86px)); opacity: 0; } }
+@keyframes fill { 0%, 4% { transform: scaleX(0); } 78%, 100% { transform: scaleX(1); } }
+@keyframes done { 0%, 78% { opacity: 0; } 82%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes waddle { from { transform: rotate(-7deg); } to { transform: rotate(7deg) translateY(-1.5px); } }
+@keyframes step { from { transform: none; } to { transform: translateY(-3.5px); } }
+@keyframes endhop { 0%, 78% { transform: none; } 84% { transform: translateY(-18px); } 90% { transform: none; } 93% { transform: translateY(-5px); } 96%, 100% { transform: none; } }
+@keyframes roll { 0%, 42% { transform: rotate(0); animation-timing-function: var(--bsm); } 100% { transform: rotate(360deg); } }
+@keyframes rollshadow { 0%, 42%, 100% { transform: none; } 70% { transform: scaleX(1.25); } }
+@keyframes drop { 0% { transform: translateY(-70px); opacity: 0; animation-timing-function: cubic-bezier(.55, 0, 1, .45); } 6% { opacity: 1; } 30% { transform: none; animation-timing-function: ease-out; } 36% { transform: translateY(-7px); animation-timing-function: ease-in; } 42%, 86% { transform: none; opacity: 1; } 94%, 100% { transform: none; opacity: 0; } }
+@keyframes catch { 0%, 28% { transform: none; } 33% { transform: scale(1.16, .82); } 40% { transform: scale(.95, 1.06); } 46%, 100% { transform: none; } }
+@keyframes gethop { 0%, 54% { transform: none; } 62% { transform: translateY(-14px); } 70% { transform: none; } 74% { transform: translateY(-4px); } 78%, 100% { transform: none; } }
+@keyframes lookup { 0%, 26% { transform: translate(0, -3px); } 34%, 100% { transform: none; } }
+@keyframes spark { 0%, 58% { transform: scale(0); opacity: 0; } 64% { transform: scale(1.2) rotate(20deg); opacity: 1; } 78% { transform: scale(.8) rotate(60deg); opacity: 1; } 86%, 100% { transform: scale(0); opacity: 0; } }
+@keyframes sweep { 0%, 100% { transform: rotate(8deg); } 50% { transform: rotate(-34deg); } }
+@keyframes lean { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } }
+@keyframes scanlook { 0%, 100% { transform: translate(2.6px, .8px); } 50% { transform: translate(2px, -2.6px); } }
+@keyframes dotb { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-3.5px); opacity: 1; } }
+@keyframes tap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg); } }
+@keyframes zz { 0% { transform: translate(0, 0) scale(.4); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(16px, -34px) scale(1.15); opacity: 0; } }
+@keyframes crack-l { 0%, 8% { transform: none; } 14% { transform: rotate(-11deg); } 18% { transform: rotate(-7deg); } 22%, 58% { transform: rotate(-10deg); animation-timing-function: var(--bsm); } 72%, 100% { transform: none; } }
+@keyframes crack-r { 0%, 8% { transform: none; } 14% { transform: rotate(11deg); } 18% { transform: rotate(7deg); } 22%, 58% { transform: rotate(10deg); animation-timing-function: var(--bsm); } 72%, 100% { transform: none; } }
+@keyframes seamc { 0%, 10%, 72%, 100% { opacity: 1; } 14%, 66% { opacity: 0; } }
+@keyframes shake { 0%, 10%, 30%, 100% { transform: none; } 13%, 19%, 25% { transform: translateX(-2.5px); } 16%, 22%, 28% { transform: translateX(2.5px); } }
+@keyframes sweat { 0%, 16% { opacity: 0; transform: translateY(-6px); } 24% { opacity: 1; transform: none; } 58% { opacity: 1; transform: translateY(12px); } 66%, 100% { opacity: 0; transform: translateY(16px); } }
+@keyframes float { 50% { transform: translateY(-4px); } }
+@keyframes chase { to { transform: rotate(360deg); } }
+@keyframes eyesround { 0%, 100% { transform: translate(0, -2.2px); } 25% { transform: translate(2.2px, 0); } 50% { transform: translate(0, 2.2px); } 75% { transform: translate(-2.2px, 0); } }
+@keyframes corepulse { 50% { transform: scale(1.04, .96); } }
+@keyframes arc { 0%, 4% { stroke-dashoffset: 276.5; opacity: 1; } 78% { stroke-dashoffset: 0; opacity: 1; } 92% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes rider { 0%, 4% { transform: rotate(0); opacity: 1; } 78% { transform: rotate(360deg); opacity: 1; } 82%, 100% { transform: rotate(360deg); opacity: 0; } }
+@keyframes spark2 { 0%, 76% { transform: scale(0); opacity: 0; } 82% { transform: scale(1.25) rotate(30deg); opacity: 1; } 94% { transform: scale(.7) rotate(70deg); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+@keyframes ringhop { 0%, 76%, 100% { transform: none; } 80% { transform: scale(1.12, .86); } 85% { transform: translateY(-8px) scale(.94, 1.06); } 90% { transform: none; } }
+@keyframes symb { 0% { transform: translate(0, 0) scale(.2); opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(1.1) rotate(var(--r, 0deg)); opacity: 0; } }
+@keyframes think { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes sf0 { 0%, 8% { transform: scale(0); } 13% { transform: scale(1.3); } 17%, 86% { transform: scale(1); } 93%, 100% { transform: scale(0); } }
+@keyframes sf1 { 0%, 24% { transform: scale(0); } 29% { transform: scale(1.3); } 33%, 86% { transform: scale(1); } 93%, 100% { transform: scale(0); } }
+@keyframes sf2 { 0%, 40% { transform: scale(0); } 45% { transform: scale(1.3); } 49%, 86% { transform: scale(1); } 93%, 100% { transform: scale(0); } }
+@keyframes sf3 { 0%, 56% { transform: scale(0); } 61% { transform: scale(1.3); } 65%, 86% { transform: scale(1); } 93%, 100% { transform: scale(0); } }
+@keyframes testhop { 0%, 8%, 12%, 24%, 28%, 40%, 44%, 56%, 60%, 70%, 82%, 100% { transform: none; } 10%, 26%, 42%, 58% { transform: scale(1.06, .94); } 74% { transform: translateY(-12px) scale(.95, 1.06); } 78% { transform: scale(1.1, .9); } }
+@keyframes scan { 0%, 6% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 50%, 86% { transform: translateY(33px); opacity: 1; } 94%, 100% { transform: translateY(33px); opacity: 0; } }
+@keyframes badge { 0%, 50% { transform: scale(0) rotate(-30deg); opacity: 0; } 56% { transform: scale(1.3) rotate(10deg); opacity: 1; } 60% { transform: scale(.92) rotate(-6deg); } 64%, 86% { transform: scale(1) rotate(0); opacity: 1; } 94%, 100% { transform: scale(0); opacity: 0; } }
+@keyframes lookscan { 0%, 6% { transform: translate(2.6px, -2px); } 50%, 100% { transform: translate(2.6px, 1.8px); } }
+@keyframes zap { 0%, 14% { transform: translate(0, 0) scale(0); opacity: 0; } 18% { transform: translate(0, 0) scale(1.2); opacity: 1; } 40% { transform: translate(var(--zx), var(--zy)) scale(.8); opacity: 1; } 44%, 100% { transform: translate(var(--zx), var(--zy)) scale(0); opacity: 0; } }
+@keyframes bad { 0%, 40% { opacity: 1; } 46%, 92% { opacity: 0; } 98%, 100% { opacity: 1; } }
+@keyframes good { 0%, 40% { opacity: 0; } 46%, 92% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes spark3 { 0%, 40% { transform: scale(0); opacity: 0; } 47% { transform: scale(1.3) rotate(30deg); opacity: 1; } 62% { transform: scale(.7) rotate(80deg); opacity: 1; } 70%, 100% { transform: scale(0); opacity: 0; } }
+@keyframes collapse { 0%, 10% { transform: none; animation-timing-function: cubic-bezier(.6, 0, .9, .5); } 30% { transform: scale(.12) rotate(-40deg); animation-timing-function: cubic-bezier(.2, .9, .3, 1.5); } 42% { transform: scale(1.18) rotate(0); } 50% { transform: scale(.96); } 58%, 100% { transform: none; } }
+@keyframes okhop { 0%, 26%, 100% { transform: none; } 30% { transform: scale(1.14, .86); } 38% { transform: translateY(-10px) scale(.92, 1.1); } 46% { transform: scale(1.06, .95); } 54% { transform: none; } }
+@keyframes burst { 0%, 30% { transform: translate(0, 0) scale(0); opacity: 0; } 34% { opacity: 1; } 56% { transform: translate(var(--x), var(--y)) scale(1) rotate(45deg); opacity: 1; } 76%, 100% { transform: translate(calc(var(--x) * 1.15), calc(var(--y) * 1.15)) scale(0) rotate(90deg); opacity: 0; } }
+@keyframes okbadge { 0%, 38% { transform: scale(0) rotate(-40deg); opacity: 0; } 46% { transform: scale(1.3) rotate(8deg); opacity: 1; } 52% { transform: scale(.9) rotate(-4deg); } 58%, 88% { transform: scale(1); opacity: 1; } 96%, 100% { transform: scale(0); opacity: 0; } }
+@keyframes rogue { 0%, 18% { transform: none; animation-timing-function: cubic-bezier(.55, 0, 1, .45); } 40% { transform: translate(-4px, 50px); animation-timing-function: ease-out; } 48% { transform: translate(-9px, 38px); animation-timing-function: ease-in; } 56% { transform: translate(-13px, 50px); animation-timing-function: ease-out; } 61% { transform: translate(-15px, 45px); animation-timing-function: ease-in; } 66%, 88% { transform: translate(-17px, 50px); opacity: 1; } 96%, 100% { transform: translate(-17px, 50px); opacity: 0; } }
+@keyframes badbadge { 0%, 40% { transform: scale(0); opacity: 0; } 46% { transform: scale(1.3) rotate(-14deg); opacity: 1; } 50% { transform: rotate(12deg); } 54% { transform: rotate(-8deg); } 58%, 88% { transform: none; opacity: 1; } 96%, 100% { transform: scale(0); opacity: 0; } }
+@keyframes wobble { 0%, 40%, 60%, 100% { transform: none; } 43% { transform: rotate(-6deg); } 47% { transform: rotate(5deg); } 51% { transform: rotate(-3deg); } 55% { transform: rotate(2deg); } }
+@keyframes run { 0% { transform: translateX(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(300px); opacity: 0; } }
+</style>
+<style id="gen"></style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="duoG" gradientUnits="userSpaceOnUse" x1="30" y1="28" x2="92" y2="96"><stop offset="0" stop-color="#4ec1fc"/><stop offset="1" stop-color="#1c7bff"/></linearGradient>
+    <linearGradient id="barG" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4ec1fc"/><stop offset="1" stop-color="#1c7bff"/></linearGradient>
+    <radialGradient id="nucG" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#f3f8ff"/><stop offset="1" stop-color="#dceaff"/></radialGradient>
+  </defs>
+</svg>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Duo and Nucli</h1>
+      <p class="lead">One mascot for <strong>splitscreen.me</strong>, one for the <strong>handler tools</strong>. Both grow out of the splitscreen.me logo: Duo is its split blue window, Nucli wears its gamepad's four button colours. One colour scheme each, the same in light and dark. The motion borrows BSManager's tricks: a wind-up before every move, squash and stretch, overshoot, and a pause before the spin.</p>
+    </div>
+    <div class="ctl"><button type="button" id="pause" aria-pressed="false">Pause animations</button><button type="button" id="theme">Theme: match device</button></div>
+  </div>
+
+  <div class="meet" id="meet"></div>
+
+  <h2>Duo's animations</h2>
+  <p class="lead">For the app, the Hub, the website and Discord.</p>
+  <div class="lib" id="lib-duo"></div>
+
+  <h2>Nucli's animations</h2>
+  <p class="lead">For the workbench, the VS Code extension and the CLI.</p>
+  <div class="lib" id="lib-nucli"></div>
+
+  <h2>In the product</h2>
+  <p class="lead">Loaders and states, ready to drop in. Each is one small SVG with CSS; nothing moves when the device asks for less motion.</p>
+  <div class="ui" id="ui"></div>
+
+  <h2>Discord emoji</h2>
+  <p class="lead">Static and animated, at Discord's sizes: 22 px in a message, 48 px on their own, 16 px as reactions.</p>
+  <div id="emoji"></div>
+
+  <h2>Small and in one colour</h2>
+  <div class="ui" id="sizes"></div>
+
+  <h2>What I dropped, and why</h2>
+  <p class="lead">Cushy (the couch) and Pip &amp; Pod (the twins) were cute, but neither reads at 16 px, and the twins double every drawing. Nab (the bug-catcher) says "you made bugs", which is the wrong tone for beginners. Padd (the gamepad) is nearly a generic controller icon and repeats Duo's idea. The palette switcher is gone too: the logo's own colours work everywhere, so each mascot gets exactly one look.</p>
+
+  <h2>Next steps</h2>
+  <ol class="next">
+    <li>Pitch Duo to the Nucleus Co-op maintainers (Discord). Nucli can start in the workbench right away.</li>
+    <li>Once they're picked: export the emoji (128 × 128 PNG and GIF, under 256 KB each) and a sticker sheet.</li>
+    <li>Workbench: Nucli in the empty Check tab, Test all (progress ring), fixes (toast), failed loads; Duo for Hub loading and the 404 page. Off in the alpha 8 look and when the device asks for less motion.</li>
+  </ol>
+  <footer>Original characters drawn for this project. Colours from the splitscreen.me logo: #4ec1fc, #1c7bff, white, and the buttons #fca53d, #ff434d, #3fbbd8, #55d137; face #1f2c46.</footer>
+</div>
+
+<script>
+const C = { b1: '#4ec1fc', b2: '#1c7bff', ink: '#1f2c46', blush: '#ff8fb1', o: '#fca53d', r: '#ff434d', t: '#3fbbd8', g: '#55d137', arm1: '#43b5fb', arm2: '#2483ff', core: '#2a8cff', orbit: '#5aa9ff' };
+const ACC = [C.o, C.r, C.t, C.g];
+let uid = 0;
+const n1 = (v) => +v.toFixed(2);
+
+// ---- faces ----
+function eyeOf(x, y, s, expr, ink, hl, side) {
+  let e;
+  const arc = (dy, flip) => `<path d="M${n1(x - 5 * s)} ${n1(y + dy * s)} q${n1(5 * s)} ${n1((flip ? 5 : -7) * s)} ${n1(10 * s)} 0" fill="none" stroke="${ink}" stroke-width="${n1(3 * s)}" stroke-linecap="round"/>`;
+  if (expr === 'happy' || (expr === 'wink' && side === 'l')) e = arc(1.5);
+  else if (expr === 'sleep') e = arc(-1, true);
+  else {
+    const r = (expr === 'wow' ? 6.3 : expr === 'worried' || expr === 'focus' ? 4.9 : 5.5) * s;
+    e = `<g class="eye"><circle cx="${x}" cy="${y}" r="${n1(r)}" fill="${ink}"/>${hl ? `<circle cx="${n1(x + 1.8 * s)}" cy="${n1(y - 2 * s)}" r="${n1(1.9 * s)}" fill="${hl}"/><circle cx="${n1(x - 1.7 * s)}" cy="${n1(y + 2 * s)}" r="${n1(.9 * s)}" fill="${hl}" opacity=".8"/>` : ''}</g>`;
+  }
+  let brow = '';
+  const k = side === 'l' ? 1 : -1;
+  if (expr === 'worried') brow = `<path d="M${n1(x - 5 * s * k)} ${n1(y - 8.5 * s)} L${n1(x + 4 * s * k)} ${n1(y - 11.5 * s)}" stroke="${ink}" stroke-width="${n1(2.4 * s)}" stroke-linecap="round"/>`;
+  if (expr === 'focus') brow = `<path d="M${n1(x - 5 * s * k)} ${n1(y - 10.5 * s)} L${n1(x + 4 * s * k)} ${n1(y - 9.3 * s)}" stroke="${ink}" stroke-width="${n1(2.4 * s)}" stroke-linecap="round"/>`;
+  return `<g class="look look-${side}">${e}</g>${brow}`;
+}
+function mouthOf(cx, y, s, expr, ink) {
+  const S = (v) => n1(v * s);
+  switch (expr) {
+    case 'happy': return `<path d="M${n1(cx - 8 * s)} ${n1(y - 1 * s)} q${S(8)} ${S(12)} ${S(16)} 0 z" fill="${ink}" stroke="${ink}" stroke-width="${S(1.4)}" stroke-linejoin="round"/><ellipse cx="${cx}" cy="${n1(y + 4.6 * s)}" rx="${S(3.6)}" ry="${S(1.8)}" fill="#ff8fb1"/>`;
+    case 'wow': return `<ellipse cx="${cx}" cy="${n1(y + 2 * s)}" rx="${S(3.6)}" ry="${S(4.4)}" fill="${ink}"/>`;
+    case 'worried': return `<path d="M${n1(cx - 7 * s)} ${n1(y + 2 * s)} q${S(3.5)} ${S(-3.5)} ${S(7)} 0 q${S(3.5)} ${S(3.5)} ${S(7)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.6)}" stroke-linecap="round"/>`;
+    case 'sleep': return `<ellipse cx="${cx}" cy="${n1(y + 1.5 * s)}" rx="${S(2.6)}" ry="${S(2.2)}" fill="${ink}"/>`;
+    case 'focus': return `<path d="M${n1(cx - 5 * s)} ${n1(y + 1 * s)} q${S(5)} ${S(2.4)} ${S(10)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.6)}" stroke-linecap="round"/>`;
+    default: return `<path d="M${n1(cx - 6.5 * s)} ${y} q${S(6.5)} ${S(6)} ${S(13)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.9)}" stroke-linecap="round"/>`;
+  }
+}
+const blushOf = (x, y, s) => `<ellipse cx="${x}" cy="${y}" rx="${n1(5.6 * s)}" ry="${n1(3.2 * s)}" fill="${C.blush}" opacity=".62"/>`;
+
+// ---- Duo ----
+// o: expr, swap: [a, b] (two faces, crossfaded by CSS), arms: down|up|wave|hold|none, mag, quad, mono, noFeet, noShadow, inJump, after, before
+function duo(o = {}) {
+  const id = 'd' + (++uid), m = !!o.mono;
+  const ink = m ? 'var(--tile)' : C.ink, hl = m ? null : '#fff';
+  const fill = m ? 'currentColor' : 'url(#duoG)';
+  const exprs = o.swap || [o.expr || 'smile'];
+  const side = (sd, part) => {
+    const one = (ex) => {
+      const x = sd === 'l' ? 47 : 73;
+      const eye = part !== 'bottom' ? eyeOf(x, 58, 1, ex, ink, hl, sd) : '';
+      const low = part !== 'top' ? `${m ? '' : blushOf(sd === 'l' ? 39 : 81, 70, 1)}<g clip-path="url(#${id}${sd})">${mouthOf(60, 69, 1, ex, ink)}</g>` : '';
+      return eye + low;
+    };
+    return exprs.length > 1 ? `<g class="fa">${one(exprs[0])}</g><g class="fb">${one(exprs[1])}</g>` : one(exprs[0]);
+  };
+  const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], wave: ['', ''], hold: ['', 'rotate(-50 90 66)'], none: null }[o.arms || 'down'];
+  const armCol = m ? 'currentColor' : null;
+  const armL = pose ? `<g class="d-arm-l"><g transform="${pose[0]}"><ellipse cx="27" cy="76" rx="5.8" ry="10.5" transform="rotate(18 27 76)" fill="${armCol || C.arm1}"/></g></g>` : '';
+  const mag = o.mag ? `<circle cx="95" cy="90" r="7.5" fill="#e3f4ff" fill-opacity=".85" stroke="${C.ink}" stroke-width="3.2"/><path d="M91 87.5 q2 -3 5 -3" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>` : '';
+  const armR = pose ? `<g class="d-arm-r"><g transform="${pose[1]}"><ellipse cx="93" cy="76" rx="5.8" ry="10.5" transform="rotate(-18 93 76)" fill="${armCol || C.arm2}"/>${mag}</g></g>` : '';
+  const shine = m ? '' : '<ellipse cx="44" cy="40" rx="9" ry="4.6" fill="#fff" opacity=".42" transform="rotate(-38 44 40)"/>';
+  const seamCol = m ? 'var(--tile)' : '#ffffff';
+  let body, seam;
+  if (o.quad) {
+    body = `<g class="q1"><path d="M60 62 L60 28 A34 34 0 0 0 26 62 Z" fill="${fill}"/>${shine}${side('l', 'top')}</g>
+      <g class="q2"><path d="M60 62 L94 62 A34 34 0 0 0 60 28 Z" fill="${fill}"/>${side('r', 'top')}</g>
+      <g class="q3">${armL}<path d="M60 62 L26 62 A34 34 0 0 0 60 96 Z" fill="${fill}"/>${side('l', 'bottom')}</g>
+      <g class="q4">${armR}<path d="M60 62 L60 96 A34 34 0 0 0 94 62 Z" fill="${fill}"/>${side('r', 'bottom')}</g>`;
+    seam = `<g class="d-seam"><path d="M60 30 V94 M28 62 H92" stroke="${seamCol}" stroke-width="3" stroke-linecap="round"/></g>`;
+  } else {
+    body = `<g class="d-hl">${armL}<path d="M60 28 A34 34 0 0 0 60 96 Z" fill="${fill}"/>${shine}${side('l')}</g>
+      <g class="d-hr">${armR}<path d="M60 28 A34 34 0 0 1 60 96 Z" fill="${fill}"/>${side('r')}</g>`;
+    seam = `<g class="d-seam"><path d="M60 30 V94" stroke="${seamCol}" stroke-width="3" stroke-linecap="round"/></g>`;
+  }
+  const feetCol = m ? 'currentColor' : '#1858c4';
+  const feet = o.noFeet ? '' : `<g class="d-feet"><ellipse class="d-fl" cx="48" cy="99" rx="8.6" ry="4.6" fill="${feetCol}"/><ellipse class="d-fr" cx="72" cy="99" rx="8.6" ry="4.6" fill="${feetCol}"/></g>`;
+  const shadow = m || o.noShadow ? '' : '<ellipse class="d-shadow" cx="60" cy="105" rx="24" ry="3.4" fill="#0b1a33" opacity=".15"/>';
+  return `<defs><clipPath id="${id}l"><rect x="0" y="0" width="60" height="120"/></clipPath><clipPath id="${id}r"><rect x="60" y="0" width="60" height="120"/></clipPath></defs>
+    ${o.before || ''}${shadow}<g class="d-jump">${feet}<g class="d-body">${body}${seam}</g>${o.inJump || ''}</g>${o.after || ''}`;
+}
+
+// ---- Nucli ----
+// o: expr, swap, mono, still, dur (seconds per orbit), skip (index of an electron to leave out), noOrbits, noShadow, before, after
+const ORBIT = 'M106 60 A46 15 0 1 1 14 60 A46 15 0 1 1 106 60';
+function nucli(o = {}) {
+  const m = !!o.mono;
+  const ink = m ? 'var(--tile)' : C.ink, hl = m ? null : '#fff';
+  const exprs = o.swap || [o.expr || 'smile'];
+  const face = (ex) => `${eyeOf(52, 57, .78, ex, ink, hl, 'l')}${eyeOf(68, 57, .78, ex, ink, hl, 'r')}${m ? '' : blushOf(45.5, 66, .66) + blushOf(74.5, 66, .66)}${mouthOf(60, 64.5, .74, ex, ink)}`;
+  const faces = exprs.length > 1 ? `<g class="fa">${face(exprs[0])}</g><g class="fb">${face(exprs[1])}</g>` : face(exprs[0]);
+  const orbitCol = m ? 'currentColor' : C.orbit;
+  const d = o.dur || 5.2;
+  const EL = [[0, 0, 0], [60, .3, 1], [120, .62, 2], [0, .5, 3]];
+  const el = EL.filter((_, i) => i !== o.skip).map(([a, ph, ci]) => {
+    const dur = n1(d * (1 + a / 300));
+    let c;
+    if (o.still) {
+      const t = (ph * 2 + .15) * Math.PI;
+      c = `<circle cx="${n1(60 + 46 * Math.cos(t))}" cy="${n1(60 + 15 * Math.sin(t))}" r="6" fill="${m ? 'currentColor' : ACC[ci]}" stroke="${m ? 'var(--tile)' : '#fff'}" stroke-width="2"/>`;
+    } else {
+      c = `<circle r="6" fill="${m ? 'currentColor' : ACC[ci]}" stroke="${m ? 'var(--tile)' : '#fff'}" stroke-width="2"><animateMotion dur="${dur}s" begin="-${n1(ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`;
+    }
+    return `<g transform="rotate(${a} 60 60)">${c}</g>`;
+  }).join('');
+  const rings = [0, 60, 120].map((a) => `<ellipse cx="60" cy="60" rx="46" ry="15" transform="rotate(${a} 60 60)" fill="none" stroke="${orbitCol}" stroke-width="2" opacity="${m ? .45 : .5}"/>`).join('');
+  const front = [0, 60, 120].map((a) => `<path d="M14 60 A46 15 0 0 0 106 60" transform="rotate(${a} 60 60)" fill="none" stroke="${orbitCol}" stroke-width="2" opacity="${m ? .45 : .55}"/>`).join('');
+  const core = `<g class="n-core"><circle cx="60" cy="60" r="23" fill="${m ? 'currentColor' : 'url(#nucG)'}" stroke="${m ? 'none' : C.core}" stroke-width="2.6"/>${m ? '' : '<ellipse cx="50" cy="46" rx="6.5" ry="3.4" fill="#fff" transform="rotate(-30 50 46)"/>'}${faces}</g>`;
+  const shadow = m || o.noShadow ? '' : '<ellipse cx="60" cy="108" rx="18" ry="3" fill="#0b1a33" opacity=".14"/>';
+  if (o.noOrbits) return `${o.before || ''}${shadow}<g class="n-float">${core}</g>${o.after || ''}`;
+  return `${o.before || ''}${shadow}<g class="n-float"><g class="n-orbits">${rings}</g>${core}<g class="n-orbits">${front}${el}</g></g>${o.after || ''}`;
+}
+
+// ---- props ----
+const star = (x, y, s, col) => `<path class="sp" d="M${x} ${y - 6 * s} L${x + 1.8 * s} ${y - 1.8 * s} L${x + 6 * s} ${y} L${x + 1.8 * s} ${y + 1.8 * s} L${x} ${y + 6 * s} L${x - 1.8 * s} ${y + 1.8 * s} L${x - 6 * s} ${y} L${x - 1.8 * s} ${y - 1.8 * s} Z" fill="${col}"/>`;
+const confetti = () => [[-42, -18, 220], [-30, -34, -160], [-14, -44, 300], [6, -46, -260], [22, -38, 190], [38, -24, -300], [46, -8, 240], [-48, -2, -200], [0, -30, 330], [30, -48, -120]]
+  .map(([x, y, r], i) => i % 3 === 2 ? `<circle class="conf" cx="60" cy="40" r="2.6" fill="${ACC[i % 4]}" style="--x:${x}px;--y:${y}px;--r:${r}deg"/>` : `<rect class="conf" x="57.5" y="37" width="5" height="${i % 2 ? 7 : 4}" rx="1" fill="${ACC[i % 4]}" style="--x:${x}px;--y:${y}px;--r:${r}deg"/>`).join('');
+const zzz = (x, y) => [0, 1, 2].map((i) => `<text class="zz" x="${x}" y="${y}" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="${12 + i * 3}" fill="#5aa9ff" style="--i:${i}">z</text>`).join('');
+const pkg = `<g class="box"><rect x="47" y="8" width="26" height="21" rx="3.5" fill="${C.o}" stroke="#d27f22" stroke-width="2"/><path d="M47 15 H73" stroke="#d27f22" stroke-width="2"/><rect x="56.5" y="8" width="7" height="7" fill="#ffe0b0"/></g>`;
+const codePanel = (o = {}) => {
+  const widths = [40, 28, 46, 30, 36, 24];
+  const lines = widths.map((w, i) => {
+    const y = 34 + i * 11;
+    if (o.badLine === i) return `<rect class="bad" x="56" y="${y}" width="${w}" height="4.5" rx="2.2" fill="${C.r}"/><path class="bad" d="M56 ${y + 7.5} q2 -2 4 0 t4 0 t4 0 t4 0 t4 0 t4 0 t4 0" fill="none" stroke="${C.r}" stroke-width="1.4"/>${o.fixable ? `<rect class="good" x="56" y="${y}" width="${w}" height="4.5" rx="2.2" fill="${C.g}" opacity="0"/>` : ''}`;
+    return `<rect x="56" y="${y}" width="${w}" height="4.5" rx="2.2" fill="var(--code)"/>`;
+  }).join('');
+  return `<rect x="46" y="24" width="68" height="74" rx="9" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/><circle cx="53" cy="29.5" r="1.6" fill="${C.r}"/><circle cx="58" cy="29.5" r="1.6" fill="${C.o}"/><circle cx="63" cy="29.5" r="1.6" fill="${C.g}"/>${lines}`;
+};
+const small = (inner, tx, ty, s) => `<g transform="translate(${tx} ${ty}) scale(${s})">${inner}</g>`;
+
+// ---- scenes ----
+const SCENES = [
+  { who: 'duo', id: 'idle', name: 'Idle', use: 'Breathes, blinks, looks around. Headers, the about page.', svg: () => duo({}) },
+  { who: 'duo', id: 'hello', name: 'Hello!', use: 'A wave and a hop. Welcome, first run, onboarding.', svg: () => duo({ expr: 'happy', arms: 'wave' }) },
+  { who: 'duo', id: 'joy', name: 'Woohoo', use: 'Wind-up, jump, confetti. A handler installed, a game launched.', svg: () => duo({ expr: 'happy', after: confetti() }) },
+  { who: 'duo', id: 'split', name: 'Split and snap', use: 'Pulls apart, snaps back. Loading, a second player joins.', svg: () => duo({}) },
+  { who: 'duo', id: 'four', name: 'Four players', use: 'Bursts into quarters. Picking a 4-player layout.', svg: () => duo({ quad: true, expr: 'happy', after: [[22, 26, 0], [98, 26, 1], [22, 96, 2], [98, 96, 3]].map(([x, y, i]) => `<g class="chip"><circle cx="${x}" cy="${y}" r="8" fill="${ACC[i]}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 4}" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="11" text-anchor="middle" fill="#fff">${i + 1}</text></g>`).join('') }) },
+  { who: 'duo', id: 'load', name: 'Loading bar', use: 'Waddles along a bar, hops at 100 %. Downloads, installs.', svg: () => `<rect x="8" y="104" width="104" height="8" rx="4" fill="var(--track)"/><rect class="fill" x="8" y="104" width="104" height="8" rx="4" fill="url(#barG)"/><rect class="done" x="8" y="104" width="104" height="8" rx="4" fill="${C.g}" opacity="0"/><g class="walker">${small(duo({ swap: ['focus', 'happy'], noShadow: true }), -8, 49, .5)}</g>`, swap: [78, 97], dur: 3.8 },
+  { who: 'duo', id: 'roll', name: 'Spinner', use: 'Curls up, winds back, spins. Waiting with no progress to show.', svg: () => duo({ expr: 'wow', arms: 'none', noFeet: true }) },
+  { who: 'duo', id: 'get', name: 'Got it', use: 'Catches a falling package. A Hub download arrived.', svg: () => duo({ swap: ['wow', 'happy'], arms: 'up', inJump: pkg + star(92, 30, 1.2, C.o) + star(26, 40, .9, C.t) }), swap: [33, 90], dur: 3.4 },
+  { who: 'duo', id: 'search', name: 'Searching', use: 'Sweeps a magnifier around. Search, finding games.', svg: () => duo({ expr: 'focus', arms: 'hold', mag: true }) },
+  { who: 'duo', id: 'think', name: 'Hmm…', use: 'A thinking bubble. Waiting for an answer, chat bots.', svg: () => duo({ expr: 'smile', before: `<path d="M80 6 h28 a8 8 0 0 1 8 8 v8 a8 8 0 0 1 -8 8 h-18 l-6 6 v-6 h-4 a8 8 0 0 1 -8 -8 v-8 a8 8 0 0 1 8 -8 z" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/>${[0, 1, 2].map((i) => `<circle class="dot" cx="${86 + i * 8}" cy="18" r="2.6" fill="${C.b2}" style="--i:${i}"/>`).join('')}` }) },
+  { who: 'duo', id: 'sleep', name: 'Nothing here', use: 'Dozes off. Empty lists, no handlers yet.', svg: () => duo({ expr: 'sleep', after: zzz(84, 34) }) },
+  { who: 'duo', id: 'oops', name: 'Oops', use: 'Cracks apart, shakes, pulls itself together. Errors.', svg: () => duo({ expr: 'worried', after: `<path class="drop" d="M98 34 C102 40 104 43 104 46 A6 6 0 0 1 92 46 C92 43 94 40 98 34 Z" fill="#7cc8ff" stroke="#fff" stroke-width="1.4"/>` }) },
+
+  { who: 'nucli', id: 'n-idle', name: 'Idle', use: 'Floats, blinks; electrons circle. Headers, the start page.', svg: () => nucli({}) },
+  { who: 'nucli', id: 'n-spin', name: 'Spinner', use: 'Four electrons chase each other, eyes follow. Any short wait.', svg: () => `<circle cx="60" cy="60" r="42" fill="none" stroke="${C.orbit}" stroke-width="2" opacity=".25"/>${[0, 1, 2, 3].map((i) => `<g class="chase" style="--i:${i}"><circle cx="60" cy="18" r="${6.5 - i * .9}" fill="${ACC[i]}" stroke="#fff" stroke-width="2"/></g>`).join('')}${nucli({ expr: 'focus', noOrbits: true, noShadow: true })}` },
+  { who: 'nucli', id: 'n-ring', name: 'Progress ring', use: 'An electron rides the ring to 100 %, then a hop. Test all, known progress.', svg: () => `<circle cx="60" cy="60" r="44" fill="none" stroke="var(--track)" stroke-width="7"/><circle class="arc" cx="60" cy="60" r="44" fill="none" stroke="url(#barG)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="276.5" transform="rotate(-90 60 60)"/><g class="rider"><circle cx="60" cy="16" r="6" fill="${C.o}" stroke="#fff" stroke-width="2"/></g>${nucli({ swap: ['focus', 'happy'], noOrbits: true, noShadow: true })}${star(98, 22, 1.3, C.o)}${star(20, 26, 1, C.t)}${star(102, 98, .9, C.g)}`, swap: [78, 98], dur: 3.6 },
+  { who: 'nucli', id: 'n-calc', name: 'Calculating', use: 'Sums float out while it thinks. Working out layouts, counting.', svg: () => nucli({ expr: 'focus', dur: 1.6, before: ['+', '×', '=', '1', '%', '0'].map((s, i) => `<text class="sym" x="60" y="64" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="15" text-anchor="middle" fill="${ACC[i % 4]}" style="--i:${i};--x:${[-38, 36, -26, 30, -42, 14][i]}px;--y:${[-36, -40, -50, -22, -14, -54][i]}px;--r:${[-20, 15, 0, 10, -10, 5][i]}deg">${s}</text>`).join('') }) },
+  { who: 'nucli', id: 'n-test', name: 'Test all', use: 'Fills a slot per player, then a hop. Running every combination.', svg: () => small(nucli({ swap: ['focus', 'happy'], dur: 2.2, noShadow: true }), 12, -2, .8) + [0, 1, 2, 3].map((i) => `<circle cx="${27 + i * 22}" cy="106" r="8" fill="none" stroke="var(--panel-line)" stroke-width="2"/><g class="sf sf${i}"><circle cx="${27 + i * 22}" cy="106" r="8" fill="${ACC[i]}"/><path d="M${23 + i * 22} 106 l3 3 l5.5 -6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`).join(''), swap: [70, 92], dur: 4 },
+  { who: 'nucli', id: 'n-scan', name: 'Reading the code', use: 'A scan line runs down, stops at a problem. Check running.', svg: () => `${codePanel({ badLine: 3 })}<rect class="scan" x="48" y="31" width="64" height="10" rx="3" fill="${C.b1}" opacity=".28"/>${small(nucli({ swap: ['smile', 'wow'], dur: 3, noShadow: true }), -10, 26, .55)}<g class="badge"><circle cx="106" cy="66" r="8" fill="${C.r}" stroke="#fff" stroke-width="2"/><text x="106" y="70.5" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="13" text-anchor="middle" fill="#fff">!</text></g>`, swap: [54, 92], dur: 3.4 },
+  { who: 'nucli', id: 'n-fix', name: 'Fixed it', use: 'Zaps the red line green. A fix applied.', svg: () => `${codePanel({ badLine: 3, fixable: true })}${small(nucli({ swap: ['focus', 'happy'], dur: 3, noShadow: true }), -10, 26, .55)}<circle class="zap" cx="23" cy="59" r="4.5" fill="${C.g}" stroke="#fff" stroke-width="1.6" style="--zx:46px;--zy:9px"/>${star(98, 64, 1.1, C.g)}`, swap: [44, 92], dur: 3.4 },
+  { who: 'nucli', id: 'n-ok', name: 'All good', use: 'Electrons rush in and burst out, a check pops. Nucleus can load it.', svg: () => nucli({ swap: ['smile', 'happy'], after: [[-40, -30, C.o], [40, -32, C.t], [-44, 18, C.g], [44, 20, C.r], [0, -46, C.o], [-24, 40, C.t]].map(([x, y, c]) => `<path class="sp" style="--x:${x}px;--y:${y}px" d="M60 54 L61.8 58.2 L66 60 L61.8 61.8 L60 66 L58.2 61.8 L54 60 L58.2 58.2 Z" fill="${c}"/>`).join('') + `<g class="badge"><circle cx="92" cy="92" r="12" fill="${C.g}" stroke="#fff" stroke-width="2.6"/><path d="M86 92 l4.2 4.2 l8 -8.4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>` }), swap: [32, 94], dur: 3 },
+  { who: 'nucli', id: 'n-bad', name: 'Found a problem', use: 'An electron drops out and bounces away. Errors in Check.', svg: () => nucli({ swap: ['smile', 'worried'], skip: 1, after: `<circle class="rogue" cx="96" cy="50" r="6" fill="${C.r}" stroke="#fff" stroke-width="2"/><g class="badge"><circle cx="96" cy="22" r="10" fill="${C.r}" stroke="#fff" stroke-width="2.4"/><text x="96" y="27.5" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="16" text-anchor="middle" fill="#fff">!</text></g>` }), swap: [40, 92], dur: 3.4 },
+  { who: 'nucli', id: 'n-sleep', name: 'Waiting for code', use: 'Dozing, electrons slow. The empty Check tab.', svg: () => nucli({ expr: 'sleep', dur: 12, after: zzz(84, 30) }) },
+];
+
+function genCSS() {
+  return SCENES.filter((s) => s.swap).map((s) => {
+    const [a, b] = s.swap;
+    return `@media (prefers-reduced-motion: no-preference) { .s-${s.id} .fa { animation: ${s.id}-a ${s.dur}s infinite; } .s-${s.id} .fb { animation: ${s.id}-b ${s.dur}s infinite; } }
+@keyframes ${s.id}-a { 0%, ${a - 1}% { opacity: 1; } ${a}%, ${b - 1}% { opacity: 0; } ${b}%, 100% { opacity: 1; } }
+@keyframes ${s.id}-b { 0%, ${a - 1}% { opacity: 0; } ${a}%, ${b - 1}% { opacity: 1; } ${b}%, 100% { opacity: 0; } }`;
+  }).join('\n');
+}
+const scene = (id, label, extra = '', vb = '0 0 120 120') => {
+  const s = SCENES.find((x) => x.id === id);
+  return `<svg class="s-${id} blink" viewBox="${vb}" role="img" aria-label="${label || s.name}" ${extra}>${s.svg()}</svg>`;
+};
+const still = (inner, label, size, cls = '', vb = '0 0 120 120') => `<svg class="${cls}" viewBox="${vb}" ${size ? `width="${size}" height="${size}"` : ''} role="img" aria-label="${label}" style="overflow:visible">${inner}</svg>`;
+
+// ---- page ----
+const EXPR = [['smile', 'Smile'], ['happy', 'Happy'], ['wink', 'Wink'], ['wow', 'Wow'], ['focus', 'Focus'], ['worried', 'Worried'], ['sleep', 'Sleepy']];
+document.getElementById('meet').innerHTML = `
+  <div class="hero"><div class="big">${scene('joy', 'Duo jumping for joy')}</div><div>
+    <div class="role">splitscreen.me</div><h3 style="font-size:30px">Duo</h3>
+    <p>The logo's split window, come alive. Two halves, one friend; with four players it bursts into quarters.</p>
+    <ul><li>Cheerful, can't wait to play</li><li>Splits when players join, snaps back together</li><li>Works as an app icon, a sticker and a 16 px spinner</li></ul>
+    <div class="sw">${['#4ec1fc', '#1c7bff', '#ffffff', C.ink, C.blush].map((c) => `<span><i style="background:${c}"></i>${c}</span>`).join('')}</div>
+  </div></div>
+  <div class="hero"><div class="big">${scene('n-idle', 'Nucli floating')}</div><div>
+    <div class="role">Handler tools</div><h3 style="font-size:30px">Nucli</h3>
+    <p>A little nucleus (for Nucleus Co-op) with four electrons, one per player, in the logo's button colours.</p>
+    <ul><li>Curious and careful, reads every line</li><li>Electrons speed up while it works, drop out when something breaks</li><li>Lives in the workbench, VS Code and the CLI</li></ul>
+    <div class="sw">${['#ffffff', C.core, C.o, C.r, C.t, C.g].map((c) => `<span><i style="background:${c}"></i>${c}</span>`).join('')}</div>
+  </div></div>
+  <div class="hero" style="grid-template-columns:minmax(0,1fr);grid-column:1/-1"><div><b>Faces</b>
+    <div class="faces">${EXPR.map(([e, n]) => `<figure>${still(duo({ expr: e, noShadow: true }), `Duo, ${n}`, 0, 'blink')}<figcaption>${n}</figcaption></figure>`).join('')}</div>
+    <div class="faces">${EXPR.map(([e, n]) => `<figure>${still(nucli({ expr: e, still: true, noShadow: true }), `Nucli, ${n}`, 0, 'blink')}<figcaption>${n}</figcaption></figure>`).join('')}</div>
+  </div></div>`;
+
+const lib = (who) => SCENES.filter((s) => s.who === who).map((s) => `<div class="scene"><div class="stage">${scene(s.id)}</div><b>${s.name}</b><span>${s.use}</span></div>`).join('');
+document.getElementById('lib-duo').innerHTML = lib('duo');
+document.getElementById('lib-nucli').innerHTML = lib('nucli');
+
+// In the product
+const wideBar = `<svg class="s-load blink" viewBox="0 0 320 64" role="img" aria-label="Duo walking along a loading bar"><rect x="8" y="50" width="304" height="9" rx="4.5" fill="var(--track)"/><rect class="fill" x="8" y="50" width="304" height="9" rx="4.5" fill="url(#barG)"/><rect class="done" x="8" y="50" width="304" height="9" rx="4.5" fill="${C.g}" opacity="0"/><g class="walker" style="--walk:270px">${small(duo({ swap: ['focus', 'happy'], noShadow: true }), -6, 6, .42)}</g></svg>`;
+const indet = `<svg viewBox="0 0 320 20" role="img" aria-label="Electrons running along a bar"><rect x="8" y="7" width="304" height="6" rx="3" fill="var(--track)"/>${[0, 1, 2, 3].map((i) => `<circle class="run" cx="10" cy="10" r="5" fill="${ACC[i]}" stroke="#fff" stroke-width="1.5" style="--i:${i}"/>`).join('')}</svg>`;
+const sizesOf = (id, label) => [16, 24, 32, 48].map((s) => `<figure>${scene(id, `${label} ${s} pixels`, `width="${s}" height="${s}"`)}<figcaption>${s}</figcaption></figure>`).join('');
+document.getElementById('ui').innerHTML = `
+  <div class="box wide"><h3>Loading bar · download, install</h3><b style="display:block;margin-bottom:6px">Downloading the Left 4 Dead 2 handler…</b>${wideBar}</div>
+  <div class="box"><h3>Spinners · 16, 24, 32, 48 px</h3><div class="row">${sizesOf('roll', 'Duo spinner')}</div><div class="row" style="margin-top:10px">${sizesOf('n-spin', 'Nucli spinner')}</div></div>
+  <div class="box"><h3>Busy buttons</h3><div class="row"><span class="fbtn">${scene('n-spin', 'Busy', 'width="18" height="18"')}Testing…</span><span class="fbtn ghost">${scene('roll', 'Busy', 'width="18" height="18"')}Getting handlers…</span></div></div>
+  <div class="box"><h3>Progress · Test all</h3><div class="state">${scene('n-ring', 'Nucli progress ring', 'width="84" height="84"')}<div><b>Test all · 7 of 12</b><span class="muted">2 to 4 players, every option.</span></div></div></div>
+  <div class="box wide"><h3>Indeterminate bar · Check running</h3><b style="font-size:14px">Checking the handler…</b>${indet}</div>
+  <div class="box"><h3>Toast · a fix applied</h3><div class="toastm">${scene('n-ok', 'Nucli all good', 'width="40" height="40"')}<span>Fixed 3 problems</span><span class="u">Undo</span></div><div class="toastm" style="margin-top:8px">${scene('n-bad', 'Nucli found a problem', 'width="40" height="40"')}<span>2 problems stop Nucleus loading it</span><span class="u">Show</span></div></div>
+  <div class="box"><h3>Empty state · Check tab</h3><div class="state">${scene('n-sleep', 'Nucli dozing', 'width="96" height="96"')}<div><b>Nothing to check yet</b><span class="muted">Open a handler, or start a new one, and I'll read it.</span></div></div></div>
+  <div class="box"><h3>Error · Hub unreachable</h3><div class="state">${scene('oops', 'Duo, oops', 'width="96" height="96"')}<div><b>Couldn't reach the Hub</b><span class="muted">Check your connection.</span><div style="margin-top:8px"><span class="fbtn ghost">Try again</span></div></div></div></div>
+  <div class="box"><h3>Search · Open dialog</h3><div class="state">${scene('search', 'Duo searching', 'width="96" height="96"')}<div><b>Searching 600 handlers…</b><span class="muted">"Borderlands"</span></div></div></div>
+  <div class="box"><h3>Success · installed</h3><div class="state">${scene('joy', 'Duo, woohoo', 'width="96" height="96"')}<div><b>Ready to play!</b><span class="muted">Left 4 Dead 2 is set up for 4 players.</span></div></div></div>`;
+
+// Discord emoji
+const SIGN = {
+  heart: '<g transform="translate(100 20) scale(1.5)"><path d="M0 8 C-8 3 -10 -5 -5.5 -7.5 C-3 -9 0 -7.5 0 -5 C0 -7.5 3 -9 5.5 -7.5 C10 -5 8 3 0 8 Z" fill="#ff4d6a" stroke="#fff" stroke-width="1.2"/></g>',
+  q: `<text x="103" y="32" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="36" text-anchor="middle" fill="${C.o}" stroke="${C.ink}" stroke-width="1.4" paint-order="stroke">?</text>`,
+  gg: `<rect x="72" y="2" width="46" height="28" rx="10" fill="#ffffff" stroke="${C.ink}" stroke-width="2.2"/><text x="95" y="23" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="20" text-anchor="middle" fill="${C.ink}">GG</text>`,
+  drop: '<path d="M102 12 C108 20 111 24 111 29 A9 9 0 0 1 93 29 C93 24 96 20 102 12 Z" fill="#7cc8ff" stroke="#fff" stroke-width="1.6"/>',
+  ok: `<circle cx="96" cy="94" r="15" fill="${C.g}" stroke="#fff" stroke-width="3"/><path d="M89 94 l5 5 l10 -10" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  bang: `<circle cx="98" cy="22" r="14" fill="${C.r}" stroke="#fff" stroke-width="3"/><text x="98" y="30" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="22" text-anchor="middle" fill="#fff">!</text>`,
+};
+const EMO = {
+  duo: { stat: [['happy', () => duo({ expr: 'happy' })], ['hi', () => duo({ expr: 'wink', arms: 'up' })], ['love', () => duo({ expr: 'happy' }) + SIGN.heart], ['gg', () => duo({ expr: 'smile' }) + SIGN.gg], ['hmm', () => duo({ expr: 'focus' }) + SIGN.q], ['sad', () => duo({ expr: 'worried' })], ['sweat', () => duo({ expr: 'worried' }) + SIGN.drop], ['four', () => duo({ quad: true, expr: 'happy' })]],
+    anim: [['hype', 'joy'], ['wave', 'hello'], ['split', 'split'], ['spin', 'roll'], ['four', 'four'], ['oops', 'oops']] },
+  nucli: { stat: [['happy', () => nucli({ expr: 'happy', still: true })], ['ok', () => nucli({ expr: 'happy', still: true }) + SIGN.ok], ['love', () => nucli({ expr: 'happy', still: true }) + SIGN.heart], ['hmm', () => nucli({ expr: 'focus', still: true }) + SIGN.q], ['wow', () => nucli({ expr: 'wow', still: true })], ['bug', () => nucli({ expr: 'worried', still: true }) + SIGN.bang], ['gg', () => nucli({ expr: 'smile', still: true }) + SIGN.gg], ['sleep', () => nucli({ expr: 'sleep', still: true })]],
+    anim: [['spin', 'n-spin'], ['thinking', 'n-calc'], ['allgood', 'n-ok'], ['bug', 'n-bad'], ['zzz', 'n-sleep']] },
+};
+function emojiBlock(who) {
+  const e = EMO[who];
+  const VB = who === 'duo' ? '16 16 90 90' : '10 10 100 100';
+  const st = e.stat.map(([n, fn]) => `<figure>${still(fn(), `:${who}_${n}:`, 0, 'blink', VB)}<figcaption>:${who}_${n}:</figcaption></figure>`).join('');
+  const an = e.anim.map(([n, id]) => `<figure>${scene(id, `:${who}_${n}:, animated`, '', VB)}<figcaption>:${who}_${n}:<span class="gif">GIF</span></figcaption></figure>`).join('');
+  const S = (i) => still(e.stat[i][1](), `:${who}_${e.stat[i][0]}:`, 0, 'blink', VB);
+  const A = (i) => scene(e.anim[i][1], `:${who}_${e.anim[i][0]}:`, '', VB);
+  const msg = who === 'duo' ? 'the new handler works with 4 players' : 'nucli says the handler loads fine now';
+  const chat = (cls) => `<div class="dc ${cls}"><div><div class="who">Player 2</div><div class="line">${msg} ${S(0)} ${A(0)}</div></div>
+    <div class="jumbo">${A(1)}${S(2)}${S(3)}</div>
+    <div class="reacts"><span class="rx me">${S(1)} 14</span><span class="rx">${A(0)} 6</span><span class="rx">${S(4)} 2</span><span class="rx">${S(6)} 1</span></div></div>`;
+  return `<h3 style="margin-top:22px">${who === 'duo' ? 'Duo' : 'Nucli'}</h3><div class="emo"><div class="emo-set"><h4>Static</h4><div class="emo-grid">${st}</div><h4 style="margin-top:10px">Animated</h4><div class="emo-grid">${an}</div></div><div style="display:grid;gap:8px">${chat('dark')}${chat('light')}</div></div>`;
+}
+document.getElementById('emoji').innerHTML = emojiBlock('duo') + emojiBlock('nucli') + '<p class="note">Once picked, I export them as files Discord takes: 128 × 128 PNG for the static ones, GIF for the animated ones, each under 256 KB.</p>';
+
+const sz = (inner, monoInner, name) => `<div class="box"><h3>${name}</h3><div class="sizes">${[64, 32, 24, 16].map((s) => `<figure>${still(inner(), `${name} ${s} pixels`, s)}<figcaption>${s}</figcaption></figure>`).join('')}${[32, 16].map((s) => `<figure class="mono">${still(monoInner(), `${name}, one colour, ${s} pixels`, s)}<figcaption>${s}, one colour</figcaption></figure>`).join('')}</div></div>`;
+document.getElementById('sizes').innerHTML = sz(() => duo({ noShadow: true }), () => duo({ mono: true }), 'Duo') + sz(() => nucli({ still: true, noShadow: true }), () => nucli({ mono: true, still: true }), 'Nucli');
+
+document.getElementById('gen').textContent = genCSS();
+
+// Pause (CSS and the SMIL orbits), reduced motion, theme
+const pause = document.getElementById('pause');
+const setPaused = (on) => {
+  document.documentElement.classList.toggle('paused', on);
+  document.querySelectorAll('svg').forEach((s) => { try { on ? s.pauseAnimations() : s.unpauseAnimations(); } catch {} });
+  pause.textContent = on ? 'Play animations' : 'Pause animations';
+  pause.setAttribute('aria-pressed', String(on));
+};
+pause.addEventListener('click', () => setPaused(!document.documentElement.classList.contains('paused')));
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setPaused(true); pause.disabled = true; pause.textContent = 'Animations off (less motion)'; }
+
+const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+const tb = document.getElementById('theme');
+const order = ['auto', 'light', 'dark'], names = { auto: 'match device', light: 'light', dark: 'dark' };
+let mode = store.get('mascot-theme') || 'auto';
+const apply = () => { if (mode === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = mode; tb.textContent = 'Theme: ' + names[mode]; };
+apply();
+tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]; store.set('mascot-theme', mode); apply(); });
+</script>
+</body>
+</html>

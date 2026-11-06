@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascot concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f5f9; --card: #ffffff; --tile: #f0f2f7; --ink: #1b1d28; --muted: #545a6e; --line: #dde1ea;
+  --accent: #0c76a5; --orbit: #9aa3b5; --pick-bg: #e3f3fb; --pick: #075a80;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1117; --card: #171a23; --tile: #1f2330; --ink: #e9ebf3; --muted: #a8afc2; --line: #2b3040;
+    --accent: #30bbf8; --orbit: #4b5266; --pick-bg: #10324a; --pick: #8fd8ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1117; --card: #171a23; --tile: #1f2330; --ink: #e9ebf3; --muted: #a8afc2; --line: #2b3040;
+  --accent: #30bbf8; --orbit: #4b5266; --pick-bg: #10324a; --pick: #8fd8ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 28px 16px 64px; }
+h1, h2, h3 { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 40px); }
+h2 { font-size: 26px; margin: 48px 0 6px; }
+h3 { font-size: 22px; }
+p { margin: 6px 0; }
+.lead { color: var(--muted); max-width: 70ch; font-size: 16px; }
+.muted { color: var(--muted); }
+header.top { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+button.theme { font: inherit; font-size: 13px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+button.theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 20px; }
+.summary > div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; }
+.summary svg { width: 64px; height: 64px; flex: none; }
+.summary b { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 17px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-top: 16px; }
+.card-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.tag { font-size: 12px; font-weight: 600; background: var(--pick-bg); color: var(--pick); border-radius: 999px; padding: 2px 10px; }
+.names { color: var(--muted); font-size: 13.5px; }
+.grid { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; margin-top: 14px; }
+@media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { border-radius: 12px; background: var(--tile); display: grid; place-items: center; padding: 10px; position: relative; }
+.tile svg { width: 100%; height: auto; max-width: 150px; }
+.t-light { --tile: #ffffff; --orbit: #9aa3b5; color: #1b1d28; background: #ffffff; border: 1px solid #dde1ea; }
+.t-dark { --tile: #161821; --orbit: #4b5266; color: #e9ebf3; background: #161821; border: 1px solid #2b3040; }
+.cap { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+.t-light + .cap, .t-dark + .cap { }
+.moods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.moods .tile svg { max-width: 96px; }
+.label { font-size: 12.5px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.sizes { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; background: var(--tile); border-radius: 12px; padding: 12px 14px; }
+.sizes figure { margin: 0; text-align: center; }
+.sizes figcaption { font-size: 11px; color: var(--muted); }
+.sizes .mono { color: var(--ink); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 14px; }
+.cols h4 { margin: 0 0 4px; font-size: 14px; }
+.cols ul { margin: 0; padding-left: 18px; color: var(--muted); }
+.cols li { margin: 2px 0; }
+.extra { display: flex; gap: 12px; align-items: center; margin-top: 12px; background: var(--tile); border-radius: 12px; padding: 10px 14px; }
+.extra svg { width: 72px; height: 72px; flex: none; }
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 14px; }
+.pair { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.pair .duo { display: flex; gap: 8px; justify-content: center; background: var(--tile); border-radius: 12px; padding: 10px; }
+.pair .duo svg { width: 96px; height: 96px; }
+.pair h3 { font-size: 18px; margin-top: 10px; }
+.mocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
+.mock { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--card); }
+.mock .bar { font-size: 12px; padding: 6px 12px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.mock .body { padding: 18px; display: flex; gap: 14px; align-items: center; }
+.mock .body svg { width: 72px; height: 72px; flex: none; }
+.mock .body b { display: block; }
+.chat { background: #2b2d31; color: #dbdee1; }
+.chat .bar { color: #b5bac1; border-color: #3f4147; }
+.chat .body { flex-wrap: wrap; gap: 8px; --tile: #2b2d31; --orbit: #5c6170; }
+.chat .body svg { width: 28px; height: 28px; }
+.chat .msg { width: 100%; font-size: 14px; }
+.chat .react { display: inline-flex; gap: 4px; align-items: center; background: #3a3d44; border-radius: 8px; padding: 2px 8px; font-size: 13px; }
+.chat .react svg { width: 20px; height: 20px; }
+/* Discord emoji */
+.emo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 760px) { .emo { grid-template-columns: minmax(0, 1fr); } }
+.emo-set { background: #313338; border-radius: 12px; padding: 12px; --tile: #313338; --orbit: #6d7280; color: #f2f3f5; }
+.emo-set h5 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: #b5bac1; text-transform: uppercase; letter-spacing: .04em; }
+.emo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; }
+.emo-grid figure { margin: 0; text-align: center; padding: 6px 2px; border-radius: 8px; }
+.emo-grid figure:hover { background: #2b2d31; }
+.emo-grid svg { width: 48px; height: 48px; display: block; margin: 0 auto 4px; }
+.emo-grid figcaption { font: 11px/1.3 ui-monospace, Consolas, monospace; color: #dbdee1; overflow-wrap: anywhere; }
+.emo-grid .gif { display: inline-block; font: 600 9px/1 system-ui, sans-serif; background: #5865f2; color: #fff; border-radius: 3px; padding: 2px 3px; margin-left: 3px; vertical-align: 1px; }
+.dc { border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; }
+.dc.dark { background: #313338; color: #dbdee1; --tile: #313338; --orbit: #6d7280; }
+.dc.light { background: #ffffff; color: #313338; border: 1px solid #e3e5e8; --tile: #ffffff; --orbit: #9aa3b5; }
+.dc .who { font-weight: 600; font-size: 14px; }
+.dc.dark .who { color: #f2f3f5; } .dc.light .who { color: #060607; }
+.dc .line { font-size: 15px; line-height: 1.45; }
+.dc .line svg { width: 22px; height: 22px; vertical-align: -5px; }
+.dc .jumbo svg { width: 48px; height: 48px; }
+.dc .reacts { display: flex; gap: 4px; flex-wrap: wrap; }
+.dc .rx { display: inline-flex; gap: 4px; align-items: center; border-radius: 8px; padding: 2px 6px; font-size: 13px; font-weight: 600; }
+.dc.dark .rx { background: #2b2d31; color: #b5bac1; } .dc.dark .rx.me { background: #373a53; outline: 1px solid #5865f2; color: #dee0fc; }
+.dc.light .rx { background: #f2f3f5; color: #4e5058; } .dc.light .rx.me { background: #e7e9fd; outline: 1px solid #5865f2; color: #4752c4; }
+.dc .rx svg { width: 16px; height: 16px; }
+.emo-note { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+ol.next { color: var(--muted); padding-left: 20px; }
+ol.next li { margin: 4px 0; }
+footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
+/* Palette bar */
+.palbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); margin: 20px -16px 0; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.palbar .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.palbar .lbl { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-right: 4px; }
+.pal { font: inherit; font-size: 13px; display: inline-flex; gap: 8px; align-items: center; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px 5px 6px; cursor: pointer; }
+.pal[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; font-weight: 600; }
+.pal:focus-visible, .pause:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pal .sw { display: inline-flex; }
+.pal .sw i { width: 12px; height: 12px; border-radius: 50%; margin-left: -3px; border: 1.5px solid var(--card); }
+.pal .sw i:first-child { margin-left: 0; }
+.palbar .from { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.pause { font: inherit; font-size: 13px; margin-left: auto; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.anims .tile svg { max-width: 92px; }
+.anims .cap b { display: block; color: var(--ink); }
+/* Motion: only in the Animations rows; nothing moves if the device asks for less, or after Pause. */
+svg :is(.bob, .h-l, .h-r, .two, .quad, .qa, .qb, .qc, .qd, .spin, .nuc, .pip, .pod, .pad, .swing, .plug, .bug, .bug2) { transform-box: view-box; transform-origin: 50px 50px; }
+svg .eye, svg .e, svg .btn { transform-box: fill-box; transform-origin: center; }
+html.paused * { animation-play-state: paused !important; }
+.glow svg { filter: drop-shadow(0 0 3px rgba(1, 179, 66, .55)); }
+@media (prefers-reduced-motion: no-preference) {
+  .blink .eye { animation: blink 4.2s infinite; }
+  .a-split .h-l { animation: split-l 1.4s ease-in-out infinite; }
+  .a-split .h-r { animation: split-r 1.4s ease-in-out infinite; }
+  .a-four .two { animation: two 4.4s ease-in-out infinite; }
+  .a-four .quad { animation: quad 4.4s ease-in-out infinite; }
+  .a-four .qa { animation: qa 4.4s ease-in-out infinite; } .a-four .qb { animation: qb 4.4s ease-in-out infinite; }
+  .a-four .qc { animation: qc 4.4s ease-in-out infinite; } .a-four .qd { animation: qd 4.4s ease-in-out infinite; }
+  .a-hop .bob { animation: hop 1.6s ease-in-out infinite; }
+  .a-shiver .bob { animation: shiver 2.4s linear infinite; }
+  .a-breathe .bob { transform-origin: 50px 82px; animation: breathe 3s ease-in-out infinite; }
+  .a-wiggle .plug { animation: wig .7s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.18s); }
+  .a-plug .plug.p2 { animation: pop 2.2s ease-in-out infinite; }
+  .a-plug .bob { animation: hop 2.2s ease-in-out infinite; }
+  .a-sag .bob { transform-origin: 50px 82px; animation: sag 3.2s ease-in-out infinite; }
+  .a-pass .pad { animation: pass 2.6s ease-in-out infinite; }
+  .a-five .pip { animation: five-l 1.8s ease-in-out infinite; }
+  .a-five .pod { animation: five-r 1.8s ease-in-out infinite; }
+  .a-turns .pip { animation: hop 2.4s ease-in-out infinite; }
+  .a-turns .pod { animation: hop 2.4s ease-in-out 1.2s infinite; }
+  .a-orbit .spin { animation: spin 10s linear infinite; }
+  .a-fast .spin { animation: spin 1.1s linear infinite; }
+  .a-fast .e { animation: pulse .55s ease-in-out infinite alternate; }
+  .a-collect .spin { animation: spin 10s linear infinite; }
+  .a-collect .e { animation: collect 3.2s ease-in-out infinite; }
+  .a-collect .nuc { animation: glowup 3.2s ease-in-out infinite; }
+  .a-scatter .e { animation: scatter 2.8s ease-out infinite; }
+  .a-scatter .nuc { animation: shiver 2.8s linear infinite; }
+  .a-swoop .swing { transform-origin: 60px 62px; animation: swing 1.2s ease-in-out infinite; }
+  .a-catch .swing { transform-origin: 60px 62px; animation: swoop1 2.8s ease-in-out infinite; }
+  .a-catch .bug { animation: catch 2.8s ease-in-out infinite; }
+  .a-escape .bug2 { animation: escape 2.4s linear infinite; }
+  .a-press .btn { animation: press 1.6s ease-in-out infinite; animation-delay: calc(var(--i) * .4s); }
+  .a-rumble .bob { animation: rumble .09s linear infinite alternate; }
+}
+@keyframes blink { 0%, 44%, 50%, 100% { transform: scaleY(1); } 47% { transform: scaleY(.1); } }
+@keyframes split-l { 50% { transform: translateX(-6px); } }
+@keyframes split-r { 50% { transform: translateX(6px); } }
+@keyframes two { 0%, 30%, 92%, 100% { opacity: 1; } 40%, 82% { opacity: 0; } }
+@keyframes quad { 0%, 30%, 92%, 100% { opacity: 0; } 40%, 82% { opacity: 1; } }
+@keyframes qa { 0%, 45%, 75%, 100% { transform: none; } 55%, 65% { transform: translate(-4px, -4px); } }
+@keyframes qb { 0%, 45%, 75%, 100% { transform: none; } 55%, 65% { transform: translate(4px, -4px); } }
+@keyframes qc { 0%, 45%, 75%, 100% { transform: none; } 55%, 65% { transform: translate(-4px, 4px); } }
+@keyframes qd { 0%, 45%, 75%, 100% { transform: none; } 55%, 65% { transform: translate(4px, 4px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 70% { transform: translateY(-8px); } 80% { transform: translateY(0); } 86% { transform: translateY(-3px); } 92% { transform: translateY(0); } }
+@keyframes shiver { 0%, 66%, 84%, 100% { transform: none; } 70%, 78% { transform: translateX(-2.5px); } 74%, 82% { transform: translateX(2.5px); } }
+@keyframes breathe { 50% { transform: scale(1.04, .96); } }
+@keyframes wig { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@keyframes pop { 0%, 40%, 100% { transform: none; } 50% { transform: translateY(-8px); } 60% { transform: translateY(0); } }
+@keyframes sag { 0%, 20%, 90%, 100% { transform: none; } 40%, 70% { transform: scale(1.06, .9); } }
+@keyframes pass { 0%, 100% { transform: translateX(-11px); } 50% { transform: translateX(11px); } }
+@keyframes five-l { 0%, 30%, 70%, 100% { transform: none; } 50% { transform: translateX(6px) rotate(10deg); } }
+@keyframes five-r { 0%, 30%, 70%, 100% { transform: none; } 50% { transform: translateX(-6px) rotate(-10deg); } }
+@keyframes pulse { to { transform: scale(1.35); } }
+@keyframes collect { 0%, 25%, 80%, 100% { transform: none; } 45%, 62% { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: .6; } }
+@keyframes glowup { 0%, 35%, 75%, 100% { transform: none; } 50%, 62% { transform: scale(1.12); } }
+@keyframes scatter { 0%, 20%, 90%, 100% { transform: none; opacity: 1; } 40%, 65% { transform: translate(var(--sx), var(--sy)); opacity: .5; } }
+@keyframes swing { 50% { transform: rotate(-16deg); } }
+@keyframes swoop1 { 0%, 25%, 70%, 100% { transform: none; } 40% { transform: rotate(-40deg); } 52% { transform: rotate(6deg); } }
+@keyframes catch { 0%, 20% { transform: translate(-6px, 40px); } 40%, 92% { transform: none; } 100% { transform: translate(-6px, 40px); opacity: 0; } }
+@keyframes escape { 0% { transform: none; opacity: 1; } 80% { transform: translateX(12px) translateY(6px); opacity: 1; } 100% { transform: translateX(14px) translateY(7px); opacity: 0; } }
+@keyframes press { 0%, 30%, 100% { transform: none; } 15% { transform: scale(.6); } }
+@keyframes rumble { from { transform: translate(-1.2px, .4px); } to { transform: translate(1.2px, -.4px); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Mascot concepts</h1>
+      <p class="lead">Two mascots: one for all of <strong>splitscreen.me</strong> (Nucleus Co-op, the Hub, the website, Discord) and a sidekick for the <strong>handler tooling</strong> (the workbench, the VS Code extension, the CLI). Three ideas for each, with animations, Discord emoji, in four moods, at real sizes, on light and dark, in colours from splitscreen.me, v3.splitscreen.me or the Nucleus Co-op app (pick below). These are sketches to pitch, not final art.</p>
+    </div>
+    <button class="theme" id="theme" type="button" aria-live="polite">Theme: match device</button>
+  </header>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="lg" gradientUnits="userSpaceOnUse" x1="14" y1="14" x2="86" y2="86"><stop offset="0" stop-color="#4ec1fc"/><stop offset="1" stop-color="#1c7bff"/></linearGradient></defs></svg>
+  <div class="palbar">
+    <div class="row"><span class="lbl">Colours</span><span id="pals" class="row" role="group" aria-label="Colours"></span><button type="button" class="pause" id="pause" aria-pressed="false">Pause animations</button></div>
+    <p class="from" id="from"></p>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <h2 id="site">For splitscreen.me</h2>
+  <p class="lead">The whole project's mascot: one screen, several players.</p>
+  <div id="site-cards"></div>
+
+  <h2 id="tools">For the tooling and the workbench</h2>
+  <p class="lead">A sidekick for people writing handlers: it reads the code, finds what's wrong and is pleased when Nucleus can load it.</p>
+  <div id="tool-cards"></div>
+
+  <h2 id="pairs">Pairs</h2>
+  <p class="lead">Each tooling mascot fits best beside one of the project mascots. Whatever colours are picked, both share them, so they look related.</p>
+  <div class="pairs" id="pairs-list"></div>
+
+  <h3 style="margin-top:28px">The suggested pair at work</h3>
+  <div class="mocks" id="mocks"></div>
+
+  <h2 id="next">Next steps</h2>
+  <ol class="next">
+    <li>Pick one of each (or mix: any project mascot works with any sidekick).</li>
+    <li>Pitch it to the Nucleus Co-op maintainers on Discord. The project mascot is their call; the tooling one can start in the workbench.</li>
+    <li>An artist (or a later pass from me) turns the chosen sketch into final art: a vector master, a one-colour version, emoji and a sticker sheet.</li>
+    <li>In the workbench it goes into the empty Check tab, Test all, failed loads, the 404 page and the tips. Never in alpha 8, never moving when the device asks for less motion.</li>
+  </ol>
+  <footer>Original characters, drawn for this project; none of them is based on another app's mascot. Colours from the splitscreen.me logo, the v3 site and Hub, and Nucleus Co-op's default theme (theme.ini).</footer>
+</div>
+
+<script>
+const P = ['#ff6b35', '#3b8bff', '#ffcf3a', '#3ddb86', '#ff5db1', '#9b7cff', '#23d3d3', '#c4eb45'];
+const D = ['#c94f22', '#2a68c4', '#c99a12', '#22a862', '#cc3d88', '#6b55c9', '#169b9b', '#8fb31f'];
+// Palettes: what each part of a mascot is painted with. 'url(#lg)' is the splitscreen.me logo's blue gradient.
+const PALETTES = {
+  logo: { name: 'splitscreen.me logo', sw: ['#4ec1fc', '#1c7bff', '#ffffff', '#474747', '#fca53d', '#ff434d', '#3fbbd8', '#55d137'],
+    from: 'From the splitscreen.me logo: a blue window (#4ec1fc to #1c7bff) split in four by a white cross, a white gamepad with a charcoal d-pad (#474747) and its four buttons (#fca53d, #ff434d, #3fbbd8, #55d137). Duo is the logo\'s window come alive; the white line is its cross.',
+    half: ['url(#lg)', 'url(#lg)', 'url(#lg)', 'url(#lg)'], split: '#ffffff', outline: 'var(--tile)', feet: ['#474747', '#474747', '#474747', '#474747'],
+    twin: ['#4ec1fc', '#1c7bff'], grip: ['#ffffff', '#eef3fa'], gripIcon: '#474747', gripStroke: '#cfd8e6',
+    pad: '#ffffff', padStroke: '#cfd8e6', padIcon: '#474747', acc: ['#fca53d', '#ff434d', '#3fbbd8', '#55d137'],
+    cushy: 'url(#lg)', cushyDark: '#1a6ae0', cable: '#474747', nab: '#55d137', nabDark: '#3a9e22', nucleus: 'url(#lg)', orbit: null,
+    ink: '#10233f', gripInk: '#474747', hl: '#ffffff', sheen: true },
+  v3: { name: 'v3.splitscreen.me', sw: ['#000000', '#14171e', '#3d4454', '#f3f4f6', '#ff6b35', '#3b8bff', '#ffcf3a', '#3ddb86'],
+    from: 'From the new site and Hub ("Bezel"): black bezel and panes (#000, #14171e), lines #3d4454, ink #f3f4f6, and the player colours only as small sparks (feet, plugs, electrons), the way v3 uses them in its player chips.',
+    half: ['#14171e', '#1f2430', '#1f2430', '#14171e'], split: '#f3f4f6', outline: '#3d4454', feet: [P[0], P[1], P[2], P[3]],
+    twin: ['#14171e', '#1f2430'], grip: ['#14171e', '#1f2430'], gripIcon: '#f3f4f6', gripStroke: '#3d4454',
+    pad: '#f3f4f6', padStroke: '#3d4454', padIcon: '#14171e', acc: [P[0], P[1], P[2], P[3]],
+    cushy: '#14171e', cushyDark: '#2c3240', cable: '#3d4454', nab: '#14171e', nabDark: '#3d4454', nucleus: '#14171e', orbit: '#a3abba',
+    ink: '#f3f4f6', gripInk: '#f3f4f6', hl: null, sheen: false },
+  app: { name: 'Nucleus Co-op app', sw: ['#000000', '#ffffff', '#01b342', '#00923c', '#1c2f20'], glow: true,
+    from: 'From the Nucleus Co-op app\'s default theme (theme.ini): black panels, white text and button borders, the green window-border gradient (#01b342), the green selection (#00923c) and the dark green hover (#1c2f20). A faint green glow, like the app\'s border.',
+    half: ['#000000', '#0b1a10', '#0b1a10', '#000000'], split: '#01b342', outline: '#ffffff', feet: ['#01b342', '#01b342', '#01b342', '#01b342'],
+    twin: ['#000000', '#0b1a10'], grip: ['#000000', '#0b1a10'], gripIcon: '#ffffff', gripStroke: '#ffffff',
+    pad: '#000000', padStroke: '#ffffff', padIcon: '#ffffff', acc: ['#01b342', '#ffffff', '#00923c', '#7be39b'],
+    cushy: '#000000', cushyDark: '#1c2f20', cable: '#01b342', nab: '#000000', nabDark: '#1c2f20', nucleus: '#000000', orbit: '#01b342',
+    ink: '#ffffff', gripInk: '#ffffff', hl: null, sheen: false },
+  players: { name: 'Player colours', sw: P,
+    from: 'The eight player colours the workbench and the v3 Hub use for players 1 to 8 (#ff6b35, #3b8bff, #ffcf3a, #3ddb86, #ff5db1, #9b7cff, #23d3d3, #c4eb45). The first sketch.',
+    half: [P[0], P[1], P[2], P[3]], split: 'var(--tile)', outline: 'var(--tile)', feet: [D[0], D[1], D[2], D[3]],
+    twin: [P[0], P[1]], grip: [P[0], P[1]], gripIcon: '#ffffff', gripStroke: 'var(--tile)',
+    pad: '#4a4d63', padStroke: 'var(--tile)', padIcon: '#ffffff', acc: [P[2], P[3], P[4], P[6]],
+    cushy: P[5], cushyDark: D[5], cable: D[5], nab: P[3], nabDark: D[3], nucleus: '#1f8fd0', orbit: null,
+    ink: '#1b1d28', gripInk: '#1b1d28', hl: '#ffffff', sheen: true },
+};
+let K = PALETTES.logo;
+let uid = 0;
+const MONO = { half: Array(4).fill('currentColor'), split: 'var(--tile)', outline: 'var(--tile)', feet: Array(4).fill('currentColor'), twin: ['currentColor', 'currentColor'], grip: ['currentColor', 'currentColor'], gripIcon: 'var(--tile)', gripStroke: 'var(--tile)', pad: 'currentColor', padStroke: 'var(--tile)', padIcon: 'var(--tile)', acc: Array(4).fill('currentColor'), cushy: 'currentColor', cushyDark: 'currentColor', cable: 'currentColor', nab: 'currentColor', nabDark: 'currentColor', nucleus: 'currentColor', orbit: 'currentColor', ink: 'var(--tile)', gripInk: 'var(--tile)', hl: null, sheen: false };
+const pal = (mono) => (mono ? MONO : K);
+const st = (k, w = 2.5) => `stroke="${k.outline}" stroke-width="${w}" stroke-linejoin="round"`;
+const sheen = (k, cx, cy, rx, ry) => (k.sheen ? `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff" opacity=".28" transform="rotate(-30 ${cx} ${cy})"/>` : '');
+
+function face(cx, cy, gap, s, mood, ink, hl) {
+  let out = '';
+  [cx - gap, cx + gap].forEach((x, i) => {
+    if (mood === 'happy') {
+      out += `<path d="M${x - 4 * s} ${cy + 1 * s} q${4 * s} ${-6 * s} ${8 * s} 0" fill="none" stroke="${ink}" stroke-width="${2.4 * s}" stroke-linecap="round"/>`;
+      return;
+    }
+    const dx = mood === 'busy' ? 1.6 * s : 0;
+    const r = (mood === 'worried' ? 3.4 : 4) * s;
+    out += `<g class="eye"><circle cx="${x + dx}" cy="${cy}" r="${r}" fill="${ink}"/>${hl ? `<circle cx="${x + dx + 1.3 * s}" cy="${cy - 1.4 * s}" r="${1.2 * s}" fill="${hl}"/>` : ''}</g>`;
+    if (mood === 'worried') {
+      const k = i === 0 ? 1 : -1;
+      out += `<path d="M${x - 4.5 * s * k} ${cy - 7 * s} L${x + 4.5 * s * k} ${cy - 9.5 * s}" stroke="${ink}" stroke-width="${2 * s}" stroke-linecap="round"/>`;
+    }
+  });
+  const my = cy + 10 * s;
+  if (mood === 'idle') out += `<path d="M${cx - 5 * s} ${my} q${5 * s} ${4 * s} ${10 * s} 0" fill="none" stroke="${ink}" stroke-width="${2.2 * s}" stroke-linecap="round"/>`;
+  if (mood === 'happy') out += `<path d="M${cx - 7 * s} ${my - 1 * s} q${7 * s} ${10 * s} ${14 * s} 0 z" fill="${ink}" stroke="${ink}" stroke-width="${1.2 * s}" stroke-linejoin="round"/>`;
+  if (mood === 'busy') out += `<circle cx="${cx + 1 * s}" cy="${my + 1 * s}" r="${2.2 * s}" fill="${ink}"/>`;
+  if (mood === 'worried') out += `<path d="M${cx - 6 * s} ${my + 2 * s} q${3 * s} ${-3 * s} ${6 * s} 0 q${3 * s} ${3 * s} ${6 * s} 0" fill="none" stroke="${ink}" stroke-width="${2 * s}" stroke-linecap="round"/>`;
+  return out;
+}
+
+// ---- splitscreen.me ----
+function duo(mood, mono, o = {}) {
+  const k = pal(mono);
+  const two = `<g class="h-l"><path d="M50 12 A38 38 0 0 0 50 88 Z" fill="${k.half[0]}" ${st(k)}/></g>
+    <g class="h-r"><path d="M50 12 A38 38 0 0 1 50 88 Z" fill="${k.half[1]}" ${st(k)}/></g>
+    <g class="h-l"><line x1="49" y1="14" x2="49" y2="86" stroke="${k.split}" stroke-width="${k.split === 'var(--tile)' ? 0 : 1.6}"/></g>`;
+  const quad = `<g class="qa"><path d="M50 50 L50 12 A38 38 0 0 0 12 50 Z" fill="${k.half[0]}" ${st(k)}/></g>
+    <g class="qb"><path d="M50 50 L88 50 A38 38 0 0 0 50 12 Z" fill="${k.half[1]}" ${st(k)}/></g>
+    <g class="qc"><path d="M50 50 L12 50 A38 38 0 0 0 50 88 Z" fill="${k.half[2]}" ${st(k)}/></g>
+    <g class="qd"><path d="M50 50 L50 88 A38 38 0 0 0 88 50 Z" fill="${k.half[3]}" ${st(k)}/></g>
+    ${k.split === 'var(--tile)' ? '' : `<path d="M50 14 V86 M14 50 H86" stroke="${k.split}" stroke-width="1.6"/>`}`;
+  const body = o.both ? `<g class="two">${two}</g><g class="quad" opacity="0">${quad}</g>` : o.quad ? quad : two;
+  const f = o.quad ? [2, 3] : [0, 1];
+  return `<g class="bob"><ellipse cx="37" cy="90" rx="8" ry="4" fill="${k.feet[f[0]]}"/><ellipse cx="63" cy="90" rx="8" ry="4" fill="${k.feet[f[1]]}"/>
+    ${body}${sheen(k, 32, 28, 8, 4)}${face(50, 44, 12, 1, mood, k.ink, k.hl)}</g>`;
+}
+const duoFour = (m, mono) => duo(m, mono, { quad: true });
+const duoBoth = (m, mono) => duo(m, mono, { both: true });
+function cushy(mood, mono) {
+  const k = pal(mono);
+  const cab = (path, i, x, y, ox, oy) => `<g class="plug p${i}" style="--i:${i};transform-origin:${ox}px ${oy}px"><path d="${path}" fill="none" stroke="${k.cable}" stroke-width="3" stroke-linecap="round"/><circle cx="${x}" cy="${y}" r="4.2" fill="${k.acc[i]}" ${st(k)}/></g>`;
+  return `<g class="bob">
+    ${cab('M36 74 C28 84 20 82 12 88', 0, 12, 88, 36, 74)}${cab('M44 78 C42 88 36 90 31 95', 1, 31, 95, 44, 78)}
+    ${cab('M56 78 C58 88 64 90 69 95', 2, 69, 95, 56, 78)}${cab('M64 74 C72 84 80 82 88 88', 3, 88, 88, 64, 74)}
+    <ellipse cx="16" cy="56" rx="8" ry="14" fill="${k.cushyDark}" ${st(k)}/><ellipse cx="84" cy="56" rx="8" ry="14" fill="${k.cushyDark}" ${st(k)}/>
+    <path d="M18 64 C14 40 28 22 50 22 C72 22 86 40 82 64 C80 78 66 80 50 80 C34 80 20 78 18 64 Z" fill="${k.cushy}" ${st(k)}/>
+    ${k.sheen ? '<rect x="31" y="60" width="38" height="13" rx="6.5" fill="#fff" opacity=".22"/>' : mono ? '' : `<rect x="31" y="60" width="38" height="13" rx="6.5" fill="none" stroke="${k.cable}" stroke-width="1.4"/>`}
+    ${sheen(k, 34, 32, 8, 4)}${face(50, 44, 11, 1, mood, k.ink, k.hl)}</g>`;
+}
+function twins(mood, mono) {
+  const k = pal(mono);
+  return `<g class="bob">
+    <g class="pip"><path d="M38 60 L44 70" stroke="${k.twin[0]}" stroke-width="5" stroke-linecap="round"/><circle cx="27" cy="44" r="20" fill="${k.twin[0]}" ${st(k)}/>${sheen(k, 20, 32, 5, 2.6)}${face(27, 42, 7, 0.62, mood, k.ink, k.hl)}</g>
+    <g class="pod"><path d="M62 60 L56 70" stroke="${k.twin[1]}" stroke-width="5" stroke-linecap="round"/><circle cx="73" cy="44" r="20" fill="${k.twin[1]}" ${st(k)}/>${sheen(k, 66, 32, 5, 2.6)}${face(73, 42, 7, 0.62, mood, k.ink, k.hl)}</g>
+    <g class="pad"><rect x="33" y="66" width="34" height="17" rx="8.5" fill="${k.pad}" stroke="${k.padStroke}" stroke-width="2"/>
+    <path d="M40 74.5 h6 M43 71.5 v6" stroke="${k.padIcon}" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="56" cy="72.5" r="2.2" fill="${k.acc[0]}"/><circle cx="60.5" cy="77" r="2.2" fill="${k.acc[3]}"/></g></g>`;
+}
+
+// ---- tooling ----
+function nucli(mood, mono) {
+  const k = pal(mono);
+  const pt = (a, t) => {
+    const x = 42 * Math.cos(t * Math.PI / 180), y = 14 * Math.sin(t * Math.PI / 180), r = a * Math.PI / 180;
+    return [50 + x * Math.cos(r) - y * Math.sin(r), 50 + x * Math.sin(r) + y * Math.cos(r)];
+  };
+  const orbit = k.orbit || 'var(--orbit)';
+  const orbits = [0, 60, 120].map((a) => `<ellipse cx="50" cy="50" rx="42" ry="14" transform="rotate(${a} 50 50)" fill="none" stroke="${orbit}" stroke-width="1.8" opacity="${mono ? '.55' : '1'}"/>`).join('');
+  const dots = [[0, 200, 0], [60, 330, 1], [120, 80, 2], [0, 20, 3]].map(([a, t, i]) => {
+    const [x, y] = pt(a, t);
+    return `<circle class="e" style="--dx:${(50 - x).toFixed(1)}px;--dy:${(50 - y).toFixed(1)}px;--sx:${((x - 50) * 0.45).toFixed(1)}px;--sy:${((y - 50) * 0.45).toFixed(1)}px" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${k.acc[i]}" ${st(k, 2)}/>`;
+  }).join('');
+  return `<g class="spin">${orbits}${dots}</g>
+    <g class="nuc"><circle cx="50" cy="50" r="21" fill="${k.nucleus}" ${st(k)}/>${sheen(k, 42, 38, 6, 3)}${face(50, 47, 8, 0.75, mood, k.ink, k.hl)}</g>`;
+}
+function nab(mood, mono) {
+  const k = pal(mono);
+  const wood = mono ? 'currentColor' : (K === PALETTES.app ? '#ffffff' : K === PALETTES.v3 ? '#a3abba' : '#a07848');
+  const caught = mood !== 'worried';
+  const bug = (x, y, cls) => `<g class="${cls}"><path d="M${x - 4} ${y - 3} l-2 -2 M${x} ${y - 3} l0 -3 M${x + 4} ${y - 3} l2 -2" stroke="${mono ? 'currentColor' : '#7a1f22'}" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="${x}" cy="${y}" rx="5" ry="3.4" fill="${mono ? 'currentColor' : '#e5484d'}"/></g>`;
+  return `<g class="bob">
+    <g class="swing"><path d="M60 62 L80 32" stroke="${wood}" stroke-width="3.2" stroke-linecap="round"/>
+      <ellipse cx="84" cy="22" rx="12" ry="9" fill="${mono ? 'none' : '#fff'}" fill-opacity=".3" stroke="${wood}" stroke-width="2.2"/>
+      <path d="M76 18 L92 26 M76 26 L92 18 M84 13 L84 31" stroke="${wood}" stroke-width=".9" opacity=".7"/>
+      ${caught ? bug(84, 23, 'bug') : ''}</g>
+    ${caught ? '' : bug(91, 52, 'bug2')}
+    <path d="M36 36 q-4 -12 -10 -14 M50 34 q4 -12 10 -14" fill="none" stroke="${k.nabDark}" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="26" cy="22" r="3.4" fill="${k.acc[1]}"/><circle cx="60" cy="20" r="3.4" fill="${k.acc[0]}"/>
+    <ellipse cx="34" cy="88" rx="7" ry="3.6" fill="${k.nabDark}"/><ellipse cx="54" cy="88" rx="7" ry="3.6" fill="${k.nabDark}"/>
+    <ellipse cx="44" cy="59" rx="25" ry="27" fill="${k.nab}" ${st(k)}/>${sheen(k, 34, 44, 6, 3)}
+    ${face(44, 55, 9, 0.9, mood, k.ink, k.hl)}</g>`;
+}
+function padd(mood, mono) {
+  const k = pal(mono);
+  const id = 'p' + (++uid);
+  const shape = 'M30 30 H70 C84 30 94 42 94 60 C94 76 86 84 78 84 C70 84 66 76 62 70 H38 C34 76 30 84 22 84 C14 84 6 76 6 60 C6 42 16 30 30 30 Z';
+  const b = (x, y, i) => `<circle class="btn" style="--i:${i}" cx="${x}" cy="${y}" r="3" fill="${mono ? 'var(--tile)' : k.acc[i]}"/>`;
+  return `<defs><clipPath id="${id}l"><rect x="0" y="0" width="50" height="100"/></clipPath><clipPath id="${id}r"><rect x="50" y="0" width="50" height="100"/></clipPath></defs>
+    <g class="bob"><g class="h-l"><path d="${shape}" clip-path="url(#${id}l)" fill="${k.grip[0]}" stroke="${k.gripStroke}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M16 54 h12 M22 48 v12" stroke="${k.gripIcon}" stroke-width="3.4" stroke-linecap="round"/></g>
+    <g class="h-r"><path d="${shape}" clip-path="url(#${id}r)" fill="${k.grip[1]}" stroke="${k.gripStroke}" stroke-width="2.5" stroke-linejoin="round"/>
+      ${b(78, 47, 0)}${b(84, 53, 1)}${b(72, 53, 2)}${b(78, 59, 3)}</g>
+    <line x1="50" y1="31" x2="50" y2="69" stroke="${k.gripStroke}" stroke-width="1.5"/>
+    ${sheen(k, 26, 37, 7, 3)}${face(50, 46, 8, 0.72, mood, k.gripInk, k.hl)}</g>`;
+}
+
+const CONCEPTS = [
+  { id: 'duo', group: 'site', pick: true, name: 'Duo', names: 'Duo, Splitz, Halfie', draw: duo,
+    pitch: 'A round little creature drawn in two halves, each with its own eye. With four players it splits into four quarters, like the screen (and like the logo\'s window).',
+    anims: [['blink', 'idle', 'Blink', 'waiting', duo], ['a-split', 'busy', 'Split and join', 'loading', duo], ['a-four blink', 'idle', 'Two become four', 'a player joins', duoBoth], ['a-hop', 'happy', 'Hop', 'all good', duo], ['a-shiver', 'worried', 'Shiver', 'an error', duo]],
+    where: ['App and Hub loading (the halves split and join)', 'The website, stickers, Discord emoji', 'Empty and error screens'],
+    good: ['Is the idea: one screen, several players', 'Reads at 16 px and in one colour', 'Grows out of the logo\'s split window'],
+    risk: ['Very simple; needs good poses to carry personality'],
+    extra: { draw: duoFour, text: 'Four players: four quarters. The same move as the screen splitting.' },
+    emo: { tag: 'duo', gifs: [['hype', 'a-hop', 'happy', duo], ['loading', 'a-split', 'busy', duo], ['split', 'a-four blink', 'idle', duoBoth], ['panic', 'a-shiver', 'worried', duo]] } },
+  { id: 'cushy', group: 'site', name: 'Cushy', names: 'Cushy, Couchy, Sofi', draw: cushy,
+    pitch: 'A soft couch-shaped blob with armrests and four controller cables for a tail. Couch co-op, as a character.',
+    anims: [['a-breathe blink', 'idle', 'Breathe', 'waiting', cushy], ['a-wiggle', 'busy', 'Cable wiggle', 'loading', cushy], ['a-plug', 'happy', 'Plugged in', 'a player connects', cushy], ['a-sag', 'worried', 'Sag', 'an error', cushy]],
+    where: ['Website hero and community art', 'Event banners (it can wear hats)', 'Discord emoji'],
+    good: ['Warm and friendly', 'Easy to dress up for events'],
+    risk: ['The cables vanish at small sizes', 'Reads as a blob before it reads as a couch'],
+    emo: { tag: 'cushy', gifs: [['comfy', 'a-breathe blink', 'idle', cushy], ['wiggle', 'a-wiggle', 'busy', cushy], ['pluggedin', 'a-plug', 'happy', cushy], ['flop', 'a-sag', 'worried', cushy]] } },
+  { id: 'twins', group: 'site', name: 'Pip & Pod', names: 'Pip & Pod, Pix & Pax', draw: twins,
+    pitch: 'Two small friends sharing one controller between them. Playing together on one machine.',
+    anims: [['a-turns blink', 'idle', 'Take turns', 'waiting', twins], ['a-pass', 'busy', 'Pass the pad', 'loading', twins], ['a-five', 'happy', 'High five', 'all good', twins], ['a-shiver', 'worried', 'Shiver', 'an error', twins]],
+    where: ['Website and onboarding stories', 'Release posts (one says, the other reacts)'],
+    good: ['Tells a story: friends playing together', 'Two characters to play off each other'],
+    risk: ['Twice the art for every pose', 'Too busy for a favicon'],
+    emo: { tag: 'pippod', gifs: [['highfive', 'a-five', 'happy', twins], ['yourturn', 'a-pass', 'busy', twins], ['hype', 'a-turns', 'happy', twins], ['panic', 'a-shiver', 'worried', twins]] } },
+  { id: 'nucli', group: 'tools', pick: true, name: 'Nucli', names: 'Nucli, Kern, Proton', draw: nucli,
+    pitch: 'A nucleus with four electrons circling it, one per player. It reads the handler; its electrons circle faster while Test all runs.',
+    anims: [['a-orbit blink', 'idle', 'Orbit', 'waiting', nucli], ['a-fast', 'busy', 'Test all', 'checking every player count', nucli], ['a-collect', 'happy', 'All players in', 'Nucleus can load it', nucli], ['a-scatter', 'worried', 'Something broke', 'an error', nucli]],
+    where: ['Workbench: empty Check, Test all, failed loads', 'VS Code extension icon and walkthrough', 'CLI and the agent skill (as a small mark)'],
+    good: ['Says Nucleus without a word', 'The electrons are the players', 'Spinning is a natural loading animation'],
+    risk: ['Orbits get thin below 24 px (the one-colour version helps)'],
+    emo: { tag: 'nucli', gifs: [['spin', 'a-orbit blink', 'idle', nucli], ['testing', 'a-fast', 'busy', nucli], ['allgood', 'a-collect', 'happy', nucli], ['broke', 'a-scatter', 'worried', nucli]] } },
+  { id: 'nab', group: 'tools', name: 'Nab', names: 'Nab, Lint, Netty', draw: nab,
+    pitch: 'A bug-catcher with a net. Idle and happy it has caught the bug; worried, the bug got away.',
+    anims: [['blink', 'idle', 'Blink', 'waiting', nab], ['a-swoop', 'busy', 'Swoop', 'checking', nab], ['a-catch blink', 'idle', 'Caught it', 'a fix applied', nab], ['a-escape', 'worried', 'It got away', 'an error', nab]],
+    where: ['Check results and fixes', 'Tips and the 404 page'],
+    good: ['Says what the tool does: catches bugs', 'Funny moods (the bug escaping)'],
+    risk: ['The net is lost at small sizes', '"Bug" may read as scolding'],
+    emo: { tag: 'nab', gifs: [['gotcha', 'a-catch blink', 'idle', nab], ['hunting', 'a-swoop', 'busy', nab], ['gotaway', 'a-escape', 'worried', nab], ['hype', 'a-hop', 'happy', nab]] } },
+  { id: 'padd', group: 'tools', name: 'Padd', names: 'Padd, Grip, Duopad', draw: padd,
+    pitch: 'A gamepad with a face, like the one in the splitscreen.me logo. In Try it it splits into its halves, one per player.',
+    anims: [['a-press blink', 'idle', 'Button press', 'waiting', padd], ['a-split', 'busy', 'Split for Try it', 'one half per player', padd], ['a-hop', 'happy', 'Hop', 'all good', padd], ['a-rumble', 'worried', 'Rumble', 'an error', padd]],
+    where: ['Try it and Test all', 'New handler and the templates'],
+    good: ['Gaming at a glance', 'Is the logo\'s gamepad', 'Splitting matches Try it'],
+    risk: ['Close to a generic controller icon', 'Overlaps Duo\'s idea if both are used'],
+    emo: { tag: 'padd', gifs: [['mash', 'a-press blink', 'idle', padd], ['split', 'a-split', 'busy', padd], ['rumble', 'a-rumble', 'worried', padd], ['hype', 'a-hop', 'happy', padd]] } },
+];
+
+const MOODS = [['idle', 'Idle', 'waiting'], ['busy', 'Busy', 'loading, Test all'], ['happy', 'Happy', 'all good'], ['worried', 'Worried', 'an error']];
+const svg = (fn, mood, mono, label, cls = '') => `<svg class="${mood} ${cls}" viewBox="0 0 100 100" role="img" aria-label="${label}">${fn(mood, mono)}</svg>`;
+const sized = (s, html) => html.replace('<svg ', `<svg width="${s}" height="${s}" `);
+
+function card(k) {
+  return `<article class="card" id="c-${k.id}">
+    <div class="card-head"><h3>${k.name}</h3>${k.pick ? '<span class="tag">Suggested</span>' : ''}<span class="names">Name ideas: ${k.names}</span></div>
+    <p>${k.pitch}</p>
+    <div class="grid">
+      <div class="hero">
+        <div><div class="tile t-light">${svg(k.draw, 'idle', false, `${k.name} on light`, 'blink')}</div><div class="cap">Light</div></div>
+        <div><div class="tile t-dark">${svg(k.draw, 'idle', false, `${k.name} on dark`, 'blink')}</div><div class="cap">Dark</div></div>
+      </div>
+      <div>
+        <div class="label" style="margin-top:0">Animations</div>
+        <div class="anims">${k.anims.map(([cls, m, n, w, fn]) => `<div><div class="tile">${svg(fn, m, false, `${k.name}: ${n}`, cls)}</div><div class="cap"><b>${n}</b>${w}</div></div>`).join('')}</div>
+      </div>
+    </div>
+    <div class="label">Moods (still)</div>
+    <div class="moods">${MOODS.map(([m, n, w]) => `<div><div class="tile">${svg(k.draw, m, false, `${k.name}, ${n.toLowerCase()}`)}</div><div class="cap"><b>${n}</b>: ${w}</div></div>`).join('')}</div>
+    <div class="label">Real sizes, colour and one colour</div>
+    <div class="sizes">
+      ${[64, 32, 24, 16].map((s) => `<figure>${sized(s, svg(k.draw, 'idle', false, `${k.name} at ${s} pixels`))}<figcaption>${s}</figcaption></figure>`).join('')}
+      ${[32, 16].map((s) => `<figure class="mono">${sized(s, svg(k.draw, 'idle', true, `${k.name}, one colour, ${s} pixels`))}<figcaption>${s}, one colour</figcaption></figure>`).join('')}
+    </div>
+    ${k.extra ? `<div class="extra">${svg(k.extra.draw, 'idle', false, `${k.name}, four players`)}<p>${k.extra.text}</p></div>` : ''}
+    ${emojis(k)}
+    <div class="cols">
+      <div><h4>Where it shows</h4><ul>${k.where.map((x) => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h4>Good</h4><ul>${k.good.map((x) => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h4>Watch out</h4><ul>${k.risk.map((x) => `<li>${x}</li>`).join('')}</ul></div>
+    </div>
+  </article>`;
+}
+
+// Discord emoji: the moods plus a small sign (a heart, a question mark, GG, a sweat drop, sparkles, !).
+const SIGN = {
+  heart: '<g transform="translate(84 20) scale(1.35) translate(-84 -20)"><path d="M84 30 C76 24 72 14 78 10 C81 8 84 10 84 13 C84 10 87 8 90 10 C96 14 92 24 84 30 Z" fill="#ff4d6a" stroke="#fff" stroke-width="1.6"/></g>',
+  q: '<text x="84" y="26" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="30" text-anchor="middle" fill="#ffcf3a" stroke="#1b1d28" stroke-width="1.2" paint-order="stroke">?</text>',
+  gg: '<rect x="56" y="1" width="43" height="27" rx="9" fill="#ffffff" stroke="#1b1d28" stroke-width="1.8"/><text x="77.5" y="21" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="19" text-anchor="middle" fill="#1b1d28">GG</text>',
+  drop: '<path d="M86 12 C90 18 93 22 93 26 A7 7 0 0 1 79 26 C79 22 82 18 86 12 Z" fill="#7cc8ff" stroke="#fff" stroke-width="1.4"/>',
+  spark: '<path d="M84 6 L86.5 14 L94 16 L86.5 18 L84 26 L81.5 18 L74 16 L81.5 14 Z" fill="#ffcf3a" stroke="#fff" stroke-width="1.2"/><path d="M16 8 L17.5 12 L21 13 L17.5 14 L16 18 L14.5 14 L11 13 L14.5 12 Z" fill="#ffcf3a"/>',
+  bang: '<text x="86" y="27" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="26" text-anchor="middle" fill="#ff4d6a" stroke="#fff" stroke-width="1.4" paint-order="stroke">!</text>',
+};
+const STATIC = [['happy', 'happy', ''], ['sad', 'worried', ''], ['love', 'happy', 'heart'], ['think', 'idle', 'q'], ['gg', 'happy', 'gg'], ['sweat', 'worried', 'drop'], ['yay', 'happy', 'spark'], ['what', 'busy', 'bang']];
+const withSign = (fn, sign) => (m, mono) => fn(m, mono) + (sign ? SIGN[sign] : '');
+function emojis(k) {
+  const e = k.emo;
+  const st = STATIC.map(([n, m, s]) => `<figure>${svg(withSign(k.draw, s), m, false, `:${e.tag}_${n}:`)}<figcaption>:${e.tag}_${n}:</figcaption></figure>`).join('');
+  const gf = e.gifs.map(([n, cls, m, fn]) => `<figure>${svg(fn, m, false, `:${e.tag}_${n}:, animated`, cls)}<figcaption>:${e.tag}_${n}:<span class="gif">GIF</span></figcaption></figure>`).join('');
+  const g = (i) => e.gifs[i];
+  const em = (n, m, s) => svg(withSign(k.draw, s), m, false, `:${e.tag}_${n}:`);
+  const an = (i) => svg(g(i)[3], g(i)[2], false, `:${e.tag}_${g(i)[0]}:`, g(i)[1]);
+  const chat = (cls) => `<div class="dc ${cls}">
+      <div><div class="who">Player 2</div><div class="line">new version of the handler is up ${em('happy', 'happy', '')} works with 4 players now ${an(0)}</div></div>
+      <div class="jumbo">${an(1)}${em('love', 'happy', 'heart')}${em('gg', 'happy', 'gg')}</div>
+      <div class="reacts"><span class="rx me">${em('yay', 'happy', 'spark')} 14</span><span class="rx">${an(0)} 6</span><span class="rx">${em('think', 'idle', 'q')} 2</span><span class="rx">${em('sweat', 'worried', 'drop')} 1</span></div>
+    </div>`;
+  return `<div class="label">Discord emoji</div>
+    <div class="emo">
+      <div class="emo-set"><h5>Static</h5><div class="emo-grid">${st}</div><h5 style="margin-top:10px">Animated</h5><div class="emo-grid">${gf}</div></div>
+      <div style="display:grid;gap:8px">${chat('dark')}${chat('light')}</div>
+    </div>
+    <p class="emo-note">In a message at 22 px, on their own at 48 px, as reactions at 16 px. Once one is picked, I can export them as files Discord takes: 128 × 128 PNG for the static ones and GIF for the animated ones, each under 256 KB.</p>`;
+}
+const by = (id) => CONCEPTS.find((k) => k.id === id);
+const PAIRS = [
+  ['duo', 'nucli', 'Duo + Nucli', true, 'Duo plays, Nucli checks the handler. Both are round, both read at 16 px, and Nucli\'s four electrons are Duo\'s four quarters.'],
+  ['cushy', 'nab', 'Cushy + Nab', false, 'The couch and the critter that keeps the bugs off it. Both soft and silly; best if the project wants a playful voice.'],
+  ['twins', 'padd', 'Pip & Pod + Padd', false, 'The twins share Padd as their controller, so the sidekick is literally in the main art. Charming, but three characters to draw.'],
+];
+
+function render() {
+  uid = 0;
+  document.body.classList.toggle('glow', !!K.glow);
+  document.getElementById('from').textContent = K.from;
+  document.getElementById('site-cards').innerHTML = CONCEPTS.filter((k) => k.group === 'site').map(card).join('');
+  document.getElementById('tool-cards').innerHTML = CONCEPTS.filter((k) => k.group === 'tools').map(card).join('');
+  document.getElementById('summary').innerHTML = [
+    ['duo', 'happy', 'a-hop', 'For splitscreen.me: Duo', 'A split window come alive. Splits into four with four players.'],
+    ['nucli', 'happy', 'a-orbit', 'For the tooling: Nucli', 'A nucleus whose electrons are the players. Spins while it works.'],
+  ].map(([id, m, cls, t, s]) => `<div>${svg(by(id).draw, m, false, by(id).name, cls)}<div><b>${t}</b><p class="muted">${s}</p></div></div>`).join('');
+  document.getElementById('pairs-list').innerHTML = PAIRS.map(([a, b, t, pick, s]) => `<div class="pair"><div class="duo">${svg(by(a).draw, 'happy', false, by(a).name, 'a-hop')}${svg(by(b).draw, 'idle', false, by(b).name, 'blink a-orbit a-breathe')}</div><h3>${t} ${pick ? '<span class="tag">Suggested</span>' : ''}</h3><p class="muted">${s}</p></div>`).join('');
+  document.getElementById('mocks').innerHTML = `
+    <div class="mock"><div class="bar">Workbench · Check, nothing to fix</div><div class="body">${svg(nucli, 'happy', false, 'Nucli, happy', 'a-collect')}<div><b>Nucleus can load this handler.</b><span class="muted">Nothing to fix. Try it shows what each player gets.</span></div></div></div>
+    <div class="mock"><div class="bar">Workbench · Test all running</div><div class="body">${svg(nucli, 'busy', false, 'Nucli, busy', 'a-fast')}<div><b>Testing 12 combinations…</b><span class="muted">Every player count with every option.</span></div></div></div>
+    <div class="mock"><div class="bar">Nucleus Co-op · getting a handler from the Hub</div><div class="body">${svg(duo, 'busy', false, 'Duo, busy', 'a-split')}<div><b>Getting the handler…</b><span class="muted">Duo splits and joins while it loads.</span></div></div></div>
+    <div class="mock"><div class="bar">Hub · page not found</div><div class="body">${svg(duo, 'worried', false, 'Duo, worried', 'a-shiver')}<div><b>This handler isn't here.</b><span class="muted">It may have been renamed. Search the Hub instead.</span></div></div></div>
+    <div class="mock chat"><div class="bar">Chat · emoji and reactions</div><div class="body">
+      <div class="msg">New handler version is up, Nucli says it loads fine</div>
+      <span class="react">${svg(duo, 'happy', false, 'Duo happy emoji')} 12</span>
+      <span class="react">${svg(duoFour, 'idle', false, 'Duo four players emoji')} 5</span>
+      <span class="react">${svg(nucli, 'happy', false, 'Nucli happy emoji')} 4</span>
+      <span class="react">${svg(duo, 'worried', false, 'Duo worried emoji')} 1</span>
+    </div></div>`;
+  for (const b of document.querySelectorAll('.pal')) b.setAttribute('aria-pressed', String(PALETTES[b.dataset.p] === K));
+}
+
+const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+document.getElementById('pals').innerHTML = Object.entries(PALETTES).map(([id, p]) => `<button type="button" class="pal" data-p="${id}" aria-pressed="false"><span class="sw" aria-hidden="true">${p.sw.slice(0, 5).map((c) => `<i style="background:${c}"></i>`).join('')}</span>${p.name}</button>`).join('');
+document.getElementById('pals').addEventListener('click', (e) => {
+  const b = e.target.closest('.pal');
+  if (!b) return;
+  K = PALETTES[b.dataset.p];
+  store.set('mascot-palette', b.dataset.p);
+  render();
+});
+K = PALETTES[store.get('mascot-palette')] || PALETTES.logo;
+render();
+
+const pause = document.getElementById('pause');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduced) { pause.disabled = true; pause.textContent = 'Animations off (your device asks for less motion)'; }
+pause.addEventListener('click', () => {
+  const on = document.documentElement.classList.toggle('paused');
+  pause.textContent = on ? 'Play animations' : 'Pause animations';
+  pause.setAttribute('aria-pressed', String(on));
+});
+
+// Theme: match device, light, dark (remembered in this browser only).
+const btn = document.getElementById('theme');
+const order = ['auto', 'light', 'dark'];
+const names = { auto: 'match device', light: 'light', dark: 'dark' };
+let mode = store.get('mascot-theme') || 'auto';
+const apply = () => {
+  if (mode === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = mode;
+  btn.textContent = 'Theme: ' + names[mode];
+};
+apply();
+btn.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]; store.set('mascot-theme', mode); apply(); });
+</script>
+</body>
+</html>
