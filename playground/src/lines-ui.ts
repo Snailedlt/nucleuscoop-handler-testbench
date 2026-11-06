@@ -86,7 +86,7 @@ export function initLines({ editor, openReference }: Deps) {
     if (l.scope === 'top') facts.push(`Only at the top level: ${BEFORE_SESSION[l.path]}`);
     const u = scan?.uses.get(l.path);
     if (u?.assigned.length) facts.push(`Set on line ${u.assigned.map((a) => a.line + 1).join(', ')}`);
-    if (facts.length) info.append(text('div', 'muted', facts.join(' · ')));
+    if (facts.length) { const f = text('div', 'muted facts', facts.join(' · ')); f.title = facts.join('\n'); info.append(f); }
     const docs = document.createElement('button');
     docs.type = 'button';
     docs.className = 'link';

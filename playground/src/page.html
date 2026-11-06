@@ -342,7 +342,13 @@ body.keybar-est .app { padding-bottom: calc(52px + var(--kb-est, 0px)) !importan
 .tip-x { display: none !important; }
 #tip-off .short { display: none; }
 #lines-list .none { color: var(--muted); padding: 10px; font-family: var(--font-body); }
-#lines-info { border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--fg); min-height: 3.2em; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+/* A fixed height: if it grew and shrank with each name, the list above would move under the
+   pointer, and the hover would flip between two rows (reported by messenils). */
+#lines-info { flex: none; box-sizing: border-box; height: 136px; overflow: hidden; border-top: 1px solid var(--line); padding: 7px 10px; font-size: 12px; color: var(--fg); display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+#lines-info > * { flex: none; max-width: 100%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+#lines-info > code { -webkit-line-clamp: 3; }
+#lines-info > .facts { -webkit-line-clamp: 1; }
+#lines-info > .link { margin-top: auto; display: inline; }
 #lines-info .muted { color: var(--muted); }
 #lines-info code { font: 11.5px var(--font-mono); color: var(--fg); overflow-wrap: anywhere; display: block; margin-bottom: 2px; }
 #editor .CodeMirror { position: absolute; inset: 0; height: auto; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }

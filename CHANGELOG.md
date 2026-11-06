@@ -32,6 +32,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
   </details>
 
+### 🐛 Fixed
+
+- **Lines no longer flickers between two names.** Moving the pointer slowly over the list could make it jump back and forth between two rows, because the description under the list changed height. It now keeps one height, and Full docs has the rest. Reported by messenils.
+
+### 🙏 Thanks
+
+- **messenils** for the video of Lines flickering, and for spotting that `Game.SetupSse` is never called.
+
 ---
 
 ## 2026-11-05 23:00
