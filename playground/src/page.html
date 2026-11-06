@@ -914,12 +914,13 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .plain-title { font-weight: 600; }
 /* Check cards (Settings › General › Check): a row with the essentials; open it for the why, other fixes and details. */
 .problem:has(> .pcard) { display: block; padding: 6px 10px 6px 16px; }
-.pcard > summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; min-height: 30px; }
-.pcard > summary::-webkit-details-marker { display: none; }
-.pcard > summary::after { content: '›'; color: var(--muted); font-size: 16px; transition: transform .15s; flex: none; width: 12px; text-align: center; }
-.pcard[open] > summary::after { transform: rotate(90deg); }
+.pcard .prow { display: flex; align-items: center; gap: 8px; min-height: 30px; cursor: pointer; }
+.ptoggle { flex: none; width: 26px; height: 26px; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
+.ptoggle::before { content: '›'; display: inline-block; transition: transform .15s; }
+.pcard.open .ptoggle::before { transform: rotate(90deg); }
+.ptoggle:hover { background: var(--surface-2); color: var(--fg); }
 .pcard .plain-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pcard[open] .plain-title { white-space: normal; }
+.pcard.open .plain-title { white-space: normal; }
 .pcard .row-fix { flex: none; }
 .pcard .row-fix .fix { white-space: nowrap; }
 .pcard .loc { flex: none; }
@@ -929,7 +930,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); color: #1b1f2a; } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
 #problems[data-density="compact"] { gap: 4px; }
 #sp-general .set-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
-@media (max-width: 600px) { .pcard .row-fix { display: none; } .pcard[open] .row-fix { display: inline; } }
+@media (max-width: 600px) { .pcard .row-fix { display: none; } .pcard.open .row-fix { display: inline; } }
 .plain-why { margin: 2px 0 0; }
 .tech { margin-top: 4px; font-size: 12px; color: var(--muted); }
 .banner .small { font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; font-weight: 400; }

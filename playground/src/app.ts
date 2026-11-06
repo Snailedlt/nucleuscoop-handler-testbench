@@ -613,19 +613,31 @@ function renderProblems(text: string) {
       const open = density !== 'compact' || openProblems.has(key);
       // Advanced adds (never replaces): the column, severity, rule id and the technical message expanded.
       const extra = simple ? '' : `<span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>`;
-      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}"><details class="pcard" data-key="${esc(key)}"${open ? ' open' : ''}>
-        <summary><span class="sev-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
+      const bodyId = `pb-${i}`;
+      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}"><div class="pcard${open ? ' open' : ''}" data-key="${esc(key)}">
+        <div class="prow"><span class="sev-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
           <span class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</span>
-          <span class="row-fix">${ordered[0] ? fixBtn(ordered[0], true) : ''}</span></summary>
-        <div class="body"><p class="plain-why">${esc(plain.why)}</p>
+          <span class="row-fix">${ordered[0] ? fixBtn(ordered[0], true) : ''}</span>
+          <button class="ptoggle" type="button" aria-expanded="${open}" aria-controls="${bodyId}" aria-label="More about line ${line}: ${esc(plain.title)}"></button></div>
+        <div class="body" id="${bodyId}"${open ? '' : ' hidden'}><p class="plain-why">${esc(plain.why)}</p>
         <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
-        <details class="tech"${density === 'detailed' ? ' open' : ''}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></details></li>`;
+        <details class="tech"${density === 'detailed' ? ' open' : ''}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></div></li>`;
     })
     .join('');
-  el.querySelectorAll<HTMLDetailsElement>('details.pcard').forEach((dt) => dt.addEventListener('toggle', () => (dt.open ? openProblems.add(dt.dataset.key!) : openProblems.delete(dt.dataset.key!))));
+  // Open or close a card: its toggle button, or a click anywhere on its row that isn't another button.
+  el.querySelectorAll<HTMLElement>('.pcard').forEach((card) => {
+    const toggle = card.querySelector<HTMLButtonElement>('.ptoggle')!, body = card.querySelector<HTMLElement>('.body')!;
+    const set = (o: boolean) => {
+      card.classList.toggle('open', o);
+      body.hidden = !o;
+      toggle.setAttribute('aria-expanded', String(o));
+      o ? openProblems.add(card.dataset.key!) : openProblems.delete(card.dataset.key!);
+    };
+    toggle.addEventListener('click', () => set(body.hidden));
+    card.querySelector('.prow')!.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('button')) set(body.hidden); });
+  });
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
-    b.addEventListener('click', (ev) => {
-      ev.preventDefault(); // inside a summary: fix, don't fold
+    b.addEventListener('click', () => {
       const fix = list[Number(b.dataset.d)].fixes![Number(b.dataset.f)];
       fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
         editor.operation(() => {
@@ -635,7 +647,7 @@ function renderProblems(text: string) {
       codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
     }),
   );
-  el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', (ev) => (ev.preventDefault(), jumpTo(Number(b.dataset.jump)))));
+  el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
 }
 const openProblems = new Set<string>();
 type Density = 'compact' | 'comfortable' | 'detailed';
