@@ -42,16 +42,10 @@ jobs:
           git fetch -q --depth 1 origin data || exit 0
           git show FETCH_HEAD:usage.json > "$RUNNER_TEMP/usage.json" 2>/dev/null || { echo "No usage.json on the data branch yet: keeping the committed one."; exit 0; }
           node -e 'const u = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (!(u.handlers > 0 && u.counts)) process.exit(1)' "$RUNNER_TEMP/usage.json" && cp "$RUNNER_TEMP/usage.json" playground/src/usage.json
-      - name: Keep the Hub snapshot between runs
-        uses: actions/cache@v4
-        with:
-          path: |
-            playground/hub-cache.json
-            playground/.cache/covers
-          key: hub-snapshot-${{ github.run_id }}
-          restore-keys: hub-snapshot-
-      - name: Build (Hub snapshot refreshed on the daily run only; unchanged versions reused)
-        run: node build.mjs --core ../core ${{ github.event_name == 'schedule' && '--refresh-hub' || '' }}
+      - name: Every Hub handler, from our own copy (the data branch; tools/hub-mirror.mjs keeps it, no Hub requests here)
+        run: git clone -q --depth 1 --branch data "https://github.com/${{ github.repository }}.git" playground/.hubdata
+      - name: Build (all Hub handlers from the data branch)
+        run: node build.mjs --core ../core --hub-data .hubdata
         env:
           GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
         working-directory: playground

@@ -63,7 +63,45 @@ const HUB = 'https://hub.splitscreen.me';
 const argHub = process.argv.indexOf('--hub');
 const hubCount = argHub > 0 ? Number(process.argv[argHub + 1]) : 40;
 const cachePath = path.join(here, 'hub-cache.json');
+//   --hub-data <dir>  the data branch, checked out (tools/hub-mirror.mjs): EVERY Hub handler, from our own
+//                  copy; no Hub requests at all. The Pages build uses this; the snapshot below is the
+//                  fallback for a build without it (a local one).
+const argData = process.argv.indexOf('--hub-data');
+let hubData = argData > 0 ? path.resolve(process.argv[argData + 1]) : null;
+// Until the daily sync has mirrored the handlers once (the data branch has no hub/ yet), the snapshot.
+if (hubData && !fs.existsSync(path.join(hubData, 'hub', 'packages.json'))) {
+  console.warn(`No mirrored handlers in ${hubData} yet (tools/hub-mirror.mjs runs in the daily Hub sync): using the snapshot of the most downloaded.`);
+  hubData = null;
+}
+function hubFromData(dir) {
+  const idx = JSON.parse(fs.readFileSync(path.join(dir, 'hub-index.json'), 'utf8'));
+  const pk = JSON.parse(fs.readFileSync(path.join(dir, 'hub', 'packages.json'), 'utf8'));
+  const handlers = [];
+  for (const h of idx.handlers) {
+    const p = pk[h._id];
+    const file = path.join(dir, 'hub', `${h._id}.js`);
+    if (!p || p.version !== h.currentVersion || !fs.existsSync(file)) continue;
+    handlers.push({
+      id: h._id,
+      title: h.title,
+      game: h.gameName,
+      owner: h.ownerName,
+      version: h.currentVersion,
+      downloads: h.downloadCount ?? 0,
+      maxPlayers: h.maxPlayers ?? null,
+      multiKbm: !!h.playableMultiMouseKeyboard,
+      updated: p.released ?? h.updatedAt ?? null,
+      url: `${HUB}/handler/${h._id}`,
+      cover: h.gameCover ?? undefined,
+      ...(p.verified ? {} : { unverified: true }),
+      source: fs.readFileSync(file, 'utf8'),
+    });
+  }
+  handlers.sort((a, b) => b.downloads - a.downloads || a.id.localeCompare(b.id));
+  return { takenAt: idx.syncedAt, handlers, rejected: [], all: true };
+}
 async function hubExamples() {
+  if (hubData) return hubFromData(hubData);
   if (!hubCount) return { takenAt: null, handlers: [], rejected: [] };
   if (!process.argv.includes('--refresh-hub') && fs.existsSync(cachePath)) {
     const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
@@ -156,17 +194,18 @@ const hub = await hubExamples();
 // so visitors' browsers never call IGDB, and the preview (no outside images) shows them too. A
 // cover that can't be fetched leaves the game's initials. Snapshots from before covers were kept
 // get their ids from our daily index (no Hub request).
-if (hub.handlers.some((h) => !h.cover)) {
+if (!hubData && hub.handlers.some((h) => !h.cover)) {
   try {
     const r = await fetch('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
     const byId = new Map((await r.json()).handlers.map((h) => [h._id, h.gameCover]));
     for (const h of hub.handlers) h.cover ??= byId.get(h.id) ?? undefined;
   } catch {}
 }
-const coverDir = path.join(here, '.cache', 'covers');
+// With --hub-data the covers are already there (tools/hub-mirror.mjs keeps them).
+const coverDir = hubData ? path.join(hubData, 'covers') : path.join(here, '.cache', 'covers');
 fs.mkdirSync(coverDir, { recursive: true });
 let coversFetched = 0;
-for (const h of hub.handlers) {
+for (const h of hubData ? [] : hub.handlers) {
   if (!h.cover || !/^\w{2,20}$/.test(h.cover)) continue;
   const file = path.join(coverDir, `${h.cover}.jpg`);
   if (fs.existsSync(file)) continue;
@@ -308,13 +347,16 @@ for (const h of hub.handlers) {
  *  fetches hub/<id>.js when one is opened, which keeps every visit small. */
 function pageHtml(inlineHub) {
   // Covers: files next to the page, or inside it for the one-file workbench.
-  const withCover = (h) => {
+  // The one file keeps the 40 most downloaded covers inside it (the rest show their initials), so
+  // all 600 handlers don't double its size.
+  const withCover = (h, i) => {
     const f = coverFile(h);
     const { cover, ...rest } = h;
-    return f ? { ...rest, cover: inlineHub ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : `covers/${h.cover}.jpg` } : rest;
+    if (!f || (inlineHub && i >= 40)) return rest;
+    return { ...rest, cover: inlineHub ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : `covers/${h.cover}.jpg` };
   };
   const handlers = (inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
-  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
+  const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/', ...(hub.all ? { all: true } : {}) })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
@@ -438,4 +480,4 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
   for (const f of files.filter((f) => !f.endsWith('build.txt')).sort()) h.update(path.relative(path.join(here, 'dist', 'pages'), f) + '\0').update(fs.readFileSync(f));
   fs.writeFileSync(path.join(here, 'dist', 'pages', 'build.txt'), h.digest('hex') + '\n');
 }
-console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);
+console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} Hub handlers${hub.all ? " (all, from the data branch)" : " (verified)"} (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

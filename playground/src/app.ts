@@ -36,9 +36,9 @@ applyTheme();
 applyCustomTheme();
 watchPictures();
 declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
-interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; lint?: { errors: number; warnings: number } }
+interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number } }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
-declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null };
+declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null; /** every handler on the Hub (our mirror), not only the most downloaded */ all?: boolean };
 declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
 declare const BOT_TEMPLATES: { commit: string | null; templates: { id: string; name: string; source: string }[] };
 
@@ -1230,7 +1230,8 @@ function entries(): OpenEntry[] {
       cover: h.cover,
       sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version}`,
       meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>`,
-      keywords: `${h.game} ${h.owner} hub`,
+      keywords: `${h.game} ${h.owner} hub${h.unverified ? ' unverified' : ''}`,
+      badges: h.unverified ? '<span class="chip warning" title="The Hub hasn\'t verified this version yet">not verified</span>' : undefined,
       lint: () => hubLintBadges(i),
       run: () => openHub(i),
     })),
@@ -1290,7 +1291,7 @@ function renderOpen() {
   }
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   const groupNote: Record<string, string> = {
-    'Hub handlers': `The most downloaded, current version verified, as of ${esc(taken)}`,
+    'Hub handlers': HUB_EXAMPLES.all ? `Every handler on the Hub, most downloaded first, as of ${esc(taken)}` : `The most downloaded, current version verified, as of ${esc(taken)}`,
     'Engine templates': 'The same templates the SplitScreen.Me Discord bot sends with /create',
   };
   // Searching: results grouped by kind (the best match's group first), each group with a count.

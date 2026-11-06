@@ -26,14 +26,16 @@ jobs:
           node-version: 22
       - name: Read the Hub list once
         run: node tools/hub-sync.mjs "$RUNNER_TEMP/hub-index.json"
-      - name: Publish it on the data branch (keeping the weekly usage counts)
+      - name: Take the data branch as it is (usage counts, mirrored handlers, covers)
         run: |
-          git fetch -q --depth 1 origin data && git show FETCH_HEAD:usage.json > "$RUNNER_TEMP/usage.json" 2>/dev/null || rm -f "$RUNNER_TEMP/usage.json"
-          cd "$RUNNER_TEMP"
-          git init -q -b data data && cd data
-          cp ../hub-index.json .
-          [ -f ../usage.json ] && cp ../usage.json .
-          printf '# Hub index\n\nThe hub.splitscreen.me handler list, synced daily by `.github/workflows/hub-sync.yml` on `main`. Read by the tools instead of the Hub API.\n\n`usage.json`: how many verified Hub handlers use each name, counted weekly by `.github/workflows/nightly.yml` (only counts, no handler code).\n' > README.md
+          git clone -q --depth 1 --branch data "https://github.com/${{ github.repository }}.git" "$RUNNER_TEMP/data" || { mkdir -p "$RUNNER_TEMP/data" && git -C "$RUNNER_TEMP/data" init -q -b data; }
+          cp "$RUNNER_TEMP/hub-index.json" "$RUNNER_TEMP/data/hub-index.json"
+      - name: Mirror new handler versions and covers (only what changed since yesterday)
+        run: node tools/hub-mirror.mjs "$RUNNER_TEMP/data"
+      - name: Publish the data branch (one commit, replaced each time)
+        working-directory: ${{ runner.temp }}/data
+        run: |
+          printf '# Hub index\n\nThe hub.splitscreen.me handler list, synced daily by `.github/workflows/hub-sync.yml` on `main`. Read by the tools instead of the Hub API.\n\n- `hub-index.json`: every handler (`tools/hub-sync.mjs`).\n- `hub/<id>.js`, `hub/packages.json`: each handler'"'"'s current version, fetched once per version (`tools/hub-mirror.mjs`); the workbench lists and opens all of them from here.\n- `covers/<cover>.jpg`: the games'"'"' covers (IGDB, as the Hub shows them), once per cover.\n- `usage.json`: how many verified Hub handlers use each name, counted weekly by `.github/workflows/nightly.yml` (only counts, no handler code).\n' > README.md
           git add -A
-          git -c user.name='hub-sync' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -qm "Hub index $(date -u +%F)"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data
+          git -c user.name='hub-sync' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q --amend -m "Hub index $(date -u +%F)" 2>/dev/null || git -c user.name='hub-sync' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -qm "Hub index $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:data
