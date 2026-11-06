@@ -142,69 +142,69 @@
     },
     "mac": {
       "name": "Mac style",
-      "about": "vlxst's Mac style for Nucleus Co-op: see-through dark panes over a wall of game covers, traffic lights, green highlights, rounded corners. Light is this page's own variant.",
+      "about": "macOS, after vlxst's Mac style for Nucleus Co-op: panes as windows with traffic lights, a frosted toolbar over a wallpaper, segmented tabs, system blue and SF Pro.",
       "base": "www",
       "shared": {
-        "font-display": "\"Franklin Gothic Medium\", \"Franklin Gothic\", \"Libre Franklin\", -apple-system, \"SF Pro Text\", \"Helvetica Neue\", system-ui, sans-serif",
-        "font-body": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"Franklin Gothic Book\", system-ui, sans-serif",
-        "font-mono": "\"SF Mono\", Menlo, ui-monospace, Consolas, monospace",
+        "font-display": "-apple-system, BlinkMacSystemFont, \"SF Pro Display\", \"Helvetica Neue\", \"Inter\", system-ui, sans-serif",
+        "font-body": "-apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Helvetica Neue\", \"Inter\", system-ui, sans-serif",
+        "font-mono": "\"SF Mono\", SFMono-Regular, Menlo, Monaco, ui-monospace, monospace",
         "display-weight": "600",
-        "r-sm": "6px",
-        "r-ctl": "7px",
+        "r-sm": "5px",
+        "r-ctl": "6px",
         "r-pane": "12px",
-        "r-lg": "14px",
-        "sh-1": "0 1px 1px rgba(0, 0, 0, .18), 0 8px 24px rgba(0, 0, 0, .22)",
-        "sh-2": "0 30px 80px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .25)"
+        "r-lg": "12px",
+        "sh-1": "0 0 0 0.5px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .08)",
+        "sh-2": "0 0 0 0.5px rgba(0, 0, 0, .22), 0 22px 70px rgba(0, 0, 0, .34)"
       },
       "light": {
-        "bg": "#e7e7ec",
-        "surface": "rgba(255, 255, 255, 0.86)",
-        "surface-2": "rgba(0, 0, 0, 0.05)",
-        "line": "rgba(0, 0, 0, 0.12)",
+        "bg": "#d9dce6",
+        "surface": "#ffffff",
+        "surface-2": "#f5f5f7",
+        "line": "rgba(0, 0, 0, 0.11)",
         "fg": "#1d1d1f",
-        "muted": "#55555c",
-        "accent": "#1c7c36",
+        "muted": "#6e6e73",
+        "accent": "#0a66d8",
         "accent-fg": "#ffffff",
-        "brand": "#1c7c36",
-        "err": "#b8261e",
-        "err-bg": "#fdecea",
-        "warn": "#855300",
-        "warn-bg": "#fdf3dc",
-        "info": "#0059b3",
-        "info-bg": "#e5f0fd",
-        "ok": "#1a7434",
-        "ok-bg": "#e3f4e8",
-        "code-bg": "rgba(255, 255, 255, 0.9)",
+        "brand": "#0a66d8",
+        "err": "#c4000f",
+        "err-bg": "#ffe9e8",
+        "warn": "#8a5a00",
+        "warn-bg": "#fff4d6",
+        "info": "#0a5fc7",
+        "info-bg": "#e8f1fd",
+        "ok": "#1a7a32",
+        "ok-bg": "#e5f5e8",
+        "code-bg": "#ffffff",
         "kw": "#9b2393",
         "str": "#c41a16",
         "num": "#1c00cf",
         "cmt": "#5d6c79",
-        "prop": "#2d6870"
+        "prop": "#326d74"
       },
       "dark": {
-        "bg": "#07080b",
-        "surface": "rgba(12, 14, 18, 0.80)",
-        "surface-2": "rgba(255, 255, 255, 0.07)",
-        "line": "rgba(255, 255, 255, 0.13)",
-        "fg": "#ffffff",
-        "muted": "#b3b8c2",
-        "accent": "#30d158",
-        "accent-fg": "#03130a",
-        "brand": "#30d158",
+        "bg": "#15161c",
+        "surface": "#1f1f21",
+        "surface-2": "#2c2c2e",
+        "line": "rgba(255, 255, 255, 0.11)",
+        "fg": "#f5f5f7",
+        "muted": "#a1a1a6",
+        "accent": "#0a72dc",
+        "accent-fg": "#ffffff",
+        "brand": "#0a84ff",
         "err": "#ff6961",
-        "err-bg": "#3a1517",
+        "err-bg": "#3b1715",
         "warn": "#ffd426",
-        "warn-bg": "#382e0c",
-        "info": "#64d2ff",
-        "info-bg": "#0f2a36",
-        "ok": "#30d158",
-        "ok-bg": "#0e2a17",
-        "code-bg": "rgba(9, 12, 18, 0.88)",
-        "kw": "#ff7ab2",
-        "str": "#ff8170",
-        "num": "#d9c97c",
-        "cmt": "#8b98a5",
-        "prop": "#6bd0bc"
+        "warn-bg": "#36300f",
+        "info": "#64b5ff",
+        "info-bg": "#0f2740",
+        "ok": "#4cd964",
+        "ok-bg": "#12301a",
+        "code-bg": "#1f1f24",
+        "kw": "#fc5fa3",
+        "str": "#fc6a5d",
+        "num": "#d0bf69",
+        "cmt": "#7f8c98",
+        "prop": "#67b7a4"
       }
     },
     "alpha8": {
@@ -272,6 +272,121 @@
         "num": "#b5cea8",
         "cmt": "#6a9955",
         "prop": "#9cdcfe"
+      }
+    }
+  },
+  "codeThemes": {
+    "github": {
+      "name": "GitHub",
+      "light": {
+        "code-bg": "#ffffff",
+        "code-fg": "#1f2328",
+        "kw": "#cf222e",
+        "str": "#0a3069",
+        "num": "#0550ae",
+        "cmt": "#6e7781",
+        "prop": "#8250df"
+      },
+      "dark": {
+        "code-bg": "#0d1117",
+        "code-fg": "#e6edf3",
+        "kw": "#ff7b72",
+        "str": "#a5d6ff",
+        "num": "#79c0ff",
+        "cmt": "#8b949e",
+        "prop": "#d2a8ff"
+      }
+    },
+    "vscode": {
+      "name": "VS Code",
+      "light": {
+        "code-bg": "#ffffff",
+        "code-fg": "#000000",
+        "kw": "#0000ff",
+        "str": "#a31515",
+        "num": "#098658",
+        "cmt": "#008000",
+        "prop": "#001080"
+      },
+      "dark": {
+        "code-bg": "#1e1e1e",
+        "code-fg": "#d4d4d4",
+        "kw": "#569cd6",
+        "str": "#ce9178",
+        "num": "#b5cea8",
+        "cmt": "#6a9955",
+        "prop": "#9cdcfe"
+      }
+    },
+    "xcode": {
+      "name": "Xcode",
+      "light": {
+        "code-bg": "#ffffff",
+        "code-fg": "#000000",
+        "kw": "#9b2393",
+        "str": "#c41a16",
+        "num": "#1c00cf",
+        "cmt": "#5d6c79",
+        "prop": "#326d74"
+      },
+      "dark": {
+        "code-bg": "#1f1f24",
+        "code-fg": "#ffffff",
+        "kw": "#fc5fa3",
+        "str": "#fc6a5d",
+        "num": "#d0bf69",
+        "cmt": "#7f8c98",
+        "prop": "#67b7a4"
+      }
+    },
+    "one": {
+      "name": "One",
+      "about": "Atom's One Light and One Dark, a little darker where they fall below 4.5:1.",
+      "light": {
+        "code-bg": "#fafafa",
+        "code-fg": "#383a42",
+        "kw": "#a626a4",
+        "str": "#3c7d3b",
+        "num": "#986801",
+        "cmt": "#6e6f77",
+        "prop": "#2a5bd7",
+        "code-muted": "#5d5f66"
+      },
+      "dark": {
+        "code-bg": "#282c34",
+        "code-fg": "#abb2bf",
+        "kw": "#c678dd",
+        "str": "#98c379",
+        "num": "#d19a66",
+        "cmt": "#979ca7",
+        "prop": "#61afef",
+        "code-muted": "#a3a9b4"
+      }
+    },
+    "monokai": {
+      "name": "Monokai",
+      "about": "Dark in both modes; keywords and comments a little lighter, for 4.5:1.",
+      "light": {
+        "code-bg": "#272822",
+        "code-fg": "#f8f8f2",
+        "kw": "#ff4f8b",
+        "str": "#e6db74",
+        "num": "#ae81ff",
+        "cmt": "#9a957f",
+        "prop": "#a6e22e"
+      }
+    },
+    "dracula": {
+      "name": "Dracula",
+      "about": "Dark in both modes; comments a little lighter, for 4.5:1.",
+      "light": {
+        "code-bg": "#282a36",
+        "code-fg": "#f8f8f2",
+        "kw": "#ff79c6",
+        "str": "#f1fa8c",
+        "num": "#bd93f9",
+        "cmt": "#8b96c4",
+        "prop": "#8be9fd"
       }
     }
   }

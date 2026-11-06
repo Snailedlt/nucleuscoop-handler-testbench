@@ -16,7 +16,7 @@
 // else. Several can be kept; one is on at a time.
 
 import THEMES from './themes.json';
-import { Look, lookCSS, Mode, PAIRS, resolve, TOKENS } from './themekit';
+import { CODE_SCOPE, CodeTheme, codeThemeCSS, codeTokens, Look, lookCSS, Mode, PAIRS, resolve, TOKENS } from './themekit';
 
 const BUILT_IN = THEMES.looks as Record<string, Look>;
 export const BUILT_IN_LOOKS = Object.keys(BUILT_IN);
@@ -204,4 +204,38 @@ export function contrastProblems(): string[] {
   }
   probe.remove();
   return out;
+}
+
+// ---- Code colours: chosen apart from the look (Settings → Appearance → Code colours) ----
+const CODE_KEY = 'nucleus-workbench-code-theme';
+const CODE_STYLE_ID = 'code-theme';
+export const CODE_THEMES = (THEMES as unknown as { codeThemes: Record<string, CodeTheme> }).codeThemes;
+/** The code theme that's on: an id from themes.json, or '' for the look's own colours. */
+export const currentCodeTheme = () => {
+  const id = get(CODE_KEY) ?? '';
+  return CODE_THEMES[id] ? id : '';
+};
+export function pickCodeTheme(id: string) {
+  put(CODE_KEY, id && CODE_THEMES[id] ? id : null);
+  applyCodeTheme();
+}
+/** A code theme's tokens in one mode ('' = the look's own, as the page shows it). */
+export function codeThemeTokens(id: string, mode: Mode): Record<string, string> {
+  if (!id) {
+    const t = lookTokens(currentLook(), mode);
+    return { 'code-bg': t['code-bg'], 'code-fg': t['code-fg'] ?? t.fg, kw: t.kw, str: t.str, num: t.num, cmt: t.cmt, prop: t.prop };
+  }
+  const c = CODE_THEMES[id];
+  return codeTokens((mode === 'dark' && c.dark) || c.light);
+}
+export function applyCodeTheme() {
+  const id = currentCodeTheme();
+  let style = document.getElementById(CODE_STYLE_ID) as HTMLStyleElement | null;
+  if (!id) return void style?.remove();
+  if (!style) {
+    style = document.createElement('style');
+    style.id = CODE_STYLE_ID;
+    document.head.appendChild(style);
+  }
+  style.textContent = codeThemeCSS(CODE_THEMES[id], CODE_SCOPE.filter((s) => s !== '.ct-sample'));
 }

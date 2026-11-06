@@ -327,16 +327,16 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #lines-info > .link { margin-top: auto; display: inline; }
 #lines-info .muted { color: var(--muted); }
 #lines-info code { font: 11.5px var(--font-mono); color: var(--fg); overflow-wrap: anywhere; display: block; margin-bottom: 2px; }
-#editor .CodeMirror { position: absolute; inset: 0; height: auto; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--fg); }
-.CodeMirror-gutters { background: var(--surface-2); border-right: 1px solid var(--line); }
-.CodeMirror-linenumber { color: var(--muted); }
-.CodeMirror-cursor { border-left-color: var(--fg); }
+#editor .CodeMirror { position: absolute; inset: 0; height: auto; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--code-fg, var(--fg)); }
+.CodeMirror-gutters { background: var(--code-gutter, var(--surface-2)); border-right: 1px solid var(--code-line, var(--line)); }
+.CodeMirror-linenumber { color: var(--code-muted, var(--muted)); }
+.CodeMirror-cursor { border-left-color: var(--code-fg, var(--fg)); }
 .CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 600; }
 .cm-s-default .cm-keyword { color: var(--kw); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
-.cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--fg); }
-.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--muted); }
+.cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
+.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--code-muted, var(--muted)); }
 .CodeMirror-lint-mark-error { background: none; border-bottom: 2px wavy var(--err); }
 .CodeMirror-lint-mark-warning { background: none; border-bottom: 2px wavy var(--warn); }
 .CodeMirror-lint-mark-info { background: none; border-bottom: 2px dotted var(--info); }
@@ -631,6 +631,17 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 @media (pointer: coarse) { .lc-remove { opacity: 1; } }
 .lc-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
 .lc-remove:hover { color: var(--err); }
+/* Code colours: a card each, with a few lines of handler in its colours */
+.code-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.code-card { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 6px 6px 8px; border-radius: var(--r-pane); border: 1px solid var(--line); background: var(--surface); cursor: pointer; box-shadow: var(--sh-1); }
+.code-card:hover { border-color: color-mix(in srgb, var(--fg) 30%, var(--line)); }
+.code-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--sh-1); }
+.code-card:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ct-sample { margin: 0; padding: 6px 8px; border-radius: calc(var(--r-ctl) + 2px); background: var(--code-bg); color: var(--code-fg, var(--fg)); font: 10.5px/1.5 var(--font-mono); white-space: pre; overflow: hidden; border: 1px solid var(--code-line, var(--line)); }
+.ct-sample .k { color: var(--kw); } .ct-sample .s { color: var(--str); } .ct-sample .n { color: var(--num); } .ct-sample .c { color: var(--cmt); font-style: italic; } .ct-sample .p { color: var(--prop); }
+.code-card .lc-name { font-size: 12.5px; padding: 0 2px; }
+.code-card .lc-tick { top: 8px; right: 8px; }
+.code-card.on .lc-tick { display: grid; }
 .look-add { align-items: center; justify-content: center; gap: 4px; min-height: 120px; padding: 12px; border-style: dashed; background: transparent; box-shadow: none; color: var(--fg); font: inherit; cursor: pointer; text-align: center; }
 .look-add svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
 .ct-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
@@ -639,17 +650,40 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .ct-msg.warn { background: var(--warn-bg); color: var(--warn); }
 .ct-msg.error { background: var(--err-bg); color: var(--err); }
 /* ---- What the looks need beyond their tokens (themes.json) ---- */
-/* Mac style (vlxst's theme for Nucleus Co-op): a dim wall of game covers behind see-through panes, and
-   traffic lights on each pane. #backdrop is filled by app.ts with the Hub covers. */
-#backdrop { display: none; }
-:root[data-site="mac"] #backdrop { display: grid; position: fixed; inset: -8vh -6vw; z-index: -1; pointer-events: none; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; padding: 10px; transform: rotate(-8deg) scale(1.15); opacity: .34; filter: saturate(.85); }
-:root[data-site="mac"] #backdrop img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 8px; }
-:root[data-site="mac"][data-theme="light"] #backdrop { opacity: .2; }
-@media (prefers-color-scheme: light) { :root[data-site="mac"]:not([data-theme="dark"]) #backdrop { opacity: .2; } }
-:root[data-site="mac"] body { background: radial-gradient(120% 90% at 50% 0%, transparent, var(--bg) 85%), var(--bg); }
-:root[data-site="mac"] .pane, :root[data-site="mac"] dialog, :root[data-site="mac"] .toast { -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4); }
-:root[data-site="mac"] .pane > .pane-head::before { content: ""; flex: none; width: 52px; height: 12px; margin-right: 2px; background: radial-gradient(circle at 6px 6px, #ff5f57 5.5px, transparent 6px), radial-gradient(circle at 26px 6px, #febc2e 5.5px, transparent 6px), radial-gradient(circle at 46px 6px, #28c840 5.5px, transparent 6px); }
-:root[data-site="mac"] .btn.primary { border-radius: 999px; }
+/* Mac style: macOS, after vlxst's Mac style for Nucleus Co-op. Panes are windows (a title bar with
+   traffic lights, a hairline edge, a deep shadow), the header a frosted toolbar over a wallpaper, tabs a
+   segmented control, buttons macOS push buttons, the selected row solid blue. */
+:root[data-site="mac"] body { font-size: 13px; -webkit-font-smoothing: antialiased; background: radial-gradient(90% 70% at 15% 10%, #b8c9f0 0%, transparent 60%), radial-gradient(80% 70% at 90% 20%, #f3c9dc 0%, transparent 55%), radial-gradient(90% 80% at 60% 100%, #f7d8b4 0%, transparent 60%), #dfe2ec; background-attachment: fixed; }
+:root[data-site="mac"][data-theme="dark"] body { background: radial-gradient(90% 70% at 15% 10%, #2c3d7a 0%, transparent 60%), radial-gradient(80% 70% at 90% 20%, #5a2752 0%, transparent 55%), radial-gradient(90% 80% at 60% 100%, #4a2a17 0%, transparent 60%), #0f1018; background-attachment: fixed; }
+@media (prefers-color-scheme: dark) { :root[data-site="mac"]:not([data-theme="light"]) body { background: radial-gradient(90% 70% at 15% 10%, #2c3d7a 0%, transparent 60%), radial-gradient(80% 70% at 90% 20%, #5a2752 0%, transparent 55%), radial-gradient(90% 80% at 60% 100%, #4a2a17 0%, transparent 60%), #0f1018; background-attachment: fixed; } }
+:root[data-site="mac"] header { background: color-mix(in srgb, var(--surface) 70%, transparent); -webkit-backdrop-filter: blur(30px) saturate(1.8); backdrop-filter: blur(30px) saturate(1.8); border-radius: 12px; padding: 8px 12px; box-shadow: var(--sh-1); }
+:root[data-site="mac"] .app > footer, :root[data-site="mac"] .app > footer .link { color: color-mix(in srgb, var(--fg) 80%, transparent); }
+:root[data-site="mac"] .pane { border-color: var(--line); box-shadow: 0 0 0 0.5px rgba(0, 0, 0, .14), 0 12px 40px rgba(0, 0, 0, .2); }
+:root[data-site="mac"] .pane > .pane-head { background: var(--surface-2); border-bottom: 0.5px solid var(--line); min-height: 38px; }
+:root[data-site="mac"] .pane > .pane-head::before { content: ""; flex: none; width: 52px; height: 12px; margin-right: 4px; background: radial-gradient(circle at 6px 6px, #ff5f57 5.6px, rgba(0,0,0,.18) 5.7px, transparent 6.3px), radial-gradient(circle at 26px 6px, #febc2e 5.6px, rgba(0,0,0,.15) 5.7px, transparent 6.3px), radial-gradient(circle at 46px 6px, #28c840 5.6px, rgba(0,0,0,.15) 5.7px, transparent 6.3px); }
+/* tabs: a segmented control, the selected segment raised */
+:root[data-site="mac"] .pane-head[role=tablist] { gap: 2px; }
+:root[data-site="mac"] .pane-head [role=tab] { border: 0; border-radius: 6px; padding: 3px 12px; font-size: 12.5px; font-weight: 500; color: var(--fg); }
+:root[data-site="mac"] .pane-head [role=tab]:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); }
+:root[data-site="mac"] .pane-head [role=tab][aria-selected=true] { background: var(--surface); box-shadow: 0 0 0 0.5px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .14); }
+:root[data-site="mac"][data-theme="dark"] .pane-head [role=tab][aria-selected=true] { background: #5b5b5f; }
+@media (prefers-color-scheme: dark) { :root[data-site="mac"]:not([data-theme="light"]) .pane-head [role=tab][aria-selected=true] { background: #5b5b5f; } }
+:root[data-site="mac"] .tab-ink { display: none; }
+/* push buttons */
+:root[data-site="mac"] .btn, :root[data-site="mac"] select { background: color-mix(in srgb, var(--fg) 4%, var(--surface)); border: 0.5px solid color-mix(in srgb, var(--fg) 18%, transparent); box-shadow: 0 0.5px 1px rgba(0, 0, 0, .14); border-radius: 6px; padding: 4px 11px; font-size: 13px; }
+:root[data-site="mac"] .btn:hover, :root[data-site="mac"] select:hover { background: color-mix(in srgb, var(--fg) 8%, var(--surface)); border-color: color-mix(in srgb, var(--fg) 24%, transparent); }
+:root[data-site="mac"] .btn.icon { padding: 4px 0; }
+:root[data-site="mac"] .btn.primary { background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent)); color: var(--accent-fg); border-color: transparent; box-shadow: 0 0.5px 1px rgba(0, 0, 0, .3), inset 0 0.5px 0 rgba(255, 255, 255, .3); }
+:root[data-site="mac"] .btn.primary:hover { background: var(--accent); }
+:root[data-site="mac"] .btn.primary::after { display: none; }
+:root[data-site="mac"] :focus-visible { outline: 3.5px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 0; }
+/* the selected row: solid system blue, as in Finder */
+:root[data-site="mac"] .entry.active { background: var(--accent); color: var(--accent-fg); box-shadow: none; }
+:root[data-site="mac"] .entry.active .s, :root[data-site="mac"] .entry.active .meta, :root[data-site="mac"] .entry.active .go { color: color-mix(in srgb, var(--accent-fg) 85%, transparent); }
+:root[data-site="mac"] .entry.active mark { background: rgba(255, 255, 255, .28); }
+:root[data-site="mac"][data-theme="dark"] :is(a, .link) { color: #5eb0ff; }
+@media (prefers-color-scheme: dark) { :root[data-site="mac"]:not([data-theme="light"]) :is(a, .link) { color: #5eb0ff; } }
+:root[data-site="mac"] * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fg) 30%, transparent) transparent; }
 /* Nucleus Co-op alpha 8: flat and square, white-bordered buttons, and nothing moves. */
 :root[data-site="alpha8"] .btn, :root[data-site="alpha8"] select { background: transparent; border-color: var(--fg); box-shadow: none; }
 :root[data-site="alpha8"] .btn:hover, :root[data-site="alpha8"] select:hover { background: var(--surface-2); border-color: var(--fg); }
@@ -906,7 +940,6 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
-<div id="backdrop" aria-hidden="true"></div>
 <div class="app">
   <header>
     <a class="brand" href="./" aria-label="Nucleus Handler Workbench: home" title="Home: start a handler, open one or pick an example">
@@ -1075,6 +1108,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         </div>
         <input type="file" id="ct-file" accept=".json,application/json" hidden>
         <div class="ct-msg small" id="ct-msg" role="status" aria-live="polite"></div>
+        <h4 class="ct-h" id="code-h">Code colours</h4>
+        <div class="code-themes" id="set-code" role="radiogroup" aria-labelledby="code-h"></div>
       </div></div>
     <div class="set-sec"><h3>Updates</h3>
       <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>

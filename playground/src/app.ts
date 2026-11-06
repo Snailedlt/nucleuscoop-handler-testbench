@@ -1,5 +1,5 @@
 import { applyTheme, initDevBar } from './devbar';
-import { applyCustomTheme } from './customtheme';
+import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
 import { clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
@@ -34,6 +34,7 @@ import { initWakaTime } from './wakatime';
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
 applyCustomTheme();
+applyCodeTheme();
 watchPictures();
 declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number } }
@@ -2174,22 +2175,6 @@ function placeInk() {
 }
 window.addEventListener('resize', () => requestAnimationFrame(placeInk));
 requestAnimationFrame(placeInk);
-// The Mac style's wall of game covers (behind the panes), from the Hub covers this page has.
-function fillBackdrop() {
-  const wall = document.getElementById('backdrop');
-  if (!wall || wall.childElementCount || document.documentElement.dataset.site !== 'mac') return;
-  const covers = HUB_EXAMPLES.handlers.map((h) => h.cover).filter((c): c is string => !!c).slice(0, 80);
-  for (let k = 0; k < 160 && covers.length; k++) {
-    const img = document.createElement('img');
-    img.src = covers[k % covers.length];
-    img.alt = '';
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    wall.append(img);
-  }
-}
-new MutationObserver(fillBackdrop).observe(document.documentElement, { attributes: true, attributeFilter: ['data-site'] });
-fillBackdrop();
 // The logo is home: the start of the Open dialog (new handler, open a file, examples). A middle click
 // or Ctrl+click still opens the workbench fresh in a new tab.
 document.querySelector<HTMLAnchorElement>('a.brand')?.addEventListener('click', (e) => {

@@ -3,7 +3,7 @@
 // the symbol bar above the on-screen keyboard.
 import { applyTheme } from './devbar';
 import { initKeyboard, keyboard, onKeyboard } from './keyboard';
-import { addLook, BUILT_IN_LOOKS, lookAbout, contrastProblems, currentLook, customLooks, lookName, lookTokens, parseTheme, pickLook, removeLook, themeFile } from './customtheme';
+import { CODE_THEMES, codeThemeTokens, currentCodeTheme, pickCodeTheme, addLook, BUILT_IN_LOOKS, lookAbout, contrastProblems, currentLook, customLooks, lookName, lookTokens, parseTheme, pickLook, removeLook, themeFile } from './customtheme';
 
 const EDITOR_KEY = 'nucleus-workbench-editor';
 const THEME_KEY = 'nucleus-workbench-dev-mode'; // shared with the dev bar
@@ -70,7 +70,42 @@ export function initSettings(d: Deps) {
   const ctMsg = $('#ct-msg');
   const say = (text: string, kind: '' | 'warn' | 'error' = '') => ((ctMsg.textContent = text), (ctMsg.className = `ct-msg small ${kind}`));
   const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+  // Code colours: the look's own, or one of the code themes, each shown as a few lines of handler.
+  function syncCode() {
+    const box = document.getElementById('set-code');
+    if (!box) return;
+    const on = currentCodeTheme();
+    const mode = isDark() ? 'dark' : 'light';
+    const sample = '<span class="c">// Two players, one screen</span>\nGame.<span class="p">MaxPlayers</span> = <span class="n">2</span>;\n<span class="k">var</span> exe = <span class="s">"game.exe"</span>;';
+    const card = (id: string, name: string) => {
+      const label = document.createElement('label');
+      label.className = `code-card${id === on ? ' on' : ''}`;
+      const r = document.createElement('input');
+      r.type = 'radio';
+      r.name = 'set-code';
+      r.value = id;
+      r.checked = id === on;
+      r.className = 'sr-only';
+      r.addEventListener('change', () => (pickCodeTheme(id), syncCode(), (box.querySelector(`input[value="${CSS.escape(id)}"]`) as HTMLInputElement | null)?.focus()));
+      const pre = document.createElement('pre');
+      pre.className = 'ct-sample';
+      pre.setAttribute('aria-hidden', 'true');
+      for (const [k, v] of Object.entries(codeThemeTokens(id, mode))) if (v) pre.style.setProperty(`--${k}`, v);
+      pre.innerHTML = sample;
+      const nm = document.createElement('span');
+      nm.className = 'lc-name';
+      nm.textContent = name;
+      const tick = document.createElement('span');
+      tick.className = 'lc-tick';
+      tick.setAttribute('aria-hidden', 'true');
+      tick.innerHTML = '<svg viewBox="0 0 24 24"><path d="m6 12.5 4 4L18 8"/></svg>';
+      label.append(r, pre, nm, tick);
+      return label;
+    };
+    box.replaceChildren(card('', "The look's own"), ...Object.entries(CODE_THEMES).map(([id, t]) => card(id, t.name)));
+  }
   function syncLooks() {
+    syncCode();
     const box = $('#set-looks');
     const on = currentLook();
     const mode = isDark() ? 'dark' : 'light';

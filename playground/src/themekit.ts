@@ -46,7 +46,7 @@ export const TOKENS: Record<string, Kind> = {
   bg: 'color', surface: 'color', 'surface-2': 'color', line: 'color', fg: 'color', muted: 'color',
   accent: 'color', 'accent-fg': 'color', brand: 'color',
   err: 'color', 'err-bg': 'color', warn: 'color', 'warn-bg': 'color', info: 'color', 'info-bg': 'color', ok: 'color', 'ok-bg': 'color',
-  'code-bg': 'color', kw: 'color', str: 'color', num: 'color', cmt: 'color', prop: 'color',
+  'code-bg': 'color', 'code-fg': 'color', 'code-muted': 'color', 'code-gutter': 'color', 'code-line': 'color', kw: 'color', str: 'color', num: 'color', cmt: 'color', prop: 'color',
   p1: 'color', p2: 'color', p3: 'color', p4: 'color', p5: 'color', p6: 'color', p7: 'color', p8: 'color',
   'r-sm': 'length', 'r-ctl': 'length', 'r-pane': 'length', 'r-lg': 'length',
   'sh-1': 'shadow', 'sh-2': 'shadow',
@@ -110,4 +110,31 @@ export function builtInCSS(file: { default: string; looks: Record<string, Look> 
       return `/* ${file.looks[id].name} */\n${lookCSS(sel, resolve(id, file.looks, 'light'), resolve(id, file.looks, 'dark'))}`;
     })
     .join('\n');
+}
+
+/** A code colour theme: the editor's own colours, for light and dark (a dark-only theme sets light only). */
+export interface CodeTheme {
+  name: string;
+  about?: string;
+  light: Tokens;
+  dark?: Tokens;
+}
+/** Where code colours apply: the editor, the before/after views and file previews. */
+export const CODE_SCOPE = ['#editor', '.diff-wrap', '.pkg-text', '.ct-sample'];
+/** A code theme's tokens with the line numbers, gutter and gutter edge worked out from its text and background. */
+export function codeTokens(t: Tokens): Tokens {
+  const out = { ...t };
+  if (t['code-fg'] && t['code-bg']) {
+    out["code-muted"] ??= `color-mix(in srgb, ${t["code-fg"]} 72%, ${t["code-bg"]})`;
+    out['code-gutter'] ??= `color-mix(in srgb, ${t['code-fg']} 4%, ${t['code-bg']})`;
+    out['code-line'] ??= `color-mix(in srgb, ${t['code-fg']} 12%, ${t['code-bg']})`;
+  }
+  return out;
+}
+/** The CSS for a code theme, scoped to the code (CODE_SCOPE), light and dark like lookCSS. */
+export function codeThemeCSS(t: CodeTheme, scope = CODE_SCOPE): string {
+  const at = (root: string) => scope.map((s) => `${root} ${s}`).join(', ');
+  const L = decl(codeTokens(t.light));
+  const D = decl(codeTokens(t.dark ?? t.light));
+  return `${at(':root')} { ${L} }\n@media (prefers-color-scheme: dark) { ${at(':root:not([data-theme="light"])')} { ${D} } }\n${at(':root[data-theme="dark"]')} { ${D} }\n${at(':root[data-theme="light"]')} { ${L} }`;
 }
