@@ -1,4 +1,4 @@
-// Looks you pick in Settings → Appearance: the built-in ones (themes.json) and your own theme files,
+// Looks you pick in Settings → Theme: the built-in ones (themes.json) and your own theme files,
 // which use the same format (themekit.ts): a name, an optional base look, and the tokens it changes,
 // shared for both modes or per mode.
 //
@@ -170,7 +170,7 @@ window.addEventListener('workbench-look', () => (put(PICK_KEY, null), applyCusto
 
 /** The look that's on, as a theme file: a custom one as it was loaded; a built-in one as a full starting point. */
 export function themeFile(id = currentLook()): Record<string, unknown> {
-  const about = 'A Nucleus Handler Workbench theme. "base" is the look it builds on (www or v3); change or delete any value (what you delete comes from the base), then load it in Settings → Appearance → Load a theme file. Token names: the design note, or src/themes.json.';
+  const about = 'A Nucleus Handler Workbench theme. "base" is the look it builds on (www or v3); change or delete any value (what you delete comes from the base), then load it in Settings → Theme → Add a theme file. Token names: the design note, or src/themes.json.';
   const custom = customLooks().find((t) => t.id === id);
   if (custom) {
     const { id: _id, ...rest } = custom;
@@ -206,7 +206,7 @@ export function contrastProblems(): string[] {
   return out;
 }
 
-// ---- Code colours: chosen apart from the look (Settings → Appearance → Code colours) ----
+// ---- Code colours: chosen apart from the look (Settings → Theme → Code colours) ----
 const CODE_KEY = 'nucleus-workbench-code-theme';
 const CODE_STYLE_ID = 'code-theme';
 export const CODE_THEMES = (THEMES as unknown as { codeThemes: Record<string, CodeTheme> }).codeThemes;

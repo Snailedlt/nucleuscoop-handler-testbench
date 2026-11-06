@@ -1151,6 +1151,7 @@ function commandList(): OpenEntry[] {
     c('Theme: dark', '', 'theme dark colour color appearance', () => setThemeMode('dark')),
     c('Theme: follow the system', '', 'theme auto system colour color appearance', () => setThemeMode('auto')),
     c('Settings', 'Ctrl+,', 'settings preferences options font size wrap', () => settings.open()),
+    c('Theme: pick a look or code colours', '', 'theme look style colours colors code syntax mac alpha v3 custom', () => settings.open('theme')),
     c('Turn Advanced mode on or off', '', 'advanced mode rule details probes', click('#advanced')),
     c('Turn tips on or off', '', 'tips hints help', () => tips.toggle()),
     c('Reset panel sizes', '', 'layout resize panels reset width', () => panels.reset()),

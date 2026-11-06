@@ -264,7 +264,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 .set-waka-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 #settings-dialog h2 { margin: 0 0 6px; font-size: 18px; }
 .set-sec { border-top: 1px solid var(--line); padding: 12px 0 10px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
-.set-sec > :not(.check):not(h3):not(.ct) { align-self: flex-start; }
+.set-sec:not(.ct) > :not(.check):not(h3) { align-self: flex-start; }
 /* Settings: on/off choices as switches, each row with a soft hover */
 .set-sec .check, #lines-settings .set-row { margin: 0; padding: 6px 8px; border-radius: var(--r-ctl); cursor: pointer; }
 .set-sec .check:hover, #lines-settings .set-row:hover { background: var(--surface-2); }
@@ -598,7 +598,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .entries.chips .entry .mono { width: 26px; height: 26px; border-radius: 999px; font-size: 10.5px; }
 .entries.chips .entry .t { font-weight: 500; white-space: nowrap; }
 :root[data-site="v3"] #open-dialog { border-radius: var(--r-pane); }
-/* Settings → Appearance → Custom theme */
+/* Settings → Theme */
 .ct { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; align-self: stretch; }
 .ct-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
 /* Looks: a card each, with a small picture of the workbench in its colours */
@@ -1086,6 +1086,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <h2>Settings</h2>
   <div class="set-tabs" role="tablist" aria-label="Settings sections">
     <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general" aria-selected="true">General</button>
+    <button type="button" role="tab" id="st-theme" data-st="theme" aria-controls="sp-theme" aria-selected="false" tabindex="-1">Theme</button>
     <button type="button" role="tab" id="st-editor" data-st="editor" aria-controls="sp-editor" aria-selected="false" tabindex="-1">Editor</button>
     <button type="button" role="tab" id="st-lines" data-st="lines" aria-controls="sp-lines" aria-selected="false" tabindex="-1">Lines</button>
     <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help" aria-selected="false" tabindex="-1">Help</button>
@@ -1093,30 +1094,32 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   </div>
   <div class="set-panels">
   <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general">
-    <div class="set-sec"><h3>Appearance</h3>
-      <div class="set-radios" role="radiogroup" aria-label="Theme">
-        <label><input type="radio" name="set-theme" value="auto"> <span class="wide-only">Match my device</span><span class="phone-only">Auto</span></label>
-        <label><input type="radio" name="set-theme" value="light"> Light</label>
-        <label><input type="radio" name="set-theme" value="dark"> Dark</label>
-      </div>
-      <div class="ct">
-        <h4 class="ct-h" id="looks-h">Look</h4>
-        <div class="looks" id="set-looks" role="radiogroup" aria-labelledby="looks-h"></div>
-        <div class="ct-actions">
-          <button class="link" type="button" id="ct-download">Download this look as a theme file</button>
-          <span class="muted small">to start your own</span>
-        </div>
-        <input type="file" id="ct-file" accept=".json,application/json" hidden>
-        <div class="ct-msg small" id="ct-msg" role="status" aria-live="polite"></div>
-        <h4 class="ct-h" id="code-h">Code colours</h4>
-        <div class="code-themes" id="set-code" role="radiogroup" aria-labelledby="code-h"></div>
-      </div></div>
     <div class="set-sec"><h3>Updates</h3>
       <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
       <button class="link" type="button" id="set-news-open">What's new</button></div>
     <div class="set-sec"><h3>Layout</h3>
       <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
       <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-theme" aria-labelledby="st-theme" hidden>
+    <div class="set-sec"><h3>Light or dark</h3>
+      <div class="set-radios" role="radiogroup" aria-label="Light or dark">
+        <label><input type="radio" name="set-theme" value="auto"> <span class="wide-only">Match my device</span><span class="phone-only">Auto</span></label>
+        <label><input type="radio" name="set-theme" value="light"> Light</label>
+        <label><input type="radio" name="set-theme" value="dark"> Dark</label>
+      </div></div>
+    <div class="set-sec ct"><h3 id="looks-h">Look</h3>
+      <p class="muted small" style="margin:0">The colours, corners, fonts and motion of the whole workbench. Your own theme files go here too.</p>
+      <div class="looks" id="set-looks" role="radiogroup" aria-labelledby="looks-h"></div>
+      <div class="ct-actions">
+        <button class="link" type="button" id="ct-download">Download this look as a theme file</button>
+        <span class="muted small">to start your own</span>
+      </div>
+      <input type="file" id="ct-file" accept=".json,application/json" hidden>
+      <div class="ct-msg small" id="ct-msg" role="status" aria-live="polite"></div></div>
+    <div class="set-sec ct"><h3 id="code-h">Code colours</h3>
+      <p class="muted small" style="margin:0">The editor's colours, with any look.</p>
+      <div class="code-themes" id="set-code" role="radiogroup" aria-labelledby="code-h"></div></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-editor" aria-labelledby="st-editor" hidden>
     <div class="set-sec">

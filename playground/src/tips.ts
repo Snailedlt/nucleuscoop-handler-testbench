@@ -139,9 +139,9 @@ const PITFALLS = T('Pitfall', [
 const SHORTCUTS = T('Shortcut', [
   { id: 's-palette', text: 'Ctrl+Shift+P (or F1) opens the command palette, as in VS Code: format, fix, Try it, theme and the rest, each with its shortcut.' },
   { id: 's-open', text: 'Ctrl+P (or Ctrl+K) opens the examples, templates and Hub handlers. Type `>` there to switch to commands.', action: { label: 'Examples', run: 'examples' } },
-  { id: 'f-looks-past', text: 'Miss the old Nucleus Co-op? Settings (Ctrl+,) → Appearance → Look has vlxst\'s Mac style and the original alpha 8 look, light and dark.' },
-  { id: 'f-code-colours', text: 'Prefer your editor\'s colours? Settings (Ctrl+,) → Appearance → Code colours: GitHub, VS Code, Xcode, One, Monokai or Dracula, with any look.' },
-  { id: 'f-custom-theme', text: 'Make the workbench yours: Settings (Ctrl+,) → Appearance → "Download this look as a theme file", keep only the colours you change, then "Load a theme file…". It shows up under Look, next to the built-in ones.' },
+  { id: 'f-looks-past', text: 'Miss the old Nucleus Co-op? Settings (Ctrl+,) → Theme has vlxst\'s Mac style and the original alpha 8 look, light and dark.' },
+  { id: 'f-code-colours', text: 'Prefer your editor\'s colours? Settings (Ctrl+,) → Theme → Code colours: GitHub, VS Code, Xcode, One, Monokai or Dracula, with any look.' },
+  { id: 'f-custom-theme', text: 'Make the workbench yours: Settings (Ctrl+,) → Theme → "Download this look as a theme file", keep only the colours you change, then "Load a theme file…". It shows up under Look, next to the built-in ones.' },
   { id: 'f-ref-home', text: 'Not sure what an option is called? Open Reference with nothing typed and browse Game, Context, Player and the rest, or see the names Hub handlers use most.' },
   { id: 'f-lines-ref', text: 'Open the Reference tab, then point at names in Lines (Ctrl+B): each one\'s full docs show in Reference, on a wide screen.', action: { label: 'Lines', run: 'lines' } },
   { id: 's-open-keys', text: 'In Open (Ctrl+K), the arrow keys move between tiles, templates and Hub rows; Home and End jump to the first and last. Hover a Hub handler\'s icons for players, keyboards and mice, and downloads.', action: { label: 'Examples', run: 'examples' } },
