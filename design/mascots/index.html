@@ -547,6 +547,7 @@ svg .rl { transform-origin: 0 -13px; }
 .na-reg .na-faces svg { width: clamp(34px, 7vw, 64px); height: auto; }
 .na-reg .nm { font-size: 12px; color: var(--na-mute); text-align: center; }
 .na-place { position: absolute; inset: 0; background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
+.na-reg .na-devs { position: relative; z-index: 1; } /* the player's devices sit above the screen's "put it here" button */
 .na-reg > :not(.na-place):not(.na-x):not(.pn) { pointer-events: none; }
 .na-msg { margin: 8px 0 0; font-size: 14px; min-height: 1.5em; }
 .na-rail { background: var(--na-pane); border-radius: 12px; padding: 10px; }
@@ -571,6 +572,10 @@ svg .rl { transform-origin: 0 -13px; }
 .na-start:disabled { opacity: .4; cursor: default; }
 .napp [data-nav]:focus-visible, .napp [data-nav].navfocus { outline: 3px solid #ffd84a; outline-offset: 2px; }
 .napp { position: relative; }
+.na-dummy { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--na-line); font-size: 13px; color: var(--na-mute); }
+.na-dummy > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.na-dev.dummy { border-style: dashed; }
+.na-forget { padding: 4px 8px; }
 .na-curs { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 .na-cur { position: absolute; border: 3px solid var(--c); border-radius: 12px; box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 16px var(--c); transition: left .12s, top .12s, width .12s, height .12s; }
 .na-cur b { position: absolute; top: -11px; left: -6px; font: 700 11px/16px system-ui, sans-serif; padding: 0 6px; border-radius: 8px; background: var(--c); color: #0d1120; }
@@ -723,7 +728,7 @@ svg .rl { transform-origin: 0 -13px; }
   </div>
 
 <div id="panel-app" role="tabpanel" aria-labelledby="tab-app" hidden>
-  <p class="lead" style="margin-top:18px">A concept for player setup in a future Nucleus Co-op. Only the devices you actually use show up: a controller when you press one of its buttons, the keyboard when you press a key, the mouse when it moves, the touchscreen when you touch it (a browser can't tell two keyboards or two mice apart). <b>Press A on a controller to join</b>, or <b>Join</b> on a device. Every controller gets its own cursor, so several people can set up at the same time. The screen splits for each new player and merges when one leaves. Move devices by dragging them, or pick one up (Enter or A) and put it somewhere else. Everything works with a mouse, touch, the keyboard (arrows, Enter, Esc, Delete) or a controller (D-pad or stick, A, B, X, Start). Under the screen, each player is a Duo holding their devices: Duo splits off a new one when someone joins, they merge when someone leaves, and a Duo reacts when its player presses something. On a controller: A hops, B ducks, X wiggles, Y cheers, Start gets everyone hopping, and the D-pad or stick makes him look and lean that way.</p>
+  <p class="lead" style="margin-top:18px">A concept for player setup in a future Nucleus Co-op. Only the devices you actually use show up: a controller when you press one of its buttons, the keyboard when you press a key, the mouse when it moves, the touchscreen when you touch it (a browser can't tell two keyboards or two mice apart). No controller to hand? <b>Add a pretend device</b> under Devices: it joins, moves and leaves like a real one. <b>Press A on a controller to join</b>, or <b>Join</b> on a device. Every controller gets its own cursor, so several people can set up at the same time. The screen splits for each new player and merges when one leaves. Move devices by dragging them, or pick one up (Enter or A) and put it somewhere else. Everything works with a mouse, touch, the keyboard (arrows, Enter, Esc, Delete) or a controller (D-pad or stick, A, B, X, Start). Under the screen, each player is a Duo holding their devices: Duo splits off a new one when someone joins, they merge when someone leaves, and a Duo reacts when its player presses something. On a controller: A hops, B ducks, X wiggles, Y cheers, Start gets everyone hopping, and the D-pad or stick makes him look and lean that way.</p>
   <div class="napp" id="napp">
     <header class="na-top"><span class="na-logo" id="na-logo"></span><b>Nucleus Co-op</b><span class="na-game">Left 4 Dead 2 · Players</span><span class="na-using" id="na-using"></span></header>
     <div class="na-body">
@@ -2446,6 +2451,7 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
   // hide controllers until then), the keyboard on a key press, the mouse or trackpad when it moves, the touchscreen
   // or pen on a touch. A browser can't tell two keyboards (or two mice) apart, so each counts once.
   const devices = [];
+  let dummies = 0;
   let players = [], nextPid = 1, layoutPick = {}, picked = null, last = 'mouse';
   const say = (s) => (msgEl.textContent = s);
   const owner = (id) => players.find((p) => p.devs.includes(id));
@@ -2464,7 +2470,7 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
     const p = owner(id);
     if (p) { const i = players.indexOf(p); p.devs = p.devs.filter((x) => x !== id); if (!p.devs.length) { p.devs = [id]; removePlayer(i, `${d.name} was unplugged; player ${i + 1}'s screen merged away.`); } else rig().setDev(i, kinds(p)); }
     const p2 = owner(id); if (p2) p2.devs = p2.devs.filter((x) => x !== id);
-    devices.splice(devices.indexOf(d), 1); render(); say(`${d.name} disconnected.`);
+    devices.splice(devices.indexOf(d), 1); render(); say(`${d.name} ${d.dummy ? 'removed' : 'disconnected'}.`);
   }
   addEventListener('keydown', () => found('kb', 'kb', 'Keyboard'), true);
   addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') found('mouse', 'mouse', 'Mouse or trackpad'); }, true);
@@ -2489,7 +2495,8 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
   const devCard = (d) => {
     const p = owner(d.id), idx = p ? players.indexOf(p) : -1, col = idx >= 0 ? PCs[idx] : '#7d88ad';
     const st = idx >= 0 ? `Player ${idx + 1}` : 'Not playing';
-    return `<div class="na-dev${picked === d.id ? ' sel' : ''}" data-dev="${d.id}"><button type="button" class="grab" data-nav data-pick="${d.id}" aria-pressed="${picked === d.id}" aria-label="${d.name}, ${st}. Pick it up to move it.">${face(d, col)}<span>${d.name}<span class="st">${st}</span></span></button>${idx < 0 ? `<button type="button" class="na-btn" data-nav data-join="${d.id}">Join</button>` : `<button type="button" class="na-btn" data-nav data-press="${d.id}" aria-label="Test ${d.name}">Test</button>`}</div>`;
+    const forget = d.dummy && idx < 0 ? `<button type="button" class="na-btn na-forget" data-nav data-forget="${d.id}" aria-label="Remove ${d.name}">✕</button>` : '';
+    return `<div class="na-dev${picked === d.id ? ' sel' : ''}${d.dummy ? ' dummy' : ''}" data-dev="${d.id}"><button type="button" class="grab" data-nav data-pick="${d.id}" aria-pressed="${picked === d.id}" aria-label="${d.name}, ${st}. Pick it up to move it.">${face(d, col)}<span>${d.name}<span class="st">${st}</span></span></button>${idx < 0 ? `<button type="button" class="na-btn" data-nav data-join="${d.id}">Join</button>` : `<button type="button" class="na-btn" data-nav data-press="${d.id}" aria-label="Test ${d.name}">Test</button>`}${forget}</div>`;
   };
   function render() {
     const n = players.length, L = lay();
@@ -2504,7 +2511,8 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
         <div class="na-faces">${p.devs.map((id) => face(dev(id), PCs[i], 64)).join('')}</div>
         <div class="na-devs">${p.devs.map((id) => devCard(dev(id))).join('')}</div></div>`).join('');
     }
-    devsEl.innerHTML = devices.filter((d) => !owner(d.id)).map(devCard).join('') || `<span style="font-size:13px;color:var(--na-mute)">${devices.length ? 'Every device is playing.' : 'No devices yet. Press a button on a controller, press a key, move the mouse or touch the screen.'}</span>`;
+    devsEl.innerHTML = (devices.filter((d) => !owner(d.id)).map(devCard).join('') || `<span style="font-size:13px;color:var(--na-mute)">${devices.length ? 'Every device is playing.' : 'No devices yet. Press a button on a controller, press a key, move the mouse or touch the screen.'}</span>`)
+      + `<div class="na-dummy" role="group" aria-label="Add a pretend device"><span>Add a pretend device, to try it without one:</span><div>${['pad', 'kb', 'mouse', 'touch'].map((k) => `<button type="button" class="na-btn" data-nav data-dummy="${k}">+ ${KN[k]}</button>`).join('')}</div></div>`;
     newEl.hidden = n >= 4;
     newEl.innerHTML = picked && !owner(picked) || picked ? `<button type="button" class="na-btn" data-nav data-place="new" style="width:100%;justify-content:center">Make a new player</button>` : '<span>Drop a device here for a new player</span>';
     hints();
@@ -2605,7 +2613,9 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
   app.addEventListener('click', (e) => {
     if (performance.now() - dragEnd < 150) return;
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.join) press(b.dataset.join);
+    if (b.dataset.dummy) { const k = b.dataset.dummy, id = 'dm' + (++dummies); found(id, k, `Pretend ${KN[k].toLowerCase()}`).dummy = true; render(); jig(id); focusSel(`[data-dev="${id}"] [data-join]`); }
+    else if (b.dataset.forget) { lost(b.dataset.forget); focusSel('[data-dummy]'); }
+    else if (b.dataset.join) press(b.dataset.join);
     else if (b.dataset.press) press(b.dataset.press);
     else if (b.dataset.pick) { if (picked && picked !== b.dataset.pick && owner(b.dataset.pick)) { place(picked, players.indexOf(owner(b.dataset.pick))); picked = null; render(); } else pick(b.dataset.pick); }
     else if (b.dataset.place !== undefined && picked) { const id = picked; picked = null; place(id, b.dataset.place === 'new' ? 'new' : +b.dataset.place); }
@@ -2683,7 +2693,7 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
   // the same time (the keyboard has the normal focus, the mouse and touch work as usual). A press on a new controller
   // joins it; after that, A presses whatever its cursor is on. ----
   const padState = {};
-  const NAVKEYS = ['join', 'press', 'pick', 'place', 'remove', 'lay'];
+  const NAVKEYS = ['join', 'press', 'pick', 'place', 'remove', 'lay', 'dummy', 'forget'];
   const keyOf = (el) => { if (!el) return null; if (el.id) return '#' + el.id; const k = NAVKEYS.find((n) => el.dataset[n] !== undefined); return k ? `[data-${k}="${el.dataset[k]}"]` : null; };
   const navItems = () => [...app.querySelectorAll('[data-nav]')].filter((x) => x.offsetParent && !x.disabled);
   function nearest(cur, dir) {
