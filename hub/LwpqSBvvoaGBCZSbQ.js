@@ -1,0 +1,35 @@
+Hub.Handler.Version = 3; // Released at https://hub.splitscreen.me/ on Thu Jun 02 2022 05:19:48 GMT+0000 (Coordinated Universal Time).
+Hub.Handler.Id = "LwpqSBvvoaGBCZSbQ";
+Hub.Maintainer.Name = "Talos91";
+Hub.Maintainer.Id = "eeL7HAz8zJovChWw4";
+
+Game.KillMutex = ["gow_startup_mutex"];
+Game.FileSymlinkExclusions = ["steam_api64.dll", "steam_appid.txt"];
+Game.NeedsSteamEmulation = false;
+Game.UseGoldberg = true;
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.SymlinkFolders = true;
+Game.SupportsKeyboard = true;
+Game.ExecutableName = "gocco_of_war_64.exe";
+Game.SteamID = "346730";
+Game.GUID = "GOCCO OF WAR";
+Game.GameName = "GOCCO OF WAR";
+Game.MaxPlayers = 32;
+Game.MaxPlayersOneMonitor = 32;
+Game.LauncherTitle = "";
+Game.HideTaskbar = false;
+Game.SupportsPositioning = true;
+Game.Hook.ForceFocus = false;
+Game.Hook.ForceFocusWindowName = "GOCCO OF WAR-peakvox";
+Game.FakeFocus = true;
+Game.SetWindowHook = true;
+Game.Hook.DInputEnabled = false;
+Game.Hook.XInputEnabled = true;
+Game.Hook.XInputReroute = false;
+Game.Hook.CustomDllEnabled = false;
+Game.XInputPlusDll = ["xinput1_3.dll", "xinput9_1_0.dll"];
+Game.Description =
+  "Set your main game to windowed first and if you select a keyboard instance select keyboard control at the beggining of the game, alt-tab to the keyboard instance if you can not control it.";
+Game.PauseBetweenStarts = 30;

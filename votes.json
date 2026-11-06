@@ -1,0 +1,60 @@
+{
+ "takenAt": "2026-11-11T08:24:07.709Z",
+ "from": "2025-11-11",
+ "to": "2026-11-11",
+ "site": "nucleus-workbench",
+ "docs": [
+  {
+   "id": "Context.Arch",
+   "up": 1,
+   "down": 0
+  }
+ ],
+ "tips": [],
+ "use": [
+  {
+   "feature": "try-it",
+   "count": 3
+  },
+  {
+   "feature": "reference-search",
+   "count": 3
+  },
+  {
+   "feature": "fix-all",
+   "count": 2
+  },
+  {
+   "feature": "save-js",
+   "count": 1
+  },
+  {
+   "feature": "compare-previous",
+   "count": 1
+  },
+  {
+   "feature": "debugger",
+   "count": 1
+  },
+  {
+   "feature": "test-all",
+   "count": 1
+  },
+  {
+   "feature": "blocks-view",
+   "count": 1
+  },
+  {
+   "feature": "form-view",
+   "count": 1
+  },
+  {
+   "feature": "save-zip",
+   "count": 1
+  },
+  {
+   "feature": "game-folder",
+   "count": 1
+  }
+ ]
+}
