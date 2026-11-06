@@ -474,6 +474,19 @@ for (const [dir, names] of [
   [path.join(coreRepo, 'docs', 'images'), ['vscode-problems', 'vscode-try-it', 'vscode-hover']],
 ]) for (const n of names) for (const t of ['light', 'dark']) fs.copyFileSync(path.join(dir, `${n}-${t}.png`), path.join(startDir, `${n}-${t}.png`));
 fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
+// Duo and Nucli, the mascot concepts (design/mascots), at /mascots/: the sheet, its earlier steps and the archive.
+// Concepts for now, not approved by the Nucleus Co-op maintainers, so search engines are asked to leave them out.
+{
+  const src = path.join(here, '..', 'design', 'mascots'), dst = path.join(here, 'dist', 'pages', 'mascots');
+  const copy = (s, d) => {
+    fs.mkdirSync(d, { recursive: true });
+    for (const e of fs.readdirSync(s, { withFileTypes: true })) {
+      if (e.isDirectory()) copy(path.join(s, e.name), path.join(d, e.name));
+      else if (e.name.endsWith('.html')) fs.writeFileSync(path.join(d, e.name), fs.readFileSync(path.join(s, e.name), 'utf8').replace(/<head>/i, '<head>\n<meta name="robots" content="noindex">'));
+    }
+  };
+  copy(src, dst);
+}
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).
 {

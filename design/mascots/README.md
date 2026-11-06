@@ -3,7 +3,8 @@
 The raw material for a future "design process" page (see the issue linked below). Each file in `history/` is the
 concept sheet as it was at that step, self-contained: open it in a browser. The live sheet is the claude.ai artifact
 "Duo and Nucli" (https://claude.ai/artifact/RuXCS7RfrHpR2VERCthExM); its version history also has steps 1 and 2,
-which are not saved here.
+which are not saved here. `index.html` is the current sheet; the workbench site serves this folder at `/mascots/` (linked from the
+start page's footer, `noindex` while they're concepts).
 
 ## Timeline (2026-11-06)
 

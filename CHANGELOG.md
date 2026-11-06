@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **A sneak peek at Duo and Nucli.** The start page links to the mascots we're sketching for splitscreen.me (Duo) and these tools (Nucli): their animations, loaders and a concept for player setup in a future Nucleus Co-op. Early concepts; they'll move into the workbench soon.
 - **Two looks from Nucleus Co-op's past, and code colours of your choice.** **Mac style** looks like macOS, after vlxst's Mac style for Nucleus Co-op: panes as windows with traffic lights, a frosted toolbar over a wallpaper, segmented tabs, push buttons and system blue. **Nucleus Co-op alpha 8** is the original 2019 app: flat greys, square corners, white-bordered buttons and no animation. Both come in light and dark. Code colours are now their own choice, under the looks: the look's own, GitHub, VS Code, Xcode, One, Monokai or Dracula, each shown as a few lines of handler. All of it now has its own Theme tab in Settings.
 
   <details><summary>Screenshots</summary>
