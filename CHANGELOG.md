@@ -26,14 +26,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
   </details>
 - **What's new can show animations.** An item can carry a GIF, a short video or an SVG (animated or not) as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
-- **Mascots your way.** Settings → Theme → Mascots: animated, still, or off. Duo and Nucli also turned up in more places: Duo cheers in Try it when every player starts (and frets when the session ends), searches when Open finds nothing and holds up the package when you save for Nucleus; Nucli wonders when Reference finds nothing.
+- **Choose how much moves.** Settings → Theme → Motion: a preset (All, Default, Calm, Still, Off) and its switches: a moving interface, Duo and Nucli (lively, play once then rest, still or off), Nucli editing the code during fixes, and What's new playing animations by itself. Default keeps out anything that slows you down or covers the code; reduced motion on your device caps it at Still. Duo and Nucli also turned up in more places: Duo cheers in Try it when every player starts (and frets when the session ends), searches when Open finds nothing and holds up the package when you save for Nucleus; Nucli wonders when Reference finds nothing.
 
   <details><summary>Animation</summary>
 
   ![Duo cheering and searching, Nucli pleased and dozing](docs/images/changelog/2026-11-06-mascot-modes.svg)
 
   </details>
-- **Nucli fixes it in front of you.** When a quick fix, Fix all or Fix with AI changes the code, Nucli flies to each changed line and zaps it: the old text flashes red and shrinks away, the new text glows green. The edit itself happens at once, so typing and Undo are never held up; with reduced motion, or mascots still or off, the changed lines just light up.
+- **Nucli can fix it in front of you.** Turn on Settings → Theme → Motion → Nucli edits the code: when a quick fix, Fix all or Fix with AI changes the code, Nucli flies to each changed line and zaps it: the old text flashes red and shrinks away, the new text glows green. The edit itself happens at once, so typing and Undo are never held up. Off by default (it briefly covers the code): the changed lines just light up.
 - **Fewer notes that vanish.** What to do next stays where you can read it: saving the .zip, or creating a new handler, says so above the code (with a Try it button), and confirmations show on the button you pressed.
 
 ---

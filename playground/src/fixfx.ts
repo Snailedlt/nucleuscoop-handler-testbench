@@ -1,13 +1,15 @@
 // Nucli fixes the code in front of you: when a fix (a quick fix, Fix all, Fix with AI) changes the editor, he flies in
 // next to each changed line and zaps it: the old text flashes red and shrinks away, the new text glows green.
 // The edit itself happens at once (typing and Undo are never held up); only the look is animated. With reduced
-// motion, or mascots set to still or off, the changed lines just light up for a moment.
+// motion, or with it turned off (the default), the changed lines just light up for a moment.
 import { diffLines } from './aifix';
-import { mascot, mascotMode } from './mascots';
+import { mascot } from './mascots';
+import { motion } from './motion';
 
 type CM = any; // CodeMirror 5
 
-const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || mascotMode() !== 'anim';
+// Off unless chosen (Settings → Theme → Motion → Nucli edits the code): the ghost text briefly covers the code.
+const calm = () => !motion().editFx || motion().mascots === 'off';
 
 /** Applies `apply` (which turns the editor's text into `after`) and animates what changed. */
 export function fixWithNucli(editor: CM, after: string, apply: () => void) {

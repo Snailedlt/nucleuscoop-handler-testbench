@@ -1,40 +1,35 @@
 // Duo (splitscreen.me) and Nucli (these tools), the mascots, from the concept sheet (design/mascots) through
-// tools/mascots-export.cjs. Inline SVG and CSS only. They move only when the device allows motion (the sheet's CSS
-// sits behind prefers-reduced-motion, and Nucli's SMIL electrons are paused here), and stay out of the alpha 8 look.
+// tools/mascots-export.cjs. Inline SVG and CSS only. How they move follows Settings → Theme → Motion (src/motion.ts);
+// the sheet's CSS also sits behind prefers-reduced-motion. They stay out of the alpha 8 look.
 import { MASCOT_CSS, MASCOT_SVG } from './mascots.gen';
+import { motion, onMotion } from './motion';
 
 export type MascotId = 'n-sleep' | 'n-ok' | 'n-bad' | 'n-fix' | 'n-ring' | 'n-spin' | 'n-idle' | 'idle' | 'roll' | 'oops' | 'search' | 'joy' | 'get' | 'think';
 
-// Settings → Theme → Mascots: animated (default), still, or off. Kept in this browser.
-export type MascotMode = 'anim' | 'still' | 'off';
-const KEY = 'nucleus-workbench-mascots';
-export function mascotMode(): MascotMode {
-  try { const v = localStorage.getItem(KEY); return v === 'still' || v === 'off' ? v : 'anim'; } catch { return 'anim'; }
-}
-export function setMascotMode(m: MascotMode) {
-  try { if (m === 'anim') localStorage.removeItem(KEY); else localStorage.setItem(KEY, m); } catch { /* private mode */ }
-  applyMascotMode();
-}
-/** On only when they're not turned off (a toast then keeps its plain icon). */
-export const mascotsOn = () => mascotMode() !== 'off';
-export function applyMascotMode() {
-  const m = mascotMode();
-  if (m === 'anim') delete document.documentElement.dataset.mascots;
-  else document.documentElement.dataset.mascots = m;
-  document.querySelectorAll<SVGSVGElement>('.masc > svg').forEach((svg) => {
-    try { if (m === 'anim' && !matchMedia('(prefers-reduced-motion: reduce)').matches) svg.unpauseAnimations(); else svg.pauseAnimations(); } catch { /* not ready */ }
+/** On unless they're turned off (a toast then keeps its plain icon). */
+export const mascotsOn = () => motion().mascots !== 'off';
+// SMIL (Nucli's electrons) ignores CSS: pause it for "still", let it run a few seconds for "once".
+function syncSmil(root: ParentNode = document) {
+  const m = motion().mascots;
+  root.querySelectorAll?.('.masc > svg').forEach((el) => {
+    const svg = el as SVGSVGElement & { _once?: number };
+    try {
+      if (m === 'loop') svg.unpauseAnimations();
+      else if (m === 'once') { svg.unpauseAnimations(); clearTimeout(svg._once); svg._once = window.setTimeout(() => svg.pauseAnimations(), 5000); }
+      else { svg.pauseAnimations(); svg.setCurrentTime(0); }
+    } catch { /* not ready */ }
   });
 }
-applyMascotMode();
+onMotion(() => syncSmil());
 
 const LOCAL = `.masc { display: inline-block; flex: none; line-height: 0; vertical-align: middle; }
 .masc > svg { display: block; width: 100%; height: 100%; overflow: visible; }
 :root[data-site="alpha8"] .masc, :root[data-mascots="off"] .masc { display: none !important; }
-:root[data-mascots="still"] .masc, :root[data-mascots="still"] .masc * { animation-play-state: paused !important; }`;
+:root[data-mascots="still"] .masc, :root[data-mascots="still"] .masc * { animation-play-state: paused !important; }
+:root[data-mascots="once"] .masc * { animation-iteration-count: 1 !important; }`;
 
 let ready = false;
 let n = 0;
-const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches || mascotMode() !== 'anim';
 
 function setup() {
   if (ready) return;
@@ -43,15 +38,8 @@ function setup() {
   s.id = 'mascot-css';
   s.textContent = LOCAL + '\n' + MASCOT_CSS;
   document.head.append(s);
-  // SMIL (Nucli's electrons) ignores CSS media queries: pause it when the device asks for less motion.
-  const settle = (root: ParentNode) => {
-    if (!still()) return;
-    root.querySelectorAll?.('.masc > svg').forEach((svg) => {
-      try { (svg as SVGSVGElement).pauseAnimations(); (svg as SVGSVGElement).setCurrentTime(0); } catch { /* not ready */ }
-    });
-  };
-  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((nd) => nd instanceof Element && settle(nd.parentNode ?? nd)))).observe(document.body, { childList: true, subtree: true });
-  settle(document);
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((nd) => nd instanceof Element && syncSmil(nd.parentNode ?? nd)))).observe(document.body, { childList: true, subtree: true });
+  syncSmil();
 }
 
 /** A mascot scene as HTML. With a label it's an image for screen readers; without one it's decoration. */

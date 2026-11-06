@@ -1,6 +1,7 @@
 // What's new: the workbench's CHANGELOG.md, inside the workbench. After an update, a short note says
 // what changed (not on a first visit), with a link to the full list. Can be turned off in Settings.
 import { picture, syncPictures } from './themed';
+import { motion } from './motion';
 
 const REPO = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench';
 declare const CHANGES: { id: string; n?: number; items: { group: string; summary: string; details: string; images?: { alt: string; file: string; dark?: string; still?: string; stillDark?: string }[] }[] }[];
@@ -93,7 +94,7 @@ export function initNews() {
     $('#news-body').querySelectorAll('img').forEach((img) => img.addEventListener('error', () => (img.closest('picture') ?? img).remove()));
     syncPictures($('#news-body'));
     // Animations start when their item opens (and the device allows motion); the button plays and pauses them.
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const calm = !motion().newsAuto; // Settings → Theme → Motion (never with reduced motion)
     $('#news-body').querySelectorAll<HTMLDetailsElement>('details.shot').forEach((dt) =>
       dt.addEventListener('toggle', () => dt.querySelectorAll<HTMLElement>('.anim').forEach((a) => playAnim(a, dt.open && !calm))),
     );

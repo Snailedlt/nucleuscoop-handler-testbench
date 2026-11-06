@@ -1,4 +1,4 @@
-import { mascotMode, setMascotMode, type MascotMode } from './mascots';
+import { PRESETS, presetOf, savedMotion, setMotion, type MascotMotion, type Preset } from './motion';
 import { confirmOn } from './toast';
 // Workbench settings (the gear in the header): theme, editor, tips, the Lines column, and the
 // niche ones (Advanced mode, the dev bar) under Advanced. Also the phone helpers it controls:
@@ -209,9 +209,18 @@ export function initSettings(d: Deps) {
   $('#set-keybar').addEventListener('change', (e) => ((ed.keybar = (e.target as HTMLInputElement).checked), save(), placeKeybar()));
   $('#set-tips').addEventListener('change', (e) => d.tips.set((e.target as HTMLInputElement).checked));
   $('#set-heads').addEventListener('click', () => (d.tips.set(true), d.tips.reset(), sync(), confirmOn($('#set-heads'), 'Heads-ups will show again ✓', 'Heads-ups will show again.')));
-  const masc = $('#set-mascots') as HTMLSelectElement;
-  masc.value = mascotMode();
-  masc.addEventListener('change', () => setMascotMode(masc.value as MascotMode));
+  // Motion: a preset, and the switches it sets; changing a switch makes it "Custom".
+  const mv = { preset: $('#set-motion') as HTMLSelectElement, ui: $('#set-motion-ui') as HTMLInputElement, masc: $('#set-motion-masc') as HTMLSelectElement, edit: $('#set-motion-edit') as HTMLInputElement, news: $('#set-motion-news') as HTMLInputElement };
+  const showMotion = () => {
+    const m = savedMotion();
+    mv.preset.value = presetOf(m);
+    mv.ui.checked = m.ui; mv.masc.value = m.mascots; mv.edit.checked = m.editFx; mv.news.checked = m.newsAuto;
+    $('#set-motion-note').textContent = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Your device asks for less motion, so nothing here moves more than Still.' : '';
+  };
+  mv.preset.addEventListener('change', () => { setMotion({ ...PRESETS[mv.preset.value as Preset] }); showMotion(); });
+  const fromSwitches = () => { setMotion({ ui: mv.ui.checked, mascots: mv.masc.value as MascotMotion, editFx: mv.edit.checked, newsAuto: mv.news.checked }); showMotion(); };
+  [mv.ui, mv.masc, mv.edit, mv.news].forEach((x) => x.addEventListener('change', fromSwitches));
+  showMotion();
   $('#set-lines').addEventListener('change', (e) => d.lines.set((e.target as HTMLInputElement).checked));
   $('#set-advanced').addEventListener('change', (e) => {
     d.advanced.checked = (e.target as HTMLInputElement).checked;
