@@ -1442,6 +1442,14 @@ const lines = initLines({
     ($('#api-q') as HTMLInputElement).value = path;
     renderApi(path);
   },
+  // Hovering a name in Lines while Reference is the open tab (and its search is empty) shows the
+  // name's docs there. Suggested by messenils.
+  previewReference: (path) => {
+    if (window.matchMedia('(max-width: 860px)').matches || ($('#panel-api') as HTMLElement).hidden) return false;
+    if (($('#api-q') as HTMLInputElement).value.trim()) return false;
+    renderApi(path);
+    return true;
+  },
 });
 
 const tips = initTips({

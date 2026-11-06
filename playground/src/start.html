@@ -34,6 +34,10 @@ try { var m = localStorage.getItem('nucleus-workbench-dev-mode'); if (m === 'lig
   --accent: #0c76a5; --accent-fg: #fff; --brand: #10a3e8; --code-bg: #ebedf0;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
   --mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  /* The workbench's scale (page.html): radius, elevation. */
+  --r-sm: 6px; --r-ctl: 8px; --r-pane: 12px; --r-lg: 14px;
+  --sh-1: 0 1px 2px rgba(15, 23, 42, .06), 0 1px 1px rgba(15, 23, 42, .03);
+  --sh-2: 0 12px 32px rgba(15, 23, 42, .12), 0 2px 6px rgba(15, 23, 42, .06);
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #1b1b1d; --surface: #242526; --line: #444950; --fg: #e3e3e3; --muted: #b0b4ba;
@@ -49,30 +53,32 @@ h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.15; margin: 6px 0 12px; }
 h2 { font-size: 22px; margin: 44px 0 12px; }
 h3 { font-size: 17px; margin: 0 0 6px; }
 p { margin: 0 0 12px; }
-code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: var(--r-sm); }
 .kicker { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 .lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
 .ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
-.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: 6.4px; font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--surface); }
+.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: var(--r-ctl); font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--surface); box-shadow: var(--sh-1); transition: filter .12s, transform .12s, box-shadow .12s; }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
-.btn:hover { filter: brightness(1.08); }
+.btn:hover { filter: brightness(1.06); box-shadow: var(--sh-2); }
+@media (prefers-reduced-motion: no-preference) { .btn:hover { transform: translateY(-1px); } }
 .btn:focus-visible, a:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 .small { font-size: 14px; color: var(--muted); }
 .shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
 .after-shots { margin-top: 28px; }
-figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; box-shadow: var(--sh-1); }
 figure a { display: block; }
 figure img { display: block; width: 100%; height: auto; }
 figure a:focus-visible { outline-offset: -3px; }
 figcaption { padding: 10px 12px; font-size: 14px; color: var(--muted); }
 figcaption strong { color: var(--fg); }
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 18px; box-shadow: var(--sh-1); }
 .card p:last-child, .card ol:last-child { margin-bottom: 0; }
 ol, ul { margin: 0 0 12px; padding-left: 22px; }
 li { margin: 4px 0; }
 .facts { list-style: none; padding: 0; display: grid; gap: 8px; }
-.facts li { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 6px; padding: 10px 12px; margin: 0; }
+.facts li { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 14px 10px 20px; margin: 0; box-shadow: var(--sh-1); }
+.facts li::before { content: ""; position: absolute; left: 8px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--brand); }
 footer { max-width: 980px; margin: 0 auto; padding: 16px 16px 40px; border-top: 1px solid var(--line); }
 main { padding-bottom: 32px; }
 @media (max-width: 760px) { .shots, .cards { grid-template-columns: 1fr; } main { padding-top: 20px; } }

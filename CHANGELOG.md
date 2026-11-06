@@ -16,6 +16,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **One look across the workbench and the start page.** Rounder panes, cards and dialogs with soft shadows, buttons that react when you point at them, Check cards with a rounded colour bar, and dialogs that fade in (or slide up on phones). The sizes come from one shared scale, and nothing moves if your device asks for less motion.
+- **Lines shows docs in Reference.** With the Reference tab open on a wide screen, pointing at a name in Lines shows its full docs there, not squeezed under the list. Suggested by messenils.
 - **A cleaner Open dialog.** Ctrl+K now opens a palette near the top of the screen: the start actions as tiles with icons, engine templates as chips, and Hub handlers as rows with the game's initials, players, downloads and a clean or warning badge (hover it to see what it means). Searching groups the results with a count and highlights what you typed, and the arrow keys move through every layout.
 
   <details><summary>Screenshot</summary>
@@ -38,7 +40,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🙏 Thanks
 
-- **messenils** for the video of Lines flickering, and for spotting that `Game.SetupSse` is never called.
+- **messenils** for the video of Lines flickering, the idea of showing its docs in Reference, and for spotting that `Game.SetupSse` is never called.
 
 ---
 

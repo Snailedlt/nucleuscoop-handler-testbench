@@ -12,6 +12,8 @@ import { BEFORE_SESSION } from '@core/lifecycle';
 interface Deps {
   editor: any; // CodeMirror 5
   openReference: (path: string) => void;
+  /** Shows a name's docs in the Reference tab when it's open and free (wide screens); true if it did. */
+  previewReference?: (path: string) => boolean;
 }
 
 const LINES_KEY = 'nucleus-workbench-lines';
@@ -32,7 +34,7 @@ const store = {
   },
 };
 
-export function initLines({ editor, openReference }: Deps) {
+export function initLines({ editor, openReference, previewReference }: Deps) {
   const LINES = allLines();
   const kinds = new Set<Kind>();
   const DEFAULTS = {
@@ -78,6 +80,12 @@ export function initLines({ editor, openReference }: Deps) {
       return;
     }
     info.append(text('code', '', l.sig));
+    // With Reference open beside the list (desktop), the full docs go there, where there's room.
+    const path = l.path.replace(/^new /, '');
+    if (previewReference && previewReference(path)) {
+      info.append(text('div', 'muted', 'Its docs are on the right, in Reference.'));
+      return;
+    }
     if (l.doc) info.append(text('div', '', l.doc));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
