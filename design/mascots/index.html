@@ -180,13 +180,13 @@ html.paused * { animation-play-state: paused !important; }
   .s-four .chip { animation: chip 2.6s var(--spring) infinite; }
   .s-four .d-body { animation: pre4 2.6s infinite; }
   /* loading bar */
-  .s-load .walker { animation: walk 3.8s infinite; }
-  .s-load .fill { animation: fill 3.8s infinite; }
-  .s-load .done { animation: done 3.8s infinite; }
-  .s-load .d-body { animation: waddle .38s ease-in-out infinite alternate; }
-  .s-load .d-fl { animation: step .38s ease-in-out infinite alternate; }
-  .s-load .d-fr { animation: step .38s ease-in-out -.38s infinite alternate; }
-  .s-load .d-jump { animation: endhop 3.8s infinite; }
+  .s-load1 .walker { animation: walk 3.8s infinite; }
+  .s-load1 .fill { animation: fill 3.8s infinite; }
+  .s-load1 .done { animation: done 3.8s infinite; }
+  .s-load1 .d-body { animation: waddle .38s ease-in-out infinite alternate; }
+  .s-load1 .d-fl { animation: step .38s ease-in-out infinite alternate; }
+  .s-load1 .d-fr { animation: step .38s ease-in-out -.38s infinite alternate; }
+  .s-load1 .d-jump { animation: endhop 3.8s infinite; }
   /* roll spinner (BSManager's wind-up spin) */
   .s-roll .d-body { transform-origin: 60px 62px; animation: roll 1.9s infinite; }
   .s-roll .d-shadow { animation: rollshadow 1.9s infinite; }
@@ -225,10 +225,10 @@ html.paused * { animation-play-state: paused !important; }
   .s-n-spin .chase { animation: chase 1.5s cubic-bezier(.62, .06, .38, .94) infinite; animation-delay: calc(var(--i) * -.085s); }
   .s-n-spin .look { animation: eyesround 1.5s linear infinite; }
   .s-n-spin .n-core { animation: corepulse 1.5s var(--soft) infinite; }
-  .s-n-ring .arc { animation: arc 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
-  .s-n-ring .rider { animation: rider 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
-  .s-n-ring .sp { animation: spark2 3.6s infinite; }
-  .s-n-ring .n-core { animation: ringhop 3.6s infinite; }
+  .s-n-ring1 .arc { animation: arc 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
+  .s-n-ring1 .rider { animation: rider 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
+  .s-n-ring1 .sp { animation: spark2 3.6s infinite; }
+  .s-n-ring1 .n-core { animation: ringhop 3.6s infinite; }
   .s-n-calc .sym { animation: symb 2.4s ease-out infinite; animation-delay: calc(var(--i) * -.4s); }
   .s-n-calc .n-core { animation: think 2.4s var(--soft) infinite; }
   .s-n-calc .look { transform: translate(0, -2.4px); }
@@ -434,7 +434,7 @@ svg :is(.kq, .kr, .kf) { transform-box: view-box; transform-origin: 0 -13px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .v.keep { background: #1c2a44; color: #b9cdf2; } :root:not([data-theme="light"]) .v.re { background: #16301e; color: #8fe3a8; } :root:not([data-theme="light"]) .v.new { background: #2a1d4a; color: #cdb8ff; } :root:not([data-theme="light"]) .v.review { background: #3a2e10; color: #ffd27a; } :root:not([data-theme="light"]) .v.drop { background: #3a1820; color: #ffb3bd; } }
 /* Nucli's status light: green when fine, amber while working, red on a problem */
 .s-n-bad .led, .s-n-scan .led { fill: #ff434d; }
-:is(.s-n-spin, .s-n-ring, .s-n-calc, .s-n-test, .s-n-fix) .led { fill: #fca53d; }
+:is(.s-n-spin, .s-n-ring, .s-n-ring1, .s-n-calc, .s-n-test, .s-n-fix) .led { fill: #fca53d; }
 .s-n-sleep .led { fill: #7f88ee; }
 .ev { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; font-size: 13px; }
 .ev summary { cursor: pointer; color: var(--accent); font-weight: 600; }
@@ -678,6 +678,39 @@ svg .rl { transform-origin: 0 -13px; }
 .r2-mtoast { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; background: rgba(127, 127, 127, .14); }
 .r2-mempty { display: flex; gap: 6px; align-items: center; }
 .r2-sizes .nx-strip figure { min-width: 40px; }
+/* Round 3 */
+.bi-btn { font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: var(--rc, 8px); border: 1px solid var(--line); background: var(--btn-bg, var(--card)); color: var(--ink); cursor: pointer; }
+.bi-btn.sm { padding: 6px; }
+.bi-btn:hover { border-color: var(--accent); }
+.bi-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bi-btn.confirmed { border-color: var(--accent); color: var(--accent); }
+.bi { overflow: visible; flex: none; }
+.bi * { transform-box: fill-box; transform-origin: center; }
+.bi .t { transform-origin: 50% 100%; } .bi .w { transform-box: view-box; transform-origin: 4px 20px; } .bi .u { transform-box: view-box; transform-origin: 12px 12px; }
+.bi .o { offset-path: path('M12 2 a10 10 0 1 1 0 20 a10 10 0 1 1 0 -20'); offset-distance: 0%; offset-rotate: 0deg; }
+.r3-demo { --btn-bg: var(--card); background: var(--tile); border-radius: 14px; padding: 16px; margin-top: 12px; }
+.r3-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.r3-tools.big { gap: 8px; }
+.r3-notes { color: var(--muted); font-size: 14px; padding-left: 18px; }
+.r3-notes li { margin: 3px 0; }
+.r3-ctl { align-items: center; margin-top: 10px; } .r3-ctl label { font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.r3-ctl select { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.r3-matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 12px; margin-top: 12px; }
+.r3-pane { background: var(--bg); color: var(--ink); font-family: var(--font); border-radius: var(--rp); border: 1px solid var(--line); overflow: hidden; }
+.r3-pane[data-look="mac"] { background: linear-gradient(135deg, color-mix(in srgb, var(--bg) 70%, #7d6cff), color-mix(in srgb, var(--bg) 70%, #2aa6ff)); }
+.r3-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card); border-bottom: 1px solid var(--line); font-size: 13px; }
+.r3-bar span { margin-left: auto; color: var(--muted); }
+.r3-bar .tl { width: 11px; height: 11px; border-radius: 50%; } .tl.r { background: #ff5f57; } .tl.y { background: #febc2e; } .tl.g { background: #28c840; }
+.r3-pane .r3-tools { padding: 8px 10px 0; } .r3-pane .bi-btn { border-radius: var(--rc); }
+.r3-body { display: grid; gap: 8px; padding: 10px; }
+.r3-row, .r3-toast { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--rp); padding: 8px 10px; font-size: 13px; min-height: 64px; }
+.r3-row b { display: block; } .r3-row span:last-child, .r3-toast span { color: var(--muted); } .r3-row b { color: var(--ink); }
+.r3-toast { min-height: 0; box-shadow: 0 4px 14px rgba(0, 0, 0, .12); }
+.r3m { display: inline-block; flex: none; line-height: 0; } .r3m > svg { width: 100%; height: 100%; overflow: visible; }
+.r3-plain { color: var(--accent); flex: none; } .r3-pct { font-weight: 700; min-width: 48px; }
+.r3-plainbar { width: 56px; height: 8px; background: var(--tile); border: 1px solid var(--line); flex: none; } .r3-plainbar i { display: block; width: 60%; height: 100%; background: var(--accent); }
+[data-motion="default"] .r3m:not(.busy) svg * { animation-iteration-count: 1 !important; }
+:is([data-motion="calm"], [data-motion="still"]) .r3m svg * { animation: none !important; }
 </style>
 <style id="gen"></style>
 </head>
@@ -739,7 +772,42 @@ svg .rl { transform-origin: 0 -13px; }
   <p class="lead">For the workbench, the VS Code extension and the CLI.</p>
   <div class="lib" id="lib-nucli"></div>
 
-  <section id="r2sec">
+  <section id="r3sec" data-motion="default">
+  <h2 id="round-3">Explorations, round 3: in the buttons, in every look</h2>
+  <p class="lead">Ideas only, nothing here is in the product. Copy, save, undo and the rest get their animation inside their own button, where your eyes already are: 0.3 to 0.6 s, cut off by the next click, the electron colours as accents. Then everything in the workbench's four looks, light and dark, with the Motion setting.</p>
+
+  <h3 class="nx-sub">Animations in the buttons</h3>
+  <div class="r3-demo" data-motion="all" data-look="www">
+    <div class="r3-tools big" id="r3-tools" role="group" aria-label="Buttons with animated icons"></div>
+    <div class="ctl" style="margin-top:10px"><button type="button" id="r3-play">Play them all</button></div>
+  </div>
+  <ul class="r3-notes">
+    <li><b>Copy:</b> the front sheet stamps onto the back one, a check draws on the copy, the label says "Copied" for 1.6 s.</li>
+    <li><b>Save:</b> the arrow drops into the tray, which squashes as it lands.</li>
+    <li><b>Undo, redo:</b> the arrow swings back (or on) and springs; an electron flashes at its tip. 0.34 s, because undo comes in bursts: each press restarts it.</li>
+    <li><b>Format:</b> the lines snap into their indentation, one after another.</li>
+    <li><b>Fix all:</b> a flick of the wand, the spark turns, three electrons fly off.</li>
+    <li><b>Share:</b> the link's two halves click together with a ring; "Link copied".</li>
+    <li><b>Try it:</b> the play button presses in and pops; an electron runs once round it.</li>
+    <li>With less motion, Motion "Still" or "Off", or the alpha 8 look: no movement, only the state (the check, the label).</li>
+  </ul>
+
+  <h3 class="nx-sub">Every look, light and dark</h3>
+  <div class="ctl r3-ctl"><label>Motion <select id="r3-motion"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label><label class="auto"><input type="checkbox" id="r3-players"> Electrons in the look's player colours</label></div>
+  <p class="lead">The buttons in each pane work too. "Still" here shows each mascot's designed still pose; the workbench freezes the current frame instead, and the new loaders start from an empty frame, so that should change with them.</p>
+  <div class="r3-matrix" id="r3-matrix"></div>
+
+  <h3 class="nx-sub">What I see</h3>
+  <div class="nx-rec"><ol>
+    <li><b>The mascots hold up in every look</b>: their own colours don't depend on the theme, and the panels, tracks and code lines take the look's colours.</li>
+    <li><b>v3 (monochrome) is the one where they stand out most.</b> If that's too loud, the simpler drawings at lower saturation would sit better there.</li>
+    <li><b>Player colours:</b> the looks use their own (#ff6b35, #3b8bff, #ffcf3a, #3ddb86), Nucli uses the splitscreen.me button colours. Tick the box to compare: one set of player colours everywhere would be clearer. Mine: the look's, since players see them in the setup too.</li>
+    <li><b>alpha 8 and Motion "Off"</b> fall back to plain icons and text; nothing is missing.</li>
+    <li><b>"Still" should show the designed still pose</b> (no animation) instead of freezing a frame.</li>
+  </ol></div>
+</section>
+
+<section id="r2sec">
   <h2 id="round-2">Explorations, round 2: time first, simpler drawings</h2>
   <p class="lead">Ideas only, nothing here is in the product. An animation only works if it fits the moment it is on screen, and if you're looking there. So first how long each moment lasts in the workbench (from its code, and timings I measured with the core), then round 1 judged against that, the ones I reworked, simpler drawings, and colours again (violet only).</p>
 
@@ -1147,7 +1215,8 @@ const SCENES = [
   { who: 'duo', id: 'slice', name: 'Split, white inside', use: 'The same split, but you see where he was cut: white inside, like a sliced fruit. An idea to compare.', svg: () => duo({ slice: true }) },
   { who: 'duo', id: 'split', name: 'Split and snap', use: 'Pulls apart, snaps back. Loading, a second player joins.', svg: () => duo({}) },
   { who: 'duo', id: 'four', name: 'Four players', use: 'Bursts into quarters. Picking a 4-player layout.', svg: () => duo({ quad: true, expr: 'happy', after: [[22, 26, 0], [98, 26, 1], [22, 96, 2], [98, 96, 3]].map(([x, y, i]) => `<g class="chip"><circle cx="${x}" cy="${y}" r="8" fill="${ACC[i]}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 4}" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="11" text-anchor="middle" fill="#fff">${i + 1}</text></g>`).join('') }) },
-  { who: 'duo', id: 'load', name: 'Loading bar', use: 'Waddles along a bar, hops at 100 %. Downloads, installs.', svg: () => `<rect x="8" y="104" width="104" height="8" rx="4" fill="var(--track)"/><rect class="fill" x="8" y="104" width="104" height="8" rx="4" fill="url(#barG)"/><rect class="done" x="8" y="104" width="104" height="8" rx="4" fill="${C.g}" opacity="0"/><g class="walker">${small(duo({ swap: ['focus', 'happy'], noShadow: true }), -8, 49, .5)}</g>`, swap: [78, 97], dur: 3.8 },
+  { who: 'duo', id: 'load', name: 'Loading bar', use: 'Duo pushes the end of the bar. When the download stalls he leans in and strains; at 100 % he lets go, the bar turns green, a check pops and he hops. Downloads, installs.', svg: () => loadBar(), earlier: [['First', 'load1', 'Waddled along a bar that filled at an even speed, and hung over the edge at the end.']] },
+  { who: 'old', id: 'load1', name: 'Loading bar', use: 'Waddles along a bar, hops at 100 %. Downloads, installs.', svg: () => `<rect x="8" y="104" width="104" height="8" rx="4" fill="var(--track)"/><rect class="fill" x="8" y="104" width="104" height="8" rx="4" fill="url(#barG)"/><rect class="done" x="8" y="104" width="104" height="8" rx="4" fill="${C.g}" opacity="0"/><g class="walker">${small(duo({ swap: ['focus', 'happy'], noShadow: true }), -8, 49, .5)}</g>`, swap: [78, 97], dur: 3.8 },
   { who: 'duo', id: 'roll', name: 'Spinner', use: 'Curls up, winds back, spins. Waiting with no progress to show.', svg: () => duo({ expr: 'wow', arms: 'none', noFeet: true }) },
   { who: 'duo', id: 'get', name: 'Got it', use: 'Catches a falling package. A Hub download arrived.', svg: () => duo({ swap: ['wow', 'happy'], arms: 'up', inJump: pkg + star(92, 30, 1.2, C.o) + star(26, 40, .9, C.t) }), swap: [33, 90], dur: 3.4 },
   { who: 'duo', id: 'search', name: 'Searching', use: 'Sweeps a magnifier around. Search, finding games.', svg: () => duo({ expr: 'focus', arms: 'hold', mag: true }) },
@@ -1158,7 +1227,8 @@ const SCENES = [
 
   { who: 'nucli', id: 'n-idle', name: 'Idle', use: 'Floats, blinks; electrons circle. Headers, the start page.', svg: () => nucli({}) },
   { who: 'nucli', id: 'n-spin', name: 'Spinner', use: 'Four electrons chase each other, eyes follow. Any short wait.', svg: () => `<circle cx="60" cy="60" r="42" fill="none" stroke="${C.orbit}" stroke-width="2" opacity=".25"/>${[0, 1, 2, 3].map((i) => `<g class="chase" style="--i:${i}"><circle cx="60" cy="18" r="${6.5 - i * .9}" fill="${ACC[i]}" stroke="#fff" stroke-width="2"/></g>`).join('')}${nucli({ expr: 'focus', noOrbits: true, noShadow: true })}` },
-  { who: 'nucli', id: 'n-ring', name: 'Progress ring', use: 'Four electrons wait in line at the top. One at a time, each sprints along the bar, hits its end and knocks the progress forward, then bounces off and rolls back to its place; each one faster. The first pushes the bar out from nothing. At 100 % they all hop with Nucli. Test all, known progress.', svg: () => ringRelay(), swap: [88, 99], dur: 5.6 },
+  { who: 'nucli', id: 'n-ring', name: 'Progress ring', use: 'The four electrons ride just behind the tip of the arc, all the way round. Each time the progress jumps they chase it: the first bumps the tip, the others crash into each other and rebound. At 100 % they have gone full circle and hop with Nucli. Test all, known progress.', svg: () => ringRide(), swap: [66, 97], dur: 5.6, earlier: [['Relay', 'n-ring1', 'Each electron sprinted to the tip, knocked it forward and rolled back to the start.']] },
+  { who: 'old', id: 'n-ring1', name: 'Progress ring', use: 'Four electrons wait in line at the top. One at a time, each sprints along the bar, hits its end and knocks the progress forward, then bounces off and rolls back to its place; each one faster. The first pushes the bar out from nothing. At 100 % they all hop with Nucli. Test all, known progress.', svg: () => ringRelay(), swap: [88, 99], dur: 5.6 },
   { who: 'nucli', id: 'n-calc', name: 'Calculating', use: 'Sums float out while it thinks. Working out layouts, counting.', svg: () => nucli({ expr: 'focus', dur: 1.6, before: ['+', '×', '=', '1', '%', '0'].map((s, i) => `<text class="sym" x="60" y="64" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="15" text-anchor="middle" fill="${ACC[i % 4]}" style="--i:${i};--x:${[-38, 36, -26, 30, -42, 14][i]}px;--y:${[-36, -40, -50, -22, -14, -54][i]}px;--r:${[-20, 15, 0, 10, -10, 5][i]}deg">${s}</text>`).join('') }) },
   { who: 'nucli', id: 'n-test', name: 'Test all', use: 'Fills a slot per player, then a hop. Running every combination.', svg: () => small(nucli({ swap: ['focus', 'happy'], dur: 2.2, noShadow: true }), 12, -2, .8) + [0, 1, 2, 3].map((i) => `<circle cx="${27 + i * 22}" cy="106" r="8" fill="none" stroke="var(--panel-line)" stroke-width="2"/><g class="sf sf${i}"><circle cx="${27 + i * 22}" cy="106" r="8" fill="${ACC[i]}"/><path d="M${23 + i * 22} 106 l3 3 l5.5 -6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`).join(''), swap: [70, 92], dur: 4 },
   { who: 'nucli', id: 'n-scan', name: 'Reading the code', use: 'A scan line runs down, stops at a problem. Check running.', svg: () => `${codePanel({ badLine: 3 })}<rect class="scan" x="48" y="31" width="64" height="10" rx="3" fill="${C.b1}" opacity=".28"/>${small(nucli({ swap: ['smile', 'wow'], dur: 3, noShadow: true }), -10, 26, .55)}<g class="badge"><circle cx="106" cy="66" r="8" fill="${C.r}" stroke="#fff" stroke-width="2"/><text x="106" y="70.5" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="13" text-anchor="middle" fill="#fff">!</text></g>`, swap: [54, 92], dur: 3.4 },
@@ -1238,7 +1308,7 @@ const AUDIT = [
 ];
 const VLABEL = { keep: 'Keep', re: 'Reworked', new: 'New', review: 'Review', drop: 'Dropped' };
 document.getElementById('audit').innerHTML = AUDIT.map(([n, v, txt]) => `<div><span class="v ${v}">${VLABEL[v]}</span><b>${n}</b>${txt ? `<br>${txt}` : ''}</div>`).join('');
-const lib = (who) => SCENES.filter((s) => s.who === who).map((s) => `<div class="scene"><div class="stage">${scene(s.id)}</div><b>${s.name}</b><span>${s.use}</span></div>`).join('');
+const lib = (who) => SCENES.filter((s) => s.who === who).map((s) => `<div class="scene"><div class="stage">${scene(s.id)}</div><b>${s.name}</b><span>${s.use}</span>${s.earlier ? `<details class="ev"><summary>Earlier versions (${s.earlier.length})</summary>${s.earlier.map(([n, id, txt]) => `<div class="evi"><div class="stage">${scene(id)}</div><b>${n}</b><span>${txt}</span></div>`).join('')}</details>` : ''}</div>`).join('');
 document.getElementById('lib-duo').innerHTML = lib('duo');
 document.getElementById('lib-nucli').innerHTML = lib('nucli');
 
@@ -1589,10 +1659,126 @@ LOADERS.carousel = (size) => `<svg viewBox="-30 -30 60 60" ${size ? `width="${si
   }
   LCSS += rows.map((r, k) => `@keyframes rr${k} { ${r.join(' ')} }`).join('') + bump.map((r, k) => `@keyframes rb${k} { ${r.join(' ')} }`).join('')
     + `@keyframes rrsp { 0%, 87% { transform: scale(0); opacity: 0; } 90% { transform: scale(1.25) rotate(30deg); opacity: 1; } 95% { transform: scale(.7) rotate(70deg); opacity: 1; } 98%, 100% { transform: scale(0); opacity: 0; } } @keyframes rrarc { ${arc.join(' ')} } @keyframes rrcore { ${core.join(' ')} }`
-    + RMQ([0, 1, 2, 3].map((k) => `.s-n-ring .rr${k} { animation: rr${k} ${cyc}s linear infinite; } .s-n-ring .rb${k} { animation: rb${k} ${cyc}s linear infinite; }`).join(' ') + ` .s-n-ring .rrarc { animation: rrarc ${cyc}s linear infinite; } .s-n-ring .n-core { animation: rrcore ${cyc}s linear infinite; } .s-n-ring .sp { animation: rrsp ${cyc}s infinite; }`)
+    + RMQ([0, 1, 2, 3].map((k) => `.s-n-ring1 .rr${k} { animation: rr${k} ${cyc}s linear infinite; } .s-n-ring1 .rb${k} { animation: rb${k} ${cyc}s linear infinite; }`).join(' ') + ` .s-n-ring1 .rrarc { animation: rrarc ${cyc}s linear infinite; } .s-n-ring1 .n-core { animation: rrcore ${cyc}s linear infinite; } .s-n-ring1 .sp { animation: rrsp ${cyc}s infinite; }`)
     + `svg :is(.rr0, .rr1, .rr2, .rr3) { transform-box: view-box; transform-origin: 60px 60px; } svg :is(.rb0, .rb1, .rb2, .rb3) { transform-box: fill-box; transform-origin: center; }`;
 }
 function ringRelay() { return `<circle cx="60" cy="60" r="44" fill="none" stroke="var(--track)" stroke-width="7"/><circle class="rrarc" cx="60" cy="60" r="44" fill="none" stroke="url(#barG)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="276.5" transform="rotate(-90 60 60)"/>${[3, 2, 1, 0].map((k) => `<g class="rr${k}"><g class="rb${k}"><circle cx="60" cy="16" r="${6 - k * .4}" fill="${ACC[k]}" stroke="#fff" stroke-width="2"/><path d="M60 12.6 V19.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></g></g>`).join('')}${nucli({ swap: ['focus', 'happy'], noOrbits: true, noShadow: true })}${star(98, 22, 1.3, C.o)}${star(20, 26, 1, C.t)}${star(102, 98, .9, C.g)}`; }
+
+// ---- Progress ring, v2: the electrons ride the progress. They sit in a line just behind the tip of the arc, all
+//      the way round. Each time the progress jumps they chase it on springs: the first one slams into the tip and
+//      bounces back, the others crash into each other (squash, rebound), then they settle. At 100 % they have gone
+//      full circle, so they end where they started: no rolling back. They hop with Nucli, the arc fades, again. ----
+{
+  const cyc = 5.6, N = 224, gap = .046, cap = .034, dt = 1 / 1200, e = .45;
+  const STEPS = [[.35, .1], [.8, .26], [1.2, .31], [1.7, .5], [2.15, .57], [2.55, .72], [3.1, .86], [3.55, 1]];
+  const ease = (u) => 1 - Math.pow(1 - Math.min(1, Math.max(0, u)), 3);
+  const head = (t) => { let p = 0; for (const [t0, v] of STEPS) { if (t < t0) break; p = p + (v - p) * ease((t - t0) / .2); } return p; };
+  const x = [0, 1, 2, 3].map((k) => -cap - k * gap), v = [0, 0, 0, 0], sq = [0, 0, 0, 0];
+  const K0 = 1400, K1 = 700, D0 = 2 * Math.sqrt(K0) * .3, D1 = 2 * Math.sqrt(K1) * .3;
+  const rows = [[], [], [], []], bump = [[], [], [], []], arc = [], core = [];
+  let next = 0, ph = 0;
+  for (let i = 0; i <= Math.round(cyc / dt); i++) {
+    const t = i * dt, P = head(t), vh = (head(t + .002) - head(t - .002)) / .004;
+    // springs: the first one toward the tip, each other one toward the one ahead
+    v[0] += (K0 * (P - cap - x[0]) - D0 * v[0]) * dt;
+    for (let k = 1; k < 4; k++) v[k] += (K1 * (x[k - 1] - gap - x[k]) - D1 * v[k]) * dt;
+    for (let k = 0; k < 4; k++) x[k] += v[k] * dt;
+    // impacts: the first against the tip, the rest against each other
+    if (x[0] > P - cap) { x[0] = P - cap; if (v[0] > vh) { sq[0] = Math.max(sq[0], Math.min(.34, (v[0] - vh) * .22)); v[0] = vh - e * (v[0] - vh); } }
+    for (let k = 1; k < 4; k++) {
+      const lim = x[k - 1] - gap * .92;
+      if (x[k] > lim) {
+        x[k] = lim;
+        const rel = v[k] - v[k - 1];
+        if (rel > 0) { const m = (v[k] + v[k - 1]) / 2; v[k] = m - e * rel / 2; v[k - 1] = m + e * rel / 2; const s = Math.min(.34, rel * .25); sq[k] = Math.max(sq[k], s); sq[k - 1] = Math.max(sq[k - 1], s * .8); }
+      }
+    }
+    for (let k = 0; k < 4; k++) sq[k] *= Math.exp(-dt / .07);
+    if (t + 1e-9 >= next * cyc / N && next <= N) {
+      const pc = (next / N * 100).toFixed(2);
+      const fade = t > cyc - .45 ? Math.max(0, (cyc - .1 - t) / .35) : 1;
+      for (let k = 0; k < 4; k++) {
+        const hv = (t - 3.95 - k * .05) / .32, out = hv > 0 && hv < 1 ? 8 * Math.sin(hv * Math.PI) : 0;
+        const s = sq[k];
+        rows[k].push(`${pc}% { transform: rotate(${(x[k] * 360).toFixed(2)}deg); }`);
+        bump[k].push(`${pc}% { transform: translateY(${(-out).toFixed(2)}px) scale(${(1 - s).toFixed(3)}, ${(1 + s * .7 + (out ? .1 * Math.sin(hv * Math.PI) : 0)).toFixed(3)}); }`);
+      }
+      const jump = STEPS.some(([t0]) => t >= t0 && t < t0 + .1);
+      arc.push(`${pc}% { stroke-dashoffset: ${(276.5 * (1 - P)).toFixed(1)}; stroke-width: ${jump ? 9 : 7}; opacity: ${fade.toFixed(2)}; }`);
+      const hc = (t - 3.95) / .36, kick = Math.max(...sq) > .12 && t < 3.8;
+      core.push(`${pc}% { transform: ${hc > 0 && hc < 1 ? `translateY(${(-7 * Math.sin(hc * Math.PI)).toFixed(2)}px)` : kick ? 'scale(1.025, .975)' : 'none'}; }`);
+      next++;
+    }
+  }
+  LCSS += rows.map((r, k) => `@keyframes rq${k} { ${r.join(' ')} }`).join('') + bump.map((r, k) => `@keyframes rqb${k} { ${r.join(' ')} }`).join('')
+    + `@keyframes rqarc { ${arc.join(' ')} } @keyframes rqcore { ${core.join(' ')} }`
+    + `@keyframes rqsp { 0%, 70% { transform: scale(0); opacity: 0; } 73% { transform: scale(1.25) rotate(30deg); opacity: 1; } 79% { transform: scale(.7) rotate(70deg); opacity: 1; } 83%, 100% { transform: scale(0); opacity: 0; } }`
+    + RMQ([0, 1, 2, 3].map((k) => `.s-n-ring .rq${k} { animation: rq${k} ${cyc}s linear infinite; } .s-n-ring .rqb${k} { animation: rqb${k} ${cyc}s linear infinite; }`).join(' ')
+      + ` .s-n-ring .rqarc { animation: rqarc ${cyc}s linear infinite; } .s-n-ring .n-core { animation: rqcore ${cyc}s linear infinite; } .s-n-ring .sp { animation: rqsp ${cyc}s infinite; }`)
+    + `svg :is(.rq0, .rq1, .rq2, .rq3) { transform-box: view-box; transform-origin: 60px 60px; } svg :is(.rqb0, .rqb1, .rqb2, .rqb3) { transform-box: fill-box; transform-origin: center; } .s-n-ring .sp { opacity: 0; }`;
+}
+// The still pose (less motion, or paused before it starts): 60 %, the electrons lined up behind the tip.
+function ringRide() {
+  const P = .6;
+  return `<circle cx="60" cy="60" r="44" fill="none" stroke="var(--track)" stroke-width="7"/><circle class="rqarc" cx="60" cy="60" r="44" fill="none" stroke="url(#barG)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="${(276.5 * (1 - P)).toFixed(1)}" transform="rotate(-90 60 60)"/>${[3, 2, 1, 0].map((k) => `<g class="rq${k}" style="transform: rotate(${((P - .034 - k * .046) * 360).toFixed(1)}deg)"><g class="rqb${k}"><circle cx="60" cy="16" r="${6 - k * .4}" fill="${ACC[k]}" stroke="#fff" stroke-width="2"/><path d="M60 12.6 V19.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></g></g>`).join('')}${nucli({ swap: ['focus', 'happy'], noOrbits: true, noShadow: true })}${star(98, 22, 1.3, C.o)}${star(20, 26, 1, C.t)}${star(102, 98, .9, C.g)}`;
+}
+
+// ---- Loading bar, v2: Duo pushes the end of the bar. The download is uneven, like a real one: a quick start, a
+//      stall (he leans in and strains, a sweat drop, his feet scramble), a steady stretch, a short stall, the last
+//      bit. He lets go just before the end; the bar turns green, a check pops at its end and he hops. Every frame is
+//      a still you can read; the still pose is the bar at 60 %. ----
+{
+  const cyc = 5.6, N = 224, sc = .46, x0 = 18.5, L = 83, XMAX = 84;
+  const KP = [[0, .06], [.35, .06], [1.15, .4], [1.95, .43], [2.95, .8], [3.25, .82], [3.65, 1]];
+  const P = (t) => { if (t <= 0) return KP[0][1]; for (let i = 1; i < KP.length; i++) if (t <= KP[i][0]) { const [t0, p0] = KP[i - 1], [t1, p1] = KP[i], u = (t - t0) / (t1 - t0); return p0 + (p1 - p0) * (u * u * (3 - 2 * u)); } return 1; };
+  const S = { w: [], b: [], l: [], r: [], f: [], d: [], c: [], s: [], fa: [], fb: [], k: [] };
+  let ph = 0, prev = null;
+  for (let s = 0; s <= N; s++) {
+    const t = s / N * cyc, pc = (s / N * 100).toFixed(2), p = P(t), vel = (P(t + .03) - P(t - .03)) / .06;
+    const x = Math.min(x0 + L * p + 4.5 - 10, XMAX);
+    if (prev !== null) ph += Math.abs(x - prev) * .6;
+    const stall = t > .4 && t < 3.6 && vel < .1;
+    if (stall) ph += cyc / N * 24;
+    prev = x;
+    const fade = t < .3 ? t / .3 : t > cyc - .4 ? Math.max(0, (cyc - .05 - t) / .35) : 1;
+    let rot = 0, y = 0, sy = 1, lf = 0, rf = 0;
+    if (t < 3.6) {
+      rot = stall ? 13 + 1.6 * Math.sin(t * 42) : 6 + 3 * Math.sin(ph);
+      y = stall ? 0 : -Math.abs(Math.sin(ph)) * 1.5;
+      sy = stall ? 1 - .05 * Math.abs(Math.sin(t * 17)) : 1 + .03 * Math.cos(2 * ph);
+      lf = -2.2 * Math.max(0, Math.sin(ph)); rf = -2.2 * Math.max(0, -Math.sin(ph));
+    } else {
+      rot = 6 * Math.max(0, 1 - (t - 3.6) / .15);
+      const h = (t - 3.85) / .42, h2 = (t - 4.38) / .26;
+      if (h > 0 && h < 1) { y = -16 * Math.sin(h * Math.PI); sy = 1 + .1 * Math.sin(h * Math.PI); }
+      else if (h >= 1 && h2 < 0) sy = .86;
+      else if (h2 > 0 && h2 < 1) y = -5 * Math.sin(h2 * Math.PI);
+    }
+    const done = t >= 3.65 ? fade : 0, ck = t < 3.68 ? 0 : t < 3.78 ? 1.3 * (t - 3.68) / .1 : t < 3.9 ? 1.3 - .3 * (t - 3.78) / .12 : 1;
+    S.w.push(`${pc}% { transform: translate(${x.toFixed(2)}px, ${y.toFixed(2)}px); opacity: ${fade.toFixed(2)}; }`);
+    S.b.push(`${pc}% { transform: rotate(${rot.toFixed(2)}deg) scale(${(1 / Math.sqrt(sy)).toFixed(3)}, ${sy.toFixed(3)}); }`);
+    S.l.push(`${pc}% { transform: translateY(${(lf / sc).toFixed(2)}px); }`); S.r.push(`${pc}% { transform: translateY(${(rf / sc).toFixed(2)}px); }`);
+    S.f.push(`${pc}% { stroke-dashoffset: ${(L * (1 - p)).toFixed(2)}; opacity: ${fade.toFixed(2)}; }`);
+    S.d.push(`${pc}% { opacity: ${done.toFixed(2)}; }`);
+    S.c.push(`${pc}% { transform: scale(${ck.toFixed(3)}); opacity: ${(ck ? fade : 0).toFixed(2)}; }`);
+    S.s.push(`${pc}% { opacity: ${stall ? 1 : 0}; transform: translateY(${stall ? (((t * 1.4) % 1) * 7).toFixed(2) : 0}px); }`);
+    S.fa.push(`${pc}% { opacity: ${t < 3.7 ? 1 : 0}; }`); S.fb.push(`${pc}% { opacity: ${t < 3.7 ? 0 : 1}; }`);
+    S.k.push(`${pc}% { transform: translate(${t < 3.7 ? 2.6 : 0}px, ${t < 3.7 ? .4 : 0}px); }`);
+  }
+  const sel = { w: '.ld-w', b: '.ld-b', l: '.d-fl', r: '.d-fr', f: '.ld-fill', d: '.ld-done', c: '.ld-chk', s: '.ld-sw', fa: '.fa', fb: '.fb', k: '.look' };
+  LCSS += Object.entries(S).map(([k, fr]) => `@keyframes ld2${k} { ${fr.join(' ')} }`).join('')
+    + RMQ(Object.entries(sel).map(([k, q]) => `.s-load ${q} { animation: ld2${k} ${cyc}s linear infinite; }`).join(' '))
+    + `.s-load .ld-b { transform-box: fill-box; transform-origin: 50% 100%; } .s-load .ld-chk { transform-box: fill-box; transform-origin: center; opacity: 0; } .s-load .ld-sw { opacity: 0; }
+.s-load .ld-w { transform: translate(${(x0 + L * .6 + 4.5 - 10).toFixed(2)}px, 0); } .s-load .ld-b { transform: rotate(6deg); } .s-load .look { transform: translate(2.6px, .4px); }`;
+}
+function loadBar() {
+  const sc = .46, L = 83;
+  const line = (cls, stroke, extra = '') => `<line class="${cls}" x1="18.5" y1="100.5" x2="101.5" y2="100.5" stroke="${stroke}" stroke-width="9" stroke-linecap="round"${extra}/>`;
+  const g = 'ldg' + (++uid);
+  return `<defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="14" y1="0" x2="106" y2="0"><stop offset="0" stop-color="#4ec1fc"/><stop offset="1" stop-color="#1c7bff"/></linearGradient></defs>` + line('ld-track', 'var(--track)') + line('ld-fill', `url(#${g})`, ` stroke-dasharray="${L} 200" stroke-dashoffset="${(L * .4).toFixed(1)}"`) + line('ld-done', C.g, ' opacity="0"')
+    + `<g class="ld-chk"><circle cx="106" cy="100.5" r="8" fill="${C.g}" stroke="#fff" stroke-width="2"/><path d="M102.2 100.7 l2.7 2.7 l4.9 -5.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`
+    + `<g class="ld-w"><g class="ld-b"><g transform="translate(${(-60 * sc).toFixed(2)} ${(96 - 103.6 * sc).toFixed(2)}) scale(${sc})">${duo({ swap: ['focus', 'happy'], arms: 'hold', noShadow: true })}</g></g><path class="ld-sw" d="M-12 58 C-10 61 -9 62.5 -9 64 A3 3 0 0 1 -15 64 C-15 62.5 -14 61 -12 58 Z" fill="#7cc8ff" stroke="#fff" stroke-width="1"/></g>`;
+}
 
 // ---- Loading bars where Duo walks: he faces where he's going and walks a bit faster than the bar the whole way,
 //      gets to the end first, turns round and taps his toe waiting for the line to arrive (a glance back, a sigh);
@@ -2209,6 +2395,109 @@ document.getElementById('r2-simple').innerHTML = simpleCards();
 document.getElementById('r2-simple-anims').innerHTML = SIMPLE_ANIMS.map(([id, name, svg]) => `<div class="scene"><div class="stage"><svg class="s-${id} blink" viewBox="0 0 120 120" role="img" aria-label="${name}, simpler drawing">${svg()}</svg></div><b>${name}</b><span>Same animation as in the library, on the simpler drawing.</span></div>`).join('');
 
 document.getElementById('gen').textContent = genCSS() + LCSS;
+// ---- Round 3: animations in the buttons; every look, light and dark, and the Motion settings ----
+// Button icons: 24 × 24, drawn with currentColor so they take each look's colours. Each plays where you clicked,
+// in 0.3 to 0.6 s, and can be cut off by the next click. With less motion (or Motion "Still"), only the state changes.
+const BI = {
+  copy: { label: 'Copy', done: 'Copied', svg: `<rect class="b" x="9" y="9" width="11" height="11" rx="2"/><rect class="f" x="4" y="4" width="11" height="11" rx="2" fill="var(--btn-bg)"/><path class="k" d="M11.6 14.6 l2 2 l4 -4.3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>` },
+  save: { label: 'Save', done: 'Saved', svg: `<path class="t" d="M4 15 v4 h16 v-4"/><g class="a"><path d="M12 3 v11"/><path d="M7.5 9.5 L12 14 L16.5 9.5"/></g>` },
+  undo: { label: 'Undo', svg: `<g class="u"><path d="M9 14 L4 9 L9 4"/><path d="M4 9 h10 a6 6 0 0 1 0 12 h-3"/><circle class="e" cx="4" cy="9" r="2" fill="${ACC[0]}" stroke="none" opacity="0"/></g>` },
+  redo: { label: 'Redo', svg: `<g class="u"><path d="M15 14 L20 9 L15 4"/><path d="M20 9 h-10 a6 6 0 0 0 0 12 h3"/><circle class="e" cx="20" cy="9" r="2" fill="${ACC[2]}" stroke="none" opacity="0"/></g>` },
+  format: { label: 'Format', svg: `<path class="l1" d="M4 6 h13"/><path class="l2" d="M8 12 h12"/><path class="l3" d="M8 18 h8"/>` },
+  fix: { label: 'Fix all', svg: `<g class="w"><path d="M4 20 L14 10"/><path d="M12.5 11.5 l2 2" stroke-width="3"/></g><path class="s" d="M17 3.5 l1 2.5 l2.5 1 l-2.5 1 l-1 2.5 l-1 -2.5 l-2.5 -1 l2.5 -1 z" fill="currentColor" stroke-width="1"/>${[0, 1, 2].map((i) => `<circle class="d d${i}" cx="17" cy="7" r="1.3" fill="${ACC[i + 1]}" stroke="none" opacity="0"/>`).join('')}` },
+  share: { label: 'Share', done: 'Link copied', svg: `<circle class="r" cx="12" cy="12" r="5" stroke-width="1.4" opacity="0"/><path class="h1" d="M10 14 a4 4 0 0 1 0 -5.6 l2 -2 a4 4 0 0 1 5.6 5.6 l-1 1"/><path class="h2" d="M14 10 a4 4 0 0 1 0 5.6 l-2 2 a4 4 0 0 1 -5.6 -5.6 l1 -1"/>` },
+  run: { label: 'Try it', svg: `<path class="p" d="M8.5 5.5 v13 l10 -6.5 z" fill="currentColor" stroke-linejoin="round"/><circle class="o" r="2" fill="${ACC[3]}" stroke="none" opacity="0"/>` },
+};
+const SPRING = 'cubic-bezier(.34, 1.56, .64, 1)';
+const BI_PLAY = {
+  copy: (q) => { q('.f').animate([{ transform: 'none' }, { transform: 'translate(5px, 5px)', offset: .4 }, { transform: 'translate(-1.5px, -1.5px)', offset: .75 }, { transform: 'none' }], { duration: 380, easing: 'ease-in-out' });
+    q('.k').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0, offset: .12 }, { strokeDashoffset: 0, offset: .9 }, { strokeDashoffset: 0, opacity: 0 }], { duration: 1900, delay: 260, easing: 'ease-out' }); },
+  save: (q) => { q('.a').animate([{ transform: 'none' }, { transform: 'translateY(4.5px)', offset: .35, easing: 'ease-out' }, { transform: 'translateY(-1.5px)', offset: .65 }, { transform: 'none' }], { duration: 380, easing: 'ease-in' });
+    q('.t').animate([{ transform: 'none' }, { transform: 'none', offset: .3 }, { transform: 'scale(1.14, .7)', offset: .42 }, { transform: 'scale(.96, 1.08)', offset: .65 }, { transform: 'none' }], { duration: 420 }); },
+  undo: (q) => { q('.u').animate([{ transform: 'none' }, { transform: 'rotate(-38deg)', offset: .4 }, { transform: 'rotate(7deg)', offset: .72 }, { transform: 'none' }], { duration: 340, easing: 'ease-out' });
+    q('.e').animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1.3)', offset: .4 }, { opacity: 0, transform: 'scale(0)' }], { duration: 340 }); },
+  format: (q) => ['.l1', '.l2', '.l3'].forEach((s, i) => q(s).animate([{ transform: `translateX(${[4, -5, 3][i]}px)`, opacity: .5 }, { transform: 'none', opacity: 1 }], { duration: 360, delay: i * 55, easing: SPRING, fill: 'backwards' })),
+  fix: (q) => { q('.w').animate([{ transform: 'none' }, { transform: 'rotate(-20deg)', offset: .35 }, { transform: 'rotate(4deg)', offset: .7 }, { transform: 'none' }], { duration: 360, easing: 'ease-out' });
+    q('.s').animate([{ transform: 'scale(1)' }, { transform: 'scale(.4)', offset: .3 }, { transform: 'scale(1.4) rotate(90deg)', offset: .6 }, { transform: 'scale(1) rotate(90deg)' }], { duration: 420, easing: 'ease-out' });
+    [[-6, -2], [5, -5], [4, 5]].forEach(([x, y], i) => q('.d' + i).animate([{ opacity: 0, transform: 'none' }, { opacity: 1, transform: 'none', offset: .45 }, { opacity: 0, transform: `translate(${x}px, ${y}px) scale(.4)` }], { duration: 520, easing: 'ease-out' })); },
+  share: (q) => { q('.h1').animate([{ transform: 'translate(-3px, 3px)' }, { transform: 'translate(.7px, -.7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' });
+    q('.h2').animate([{ transform: 'translate(3px, -3px)' }, { transform: 'translate(-.7px, .7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' });
+    q('.r').animate([{ opacity: 0, transform: 'scale(.3)' }, { opacity: .9, transform: 'scale(.6)', offset: .01 }, { opacity: 0, transform: 'scale(1.8)' }], { duration: 380, delay: 190, easing: 'ease-out' }); },
+  run: (q) => { q('.p').animate([{ transform: 'none' }, { transform: 'scale(.8)', offset: .25 }, { transform: 'scale(1.12)', offset: .55 }, { transform: 'none' }], { duration: 380, easing: 'ease-out' });
+    q('.o').animate([{ offsetDistance: '0%', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .85 }, { offsetDistance: '100%', opacity: 0 }], { duration: 620, delay: 120, easing: 'cubic-bezier(.4, 0, .3, 1)' }); },
+};
+BI_PLAY.redo = (q) => { q('.u').animate([{ transform: 'none' }, { transform: 'rotate(38deg)', offset: .4 }, { transform: 'rotate(-7deg)', offset: .72 }, { transform: 'none' }], { duration: 340, easing: 'ease-out' });
+  q('.e').animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1.3)', offset: .4 }, { opacity: 0, transform: 'scale(0)' }], { duration: 340 }); };
+const biBtn = (k, small) => `<button type="button" class="bi-btn${small ? ' sm' : ''}" data-bi="${k}"${small ? ` aria-label="${BI[k].label}"` : ''}><svg class="bi bi-${k}" viewBox="0 0 24 24" width="${small ? 18 : 20}" height="${small ? 18 : 20}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${BI[k].svg}</svg>${small ? '' : `<span>${BI[k].label}</span>`}</button>`;
+// Plays on click. Motion comes from the closest [data-motion] (Round 3's setting) and the device's preference.
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest?.('.bi-btn'); if (!b) return;
+  const k = b.dataset.bi, svg = b.querySelector('svg'), q = (s) => svg.querySelector(s);
+  svg.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  const m = b.closest('[data-motion]')?.dataset.motion || 'default';
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches || m === 'still' || m === 'off' || document.documentElement.classList.contains('paused') || b.closest('[data-look="alpha8"]');
+  if (!still) BI_PLAY[k](q);
+  else if (k === 'copy') q('.k').animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 0 }], { duration: 1600 });
+  const span = b.querySelector('span');
+  if (BI[k].done) {
+    clearTimeout(b._t);
+    if (span) span.textContent = BI[k].done; else b.setAttribute('aria-label', BI[k].done);
+    b.classList.add('confirmed');
+    b._t = setTimeout(() => { if (span) span.textContent = BI[k].label; else b.setAttribute('aria-label', BI[k].label); b.classList.remove('confirmed'); }, 1600);
+  }
+});
+
+// The workbench's looks (playground/src/themes.json), light and dark.
+const R3_LOOKS = [
+  ['www', 'splitscreen.me', { light: ['#f5f6f7', '#ffffff', '#ebedf0', '#dadde1', '#1c1e21', '#5c636c', '#0c76a5', '#ffffff'], dark: ['#1b1b1d', '#242526', '#2e3033', '#444950', '#e3e3e3', '#b0b4ba', '#30bbf8', '#06131c'] }, ['12px', '8px'], 'system-ui, sans-serif'],
+  ['v3', 'v3.splitscreen.me', { light: ['#eceef2', '#ffffff', '#f3f4f7', '#dde1e8', '#0b0d12', '#4f5767', '#0b0d12', '#ffffff'], dark: ['#000000', '#14171e', '#1b1f28', '#2c3240', '#f3f4f6', '#a3abba', '#f3f4f6', '#07080a'] }, ['14px', '8px'], '"Archivo", system-ui, sans-serif'],
+  ['mac', 'Mac style', { light: ['#d9dce6', '#ffffff', '#f5f5f7', 'rgba(0, 0, 0, .11)', '#1d1d1f', '#6e6e73', '#0a66d8', '#ffffff'], dark: ['#15161c', '#1f1f21', '#2c2c2e', 'rgba(255, 255, 255, .11)', '#f5f5f7', '#a1a1a6', '#0a72dc', '#ffffff'] }, ['12px', '6px'], '-apple-system, "SF Pro Text", system-ui, sans-serif'],
+  ['alpha8', 'Nucleus Co-op alpha 8', { light: ['#e1e1e1', '#f5f5f5', '#dcdcdc', '#8c8c8c', '#000000', '#454545', '#323232', '#ffffff'], dark: ['#323232', '#282828', '#3c3c3c', '#5a5a5a', '#ffffff', '#c8c8c8', '#ffffff', '#1e1e1e'] }, ['0px', '0px'], '"Segoe UI", Tahoma, sans-serif'],
+];
+const THEME_PLAYERS = ['#ff6b35', '#3b8bff', '#ffcf3a', '#3ddb86'];
+const r3Vars = ([bg, surface, s2, line, fg, muted, accent, accentFg], [rp, rc], font) => `--bg:${bg};--card:${surface};--panel:${surface};--tile:${s2};--btn-bg:${s2};--line:${line};--panel-line:${line};--track:${line};--ink:${fg};--muted:${muted};--accent:${accent};--accent-fg:${accentFg};--pick:${accent};--pick-bg:color-mix(in srgb, ${accent} 14%, ${surface});--code:color-mix(in srgb, ${fg} 28%, transparent);--rp:${rp};--rc:${rc};--font:${font};color-scheme:${bg === '#000000' || parseInt(bg.slice(1, 3), 16) < 128 ? 'dark' : 'light'}`;
+const R3_FALLBACK = { ok: '<svg class="r3-plain" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 12.5 l3 3 l6 -6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
+const r3Pane = (look, mode, players) => {
+  const [id, name, cols, radii, font] = look;
+  const recol = (svg) => players ? ACC.reduce((s, c, i) => s.split(c).join(THEME_PLAYERS[i]), svg) : svg;
+  const m = (sid, size, busy, label) => `<span class="r3m${busy ? ' busy' : ''}" style="width:${size}px;height:${size}px">${recol(scene(sid, label, `width="${size}" height="${size}"`))}</span>`;
+  const plain = id === 'alpha8' || document.getElementById('r3-motion').value === 'off';
+  return `<div class="r3-pane" data-look="${id}" style="${r3Vars(cols[mode], radii, font)}"><div class="r3-bar">${id === 'mac' ? '<i class="tl r"></i><i class="tl y"></i><i class="tl g"></i>' : ''}<b>${name}</b><span>${mode}</span></div>
+    <div class="r3-tools">${['copy', 'save', 'undo', 'redo', 'format', 'fix', 'share', 'run'].map((k) => biBtn(k, true)).join('')}</div>
+    <div class="r3-body">
+      <div class="r3-row">${plain ? R3_FALLBACK.ok : m('n-ok', 48, false, 'Nucli, pleased')}<span><b>Nothing to fix.</b> Try it next.</span></div>
+      <div class="r3-row">${plain ? '<span class="r3-pct">26 / 40</span>' : m('n-ring', 48, true, 'Test all progress')}<span><b>Test all</b> 26 of 40 runs</span></div>
+      <div class="r3-row">${plain ? '<span class="r3-plainbar"><i></i></span>' : m('load', 56, true, 'Downloading')}<span><b>Getting Borderlands 2…</b> 60 %</span></div>
+      <div class="r3-toast">${plain ? R3_FALLBACK.ok : m('n-ok', 30, false, '')}<span>Fixed 12 problems</span></div>
+    </div></div>`;
+};
+const r3Render = () => {
+  const box = document.getElementById('r3-matrix'), players = document.getElementById('r3-players').checked;
+  box.innerHTML = R3_LOOKS.flatMap((l) => ['light', 'dark'].map((md) => r3Pane(l, md, players))).join('');
+  r3Motion();
+};
+// Motion presets, as in playground/src/motion.ts: All loops; Default plays once (loaders keep going); Calm keeps the
+// interface's motion but still mascots; Still: nothing moves; Off: no mascots. "Still" here shows the designed still
+// pose (animation: none), not a frozen frame: a frozen loader can stop on an empty frame.
+const r3Motion = () => {
+  const sec = document.getElementById('r3sec'), m = document.getElementById('r3-motion').value;
+  sec.dataset.motion = m;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  sec.querySelectorAll('.r3m > svg').forEach((svg) => {
+    try {
+      clearTimeout(svg._once);
+      if (RM || m === 'still' || m === 'calm' || m === 'off' || document.documentElement.classList.contains('paused')) { svg.pauseAnimations(); svg.setCurrentTime(0); }
+      else { svg.unpauseAnimations(); svg.setCurrentTime(0); if (m === 'default' && !svg.parentElement.classList.contains('busy')) svg._once = setTimeout(() => svg.pauseAnimations(), 5000); }
+    } catch {}
+  });
+  sec.querySelectorAll('.r3m > svg').forEach((svg) => svg.getAnimations({ subtree: true }).forEach((a) => { a.cancel(); a.play(); }));
+};
+document.getElementById('r3-tools').innerHTML = Object.keys(BI).map((k) => biBtn(k, false)).join('');
+document.getElementById('r3-motion').addEventListener('change', r3Render);
+document.getElementById('r3-players').addEventListener('change', r3Render);
+r3Render();
+document.getElementById('r3-play').addEventListener('click', () => document.querySelectorAll('#r3-tools .bi-btn').forEach((b, i) => setTimeout(() => b.click(), i * 260)));
+
 
 // Pause (CSS and the SMIL orbits), reduced motion, theme
 const pause = document.getElementById('pause');
