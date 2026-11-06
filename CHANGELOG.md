@@ -12,8 +12,6 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
-- **Red squiggles are back.** Problems are underlined again exactly where they are in the code (a thin VS Code-style wave: red for errors, yellow for warnings; dotted for tips); the style that drew them had stopped working.
-- **A typo no longer hides every other problem.** While a line doesn't parse yet (say you're halfway through `player.`), the rest is still checked, and the error sits on the unfinished code instead of on the next line.
 ## Unreleased
 
 ### ✨ New
@@ -62,6 +60,11 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog: saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.
+- **Nicer docs on hover.** The signature is coloured (name, parameters, types), defaults and categories are small labels, and docs written by Claude say so at the bottom, with what they're based on. 150 more names have docs now.
+- **Shortcuts where you look.** Hover a button (or reach it with Tab) to see its keyboard shortcut, also outside Advanced mode.
+- **Tips point at the real button.** A tip about Lines, Try it or Save or copy highlights that button while it shows; the tip's own arrows are both ‹ and ›.
+- **Suggestions after `=`.** Typing `Game.SymlinkGame = ` offers `true` and `false`, an option with fixed values lists them (`Nucleus.DPIHandling.…`), `Game.Play = ` writes the function with the cursor inside, and `Game.ProtoInput.BlockedMessages = ` offers the set most Hub handlers block.
 - **Problems explained right where they are.** Hovering underlined code (or a marker in the margin) opens a card under it, not on top of it: an icon in the problem's colour, a plain title, the exact message with names shown as code, and the fix as a button you can click. The name's docs follow below.
 
   <details><summary>Screenshot</summary>
@@ -71,6 +74,15 @@ How to write it (people and AI agents read this, and the workbench shows it):
   </details>
 
 - **The colour glow is for AI only.** Pointing at an everyday button no longer makes it glow; only Fix with AI does.
+
+### 🐛 Fixed
+
+- **Red squiggles are back.** Problems are underlined again exactly where they are in the code (a thin VS Code-style wave: red for errors, yellow for warnings; dotted for tips); the style that drew them had stopped working.
+- **A typo no longer hides every other problem.** While a line doesn't parse yet (say you're halfway through `player.`), the rest is still checked, and the error sits on the unfinished code instead of on the next line.
+
+### 🙏 Thanks
+
+- **messenils** for the idea of naming the window messages in `BlockedMessages`.
 
 ---
 
@@ -128,7 +140,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🙏 Thanks
 
-- **messenils** for the video of Lines flickering, the idea of showing its docs in Reference, for spotting that `Game.SetupSse` is never called, and for the idea of naming the window messages in `BlockedMessages`.
+- **messenils** for the video of Lines flickering, the idea of showing its docs in Reference, and for spotting that `Game.SetupSse` is never called.
 
 ---
 

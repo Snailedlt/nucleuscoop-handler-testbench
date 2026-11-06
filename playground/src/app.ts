@@ -12,8 +12,8 @@ import 'codemirror/addon/edit/closebrackets';
 import { vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals } from '@core/lint';
-import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
-import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
+import { api, membersOf, ownerLabel, Resolved } from '@core/api';
+import { memberContextAt, resolveAt, callContextAt, valueContextAt } from '@core/complete';
 import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
@@ -32,6 +32,8 @@ import { mascot, mascotsOn } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
 import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
+import { memberCard } from './doccard';
+import { initKeyHints } from './keyhints';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
@@ -321,6 +323,26 @@ function hinter(cm: any) {
   const cur = cm.getCursor();
   const offset = cm.indexFromPos(cur);
   const ctx = memberContextAt(text, offset);
+  // `Game.DPIHandling = |`: the values the option takes (enum values, true/false, a callback function, the usual
+  // window messages for BlockedMessages).
+  const val = !ctx ? valueContextAt(text, offset) : undefined;
+  if (val && !val.partial.includes('.')) {
+    const p = val.partial.toLowerCase();
+    const indent = (cm.getLine(cur.line).match(/^\s*/) ?? [''])[0];
+    const list = val.values.filter((v) => v.value.toLowerCase().startsWith(p)).map((v) => ({
+      text: v.value,
+      displayText: v.value,
+      render(el: HTMLElement) {
+        el.innerHTML = `<span class="hint-name">${esc(v.value.replace(/\s+/g, ' '))}</span><span class="hint-type">${esc(v.detail ?? '')}</span>`;
+      },
+      // A callback: the function on its own lines, the cursor inside it.
+      hint: v.snippet ? (c: any, data: any) => {
+        c.replaceRange(`function () {\n${indent}  \n${indent}};`, data.from, data.to);
+        c.setCursor({ line: data.from.line + 1, ch: indent.length + 2 });
+      } : undefined,
+    }));
+    return list.length ? { list, from: cm.posFromIndex(val.partialStart), to: cur } : null;
+  }
   if (!ctx) return null;
   const partial = ctx.partial.toLowerCase();
   const list = membersOf(ctx.base)
@@ -339,7 +361,8 @@ function hinter(cm: any) {
 const rank = (m?: { required?: boolean; deprecated?: string; doc?: string }) => (!m ? 1 : m.required ? 0 : m.deprecated ? 3 : m.doc ? 1 : 2);
 
 editor.on('inputRead', (cm: any, change: any) => {
-  if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0])) {
+  const afterEquals = change.text[0] === ' ' && /[\w\]]\s*=\s$/.test(cm.getLine(change.from.line).slice(0, change.from.ch + 1));
+  if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0]) || afterEquals) {
     if (!cm.state.completionActive) cm.showHint({ hint: hinter, completeSingle: false });
   }
   if (change.text[0] === '(' || change.text[0] === ',') showSignature();
@@ -438,7 +461,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hid
 function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
     case 'member':
-      return md(memberMarkdown(res.owner, res.name, res.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''));
+      return memberCard(res.owner, res.name, res.member);
     case 'enum': {
       const e = api.enums[res.name];
       return md('```\nenum Nucleus.' + res.name + '\n```\n\n' + (e.doc ?? '') + '\n\n' + Object.entries(e.values).map(([k, v]) => `\`${k}\` = ${v}`).join(', '));
@@ -923,7 +946,7 @@ function renderApiGroup(el: HTMLElement, key: string) {
   const g = API_GROUPS.find((x) => x.key === key)!;
   const list = allEntries().filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
   el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
-    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
+    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-mark" title="Written by Claude (AI), not from the official docs" aria-label="Written by Claude (AI)">✦</span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
   el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
   wireApiLinks(el);
   el.scrollTop = 0;
@@ -952,7 +975,7 @@ function renderApi(q: string) {
     el.innerHTML =
       head +
       (entries.length || head
-        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
+        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`).join('')
         : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
   }
   wireApiLinks(el);
@@ -1623,6 +1646,13 @@ const tips = initTips({
     },
     share: () => copyLink(),
   },
+  targets: {
+    lines: () => $('#lines-toggle'),
+    new: () => $('#new-open'),
+    examples: () => $('#doc-switch'),
+    tryit: () => document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'),
+    share: () => $('#code-menu-open'),
+  },
 });
 $('#tips-reset').addEventListener('click', () => tips.reset());
 
@@ -1639,9 +1669,7 @@ const news = initNews();
 const panels = initPanels({ refresh: () => editor.refresh(), toast });
 $('#set-reset-sizes').addEventListener('click', () => (panels.reset(), confirmOn($('#set-reset-sizes'), 'Back to defaults ✓', 'Panel sizes are back to their defaults.')));
 const moreDialog = $('#more-dialog') as HTMLDialogElement;
-$('#more-open').addEventListener('click', () => {
-  moreDialog.showModal();
-});
+$('#more-open').addEventListener('click', () => moreDialog.showModal());
 $('#more-close').addEventListener('click', () => moreDialog.close());
 moreDialog.querySelectorAll<HTMLButtonElement>('[data-proxy]').forEach((b) =>
   b.addEventListener('click', () => {
@@ -1690,6 +1718,17 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     helpDialog.showModal();
   }
 });
+
+// The common shortcuts, on hover or keyboard focus of the buttons they belong to (both modes).
+initKeyHints([
+  { el: document.getElementById('doc-switch'), what: 'Open an example or a Hub handler', keys: 'Ctrl K' },
+  { el: document.getElementById('lines-toggle'), what: 'Show or hide Lines', keys: 'Ctrl B' },
+  { el: document.getElementById('code-menu-open'), what: 'Save or copy', keys: 'Ctrl S' },
+  { el: document.getElementById('save'), what: 'Save or copy', keys: 'Ctrl S' },
+  { el: document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'), what: 'Try it', keys: 'Ctrl Enter' },
+  { el: document.getElementById('settings-open'), what: 'Settings', keys: 'Ctrl ,' },
+  { el: document.getElementById('help-open'), what: 'All keyboard shortcuts', keys: '?' },
+]);
 
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
@@ -2023,39 +2062,13 @@ let downloads: any = null;
   }
   if (downloads) $('#save').hidden = false;
 })();
-const saveDialog = $('#save-dialog') as HTMLDialogElement;
 const handlerFileName = () => {
   const m = editor.getValue().match(/^Game\.GameName\s*=\s*"([^"]*)"/m);
   const name = (m?.[1] || doc.name.replace(/\.js$/i, '') || 'handler').replace(/[\\/:*?"<>|]/g, '').trim() || 'handler';
   return name;
 };
-$('#save').addEventListener('click', () => {
-  const name = handlerFileName();
-  $('#save-name').textContent = `${name}.zip`;
-  const extra = $('#save-files');
-  extra.hidden = !packageFiles.length;
-  extra.textContent = packageFiles.length ? `With the package's other ${packageFiles.length === 1 ? 'file' : `${packageFiles.length} files`}: ${packageFiles.map((f) => f.name).join(', ')}.` : '';
-  $('#save-js').textContent = `${name}.js`;
-  saveDialog.showModal();
-});
-$('#save-cancel').addEventListener('click', () => saveDialog.close());
-$('#save-go').addEventListener('click', async () => {
-  const name = handlerFileName();
-  const errorsLeft = current.filter((d) => d.severity === 'error').length;
-  try {
-    const zip = buildPackage(editor.getValue(), packageFiles);
-    await downloads.save({ filename: `${name}.zip`, data: zip });
-    waka.saved();
-    saveDialog.close();
-    // What to do next, above the code rather than a note that goes away.
-    notice(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`, errorsLeft ? { kind: 'warning' } : { kind: 'success', mascot: 'n-ok' });
-  } catch (e: any) {
-    saveDialog.close();
-    if (e?.code === 'declined') return;
-    if (['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) $('#save').hidden = true;
-    notice("Couldn't save the file here. Use Copy instead and paste it into a .js file.", { kind: 'error' });
-  }
-});
+// "Save for Nucleus" in the header opens the same Save or copy dialog as the button next to the code.
+$('#save').addEventListener('click', () => openCodeDialog());
 
 // ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
@@ -2182,32 +2195,45 @@ document.querySelectorAll('dialog').forEach((dl) =>
 // Copy or download, next to the code: copy, a link, and the handler as .zip (with the install
 // steps), .js or .nc.
 const codeDialog = $('#code-dialog') as HTMLDialogElement;
-$('#code-menu-open').addEventListener('click', () => {
+function openCodeDialog() {
+  const name = handlerFileName();
+  $('#code-main').hidden = false;
+  $('#code-done').hidden = true;
   codeDialog.querySelectorAll<HTMLButtonElement>('.dl').forEach((b) => (b.hidden = !downloads));
   (codeDialog.querySelector('[data-code=link]') as HTMLButtonElement).hidden = !(doc.hash || canShare());
-  const withFiles = packageFiles.length ? ` · with ${packageFiles.length} other file${packageFiles.length === 1 ? '' : 's'}` : '';
-  codeDialog.querySelector('[data-code=zip] small')!.textContent = 'Drag it onto Extract handler in Nucleus Co-op' + withFiles;
-  codeDialog.querySelector('[data-code=nc] small')!.textContent = 'The same package with the extension Hub downloads use' + withFiles;
-  codeDialog.querySelector('[data-code=js] small')!.innerHTML = packageFiles.length ? 'The code only, without the package\'s other files' : 'For the <code>handlers</code> folder or your own editor';
+  const withFiles = packageFiles.length ? `, with ${packageFiles.length} other file${packageFiles.length === 1 ? '' : 's'}` : '';
+  $('#code-zip-sub').textContent = `${name}.zip${withFiles}: drag it onto Extract handler`;
+  $('#code-js-sub').textContent = packageFiles.length ? 'The code only, without the other files' : 'For the handlers folder or your editor';
   codeDialog.showModal();
-});
+}
+$('#code-menu-open').addEventListener('click', openCodeDialog);
 $('#code-close').addEventListener('click', () => codeDialog.close());
 codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
   b.addEventListener('click', async () => {
-    codeDialog.close();
     const kind = b.dataset.code;
-    if (kind === 'copy') return ($('#copy') as HTMLButtonElement).click();
-    if (kind === 'link') return copyLink();
-    if (kind === 'zip') return ($('#save') as HTMLButtonElement).click();
+    if (kind === 'copy') return (codeDialog.close(), ($('#copy') as HTMLButtonElement).click());
+    if (kind === 'link') return (codeDialog.close(), copyLink());
     const name = handlerFileName();
-    const text = new TextEncoder().encode(editor.getValue());
     const filename = `${name}.${kind}`;
     try {
-      await downloads.save({ filename, data: kind === 'js' ? text : buildPackage(editor.getValue(), packageFiles) });
+      const data = kind === 'js' ? new TextEncoder().encode(editor.getValue()) : buildPackage(editor.getValue(), packageFiles);
+      await downloads.save({ filename, data });
       waka.saved();
-      confirmOn($('#code-menu-open'), 'Saved ✓', `Saved ${filename}.`);
+      if (kind !== 'zip') return (codeDialog.close(), confirmOn($('#code-menu-open'), 'Saved ✓', `Saved ${filename}.`));
+      // The .zip: what to do next, in the same dialog.
+      const errorsLeft = current.filter((d) => d.severity === 'error').length;
+      $('#code-saved').textContent = `Saved ${filename}`;
+      $('#code-warn').hidden = !errorsLeft;
+      $('#code-warn').textContent = errorsLeft ? `It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it. Check lists them.` : '';
+      $('#code-js-name').textContent = `${name}.js`;
+      $('#code-main').hidden = true;
+      $('#code-done').hidden = false;
+      $('#code-close').focus();
     } catch (e: any) {
-      if (e?.code !== 'declined') notice("Couldn't save the file here. Use Copy the code instead.", { kind: 'error' });
+      codeDialog.close();
+      if (e?.code === 'declined') return;
+      if (['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) $('#save').hidden = true;
+      notice("Couldn't save the file here. Use Copy the code instead and paste it into a .js file.", { kind: 'error' });
     }
   }),
 );

@@ -87,6 +87,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
       return;
     }
     if (l.doc) info.append(text('div', '', l.doc));
+    if (l.aiDoc) info.append(text('div', 'ai-doc', 'Written by Claude (AI), not from the official docs.'));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
     if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
@@ -107,6 +108,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     const d = text('div', 'ln-doc', '');
     d.append(text('code', '', l.sig));
     if (l.doc) d.append(text('div', '', l.doc));
+    if (l.aiDoc) d.append(text('div', 'ai-doc', 'Written by Claude (AI), not from the official docs.'));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
     if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);

@@ -292,6 +292,23 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
 .code-list .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .code-list .btn small { color: var(--muted); font-size: 12px; font-weight: 400; }
+/* Save or copy: one recommended action (the .zip for Nucleus), the rest as a grid of small choices. */
+#code-dialog { width: min(560px, calc(100vw - 32px)); }
+#code-dialog button svg { flex: none; color: var(--accent); }
+#code-dialog button span { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+#code-dialog button small { color: var(--muted); font-size: 12.5px; font-weight: 400; }
+.code-hero { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid var(--accent); border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--fg); font: inherit; font-size: 15px; cursor: pointer; }
+.code-hero:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+.code-hero > span:nth-child(2) { flex: 1; }
+.code-badge { font-size: 11.5px; font-weight: 600; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; flex: none !important; }
+.code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.code-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
+.code-opt:hover { background: var(--surface-2); }
+.code-opt[hidden], .code-hero[hidden] { display: none; }
+.code-saved { font-weight: 600; margin: 0 0 6px; }
+.code-saved::before { content: '✓ '; color: var(--ok, #2e9e5b); }
+.code-warn { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 4px; }
+@media (max-width: 520px) { .code-grid { grid-template-columns: 1fr; } }
 #code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; padding: 2px 9px; align-self: stretch; }
 .lines-toggle { align-self: stretch; }
 #keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
@@ -317,6 +334,10 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #tipbar.contextual #tip-label { color: var(--info); }
 #tipbar code { font: 11.5px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 3px; }
 #tipbar .tip-actions { display: flex; gap: 6px; flex: none; }
+/* The control a tip is about, while that tip shows: a ring (a soft pulse when motion is on). */
+.tip-target { box-shadow: 0 0 0 2px var(--accent) !important; border-radius: var(--r-ctl); }
+:root:not([data-motion-ui="off"]) .tip-target { animation: tip-target 1.6s ease-in-out 3; }
+@keyframes tip-target { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent) !important; } }
 #tipbar .tip-btn { padding: 3px 9px; font-size: 12px; }
 #tipbar .tip-btn.icon { width: 26px; padding: 3px 0; }
 @media (prefers-reduced-motion: no-preference) { #tipbar.contextual { animation: tip-in .25s ease-out; } @keyframes tip-in { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } } }
@@ -387,6 +408,27 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 #tip .hc-rule { font: 11px var(--font-mono); color: var(--muted); }
 #tip.has-problems .hc-doc { border-top: 1px solid var(--line); padding: 10px 12px; }
 #tip p, .api p { margin: 0 0 6px; }
+/* API docs card (doccard.ts): signature, description, facts, and who wrote it. */
+.dc-sig { font: 12.5px/1.5 var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 7px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }
+.dc-sig div + div { margin-top: 2px; border-top: 1px dashed var(--line); padding-top: 2px; }
+.sg-o { color: var(--muted); } .sg-n { color: var(--prop, var(--accent)); font-weight: 700; } .sg-p { color: var(--code-fg, var(--fg)); }
+.sg-t { color: var(--kw, var(--accent)); } .sg-c { color: var(--muted); }
+.dc p { margin: 0 0 6px; line-height: 1.5; }
+.dc-dep { color: var(--warn); font-weight: 600; }
+.dc-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+.dc-chip { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.dc-chip.req { color: var(--err); border-color: currentColor; }
+.dc-chip code { font-size: 11px; padding: 0 3px; }
+.dc-ai { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+.dc-ai svg { flex: none; margin-top: 2px; color: var(--accent); }
+.ai-doc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.ai-doc::before, .ai-mark { content: '✦ '; color: var(--accent); }
+.ai-mark { font-size: 11px; }
+/* Shortcut hints (keyhints.ts). */
+.keyhint { position: fixed; z-index: 90; display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 12px; pointer-events: none; white-space: nowrap; }
+.keyhint[hidden] { display: none; }
+.keyhint .kh-keys { display: flex; gap: 3px; }
+.keyhint kbd { font: 11px var(--font-mono); background: var(--surface-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
 .doc-code, #tip pre { background: var(--surface-2); border-radius: 5px; padding: 6px 8px; font: 12px/1.45 var(--font-mono); margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
 code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
 a { color: var(--accent); }
@@ -1061,7 +1103,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button class="btn wide-only" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
       <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
       <button class="btn wide-only" id="new-open" type="button">New handler…</button>
-      <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
+      <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install, or copy the code" aria-haspopup="dialog">Save for Nucleus…</button>
       <button class="btn wide-only" id="copy" type="button" title="Copy the handler source">Copy</button>
       <button class="btn icon wide-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
       <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: what's new, keyboard shortcuts">⋯</button>
@@ -1073,7 +1115,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Copy or download the handler" aria-label="Copy or download the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Save or copy the handler" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -1111,7 +1153,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div class="tip-actions">
           <button class="btn tip-btn" id="tip-action" type="button" hidden></button>
           <button class="btn icon tip-btn" id="tip-prev" type="button" title="Previous tip" aria-label="Previous tip">‹</button>
-          <button class="btn tip-btn" id="tip-next" type="button" title="Next tip" aria-label="Next tip"><span class="long">Next tip</span><span class="short">›</span></button>
+          <button class="btn icon tip-btn" id="tip-next" type="button" title="Next tip" aria-label="Next tip">›</button>
           <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on in Settings)" aria-label="Turn tips off"><span class="long">×</span><span class="short">Turn off</span></button>
         </div>
         <button class="tip-x" id="tip-off-2" type="button" aria-label="Turn tips off" title="Turn tips off">×</button>
@@ -1262,14 +1304,25 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="actions"><span class="muted" id="set-build" style="margin-right:auto;font-size:12px"></span><button class="btn primary" type="button" id="settings-close" autofocus>Done</button></div>
 </dialog>
 
-<dialog id="code-dialog" aria-label="Copy or download">
-  <h2>Copy or download</h2>
-  <div class="more-list code-list">
-    <button class="btn" type="button" data-code="copy"><span>Copy the code</span><small>To paste into a .js file or a message</small></button>
-    <button class="btn" type="button" data-code="link"><span>Copy a link</span><small>Opens this handler, or only the selected lines</small></button>
-    <button class="btn dl" type="button" data-code="zip"><span>Download for Nucleus (.zip)</span><small>Drag it onto Extract handler in Nucleus Co-op</small></button>
-    <button class="btn dl" type="button" data-code="js"><span>Download the code (.js)</span><small>For the <code>handlers</code> folder or your own editor</small></button>
-    <button class="btn dl" type="button" data-code="nc"><span>Download as .nc</span><small>The same package with the extension Hub downloads use</small></button>
+<dialog id="code-dialog" aria-labelledby="code-h">
+  <h2 id="code-h">Save or copy</h2>
+  <div id="code-main">
+    <button class="code-hero dl" type="button" data-code="zip"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Save for Nucleus Co-op</b><small id="code-zip-sub">A .zip you drag onto Extract handler</small></span><span class="code-badge">Recommended</span></button>
+    <div class="code-grid">
+      <button class="code-opt" type="button" data-code="copy"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 9h10v10H9zM5 15V5h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy the code</b><small>To paste anywhere</small></span></button>
+      <button class="code-opt" type="button" data-code="link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy a link</b><small>Opens this handler, or the selected lines</small></span></button>
+      <button class="code-opt dl" type="button" data-code="js"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 3h7l5 5v13H7zM14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Download .js</b><small id="code-js-sub">For the handlers folder or your editor</small></span></button>
+      <button class="code-opt dl" type="button" data-code="nc"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Download .nc</b><small>The package the VS Code extension uses</small></span></button>
+    </div>
+  </div>
+  <div id="code-done" hidden>
+    <p class="code-saved" id="code-saved"></p>
+    <p id="code-warn" class="code-warn" hidden></p>
+    <ol class="steps">
+      <li>Open Nucleus Co-op and drag the file onto the <strong>Extract handler</strong> button (the box-with-arrow icon next to the game list).</li>
+      <li>Nucleus asks to replace the old handler if there is one, then offers to add the game. Pick the game's .exe when asked.</li>
+    </ol>
+    <p class="muted small">By hand instead: copy the code into <code>Nucleus Co-op\handlers\<span id="code-js-name"></span></code>, then restart Nucleus.</p>
   </div>
   <div class="actions"><button class="btn" type="button" id="code-close">Close</button></div>
 </dialog>
@@ -1333,16 +1386,6 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="actions"><button class="btn primary" type="button" id="help-close">Close</button></div>
 </dialog>
 
-<dialog id="save-dialog">
-  <h2>Install it in Nucleus Co-op</h2>
-  <ol class="steps">
-    <li>Save the file: <strong id="save-name"></strong>.<br><span class="muted" id="save-files" hidden></span></li>
-    <li>Open Nucleus Co-op and drag the file onto the <strong>Extract handler</strong> button (the box-with-arrow icon next to the game list).</li>
-    <li>Nucleus asks to replace the old handler if there is one, then offers to add the game. Pick the game's .exe when asked.</li>
-  </ol>
-  <p class="muted">Prefer doing it by hand? Copy the handler and paste it into <code>Nucleus Co-op\handlers\<span id="save-js"></span></code>, then restart Nucleus.</p>
-  <div class="actions"><button class="btn" type="button" id="save-cancel">Cancel</button><button class="btn primary" type="button" id="save-go">Save .zip</button></div>
-</dialog>
 
 <dialog id="new-dialog">
   <form id="new-form">
