@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duo and Nucli on a web page</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.5; }
+  body { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .card { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid #8884; border-radius: 12px; }
+  code { background: #8882; padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>Duo and Nucli on a web page</h1>
+
+<h2>1. As an image</h2>
+<p>The SVG animates, and stands still by itself when the visitor asks for less motion.</p>
+<div class="row">
+  <img src="duo-idle.svg" alt="Duo" width="120" height="120">
+  <img src="nucli-idle.svg" alt="Nucli" width="120" height="120">
+</div>
+
+<h2>2. With a still frame for reduced motion</h2>
+<picture>
+  <source srcset="duo-joy-still.svg" media="(prefers-reduced-motion: reduce)">
+  <img src="duo-joy.svg" alt="Duo cheering" width="120" height="120">
+</picture>
+
+<h2>3. In a message (decoration: the text says it)</h2>
+<div class="card"><img src="nucli-ok.svg" alt="" width="56" height="56"><p><strong>All good.</strong> Nucleus can load this handler.</p></div>
+<p></p>
+<div class="card"><img src="duo-oops.svg" alt="" width="56" height="56"><p><strong>Couldn't load the handler.</strong> Check your connection and try again.</p></div>
+
+<h2>4. While something loads</h2>
+<p role="status" class="row"><img src="nucli-spin.svg" alt="" width="32" height="32"> Checking 600 handlers…</p>
+</body>
+</html>

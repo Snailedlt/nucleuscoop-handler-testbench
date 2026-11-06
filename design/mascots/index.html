@@ -607,6 +607,16 @@ svg .rl { transform-origin: 0 -13px; }
 .svgc img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; border-radius: 8px; }
 .svgc figcaption { font-size: 13px; margin-top: 6px; color: var(--muted); }
 .svgc a { color: var(--accent); font-size: 12px; word-break: break-all; }
+.packs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin: 10px 0 14px; }
+.pack { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.pack b { display: block; } .pack span { display: block; color: var(--muted); font-size: 14px; }
+.pack:first-child { grid-column: 1 / -1; border-color: var(--accent); }
+.dl-btn { flex: none; display: inline-flex; flex-direction: column; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--accent); color: var(--bg); font-weight: 700; text-decoration: none; }
+.dl-btn small { font-weight: 400; font-size: 11.5px; opacity: .9; }
+.dl-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.howto { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.howto summary { cursor: pointer; font-weight: 700; }
+.howto code { font-size: 12.5px; word-break: break-word; }
 </style>
 <style id="gen"></style>
 </head>
@@ -695,6 +705,30 @@ svg .rl { transform-origin: 0 -13px; }
     <li>Once they're picked: export the emoji (128 × 128 PNG and GIF, under 256 KB each) and a sticker sheet.</li>
     <li>Workbench: Nucli in the empty Check tab, Test all (progress ring), fixes (toast), failed loads; Duo for Hub loading and the 404 page. Off in the alpha 8 look and when the device asks for less motion.</li>
   </ol>
+
+  <h2 id="downloads">Downloads</h2>
+  <p class="lead">Everything as files to use: take it all, or just the part you need. Every pack has a README with how to use it, and the colours.</p>
+  <div class="packs"><div class="pack"><div><b>Everything</b><span>Every pack below in one file.</span></div><a class="dl-btn" href="packs/duo-and-nucli-everything.zip" download>Download <small>9.1 MB · .zip</small></a></div><div class="pack"><div><b>Duo pack</b><span>Every Duo scene: animated SVG, still SVG, PNG (512, 128) and GIF. Plus the four-player, one-colour and small 3D Duo.</span></div><a class="dl-btn" href="packs/duo.zip" download>Download <small>2.8 MB · .zip</small></a></div><div class="pack"><div><b>Nucli pack</b><span>Every Nucli scene, the same formats.</span></div><a class="dl-btn" href="packs/nucli.zip" download>Download <small>3.0 MB · .zip</small></a></div><div class="pack"><div><b>Discord emoji</b><span>128 × 128: static PNGs and animated GIFs, each under Discord's 256 KB, named like :duo_happy:.</span></div><a class="dl-btn" href="packs/discord-emoji.zip" download>Download <small>1.6 MB · .zip</small></a></div><div class="pack"><div><b>Loaders and spinners</b><span>Every loader (wave, carousel, twirl, hop-in, kaleidoscopes, walking bars…) as animated SVG, still SVG and GIF.</span></div><a class="dl-btn" href="packs/loaders.zip" download>Download <small>1.4 MB · .zip</small></a></div><div class="pack"><div><b>Avatars</b><span>512 px profile pictures of Duo and Nucli, on light and dark.</span></div><a class="dl-btn" href="packs/avatars.zip" download>Download <small>223 KB · .zip</small></a></div><div class="pack"><div><b>Web kit</b><span>An example page with the ways to put them on a website, and the files it uses.</span></div><a class="dl-btn" href="packs/web-kit.zip" download>Download <small>26 KB · .zip</small></a></div></div>
+  <details class="howto"><summary>How to use them on a website or in an app</summary>
+    <h3>On a website</h3>
+    <ul>
+      <li><b>As an image</b>, the simplest: <code>&lt;img src="duo-joy.svg" alt="Duo cheering" width="120" height="120"&gt;</code>. The SVG animates, and stands still by itself when the visitor asks for less motion.</li>
+      <li><b>A GIF needs a still</b> for reduced motion: <code>&lt;picture&gt;&lt;source srcset="duo-joy-still.svg" media="(prefers-reduced-motion: reduce)"&gt;&lt;img src="duo-joy.gif" alt="…"&gt;&lt;/picture&gt;</code>.</li>
+      <li><b>Decoration</b> next to text that says it: <code>alt=""</code>. <b>Loaders</b>: the text gets <code>role="status"</code>, the image <code>alt=""</code>; under ~32 px use the twirl or the spinner.</li>
+      <li><b>Inline</b> (to restyle with CSS): paste the file's <code>&lt;svg&gt;</code>; each carries its own <code>&lt;style&gt;</code>. Give each copy unique ids.</li>
+      <li>The <b>web kit</b>'s <code>example.html</code> shows all of these.</li>
+    </ul>
+    <h3>In an app</h3>
+    <ul>
+      <li><b>Discord</b>: Server Settings → Emoji → Upload Emoji: the PNGs as static emoji, the GIFs as animated ones. Avatars for profile pictures.</li>
+      <li><b>WinForms</b> (like Nucleus Co-op): a PictureBox with the PNG, or the GIF (it animates). <b>WPF / Avalonia</b>: the SVG through SharpVectors or Svg.Skia, or the PNGs.</li>
+      <li><b>Electron, Tauri, web views</b>: as on a website. <b>Android</b>: the still SVG as a Vector Asset, GIFs through Glide or Coil. <b>iOS / macOS</b>: PNGs or the still SVG in an asset catalog.</li>
+      <li><b>Games</b> (Unity, Godot): the 512 px PNGs as sprites; Godot imports SVG too.</li>
+      <li>Wherever the system has a "reduce motion" setting, show the still file then.</li>
+    </ul>
+    <h3>Keep them right</h3>
+    <p>Duo's stripe stays white and vertical (a cross for four players), Nucli's electrons in the player colours. Scale evenly; don't stretch, recolour the body or add outlines.</p>
+  </details>
 
   <h2 id="svg">The drawings (SVG)</h2>
   <p class="lead">Each version of the characters as a still SVG file, from the first sketches to now. Far fewer than the animations: most steps changed how they move, not how they look.</p>
@@ -2784,10 +2818,10 @@ document.querySelectorAll('.hist').forEach((d) => d.addEventListener('toggle', (
   let dl = null;
   if (window.claude && window.claude.use) window.claude.use('downloads').then((d) => (dl = d)).catch(() => {});
   document.addEventListener('click', async (e) => {
-    const a = e.target.closest && e.target.closest('.svgc a[download]');
+    const a = e.target.closest && e.target.closest('.svgc a[download], .pack a[download]');
     if (!a || !dl) return;
     e.preventDefault();
-    try { await dl.save({ filename: a.getAttribute('href').split('/').pop(), data: await (await fetch(a.href)).text() }); } catch {}
+    try { await dl.save({ filename: a.getAttribute('href').split('/').pop(), data: await (await fetch(a.href)).blob() }); } catch {}
   });
 })();
 </script>
