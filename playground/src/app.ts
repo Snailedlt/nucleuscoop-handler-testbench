@@ -29,6 +29,7 @@ import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
 import { mascot } from './mascots';
+import { fixWithNucli, applyEditsToText } from './fixfx';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 
@@ -497,9 +498,11 @@ function renderProblems(text: string) {
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
     b.addEventListener('click', () => {
       const fix = list[Number(b.dataset.d)].fixes![Number(b.dataset.f)];
-      editor.operation(() => {
-        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
-      });
+      fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
+        editor.operation(() => {
+          for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+        }),
+      );
       toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction, mascot: 'n-ok' });
     }),
   );
@@ -549,9 +552,11 @@ function showLineProblems(line: number, at?: number) {
     b.addEventListener('click', () => {
       const d = list[Number(b.dataset.lpFix)];
       const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes![0];
-      editor.operation(() => {
-        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
-      });
+      fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
+        editor.operation(() => {
+          for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+        }),
+      );
       hideLinePop();
       toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction, mascot: 'n-ok' });
     }),
@@ -1747,7 +1752,7 @@ editor.on('change', (_cm: unknown, ch: { origin?: string }) => {
 
 function applyCode(code: string) {
   const doc = editor.getDoc();
-  doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix');
+  fixWithNucli(editor, code, () => doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix'));
 }
 
 function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }, source: 'AI' | 'Fix all' = 'AI') {

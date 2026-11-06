@@ -384,6 +384,14 @@ a { color: var(--accent); }
 .masc-empty .masc { margin: -6px 0; }
 .masc-banner { display: flex; align-items: center; gap: 10px; }
 .masc-banner { overflow: visible; }
+/* Nucli fixing the code (src/fixfx.ts) */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+.fx-nucli { position: absolute; left: 0; top: 0; filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
+.fx-ghost { position: absolute; white-space: pre; color: #e5484d; text-decoration: line-through; text-decoration-thickness: 2px; background: rgba(229, 72, 77, .14); border-radius: 3px; padding: 0 2px; margin-left: -2px; transform-origin: left center; }
+.fx-beam { position: absolute; height: 3px; border-radius: 2px; background: linear-gradient(90deg, #55d137, #b9ff9e); box-shadow: 0 0 8px #55d137; transform-origin: right center; }
+.CodeMirror .fx-new { animation: fx-glow 1.5s ease-out both; }
+.CodeMirror .fx-new-still { background: rgba(85, 209, 55, .16); }
+@keyframes fx-glow { 0% { background: rgba(85, 209, 55, 0); } 20% { background: rgba(85, 209, 55, .38); box-shadow: inset 3px 0 #55d137; } 100% { background: rgba(85, 209, 55, 0); box-shadow: inset 3px 0 transparent; } }
 .masc-banner > .masc { margin: -2px 0 -2px -4px; }
 #sim-matrix .mx-head { position: relative; padding-left: 50px; min-height: 40px; align-items: center; }
 #sim-matrix .mx-masc { position: absolute; left: 0; top: 50%; translate: 0 -50%; }

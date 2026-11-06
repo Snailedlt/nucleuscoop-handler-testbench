@@ -33,6 +33,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
   ![Duo cheering and searching, Nucli pleased and dozing](docs/images/changelog/2026-11-06-mascot-modes.svg)
 
   </details>
+- **Nucli fixes it in front of you.** When a quick fix, Fix all or Fix with AI changes the code, Nucli flies to each changed line and zaps it: the old text flashes red and shrinks away, the new text glows green. The edit itself happens at once, so typing and Undo are never held up; with reduced motion, or mascots still or off, the changed lines just light up.
 - **Fewer notes that vanish.** What to do next stays where you can read it: saving the .zip, or creating a new handler, says so above the code (with a Try it button), and confirmations show on the button you pressed.
 
 ---
