@@ -70,6 +70,9 @@ start page's footer, `noindex` while they're concepts).
     keyboard, the mouse, touch), unplugged ones leave; every controller gets its own cursor, so several people can
     use the setup at the same time. `23-…`
 
+`svg/` holds every version of the characters as a still SVG (Duo 1–3, Nucli 1–9, the six first ideas), exported
+from the sheets; the sheet shows them under "The drawings (SVG)".
+
 ## Lessons we kept
 
 - One mascot per job: Duo is the fun one (splitscreen.me), Nucli the quiet technician (the tools).

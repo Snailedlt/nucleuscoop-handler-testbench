@@ -483,6 +483,7 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
     for (const e of fs.readdirSync(s, { withFileTypes: true })) {
       if (e.isDirectory()) copy(path.join(s, e.name), path.join(d, e.name));
       else if (e.name.endsWith('.html')) fs.writeFileSync(path.join(d, e.name), fs.readFileSync(path.join(s, e.name), 'utf8').replace(/<head>/i, '<head>\n<meta name="robots" content="noindex">'));
+      else if (e.name.endsWith('.svg')) fs.copyFileSync(path.join(s, e.name), path.join(d, e.name)); // the drawings
     }
   };
   copy(src, dst);

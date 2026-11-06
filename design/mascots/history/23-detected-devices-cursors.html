@@ -391,7 +391,7 @@ html.paused * { animation-play-state: paused !important; }
 /* Loader experiments */
 svg :is(.t3f, .t3sf, .t3sb, .t3fl, .t3fr, .t3a, .c3) { transform-box: view-box; }
 svg .t3f { transform-origin: 0 -13px; } svg .t3sf, svg .t3sb { transform-origin: 0 -13px; } svg .t3a { transform-origin: 0 -11px; } svg .t3fl, svg .t3fr, svg .c3 { transform-origin: 0 0; }
-svg .t3sb { opacity: 0; }
+svg .t3sb { opacity: 0; } svg .t3sf { transform: scaleX(.002); } /* face-on, the seam is a straight line down the middle */
 
 /* Quality pass: the fake-out (setup, pause, payoff) */
 svg .pf { transform-box: fill-box; transform-origin: left center; opacity: 0; }
@@ -597,6 +597,11 @@ svg .rl { transform-origin: 0 -13px; }
 .hist iframe { display: block; width: calc(100% - 28px); height: min(80vh, 760px); margin: 0 14px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .na-duos { margin-top: 10px; border-radius: 12px; background: #121a2e; border: 1px solid #1b2238; overflow: hidden; --ground: #1b2540; --puff: #3a4766; }
 .na-duos svg { display: block; width: 100%; height: auto; max-height: 210px; }
+.svgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 8px 0 18px; }
+.svgc { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+.svgc img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; border-radius: 8px; }
+.svgc figcaption { font-size: 13px; margin-top: 6px; color: var(--muted); }
+.svgc a { color: var(--accent); font-size: 12px; word-break: break-all; }
 </style>
 <style id="gen"></style>
 </head>
@@ -685,6 +690,15 @@ svg .rl { transform-origin: 0 -13px; }
     <li>Once they're picked: export the emoji (128 × 128 PNG and GIF, under 256 KB each) and a sticker sheet.</li>
     <li>Workbench: Nucli in the empty Check tab, Test all (progress ring), fixes (toast), failed loads; Duo for Hub loading and the 404 page. Off in the alpha 8 look and when the device asks for less motion.</li>
   </ol>
+
+  <h2 id="svg">The drawings (SVG)</h2>
+  <p class="lead">Each version of the characters as a still SVG file, from the first sketches to now. Far fewer than the animations: most steps changed how they move, not how they look.</p>
+  <h3>Duo</h3>
+  <div class="svgs"><figure class="svgc"><img src="svg/duo-1-arms-and-feet.svg" alt="Duo 1: arms and feet (step 4)" loading="lazy"><figcaption>Duo 1: arms and feet (step 4)<br><a href="svg/duo-1-arms-and-feet.svg" download>duo-1-arms-and-feet.svg</a></figcaption></figure><figure class="svgc"><img src="svg/duo-2-shaded.svg" alt="Duo 2: drawn shading (step 6)" loading="lazy"><figcaption>Duo 2: drawn shading (step 6)<br><a href="svg/duo-2-shaded.svg" download>duo-2-shaded.svg</a></figcaption></figure><figure class="svgc"><img src="svg/duo-3-current.svg" alt="Duo 3, current: the white stripe is the seam" loading="lazy"><figcaption>Duo 3, current: the white stripe is the seam<br><a href="svg/duo-3-current.svg" download>duo-3-current.svg</a></figcaption></figure><figure class="svgc"><img src="svg/duo-3-four-players.svg" alt="Duo, four players: a cross" loading="lazy"><figcaption>Duo, four players: a cross<br><a href="svg/duo-3-four-players.svg" download>duo-3-four-players.svg</a></figcaption></figure><figure class="svgc"><img src="svg/duo-3-small-3d.svg" alt="Duo, small and 3D (loaders)" loading="lazy"><figcaption>Duo, small and 3D (loaders)<br><a href="svg/duo-3-small-3d.svg" download>duo-3-small-3d.svg</a></figcaption></figure><figure class="svgc"><img src="svg/duo-3-one-colour.svg" alt="Duo in one colour" loading="lazy"><figcaption>Duo in one colour<br><a href="svg/duo-3-one-colour.svg" download>duo-3-one-colour.svg</a></figcaption></figure></div>
+  <h3>Nucli</h3>
+  <div class="svgs"><figure class="svgc"><img src="svg/nucli-1-white.svg" alt="Nucli 1: white (step 4)" loading="lazy"><figcaption>Nucli 1: white (step 4)<br><a href="svg/nucli-1-white.svg" download>nucli-1-white.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-2-amber.svg" alt="Nucli 2: amber, shaded (step 6)" loading="lazy"><figcaption>Nucli 2: amber, shaded (step 6)<br><a href="svg/nucli-2-amber.svg" download>nucli-2-amber.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-3-nucleus-coop-logo.svg" alt="Nucli 3: as the Nucleus Co-op logo (step 7)" loading="lazy"><figcaption>Nucli 3: as the Nucleus Co-op logo (step 7)<br><a href="svg/nucli-3-nucleus-coop-logo.svg" download>nucli-3-nucleus-coop-logo.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-4-violet-ribbons.svg" alt="Nucli 4: violet, woven ribbons, hook (step 8)" loading="lazy"><figcaption>Nucli 4: violet, woven ribbons, hook (step 8)<br><a href="svg/nucli-4-violet-ribbons.svg" download>nucli-4-violet-ribbons.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-5-white-eyes.svg" alt="Nucli 5: white eyes, device electrons (step 9)" loading="lazy"><figcaption>Nucli 5: white eyes, device electrons (step 9)<br><a href="svg/nucli-5-white-eyes.svg" download>nucli-5-white-eyes.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-6-one-ring-hands.svg" alt="Nucli 6: one ring and hands, &quot;a toy&quot; (step 10)" loading="lazy"><figcaption>Nucli 6: one ring and hands, &quot;a toy&quot; (step 10)<br><a href="svg/nucli-6-one-ring-hands.svg" download>nucli-6-one-ring-hands.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-7-proton-loupe.svg" alt="Nucli 7: proton cluster and loupe (step 11)" loading="lazy"><figcaption>Nucli 7: proton cluster and loupe (step 11)<br><a href="svg/nucli-7-proton-loupe.svg" download>nucli-7-proton-loupe.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-8-quiet.svg" alt="Nucli 8: quiet (step 12)" loading="lazy"><figcaption>Nucli 8: quiet (step 12)<br><a href="svg/nucli-8-quiet.svg" download>nucli-8-quiet.svg</a></figcaption></figure><figure class="svgc"><img src="svg/nucli-9-current.svg" alt="Nucli 9, current: calm atom (step 13)" loading="lazy"><figcaption>Nucli 9, current: calm atom (step 13)<br><a href="svg/nucli-9-current.svg" download>nucli-9-current.svg</a></figcaption></figure></div>
+  <h3>The first six ideas</h3>
+  <div class="svgs"><figure class="svgc"><img src="svg/concept-duo.svg" alt="Duo, the first sketch (step 3)" loading="lazy"><figcaption>Duo, the first sketch (step 3)<br><a href="svg/concept-duo.svg" download>concept-duo.svg</a></figcaption></figure><figure class="svgc"><img src="svg/concept-cushy.svg" alt="Cushy, the couch (dropped)" loading="lazy"><figcaption>Cushy, the couch (dropped)<br><a href="svg/concept-cushy.svg" download>concept-cushy.svg</a></figcaption></figure><figure class="svgc"><img src="svg/concept-pip-and-pod.svg" alt="Pip &amp; Pod, the twins (dropped)" loading="lazy"><figcaption>Pip &amp; Pod, the twins (dropped)<br><a href="svg/concept-pip-and-pod.svg" download>concept-pip-and-pod.svg</a></figcaption></figure><figure class="svgc"><img src="svg/concept-nucli.svg" alt="Nucli, the first sketch (step 3)" loading="lazy"><figcaption>Nucli, the first sketch (step 3)<br><a href="svg/concept-nucli.svg" download>concept-nucli.svg</a></figcaption></figure><figure class="svgc"><img src="svg/concept-nab.svg" alt="Nab, the bug-catcher (dropped)" loading="lazy"><figcaption>Nab, the bug-catcher (dropped)<br><a href="svg/concept-nab.svg" download>concept-nab.svg</a></figcaption></figure><figure class="svgc"><img src="svg/concept-padd.svg" alt="Padd, the gamepad (dropped)" loading="lazy"><figcaption>Padd, the gamepad (dropped)<br><a href="svg/concept-padd.svg" download>concept-padd.svg</a></figcaption></figure></div>
 
   <h2 id="history">Historic branding, theming, styles, mascots and animations</h2>
   <p class="lead">Everything tried and dropped, and why, with every earlier version of this sheet. Steps 1 and 2 (the first six sketches, then the palettes) are only in the artifact's version history.</p>
@@ -834,7 +848,7 @@ function duo(o = {}) {
     const one = (ex) => {
       const x = sd === 'l' ? 47 : 73;
       const eye = part !== 'bottom' ? eyeOf(x, o.quad ? 50 : 58, 1, ex, ink, hl, sd) : ''; // four players: eyes clear of the cross
-      const low = part !== 'top' ? `${m ? '' : blushOf(sd === 'l' ? 39 : 81, 70, 1)}<g clip-path="url(#${id}${sd})">${mouthOf(60, 69, 1, ex, ink)}</g>` : '';
+      const low = part !== 'top' ? `${m ? '' : blushOf(sd === 'l' ? 39 : 81, 70, 1)}<g mask="url(#${id}m${sd})">${mouthOf(60, 69, 1, ex, ink)}</g>` : '';
       return eye + low;
     };
     return `<g class="fw">${exprs.length > 1 ? `<g class="fa">${one(exprs[0])}</g><g class="fb">${one(exprs[1])}</g>` : one(exprs[0])}</g>`;
@@ -869,7 +883,7 @@ function duo(o = {}) {
   const feetCol = m ? 'currentColor' : '#1858c4';
   const feet = o.noFeet ? '' : `<g class="d-feet"><ellipse class="d-fl" cx="48" cy="99" rx="8.6" ry="4.6" fill="${feetCol}"/><ellipse class="d-fr" cx="72" cy="99" rx="8.6" ry="4.6" fill="${feetCol}"/></g>`;
   const shadow = m || o.noShadow ? '' : '<ellipse class="d-shadow" cx="60" cy="105" rx="24" ry="3.4" fill="#0b1a33" opacity=".15"/>';
-  return `<defs>${pdefs}<clipPath id="${id}b"><circle cx="60" cy="62" r="34"/></clipPath><clipPath id="${id}xl"><rect x="60" y="0" width="12" height="120"/></clipPath><clipPath id="${id}xr"><rect x="48" y="0" width="12" height="120"/></clipPath><clipPath id="${id}l"><rect x="0" y="0" width="60.8" height="120"/></clipPath><clipPath id="${id}r"><rect x="59.2" y="0" width="60.8" height="120"/></clipPath></defs>
+  return `<defs>${pdefs}<clipPath id="${id}b"><circle cx="60" cy="62" r="34"/></clipPath><clipPath id="${id}xl"><rect x="60" y="0" width="12" height="120"/></clipPath><clipPath id="${id}xr"><rect x="48" y="0" width="12" height="120"/></clipPath><clipPath id="${id}l"><rect x="0" y="0" width="60.8" height="120"/></clipPath><mask id="${id}ml" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120"><rect x="0" y="0" width="60.8" height="120" fill="#fff"/></mask><mask id="${id}mr" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120"><rect x="59.2" y="0" width="60.8" height="120" fill="#fff"/></mask><clipPath id="${id}r"><rect x="59.2" y="0" width="60.8" height="120"/></clipPath></defs>
     ${o.before || ''}${shadow}<g class="d-jump">${feet}<g class="d-body">${body}${seam}</g>${o.inJump || ''}</g>${o.after || ''}`;
 }
 
@@ -1135,9 +1149,11 @@ function turnKeys(pre, th, times) {
     const r = a * Math.PI / 180, s = Math.sin(r), c = Math.cos(r);
     // Features and the seam fade as they near the edge, where a band on a ball is seen edge-on, instead of popping.
     const cl = (v) => Math.min(1, Math.max(0, v)).toFixed(2);
+    // Never exactly 0: a browser skips drawing anything scaled to nothing, and face-on the seam is a straight line.
+    const nz = (v) => (Math.abs(v) < .002 ? (v < 0 ? -.002 : .002) : v).toFixed(3);
     f.push(`${p}% { transform: translateX(${(11 * s).toFixed(2)}px) scaleX(${Math.max(.04, c).toFixed(3)}); opacity: ${cl((c - .02) / .2)}; }`);
-    sf.push(`${p}% { transform: scaleX(${s.toFixed(3)}); opacity: ${cl(c / .3)}; }`);
-    sb.push(`${p}% { transform: scaleX(${(-s).toFixed(3)}); opacity: ${cl(-c / .3)}; }`);
+    sf.push(`${p}% { transform: scaleX(${nz(s)}); opacity: ${cl(c / .3)}; }`);
+    sb.push(`${p}% { transform: scaleX(${nz(-s)}); opacity: ${cl(-c / .3)}; }`);
     fl.push(`${p}% { transform: translateX(${(4.8 * Math.sin(r - Math.PI / 3) + 4.2).toFixed(2)}px); }`);
     fr.push(`${p}% { transform: translateX(${(4.8 * Math.sin(r + Math.PI / 3) - 4.2).toFixed(2)}px); }`);
   });
@@ -2751,6 +2767,19 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
 </script>
 <script>
 document.querySelectorAll('.hist').forEach((d) => d.addEventListener('toggle', () => { const f = d.querySelector('iframe'); if (d.open && !f.src) f.src = f.dataset.src; }));
+</script>
+<script>
+// The SVG links: a plain download on a normal site; inside the claude.ai viewer, its downloads feature.
+(() => {
+  let dl = null;
+  if (window.claude && window.claude.use) window.claude.use('downloads').then((d) => (dl = d)).catch(() => {});
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest && e.target.closest('.svgc a[download]');
+    if (!a || !dl) return;
+    e.preventDefault();
+    try { await dl.save({ filename: a.getAttribute('href').split('/').pop(), data: await (await fetch(a.href)).text() }); } catch {}
+  });
+})();
 </script>
 </body>
 </html>
