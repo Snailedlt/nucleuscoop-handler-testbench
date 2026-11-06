@@ -264,7 +264,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 .set-waka-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 #settings-dialog h2 { margin: 0 0 6px; font-size: 18px; }
 .set-sec { border-top: 1px solid var(--line); padding: 12px 0 10px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
-.set-sec > :not(.check):not(h3) { align-self: flex-start; }
+.set-sec > :not(.check):not(h3):not(.ct) { align-self: flex-start; }
 /* Settings: on/off choices as switches, each row with a soft hover */
 .set-sec .check, #lines-settings .set-row { margin: 0; padding: 6px 8px; border-radius: var(--r-ctl); cursor: pointer; }
 .set-sec .check:hover, #lines-settings .set-row:hover { background: var(--surface-2); }
@@ -594,14 +594,38 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 /* Settings → Appearance → Custom theme */
 .ct { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; align-self: stretch; }
 .ct-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
-.looks { display: flex; flex-direction: column; gap: 2px; }
-.look-row { display: flex; align-items: center; gap: 8px; border-radius: var(--r-ctl); padding: 4px 8px; }
-.look-row:hover { background: var(--surface-2); }
-.look-row label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 2px 0; }
-.look-row .sw { flex: none; width: 34px; height: 22px; border-radius: 6px; border: 1px solid var(--line); }
-.look-row .ln { display: flex; flex-direction: column; min-width: 0; }
-.look-row .ln small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.look-row .link { flex: none; font-size: 12.5px; }
+/* Looks: a card each, with a small picture of the workbench in its colours */
+.looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.look-card { position: relative; display: flex; flex-direction: column; border-radius: var(--r-pane); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); transition: border-color .12s, box-shadow .12s, transform .12s; }
+.look-card:hover { border-color: color-mix(in srgb, var(--fg) 30%, var(--line)); }
+@media (prefers-reduced-motion: no-preference) { .look-card:hover { transform: translateY(-1px); } }
+.look-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--sh-1); }
+.look-card:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lc-label { display: flex; flex-direction: column; gap: 2px; padding: 8px 8px 10px; cursor: pointer; min-width: 0; }
+.lc-prev { display: flex; flex-direction: column; gap: 5px; height: 64px; padding: 6px; border-radius: calc(var(--r-ctl) + 2px); background: var(--b); border: 1px solid var(--l); box-sizing: border-box; overflow: hidden; margin-bottom: 6px; }
+.lc-prev i { display: block; }
+.lc-top { display: flex; align-items: center; gap: 3px; }
+.lc-top .d1, .lc-top .d2, .lc-top .d3 { width: 6px; height: 6px; border-radius: 2px; }
+.lc-top .d1 { background: var(--p1); } .lc-top .d2 { background: var(--p2); } .lc-top .d3 { background: var(--p3); border-radius: 50%; }
+.lc-top .sp { flex: 1; }
+.lc-top .bt { width: 18px; height: 6px; border-radius: 3px; background: var(--s); border: 1px solid var(--l); }
+.lc-pane { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 5px 6px; border-radius: min(var(--r), 7px); background: var(--s); border: 1px solid var(--l); }
+.lc-pane .t1 { width: 70%; height: 4px; border-radius: 2px; background: var(--f); opacity: .85; }
+.lc-pane .t2 { width: 90%; height: 3px; border-radius: 2px; background: var(--m); opacity: .7; }
+.lc-pane .t3 { width: 45%; height: 3px; border-radius: 2px; background: var(--a); }
+.lc-pane .cta { margin-top: auto; width: 34px; height: 8px; border-radius: 3px; background: var(--a); }
+.lc-name { font-weight: 600; font-size: 13px; overflow-wrap: anywhere; }
+.lc-about { font-size: 11.5px; color: var(--muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lc-tick { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: none; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.look-card.on .lc-tick { display: grid; }
+.lc-tick svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.lc-remove { position: absolute; top: 12px; left: 12px; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--fg); cursor: pointer; opacity: 0; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: opacity .12s; }
+.look-card:hover .lc-remove, .lc-remove:focus-visible { opacity: 1; }
+@media (pointer: coarse) { .lc-remove { opacity: 1; } }
+.lc-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.lc-remove:hover { color: var(--err); }
+.look-add { align-items: center; justify-content: center; gap: 4px; min-height: 120px; padding: 12px; border-style: dashed; background: transparent; box-shadow: none; color: var(--fg); font: inherit; cursor: pointer; text-align: center; }
+.look-add svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
 .ct-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .ct-msg:empty { display: none; }
 .ct-msg { padding: 6px 10px; border-radius: var(--r-ctl); background: var(--surface-2); }
@@ -818,7 +842,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <div class="app">
   <header>
-    <a class="brand" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" aria-label="Nucleus Handler Tools: home" title="Nucleus Handler Tools: the workbench, the VS Code extension and how to install them">
+    <a class="brand" href="./" aria-label="Nucleus Handler Workbench: home" title="Home: start a handler, open one or pick an example">
       <img class="logo logo-www" src="data:image/png;base64,/*WWW_LOGO*/" alt="" width="30" height="30">
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
       <div>
@@ -943,7 +967,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </main>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -979,8 +1003,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <h4 class="ct-h" id="looks-h">Look</h4>
         <div class="looks" id="set-looks" role="radiogroup" aria-labelledby="looks-h"></div>
         <div class="ct-actions">
-          <button class="btn" type="button" id="ct-load">Load a theme file…</button>
           <button class="link" type="button" id="ct-download">Download this look as a theme file</button>
+          <span class="muted small">to start your own</span>
         </div>
         <input type="file" id="ct-file" accept=".json,application/json" hidden>
         <div class="ct-msg small" id="ct-msg" role="status" aria-live="polite"></div>
@@ -1041,6 +1065,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="more-list">
     <button class="btn" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
+    <button class="btn" type="button" data-proxy="a.start-link">About these tools</button>
   </div>
   <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
 </dialog>

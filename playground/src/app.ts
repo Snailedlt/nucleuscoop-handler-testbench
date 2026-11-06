@@ -1155,6 +1155,7 @@ function commandList(): OpenEntry[] {
     c('Reset panel sizes', '', 'layout resize panels reset width', () => panels.reset()),
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
+    c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
   if (packageFiles.length) list.splice(16, 0, c("Show the package's files", '', 'package files folder zip nc', openFilesDialog));
@@ -2145,15 +2146,22 @@ const waka = initWakaTime({
   $('#settings-open').addEventListener('click', sync);
 }
 
-// The logo opens the start page. The single file (a release download, the Claude artifact) links to
-// the live site's; where a start page is served next to it (the artifact, a copy of the site), it
-// opens that one, so a preview stays a preview.
+// The logo is home: the start of the Open dialog (new handler, open a file, examples). A middle click
+// or Ctrl+click still opens the workbench fresh in a new tab.
+document.querySelector<HTMLAnchorElement>('a.brand')?.addEventListener('click', (e) => {
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  showOpen();
+});
+// "About these tools" opens the start page. The single file (a release download, the Claude artifact)
+// links to the live site's; where a start page is served next to it (the artifact, a copy of the
+// site), it opens that one, so a preview stays a preview.
 {
-  const brand = document.querySelector<HTMLAnchorElement>('a.brand');
-  if (brand && /^https?:/.test(location.protocol) && /^https:/.test(brand.getAttribute('href') ?? '')) {
+  const start = document.querySelector<HTMLAnchorElement>('a.start-link');
+  if (start && /^https?:/.test(location.protocol) && /^https:/.test(start.getAttribute('href') ?? '')) {
     fetch('start/', { method: 'HEAD', cache: 'no-store' })
       .then((r) => {
-        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) brand.href = 'start/';
+        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) start.href = 'start/';
       })
       .catch(() => {});
   }

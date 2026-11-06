@@ -74,55 +74,67 @@ export function initSettings(d: Deps) {
     const box = $('#set-looks');
     const on = currentLook();
     const mode = isDark() ? 'dark' : 'light';
-    const row = (id: string, name: string, about: string | undefined, custom: boolean) => {
+    const el = (tag: string, cls: string, text?: string) => {
+      const e = document.createElement(tag);
+      e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    };
+    // A card per look: a small picture of the workbench in its colours (the mode on screen), its name
+    // in its own font, a line about it; the one that's on has a ring and a tick.
+    const card = (id: string, name: string, about: string | undefined, custom: boolean) => {
       const t = lookTokens(id, mode);
-      const div = document.createElement('div');
-      div.className = 'look-row';
-      const label = document.createElement('label');
+      const div = el('div', `look-card${id === on ? ' on' : ''}`);
+      const label = el('label', 'lc-label');
       const r = document.createElement('input');
       r.type = 'radio';
       r.name = 'set-look';
       r.value = id;
       r.checked = id === on;
-      r.addEventListener('change', () => (pickLook(id), say(''), syncLooks()));
-      const sw = document.createElement('span');
-      sw.className = 'sw';
-      sw.setAttribute('aria-hidden', 'true');
-      // its page colour, its panes and its accent, in the mode shown now
-      sw.style.background = `linear-gradient(135deg, ${t.bg} 0 34%, ${t.surface} 34% 67%, ${t.accent} 67%)`;
-      const ln = document.createElement('span');
-      ln.className = 'ln';
-      const strong = document.createElement('strong');
-      strong.textContent = name;
-      ln.append(strong);
+      r.className = 'sr-only';
+      r.addEventListener('change', () => (pickLook(id), say(''), syncLooks(), (box.querySelector(`input[value="${CSS.escape(id)}"]`) as HTMLInputElement | null)?.focus()));
+      const prev = el('span', 'lc-prev');
+      prev.setAttribute('aria-hidden', 'true');
+      for (const [k, v] of Object.entries({ b: t.bg, s: t.surface, s2: t['surface-2'], f: t.fg, m: t.muted, a: t.accent, af: t['accent-fg'], l: t.line, r: t['r-pane'], p1: t.p1, p2: t.p2, p3: t.p3 })) if (v) prev.style.setProperty(`--${k}`, v);
+      // the header (logo dots, buttons), a pane of text with a coloured word, the primary button
+      prev.innerHTML = '<span class="lc-top"><i class="d1"></i><i class="d2"></i><i class="d3"></i><i class="sp"></i><i class="bt"></i></span><span class="lc-pane"><i class="t1"></i><i class="t2"></i><i class="t3"></i><i class="cta"></i></span>';
+      const nm = el('span', 'lc-name', name);
+      if (t['font-display']) nm.style.fontFamily = t['font-display'];
+      label.append(r, prev, nm);
       if (about) {
-        const small = document.createElement('small');
-        small.textContent = about;
-        small.title = about;
-        ln.append(small);
+        const ab = el('span', 'lc-about', about);
+        ab.title = about;
+        label.append(ab);
       }
-      label.append(r, sw, ln);
-      div.append(label);
+      const tick = el('span', 'lc-tick');
+      tick.setAttribute('aria-hidden', 'true');
+      tick.innerHTML = '<svg viewBox="0 0 24 24"><path d="m6 12.5 4 4L18 8"/></svg>';
+      div.append(label, tick);
       if (custom) {
-        const rm = document.createElement('button');
-        rm.type = 'button';
-        rm.className = 'link';
-        rm.textContent = 'Remove';
+        const rm = el('button', 'lc-remove');
+        (rm as HTMLButtonElement).type = 'button';
         rm.setAttribute('aria-label', `Remove ${name}`);
+        rm.title = 'Remove';
+        rm.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
         rm.addEventListener('click', () => (removeLook(id), say(`"${name}" removed.`), syncLooks()));
         div.append(rm);
       }
       return div;
     };
+    // The last card adds one: a theme file from the device.
+    const add = el('button', 'look-card look-add');
+    (add as HTMLButtonElement).type = 'button';
+    add.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="lc-name">Add a theme file</span><span class="lc-about">JSON, from your device</span>';
+    add.addEventListener('click', () => ($('#ct-file') as HTMLInputElement).click());
     box.replaceChildren(
-      ...BUILT_IN_LOOKS.map((id) => row(id, lookName(id), lookAbout(id), false)),
-      ...customLooks().map((t) => row(t.id, t.name, t.about ?? `Your theme, on ${lookName(t.base)}`, true)),
+      ...BUILT_IN_LOOKS.map((id) => card(id, lookName(id), lookAbout(id), false)),
+      ...customLooks().map((t) => card(t.id, t.name, t.about ?? `Your theme, on ${lookName(t.base)}`, true)),
+      add,
     );
   }
   syncLooks();
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', syncLooks);
   window.addEventListener('workbench-look', () => setTimeout(syncLooks));
-  $('#ct-load').addEventListener('click', () => ($('#ct-file') as HTMLInputElement).click());
   $('#ct-file').addEventListener('change', async (e) => {
     const input = e.target as HTMLInputElement;
     const f = input.files?.[0];
