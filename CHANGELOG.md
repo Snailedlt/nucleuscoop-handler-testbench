@@ -62,6 +62,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Problems explained right where they are.** Hovering underlined code (or a marker in the margin) opens a card under it, not on top of it: an icon in the problem's colour, a plain title, the exact message with names shown as code, and the fix as a button you can click. The name's docs follow below.
+
+  <details><summary>Screenshot</summary>
+
+  ![The hover card for a misspelled Context.PlayerID, with its fix](docs/images/changelog/2026-11-06-hover-card-light.png)
+
+  </details>
+
 - **The colour glow is for AI only.** Pointing at an everyday button no longer makes it glow; only Fix with AI does.
 
 ---

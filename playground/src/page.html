@@ -359,7 +359,28 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 
 #sig { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 10px; font: 12px/1.5 var(--font-mono); box-shadow: 0 4px 14px rgba(0,0,0,.15); overflow-x: auto; }
 #sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }
-#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); pointer-events: none; }
+#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
+#tip[hidden] { display: none; }
+/* The hover card's problems: an icon in the severity colour, a plain title, the exact message (names as code), a fix. */
+#tip.has-problems { padding: 0; }
+#tip .hc-item { display: flex; gap: 10px; padding: 10px 12px; border-left: 3px solid var(--line); }
+#tip .hc-item + .hc-item { border-top: 1px solid var(--line); }
+#tip .hc-item.error { border-left-color: var(--err); }
+#tip .hc-item.warning { border-left-color: var(--warn); }
+#tip .hc-item.info { border-left-color: var(--info); }
+#tip .hc-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); margin-top: 1px; }
+#tip .error .hc-ico { background: var(--err); }
+#tip .warning .hc-ico { background: var(--warn); color: #1b1f2a; }
+#tip .info .hc-ico { background: var(--info); }
+#tip .hc-body { min-width: 0; }
+#tip .hc-title { font-weight: 600; color: var(--fg); }
+#tip .hc-msg { color: var(--muted); margin-top: 2px; line-height: 1.45; }
+#tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 4px; border-radius: 3px; overflow-wrap: anywhere; }
+#tip .hc-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+#tip .hc-actions .btn { padding: 3px 10px; font-size: 12px; }
+#tip .hc-actions .btn code { background: transparent; color: inherit; padding: 0; }
+#tip .hc-rule { font: 11px var(--font-mono); color: var(--muted); }
+#tip.has-problems .hc-doc { border-top: 1px solid var(--line); padding: 10px 12px; }
 #tip p, .api p { margin: 0 0 6px; }
 .doc-code, #tip pre { background: var(--surface-2); border-radius: 5px; padding: 6px 8px; font: 12px/1.45 var(--font-mono); margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
 code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 4px; }

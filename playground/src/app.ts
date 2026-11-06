@@ -273,6 +273,7 @@ const editor = CodeMirror($('#editor'), {
           }));
       }),
     delay: 250,
+    tooltips: false, // our own hover card (showHoverCard)
   },
   configureMouse: vscodeMouse,
   extraKeys: {
@@ -350,34 +351,89 @@ initMessageHints(editor);
 // Hover docs
 const tip = $('#tip');
 let tipTimer: number | undefined;
+let tipHideTimer: number | undefined;
+// The hover card: the problems under the pointer (what, why, a fix you can click) and the docs of the name there.
+// Anchored under the code it's about (above it near the bottom), so it never covers that code; it stays open while
+// the pointer moves onto it. Replaces CodeMirror's own plain-text lint tooltip (lint.tooltips: false).
+const SEV_ICON: Record<string, string> = { error: '✖', warning: '!', info: 'i', hint: '·' };
+const codeIn = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+function problemCard(list: Diagnostic[]): string {
+  return list.map((d, i) => {
+    const plain = plainFor(d);
+    const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes?.[0];
+    return `<div class="hc-item ${sevClass[d.severity]}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div class="hc-body">`
+      + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${codeIn(d.message)}</div>`
+      + (fix ? `<div class="hc-actions"><button class="btn primary" type="button" data-hc-fix="${i}">${fix.preferred ? 'Fix: ' : ''}${codeIn(fix.title)}</button>${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : mode === 'dev' ? `<div class="hc-actions"><span class="hc-rule">${d.rule}</span></div>` : '')
+      + `</div></div>`;
+  }).join('');
+}
+function placeTip(from: { left: number; top: number; bottom: number }) {
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  const x = Math.min(Math.max(8, from.left - 12), window.innerWidth - w - 8);
+  const below = from.bottom + 6 + h <= window.innerHeight - 8 || from.top - 6 - h < 8;
+  tip.style.left = `${x}px`;
+  tip.style.top = `${below ? from.bottom + 6 : from.top - 6 - h}px`;
+}
+function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
+  if (!list.length && !doc) return void (tip.hidden = true);
+  tip.innerHTML = problemCard(list) + (doc ? `<div class="hc-doc">${doc}</div>` : '');
+  tip.classList.toggle('has-problems', list.length > 0);
+  tip.hidden = false;
+  tip.querySelectorAll<HTMLButtonElement>('[data-hc-fix]').forEach((b) => b.addEventListener('click', () => {
+    const d = list[Number(b.dataset.hcFix)];
+    const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes![0];
+    tip.hidden = true;
+    fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
+      editor.operation(() => {
+        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+      }),
+    );
+    codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
+  }));
+  placeTip(editor.charCoords(editor.posFromIndex(anchorFrom), 'window'));
+}
+const problemsAt = (at: number) => current.filter((d) => d.severity !== 'hint' && d.start <= at && at <= Math.max(d.end, d.start + 1));
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
+  if (tip.contains(e.target as Node)) return;
   clearTimeout(tipTimer);
   tipTimer = window.setTimeout(() => {
     // Not over the "+" or while its menu is open: the menu says it already.
     if ((e.target as HTMLElement).closest?.('.wm-add') || document.querySelector('.wm-menu')) { tip.hidden = true; return; }
-    const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
     const text = editor.getValue();
+    // A marker in the gutter: every problem on that line.
+    const marker = (e.target as HTMLElement).closest?.('.CodeMirror-lint-marker');
+    if (marker) {
+      const line = editor.lineAtHeight(e.clientY, 'window');
+      const list = lineProblems(line, mode === 'dev');
+      if (!list.length) return void (tip.hidden = true);
+      return showHoverCard(text, 0, list, '', Math.min(...list.map((d) => d.start)));
+    }
+    if ((e.target as HTMLElement).closest?.('.CodeMirror-gutters')) return void (tip.hidden = true);
+    const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
     const at = editor.indexFromPos(pos);
+    // Past the end of the line: nothing there.
+    const end = editor.charCoords({ line: pos.line, ch: editor.getLine(pos.line).length }, 'window');
+    if (e.clientX > end.right + 4) return void (tip.hidden = true);
+    const list = problemsAt(at);
     // A number in Game.ProtoInput.BlockedMessages: the window message and what blocking it does.
     const msg = blockedItemAt(text, at);
     const r = msg ? undefined : resolveAt(text, at);
-    const html = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
-    if (!html) {
-      tip.hidden = true;
-      return;
-    }
-    tip.innerHTML = html;
-    tip.hidden = false;
-    const x = Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 12);
-    const y = e.clientY + 18 + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 10 : e.clientY + 18;
-    tip.style.left = `${Math.max(8, x)}px`;
-    tip.style.top = `${Math.max(8, y)}px`;
+    const doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+    const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : at;
+    showHoverCard(text, at, list, doc, from);
   }, 280);
 });
-editor.getWrapperElement().addEventListener('mouseleave', () => {
+const hideTipSoon = () => { clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
+editor.getWrapperElement().addEventListener('mouseleave', (e: MouseEvent) => {
   clearTimeout(tipTimer);
-  tip.hidden = true;
+  if (!tip.contains(e.relatedTarget as Node)) hideTipSoon();
 });
+editor.getWrapperElement().addEventListener('mouseenter', () => clearTimeout(tipHideTimer));
+tip.addEventListener('mouseenter', () => { clearTimeout(tipHideTimer); clearTimeout(tipTimer); });
+tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperElement().contains(e.relatedTarget as Node)) hideTipSoon(); });
+editor.on('change', () => (tip.hidden = true));
+editor.on('scroll', () => (tip.hidden = true));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
 
 function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
