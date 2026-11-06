@@ -421,7 +421,19 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .dc-chip.req { color: var(--err); border-color: currentColor; }
 .dc-chip code { font-size: 11px; padding: 0 3px; }
 .dc-ai { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 1.45; color: var(--muted); }
-.dc-ai svg { flex: none; margin-top: 2px; color: var(--accent); }
+.dc-ai .ai-spark { margin-top: 1px; }
+/* The AI mark: two four-point sparkles with a purple-to-cyan gradient, wherever something was written by Claude. */
+.ai-spark, .ai-doc::before { content: ''; display: inline-block; flex: none; width: 1.1em; height: 1.1em; vertical-align: -0.18em; background: linear-gradient(135deg, #a855f7 10%, #22d3ee 90%);
+  -webkit-mask: var(--spark) center / contain no-repeat; mask: var(--spark) center / contain no-repeat;
+  --spark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 1.5Q15 9.5 23 10.5Q15 11.5 14 19.5Q13 11.5 5 10.5Q13 9.5 14 1.5Z'/%3E%3Cpath d='M5.5 13.5Q6 17.5 10 18Q6 18.5 5.5 22.5Q5 18.5 1 18Q5 17.5 5.5 13.5Z'/%3E%3C/svg%3E"); }
+.ai-doc::before { margin-right: 4px; }
+/* Reference home: the docs to check, apart from the Browse grid. */
+.api-ai { display: flex; gap: 12px; align-items: flex-start; text-align: left; font: inherit; color: var(--fg); cursor: pointer; padding: 12px 14px; border-radius: var(--r-pane); border: 1px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, #a855f7, #22d3ee) border-box; }
+.api-ai:hover { background: linear-gradient(color-mix(in srgb, #a855f7 7%, var(--surface)), color-mix(in srgb, #22d3ee 7%, var(--surface))) padding-box, linear-gradient(135deg, #a855f7, #22d3ee) border-box; }
+.api-ai .ai-spark { width: 26px; height: 26px; margin-top: 2px; }
+.api-ai .t { font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.api-ai .d { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
 .dc-check { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 12px; color: var(--muted); }
 .dc-check a { font-size: 12px; }
 .votes { display: inline-flex; gap: 2px; }
@@ -430,8 +442,7 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .vote-btn[aria-pressed="true"] { opacity: 1; filter: none; background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
 #tip-votes .votes { margin-right: 2px; }
 .ai-doc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-.ai-doc::before, .ai-mark { content: '✦ '; color: var(--accent); }
-.ai-mark { font-size: 11px; }
+
 /* Shortcut hints (keyhints.ts). */
 .keyhint { position: fixed; z-index: 90; display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 12px; pointer-events: none; white-space: nowrap; }
 .keyhint[hidden] { display: none; }

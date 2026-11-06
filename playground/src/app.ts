@@ -989,7 +989,7 @@ $('#sim-all').addEventListener('click', testAll);
 // Reference with nothing typed: what's in it, so it's clear what can be found there.
 const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
   // The docs Claude wrote that no person has checked yet: handler authors can confirm or correct them (👍/👎, an issue).
-  { key: 'AI', title: '✦ Written by Claude: please check', doc: 'Docs Claude wrote from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
+  { key: 'AI', title: 'Written by Claude: please check', doc: 'Docs Claude wrote from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
   { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
   { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
   { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
@@ -1011,8 +1011,9 @@ function renderApiHome(el: HTMLElement) {
   const enums = Object.keys(api.enums).sort();
   el.innerHTML = `<div class="api-home">
     <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
+    ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check Claude's docs <span class="count">${unchecked().size}</span></span><span class="d">Claude wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
     <h3 class="api-h">Browse</h3>
-    <div class="api-groups">${API_GROUPS.map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
+    <div class="api-groups">${API_GROUPS.filter((g) => g.key !== 'AI').map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
     <h3 class="api-h">Most used in Hub handlers</h3>
     <div class="api-chips">${top.map(([p, n]) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${n} of ${USAGE.handlers} Hub handlers">${esc(p)}</button>`).join('')}</div>
     <h3 class="api-h">Nucleus values (enums)</h3>
@@ -1028,7 +1029,7 @@ function renderApiGroup(el: HTMLElement, key: string) {
   const g = API_GROUPS.find((x) => x.key === key)!;
   const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
   el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
-    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-mark" title="Written by Claude (AI), not from the official docs" aria-label="Written by Claude (AI)">✦</span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
+    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="Written by Claude (AI), not from the official docs" role="img" aria-label="Written by Claude (AI)"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
   el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
   wireApiLinks(el);
   el.scrollTop = 0;
