@@ -56,6 +56,9 @@ which are not saved here.
     compare; the fake-out strains without opening; the progress ring's electrons hit the bar, not each other;
     the walker walks ahead the whole way and taps his toe at the end; seams fade at the ball's edge instead of
     popping. Impact frames parked as a future idea. `19-…`
+20. **One stripe**: Duo is a blue ball with one white stripe wrapping vertically round the middle, a texture on his
+    body, never hidden, never doubled, on every Duo (players included). The progress ring's electrons wait in line
+    at the top, take turns hitting the bar and roll back; nothing vanishes. `20-…`
 
 ## Lessons we kept
 
@@ -65,4 +68,5 @@ which are not saved here.
 - Impact comes from contrast: a long hold, then a snap; hit stop on the big hit. Impact frames read as glitches at
   this size, so they went.
 - Characters are 3D even when drawn flat: outlines stay round, features travel round the body.
+- Duo's stripe is a texture, not a body part: one vertical band, under the face, always there.
 - Nothing is deleted: earlier versions stay next to the new ones, collapsed.
