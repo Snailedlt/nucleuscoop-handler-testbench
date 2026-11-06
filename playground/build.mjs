@@ -272,7 +272,10 @@ const bot = botTemplates();
 if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handler(s) whose current version isn't verified: ${hub.rejected.map((r) => r.title).join(', ')}`);
 
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
-const build = { bench: rev(path.join(here, '..')), core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
+// Anonymous votes and feature counts (src/feedback.ts) go to this GoatCounter site, if one is set (the FEEDBACK_GOATCOUNTER
+// variable: the site code, e.g. "nucleus-workbench"). Without it, nothing is sent anywhere.
+const feedbackSite = /^[a-z0-9-]{2,50}$/.test(process.env.FEEDBACK_GOATCOUNTER ?? '') ? process.env.FEEDBACK_GOATCOUNTER : null;
+const build = { bench: rev(path.join(here, '..')), core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null, feedback: feedbackSite };
 // What's new, from ../CHANGELOG.md: dated sections ("## 2026-11-05"), newest first, in emoji groups
 // ("### ✨ New"); each bullet starts with a **short summary**, and may have a screenshot under it
 // ("  ![alt](docs/images/changelog/x-light.png)", plus x-dark.png beside it, copied to changes/ next to the page). "Unreleased" is only

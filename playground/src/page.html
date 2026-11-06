@@ -387,13 +387,10 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 #sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }
 #tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
 #tip[hidden] { display: none; }
-/* The hover card's problems: an icon in the severity colour, a plain title, the exact message (names as code), a fix. */
-#tip.has-problems { padding: 0; }
-#tip .hc-item { display: flex; gap: 10px; padding: 10px 12px; border-left: 3px solid var(--line); }
-#tip .hc-item + .hc-item { border-top: 1px solid var(--line); }
-#tip .hc-item.error { border-left-color: var(--err); }
-#tip .hc-item.warning { border-left-color: var(--warn); }
-#tip .hc-item.info { border-left-color: var(--info); }
+/* The hover card (one box): over a problem, the problem with an icon in its colour, its message (names as code) and
+   its fixes; the docs of the name fold away below. */
+#tip .hc-item { display: flex; gap: 10px; }
+#tip .hc-item + .hc-item { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 #tip .hc-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); margin-top: 1px; }
 #tip .error .hc-ico { background: var(--err); }
 #tip .warning .hc-ico { background: var(--warn); color: #1b1f2a; }
@@ -402,11 +399,15 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 #tip .hc-title { font-weight: 600; color: var(--fg); }
 #tip .hc-msg { color: var(--muted); margin-top: 2px; line-height: 1.45; }
 #tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 4px; border-radius: 3px; overflow-wrap: anywhere; }
-#tip .hc-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+#tip .hc-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
 #tip .hc-actions .btn { padding: 3px 10px; font-size: 12px; }
 #tip .hc-actions .btn code { background: transparent; color: inherit; padding: 0; }
+#tip .hc-key { display: inline-flex; gap: 2px; margin-left: 2px; }
+#tip .hc-key kbd { font: 10.5px var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
 #tip .hc-rule { font: 11px var(--font-mono); color: var(--muted); }
-#tip.has-problems .hc-doc { border-top: 1px solid var(--line); padding: 10px 12px; }
+#tip details.hc-doc { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 6px; }
+#tip details.hc-doc > summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+#tip details.hc-doc[open] > summary { margin-bottom: 6px; }
 #tip p, .api p { margin: 0 0 6px; }
 /* API docs card (doccard.ts): signature, description, facts, and who wrote it. */
 .dc-sig { font: 12.5px/1.5 var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 7px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -421,6 +422,13 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .dc-chip code { font-size: 11px; padding: 0 3px; }
 .dc-ai { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 1.45; color: var(--muted); }
 .dc-ai svg { flex: none; margin-top: 2px; color: var(--accent); }
+.dc-check { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.dc-check a { font-size: 12px; }
+.votes { display: inline-flex; gap: 2px; }
+.vote-btn { font: 13px/1 var(--font-body); background: none; border: 1px solid transparent; border-radius: 6px; padding: 3px 5px; cursor: pointer; filter: grayscale(1); opacity: .7; }
+.vote-btn:hover, .vote-btn:focus-visible { opacity: 1; filter: none; border-color: var(--line); }
+.vote-btn[aria-pressed="true"] { opacity: 1; filter: none; background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+#tip-votes .votes { margin-right: 2px; }
 .ai-doc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 .ai-doc::before, .ai-mark { content: '✦ '; color: var(--accent); }
 .ai-mark { font-size: 11px; }
@@ -1155,7 +1163,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <svg class="tip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="tip-body"><strong id="tip-label">Tip</strong> <span id="tip-text"></span></div>
         <div class="tip-actions">
-          <button class="btn tip-btn" id="tip-action" type="button" hidden></button>
+          <span id="tip-votes"></span><button class="btn tip-btn" id="tip-action" type="button" hidden></button>
           <button class="btn icon tip-btn" id="tip-prev" type="button" title="Previous tip" aria-label="Previous tip">‹</button>
           <button class="btn icon tip-btn" id="tip-next" type="button" title="Next tip" aria-label="Next tip">›</button>
           <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on in Settings)" aria-label="Turn tips off"><span class="long">×</span><span class="short">Turn off</span></button>
@@ -1246,6 +1254,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <div class="set-sec"><h3>Layout</h3>
       <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
       <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
+    <div class="set-sec"><h3>Feedback</h3>
+      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Send anonymous votes and usage counts<small>Your 👍/👎 on tips and docs, and which features get used (once per visit), so we see what helps. Only counts: no code, no names, no cookies, nothing that identifies you.</small></span></label>
+      <p class="muted small" id="set-feedback-note" hidden></p></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-theme" aria-labelledby="st-theme" hidden>
     <div class="set-sec"><h3>Light or dark</h3>

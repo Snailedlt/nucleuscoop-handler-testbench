@@ -1,5 +1,6 @@
 // The tip bar under the code. One general tip at a time (Next shows another), and Clippy-style
 // tips that pop up once when the code or the cursor makes them relevant. Off with one click.
+import { voteButtons } from './feedback';
 import { CONTEXT_TIPS, GENERAL_TIPS, Tip, TipContext } from './tips';
 import { scanHandler, inCallback, Scan } from './lines';
 
@@ -51,6 +52,7 @@ export function initTips({ editor, actions, toast, targets }: Deps) {
         body.append(c);
       } else body.append(document.createTextNode(part));
     });
+    $('#tip-votes').innerHTML = voteButtons('tip', tip.id, { up: 'Useful tip', down: 'Not useful' });
     document.querySelectorAll('.tip-target').forEach((e) => e.classList.remove('tip-target'));
     if (tip.action && on) targets?.[tip.action.run]?.()?.classList.add('tip-target');
     if (tip.action) {

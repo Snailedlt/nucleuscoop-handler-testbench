@@ -1,7 +1,7 @@
 import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
-import { clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
+import { announce, clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
@@ -34,6 +34,7 @@ import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
+import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
@@ -43,7 +44,7 @@ applyTheme();
 applyCustomTheme();
 applyCodeTheme();
 watchPictures();
-declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
+declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null; feedback?: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number } }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null; /** every handler on the Hub (our mirror), not only the most downloaded */ all?: boolean };
@@ -405,10 +406,10 @@ const codeIn = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 function problemCard(list: Diagnostic[]): string {
   return list.map((d, i) => {
     const plain = plainFor(d);
-    const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes?.[0];
+    const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
     return `<div class="hc-item ${sevClass[d.severity]}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div class="hc-body">`
       + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${codeIn(d.message)}</div>`
-      + (fix ? `<div class="hc-actions"><button class="btn primary" type="button" data-hc-fix="${i}">${fix.preferred ? 'Fix: ' : ''}${codeIn(fix.title)}</button>${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : mode === 'dev' ? `<div class="hc-actions"><span class="hc-rule">${d.rule}</span></div>` : '')
+      + (fixes.length || mode === 'dev' ? `<div class="hc-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred ? 'Fix: ' : ''}${codeIn(f.title)}</button>`).join('')}${fixes.length && i === 0 ? '<span class="hc-key" title="Fixes from the keyboard"><kbd>Ctrl</kbd><kbd>.</kbd></span>' : ''}${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : '')
       + `</div></div>`;
   }).join('');
 }
@@ -421,12 +422,17 @@ function placeTip(from: { left: number; top: number; bottom: number }) {
 }
 function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
   if (!list.length && !doc) return void (tip.hidden = true);
-  tip.innerHTML = problemCard(list) + (doc ? `<div class="hc-doc">${doc}</div>` : '');
+  // One box: over a problem, the problem (what, why, fixes); the name's docs fold away under it, open on a click.
+  // Over plain code, the docs. (As in JetBrains IDEs and VS Code: the problem first, the docs one step away.)
+  const name = list.length && doc ? resolveAt(text, at) : undefined;
+  tip.innerHTML = list.length
+    ? problemCard(list) + (doc ? `<details class="hc-doc"><summary>Docs${name ? ` for <code>${esc(text.slice(name.start, name.end))}</code>` : ''}</summary>${doc}</details>` : '')
+    : `<div class="hc-doc">${doc}</div>`;
   tip.classList.toggle('has-problems', list.length > 0);
   tip.hidden = false;
   tip.querySelectorAll<HTMLButtonElement>('[data-hc-fix]').forEach((b) => b.addEventListener('click', () => {
-    const d = list[Number(b.dataset.hcFix)];
-    const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes![0];
+    const [di, fi] = b.dataset.hcFix!.split(':').map(Number);
+    const fix = list[di].fixes![fi];
     tip.hidden = true;
     fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
       editor.operation(() => {
@@ -652,8 +658,8 @@ function showLineProblems(line: number, at?: number) {
       .map((d, i) => {
         const plain = plainFor(d);
         const about = d.message.match(/`([^`]+)`/)?.[1];
-        const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes?.[0];
-        return `<div class="lp-item ${sevClass[d.severity]}"><div class="lp-title">Line ${line + 1}: ${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div><div class="lp-why">${esc(plain.why)}</div><div class="lp-actions">${fix ? `<button class="btn primary" type="button" data-lp-fix="${i}">${fix.preferred ? 'Fix this' : esc(fix.title.replace(/`/g, ''))}</button>` : ''}<button class="link" type="button" data-lp-more>More in Check</button></div></div>`;
+        const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
+        return `<div class="lp-item ${sevClass[d.severity]}"><div class="lp-title">Line ${line + 1}: ${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div><div class="lp-why">${esc(plain.why)}</div><div class="lp-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-lp-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred && fixes.length === 1 ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`).join('')}<button class="link" type="button" data-lp-more>More in Check</button></div></div>`;
       })
       .join('');
   // Under the line, or above it near the bottom of the editor.
@@ -665,8 +671,8 @@ function showLineProblems(line: number, at?: number) {
   linePop.querySelector('.lp-close')!.addEventListener('click', hideLinePop);
   linePop.querySelectorAll<HTMLButtonElement>('[data-lp-fix]').forEach((b) =>
     b.addEventListener('click', () => {
-      const d = list[Number(b.dataset.lpFix)];
-      const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes![0];
+      const [di, fi] = b.dataset.lpFix!.split(':').map(Number);
+      const fix = list[di].fixes![fi];
       fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
         editor.operation(() => {
           for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
@@ -817,6 +823,7 @@ function syncPlayerChoices() {
 }
 function runSim() {
   syncPlayerChoices();
+  if (!$('#panel-simulate').hidden) use('try-it');
   const players = Number(($('#sim-players') as HTMLSelectElement).value);
   const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
   const kb = Number(($('#sim-kb') as HTMLSelectElement).value);
@@ -876,6 +883,7 @@ $('#sim-run').addEventListener('click', runSim);
 const MX_RES = MATRIX_RESOLUTIONS;
 let mxRun = 0;
 function testAll() {
+  use('test-all');
   document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: 'running tests' }));
   const run = ++mxRun;
   const code = editor.getValue();
@@ -1004,6 +1012,7 @@ function wireApiLinks(el: HTMLElement) {
 }
 
 function renderApi(q: string) {
+  if (q.trim()) use('reference-search');
   const el = $('#api-results');
   if (!q.trim()) return renderApiHome(el);
   {
@@ -1332,6 +1341,7 @@ function setThemeMode(m: 'light' | 'dark' | 'auto') {
 
 /** Format document: indentation and spacing (core/format.ts guarantees the tokens don't change). */
 function formatDocument() {
+  use('format');
   const text = editor.getValue();
   const r = formatHandler(text);
   if (!r.ok) return notice(r.reason, { kind: 'error' });
@@ -1771,6 +1781,23 @@ initKeyHints([
   { el: document.getElementById('help-open'), what: 'All keyboard shortcuts', keys: '?' },
 ]);
 
+// Feedback (feedback.ts): votes on tips and Claude's docs, anonymous counts. A 👎 on a doc points at the issue link.
+wireVotes((kind, _id, v, el) => {
+  if (kind === 'doc' && v === 'down') el.closest('.dc-check')?.querySelector<HTMLElement>('a')?.focus();
+  announce(v ? (v === 'up' ? 'Thanks: counted as helpful.' : 'Thanks: counted as not helpful.') : 'Vote taken back.');
+});
+{
+  const box = $('#set-feedback') as HTMLInputElement, note = $('#set-feedback-note');
+  const sync = () => {
+    box.checked = feedbackOn();
+    box.disabled = !feedbackAvailable() || feedbackBlockedByBrowser();
+    note.hidden = !box.disabled;
+    note.textContent = !feedbackAvailable() ? 'Not set up in this copy of the workbench: nothing is sent. Your votes are kept in this browser only.' : 'Off: your browser asks sites not to track you (Do Not Track or Global Privacy Control).';
+  };
+  box.addEventListener('change', () => (setFeedback(box.checked), sync()));
+  sync();
+}
+
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 
@@ -1879,6 +1906,7 @@ aiBtn.addEventListener('click', runAiFix);
 
 // Fix all: the deterministic, offline fixes (the same as `nucleus lint --fix` and the extension).
 $('#fix-all').addEventListener('click', () => {
+  use('fix-all');
   const base = editor.getValue();
   const before = counts(base, lintCtx());
   const r = fixAll(base, lintCtx());
@@ -2263,6 +2291,7 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
       await downloads.save({ filename, data });
       waka.saved();
       if (kind !== 'zip') return (codeDialog.close(), confirmOn($('#code-menu-open'), 'Saved ✓', `Saved ${filename}.`));
+      use(`save-${kind}`);
       // The .zip: what to do next, in the same dialog.
       const errorsLeft = current.filter((d) => d.severity === 'error').length;
       $('#code-saved').textContent = `Saved ${filename}`;
