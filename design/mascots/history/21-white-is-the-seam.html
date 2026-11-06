@@ -825,7 +825,7 @@ function duo(o = {}) {
   const side = (sd, part) => {
     const one = (ex) => {
       const x = sd === 'l' ? 47 : 73;
-      const eye = part !== 'bottom' ? eyeOf(x, 58, 1, ex, ink, hl, sd) : '';
+      const eye = part !== 'bottom' ? eyeOf(x, o.quad ? 50 : 58, 1, ex, ink, hl, sd) : ''; // four players: eyes clear of the cross
       const low = part !== 'top' ? `${m ? '' : blushOf(sd === 'l' ? 39 : 81, 70, 1)}<g clip-path="url(#${id}${sd})">${mouthOf(60, 69, 1, ex, ink)}</g>` : '';
       return eye + low;
     };
