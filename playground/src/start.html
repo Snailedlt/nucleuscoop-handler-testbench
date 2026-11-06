@@ -81,6 +81,22 @@ li { margin: 4px 0; }
 .facts li::before { content: ""; position: absolute; left: 8px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--brand); }
 footer { max-width: 980px; margin: 0 auto; padding: 16px 16px 40px; border-top: 1px solid var(--line); }
 main { padding-bottom: 32px; }
+/* Motion, after bsmanager.io: a glow behind the top fades in, the hero arrives in steps, and buttons
+   widen a little under the pointer with a soft overshoot. Nothing moves under reduced motion. */
+body { position: relative; }
+body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; z-index: -1; pointer-events: none; background: radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%); }
+@media (prefers-reduced-motion: no-preference) {
+  body::before { animation: glow-in 1.2s ease-out both; }
+  @keyframes glow-in { from { opacity: 0; transform: scaleY(.6); transform-origin: top; } }
+  main > header > * { animation: hero-in .7s cubic-bezier(.3, 1, .7, 1) both; }
+  main > header > :nth-child(2) { animation-delay: .06s; } main > header > :nth-child(3) { animation-delay: .12s; }
+  main > header > :nth-child(4) { animation-delay: .18s; } main > header > :nth-child(5) { animation-delay: .24s; }
+  @keyframes hero-in { from { opacity: 0; transform: translateY(12px) scale(.985); } }
+  .btn { transition: filter .12s, transform .12s, box-shadow .12s, padding .3s cubic-bezier(.3, 1, .7, 1); }
+  .btn:hover { padding-inline: 24px; transform: none; }
+  .cards .card, figure { transition: transform .3s cubic-bezier(.3, 1, .7, 1), box-shadow .3s; }
+  .cards .card:hover, figure:hover { transform: translateY(-3px); box-shadow: var(--sh-2); }
+}
 @media (max-width: 760px) { .shots, .cards { grid-template-columns: 1fr; } main { padding-top: 20px; } }
 </style>
 </head>

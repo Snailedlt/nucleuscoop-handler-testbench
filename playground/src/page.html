@@ -702,6 +702,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .btn.primary { position: relative; isolation: isolate; }
   .btn.primary::after { content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit; background: linear-gradient(90deg, var(--p1), var(--p3), var(--p4), var(--p7), var(--p2), var(--p6), var(--p5), var(--p1)); background-size: 400% 100%; filter: blur(7px); opacity: 0; transition: opacity .25s ease; animation: glow-ribbon 8s linear infinite paused; pointer-events: none; }
   .btn.primary:hover::after, .btn.primary:focus-visible::after { opacity: .55; animation-play-state: running; }
+  /* and it widens a little under the pointer, with a soft overshoot (bsmanager.io's download button) */
+  .btn.primary { transition: background-color .12s, border-color .12s, filter .12s, padding .3s cubic-bezier(.3, 1, .7, 1); }
+  .btn.primary:hover { padding-inline: 18px; }
+  :root[data-site="alpha8"] .btn.primary:hover { padding-inline: 12px; }
   :root[data-site="v3"] .btn.primary::after, :root[data-site="alpha8"] .btn.primary::after { display: none; }
   @keyframes glow-ribbon { to { background-position: 400% 0; } }
   /* Icon buttons: a little turn under the pointer, a kick back when pressed */
