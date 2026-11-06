@@ -988,6 +988,8 @@ $('#sim-all').addEventListener('click', testAll);
 
 // Reference with nothing typed: what's in it, so it's clear what can be found there.
 const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
+  // The docs Claude wrote that no person has checked yet: handler authors can confirm or correct them (👍/👎, an issue).
+  { key: 'AI', title: '✦ Written by Claude: please check', doc: 'Docs Claude wrote from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
   { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
   { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
   { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
@@ -997,6 +999,8 @@ const API_GROUPS: { key: string; title: string; doc: string; match: (path: strin
   { key: 'Hub', title: 'Hub (written by the Hub)', doc: 'Lines hub.splitscreen.me writes into a handler when it is uploaded. You don\'t add or change them.', match: (p) => p.startsWith('Hub.') },
   { key: 'System', title: '.NET (System.*)', doc: 'Files, folders, paths and the environment, through .NET.', match: (p) => p.startsWith('System.') },
 ];
+let uncheckedCache: Set<string> | undefined;
+const unchecked = () => (uncheckedCache ??= new Set(allEntries(true).filter((e) => e.member.docBy === 'claude' && !e.member.docCheckedBy).map((e) => e.path)));
 const typeOf = (e: Entry) => (e.member.kind === 'method' ? 'fn' : ((e.member as { type?: string }).type ?? ''));
 function renderApiHome(el: HTMLElement) {
   const all = allEntries(true);
