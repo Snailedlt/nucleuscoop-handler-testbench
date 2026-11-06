@@ -52,6 +52,10 @@ which are not saved here.
 18. **The seam is the split**: each half (or quarter) keeps its half of the white line when Duo splits; in the
     players demo each new Duo keeps a sliver of white on the side it split from until it heals round. A History
     section at the end of the sheet holds everything dropped and every earlier step (03–16), loaded on open. `18-…`
+19. **The seam is part of the body**: drawn under the face, edge to edge, in every piece; a "white inside" split to
+    compare; the fake-out strains without opening; the progress ring's electrons hit the bar, not each other;
+    the walker walks ahead the whole way and taps his toe at the end; seams fade at the ball's edge instead of
+    popping. Impact frames parked as a future idea. `19-…`
 
 ## Lessons we kept
 
