@@ -868,7 +868,7 @@ function duo(o = {}) {
   const feetCol = m ? 'currentColor' : '#1858c4';
   const feet = o.noFeet ? '' : `<g class="d-feet"><ellipse class="d-fl" cx="48" cy="99" rx="8.6" ry="4.6" fill="${feetCol}"/><ellipse class="d-fr" cx="72" cy="99" rx="8.6" ry="4.6" fill="${feetCol}"/></g>`;
   const shadow = m || o.noShadow ? '' : '<ellipse class="d-shadow" cx="60" cy="105" rx="24" ry="3.4" fill="#0b1a33" opacity=".15"/>';
-  return `<defs>${pdefs}<clipPath id="${id}b"><circle cx="60" cy="62" r="34"/></clipPath><clipPath id="${id}xl"><rect x="60" y="0" width="12" height="120"/></clipPath><clipPath id="${id}xr"><rect x="48" y="0" width="12" height="120"/></clipPath><clipPath id="${id}l"><rect x="0" y="0" width="60" height="120"/></clipPath><clipPath id="${id}r"><rect x="60" y="0" width="60" height="120"/></clipPath></defs>
+  return `<defs>${pdefs}<clipPath id="${id}b"><circle cx="60" cy="62" r="34"/></clipPath><clipPath id="${id}xl"><rect x="60" y="0" width="12" height="120"/></clipPath><clipPath id="${id}xr"><rect x="48" y="0" width="12" height="120"/></clipPath><clipPath id="${id}l"><rect x="0" y="0" width="60.8" height="120"/></clipPath><clipPath id="${id}r"><rect x="59.2" y="0" width="60.8" height="120"/></clipPath></defs>
     ${o.before || ''}${shadow}<g class="d-jump">${feet}<g class="d-body">${body}${seam}</g>${o.inJump || ''}</g>${o.after || ''}`;
 }
 
