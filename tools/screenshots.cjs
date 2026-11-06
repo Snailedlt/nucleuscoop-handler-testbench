@@ -175,10 +175,10 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     // Unreleased: stacked toasts.
     ({ ctx, p } = await open(b, t, CHW, 'example-mistakes'));
     await p.addStyleTag({ content: '#toasts { display: flex !important; }' });
-    await p.evaluate(() => (location.hash = '#nope'));
-    await p.waitForTimeout(200);
-    await p.click('.problem button:has-text("Fix this")').catch(() => {});
-    await p.waitForTimeout(200);
+    for (let i = 0; i < 2; i++) {
+      await p.click('.problem button:has-text("Fix this")').catch(() => {});
+      await p.waitForTimeout(400);
+    }
     await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setValue('Game.GUID="Demo";\nGame.GameName="Demo";\nGame.ExecutableName="demo.exe";\n'));
     await p.click('.CodeMirror');
     await p.keyboard.press('Shift+Alt+F');

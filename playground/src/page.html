@@ -506,6 +506,18 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 #welcome .w-steps { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
 #welcome .w-steps b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 11px; margin-right: 2px; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+/* A notice at the top of the code pane (src/toast.ts notice()): problems that need reading stay there until dismissed. */
+#notice { display: flex; align-items: flex-start; gap: 10px; margin: 8px 10px 0; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-left: 3px solid var(--tk); border-radius: var(--r-pane); background: var(--surface-2); font-size: 13.5px; line-height: 1.4; }
+#notice[hidden] { display: none; }
+#notice.info { --tk: var(--info); } #notice.warning { --tk: var(--warn); } #notice.error { --tk: var(--err); } #notice.success { --tk: var(--ok); }
+#notice .notice-icon { flex: none; width: 18px; height: 18px; margin-top: 1px; fill: none; stroke: var(--tk); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#notice .notice-text { flex: 1; min-width: 0; overflow-wrap: anywhere; padding-top: 1px; }
+#notice .notice-action { flex: none; padding: 3px 10px; font-size: 13px; }
+#notice .notice-close { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin: -3px 0; padding: 0; background: none; border: 0; border-radius: var(--r-ctl); color: var(--muted); cursor: pointer; }
+#notice .notice-close:hover { background: var(--surface); color: var(--fg); }
+#notice .notice-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+/* A button that answers for itself ("Copied ✓"), instead of a toast. */
+.btn.confirmed, .link.confirmed { color: var(--ok); }
 /* Toasts (src/toast.ts): a deck at the bottom right (above the bottom bar on phones). JS places
    each toast (transform, height) and the deck's own height; hovering fans it out. */
 #toasts { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 90; width: min(400px, calc(100vw - 32px)); height: 0; pointer-events: none; transition: height .35s cubic-bezier(.21,1.02,.73,1); }
@@ -754,6 +766,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Copy or download the handler" aria-label="Copy or download the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
+      <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
       <div class="code-row">
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>

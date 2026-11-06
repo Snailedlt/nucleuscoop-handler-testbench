@@ -193,9 +193,69 @@ export function toast(text: string, opts: ToastOptions = {}): void {
   layout();
 }
 
+/**
+ * A notice at the top of the code pane, for what needs reading or doing (an error, a link that
+ * opens nothing): it stays until dismissed or the next handler opens. One at a time.
+ */
+export function notice(text: string, opts: { kind?: ToastKind; action?: { label: string; run: () => void } } = {}) {
+  const el = document.getElementById('notice');
+  if (!el) return toast(text, opts);
+  const kind = opts.kind ?? kindOf(text);
+  el.className = kind;
+  el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  (el.querySelector('.notice-icon') as SVGElement).innerHTML = ICONS[kind];
+  (el.querySelector('.notice-text') as HTMLElement).textContent = text;
+  const act = el.querySelector('.notice-action') as HTMLButtonElement;
+  act.hidden = !opts.action;
+  act.textContent = opts.action?.label ?? '';
+  act.onclick = opts.action ? () => (clearNotice(), opts.action!.run()) : null;
+  (el.querySelector('.notice-close') as HTMLButtonElement).onclick = clearNotice;
+  el.hidden = false;
+}
+export function clearNotice() {
+  const el = document.getElementById('notice');
+  if (el) el.hidden = true;
+}
+
+/**
+ * Feedback on the button itself ("Copied ✓" for a moment), where the person is looking. When the
+ * button isn't on screen (it was in a menu that closed), a toast says it instead.
+ */
+export function confirmOn(btn: HTMLElement | null | undefined, label: string, toastText: string) {
+  if (!btn || !btn.offsetParent || btn.closest('dialog:not([open])')) return toast(toastText, { kind: 'success' });
+  announce(toastText);
+  const original = btn.dataset.label ?? btn.innerHTML;
+  btn.dataset.label = original;
+  btn.textContent = label;
+  btn.classList.add('confirmed');
+  clearTimeout(Number(btn.dataset.confirmTimer));
+  btn.dataset.confirmTimer = String(
+    window.setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove('confirmed');
+      delete btn.dataset.label;
+    }, 1600),
+  );
+}
+
+/** Says something to screen readers only (a label that changes isn't read out by itself). */
+let sr: HTMLElement | null = null;
+function announce(text: string) {
+  if (!sr) {
+    sr = document.createElement('div');
+    sr.className = 'sr-only';
+    sr.setAttribute('role', 'status');
+    sr.setAttribute('aria-live', 'polite');
+    document.body.appendChild(sr);
+  }
+  sr.textContent = '';
+  setTimeout(() => (sr!.textContent = text), 50);
+}
+
 /** Creates the (empty) live region early: screen readers only announce changes to one they know. */
 export function initToasts() {
   container();
+  announce('');
 }
 
 /** Closes every toast at once (e.g. before a screenshot). */

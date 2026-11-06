@@ -1,6 +1,6 @@
 import { applyTheme, initDevBar } from './devbar';
 import { watchPictures } from './themed';
-import { initToasts, toast as showToast, type ToastOptions } from './toast';
+import { clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
@@ -892,7 +892,8 @@ function renderDocHead() {
   }
   if (doc.hash || canShare()) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this handler (or just the selected lines)">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
-  $('#doc-meta').querySelector('#copy-link')?.addEventListener('click', copyLink);
+  const linkBtn = $('#doc-meta').querySelector<HTMLElement>('#copy-link');
+  linkBtn?.addEventListener('click', () => copyLink(linkBtn));
 }
 
 /**
@@ -900,7 +901,7 @@ function renderDocHead() {
  * (#share-…). With text selected, only the selection is shared.
  */
 const DISCORD_LIMIT = 2000;
-async function copyLink() {
+async function copyLink(trigger?: HTMLElement | null) {
   const selection = editor.getSelection();
   const edited = editor.getValue() !== loadedText;
   let id = doc.hash && !edited && !selection ? doc.hash : '';
@@ -908,7 +909,7 @@ async function copyLink() {
     try {
       id = await encodeShare(selection || editor.getValue());
     } catch {
-      toast("This browser can't make share links. Use Copy instead.");
+      notice("This browser can't make share links. Use Copy instead.", { kind: 'error' });
       return;
     }
   }
@@ -917,16 +918,17 @@ async function copyLink() {
     // Inside a Claude artifact the page's own address isn't the artifact's link: put the id in the
     // hash, which the artifact's address and Share > Copy link follow.
     history.replaceState(null, '', '#' + id);
-    toast(`The page link now opens ${what}. Copy it from the address bar or Share > Copy link.`);
+    notice(`The page link now opens ${what}. Copy it from the address bar or Share > Copy link.`, { kind: 'info' });
     return;
   }
   const url = location.href.replace(/#.*$/, '') + '#' + id;
   const long = url.length > DISCORD_LIMIT ? ` It is ${url.length.toLocaleString()} characters, too long for a Discord message (${DISCORD_LIMIT.toLocaleString()}): ${selection ? 'share the file instead' : 'select just the lines that matter and copy again, or share the file'}.` : '';
   try {
     await navigator.clipboard.writeText(url);
-    toast(`Link copied. It opens ${what} for anyone.${long}`);
+    confirmOn(trigger, 'Link copied ✓', `Link copied. It opens ${what} for anyone.`);
+    if (long) notice(`The link copied, but it's long.${long}`, { kind: 'warning' });
   } catch {
-    toast(`Couldn't copy. The link is in the address bar.${long}`);
+    notice(`Couldn't copy. The link is in the address bar.${long}`, { kind: 'warning' });
     history.replaceState(null, '', '#' + id);
   }
 }
@@ -936,6 +938,7 @@ function setPackageFiles(files: PackageFile[]) {
   renderDocHead();
 }
 function loadSource(src: string, meta: DocMeta) {
+  clearNotice(); // it was about the handler before
   packageFiles = [];
   storeFiles([]);
   editor.setValue(src);
@@ -964,7 +967,6 @@ function openExamplePackage(id: string) {
   loadSource(e.handler, { name: e.name, kind: 'example', hash: `package-${id}`, published: { guid: guidOf(e.handler) } });
   setPackageFiles(files);
   storeFiles(files);
-  toast(`Opened with ${files.length} other files. "+ ${files.length} files" above the code shows them.`);
 }
 
 // The package's other files, and where the Hub install puts them: the contents of each top-level
@@ -1012,12 +1014,11 @@ async function openHub(i: number) {
       if (!r.ok) throw new Error(String(r.status));
       h.source = await r.text();
     } catch {
-      toast(`Couldn't load ${h.title}. Check your connection and try again.`);
+      notice(`Couldn't load ${h.title} from this site. Check your connection.`, { kind: 'error', action: { label: 'Try again', run: () => void openHub(i) } });
       return;
     }
   }
   loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}`, published: { version: h.version, guid: guidOf(h.source) } });
-  toast(`Opened ${h.title} v${h.version} from the Hub.`);
 }
 function openTemplate(id: string) {
   const t = BOT_TEMPLATES.templates.find((x) => x.id === id);
@@ -1078,14 +1079,13 @@ function setThemeMode(m: 'light' | 'dark' | 'auto') {
     else localStorage.setItem('nucleus-workbench-dev-mode', m);
   } catch {}
   applyTheme();
-  toast(m === 'auto' ? 'The theme follows your system.' : `Theme: ${m}.`);
 }
 
 /** Format document: indentation and spacing (core/format.ts guarantees the tokens don't change). */
 function formatDocument() {
   const text = editor.getValue();
   const r = formatHandler(text);
-  if (!r.ok) return toast(r.reason);
+  if (!r.ok) return notice(r.reason, { kind: 'error' });
   if (!r.changed) return toast('Already formatted.');
   const cur = editor.getCursor();
   const top = editor.getScrollInfo().top;
@@ -1289,11 +1289,11 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 $('#copy').addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(editor.getValue());
-    toast(`Copied ${editor.lineCount()} lines.`);
+    confirmOn($('#copy'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
     editor.focus();
-    toast('Selected the handler. Press Ctrl+C to copy.');
+    notice('The browser didn\'t let this page copy. The whole handler is selected: press Ctrl+C.', { kind: 'info' });
   }
 });
 
@@ -1667,7 +1667,6 @@ const advanced = $('#advanced') as HTMLInputElement;
 advanced.checked = mode === 'dev';
 advanced.addEventListener('change', () => {
   setMode(advanced.checked ? 'dev' : 'simple');
-  toast(advanced.checked ? 'Advanced mode on: rule ids, filters, suggestions, recorded calls and engine probes.' : 'Advanced mode off: the same screens, without the extra detail.');
 });
 
 // ---------------------------------------------------------------------------
@@ -1693,7 +1692,7 @@ async function openFile(file: File) {
     if (/\.(zip|nc)$/i.test(file.name)) {
       const pkg = await readPackage(await file.arrayBuffer());
       if (!pkg) {
-        toast(`${file.name} doesn't contain a handler.js this page can read.`);
+        notice(`${file.name} doesn't contain a handler.js this page can read.`, { kind: 'error' });
         return;
       }
       loadSource(pkg.handler.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name.replace(/\.(zip|nc)$/i, '.js'), kind: 'draft' });
@@ -1702,14 +1701,14 @@ async function openFile(file: File) {
       const kept = storeFiles(pkg.files);
       const n = pkg.files.length;
       const lost = pkg.unreadable.length ? ` This browser couldn't unpack ${pkg.unreadable.join(', ')}, so saving won't include ${pkg.unreadable.length === 1 ? 'it' : 'them'}.` : '';
-      toast(n ? `Opened ${file.name} with ${n} other file${n === 1 ? '' : 's'}. They're saved with the handler.${kept ? '' : " They're too big to keep after a reload."}${lost}` : `Opened ${file.name}.${lost}`);
+      // The "+ N files" chip shows the files; only what needs saying goes in a notice.
+      if (!kept || lost) notice(`${kept ? '' : `The ${n} other file${n === 1 ? '' : 's'} are too big to keep after a reload: save before closing the page.`}${lost}`.trim(), { kind: 'warning' });
       return;
     }
     const text = await file.text();
     loadSource(text.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name, kind: 'draft' });
-    toast(`Opened ${file.name}.`);
   } catch {
-    toast(`Couldn't read ${file.name}.`);
+    notice(`Couldn't read ${file.name}.`, { kind: 'error' });
   }
 }
 const fileInput = $('#file-input') as HTMLInputElement;
@@ -1799,12 +1798,12 @@ $('#save-go').addEventListener('click', async () => {
     await downloads.save({ filename: `${name}.zip`, data: zip });
     waka.saved();
     saveDialog.close();
-    toast(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
+    (errorsLeft ? notice : toast)(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
   } catch (e: any) {
     saveDialog.close();
     if (e?.code === 'declined') return;
     if (['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) $('#save').hidden = true;
-    toast("Couldn't save the file here. Use Copy instead and paste it into a .js file.");
+    notice("Couldn't save the file here. Use Copy instead and paste it into a .js file.", { kind: 'error' });
   }
 });
 
@@ -1820,7 +1819,7 @@ function openFromHash(): boolean {
         loadSource(src, { name: 'Shared handler', kind: 'example', hash: h });
         if (narrow()) setView('code'); // after the async load, which shows the results
       })
-      .catch(() => toast('This share link is damaged or incomplete. Ask for it again, or for the file.'));
+      .catch(() => notice('This share link is damaged or incomplete. Ask for it again, or for the file.', { kind: 'error' }));
     return true;
   }
   if (h === 'whats-new') {
@@ -1857,11 +1856,12 @@ function openFromHash(): boolean {
     const t = BOT_TEMPLATES.templates.find((x) => slug(x.id) === slug(h.slice('template-'.length)));
     if (t) return openTemplate(t.id), true;
   }
-  toast(`The link "#${h}" doesn't match an example in this build.`);
+  notice(`The link "#${h}" doesn't match an example or Hub handler in this version of the workbench.`, { kind: 'error' });
   return false;
 }
 // A link shares code: on phones, show the handler, not the results.
 window.addEventListener('hashchange', () => {
+  clearNotice(); // a notice about the previous link no longer applies
   if (location.hash.slice(1) !== doc.hash && openFromHash() && narrow()) setView('code');
 });
 
@@ -1957,7 +1957,7 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
       waka.saved();
       toast(`Saved ${filename}.`);
     } catch (e: any) {
-      if (e?.code !== 'declined') toast("Couldn't save the file here. Use Copy the code instead.");
+      if (e?.code !== 'declined') notice("Couldn't save the file here. Use Copy the code instead.", { kind: 'error' });
     }
   }),
 );
