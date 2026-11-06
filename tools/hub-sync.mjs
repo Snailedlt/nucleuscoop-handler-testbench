@@ -15,7 +15,7 @@ if (!res.ok) throw new Error(`Hub returned ${res.status}`);
 const list = (await res.json()).Handlers ?? [];
 if (list.length < 100) throw new Error(`Only ${list.length} handlers in the Hub's answer; keeping the old index.`);
 // Only what the tools use (the same field names as the Hub's API), sorted so unchanged data stays identical.
-const KEEP = ['_id', 'title', 'gameName', 'ownerName', 'description', 'downloadCount', 'stars', 'verified', 'currentVersion', 'currentPackage', 'maxPlayers', 'playableControllers', 'playableMouseKeyboard', 'playableMultiMouseKeyboard', 'updatedAt'];
+const KEEP = ['_id', 'title', 'gameName', 'ownerName', 'description', 'downloadCount', 'stars', 'verified', 'currentVersion', 'currentPackage', 'maxPlayers', 'playableControllers', 'playableMouseKeyboard', 'playableMultiMouseKeyboard', 'updatedAt', 'gameCover'];
 const handlers = list
   .map((h) => Object.fromEntries(KEEP.filter((k) => h[k] !== undefined && h[k] !== null && h[k] !== '').map((k) => [k, k === 'description' ? String(h[k]).slice(0, 300) : h[k]])))
   .sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0) || String(a._id).localeCompare(String(b._id)));

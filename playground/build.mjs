@@ -99,7 +99,7 @@ async function hubExamples() {
     if (handlers.length >= hubCount) break;
     const known = previous.get(`${h._id}-v${h.currentVersion}`);
     if (known) {
-      handlers.push(known); // as in the last snapshot (download counts too), so an unchanged Hub gives an identical page
+      handlers.push({ ...known, cover: h.gameCover ?? known.cover }); // as in the last snapshot (download counts too), so an unchanged Hub gives an identical page
       reused++;
       continue;
     }
@@ -131,6 +131,7 @@ async function hubExamples() {
       multiKbm: !!h.playableMultiMouseKeyboard,
       updated: meta.releaseDate ?? h.updatedAt ?? null,
       url: `${HUB}/handler/${h._id}`,
+      cover: h.gameCover ?? undefined, // the game's IGDB cover id, as the Hub shows it
       source: meta.jsContent.replace(/\r\n/g, '\n'),
     });
   }
@@ -150,6 +151,36 @@ async function hubExamples() {
   return result;
 }
 const hub = await hubExamples();
+
+// Game covers (the Hub's IGDB cover ids): downloaded once at build time and shipped with the site,
+// so visitors' browsers never call IGDB, and the preview (no outside images) shows them too. A
+// cover that can't be fetched leaves the game's initials. Snapshots from before covers were kept
+// get their ids from our daily index (no Hub request).
+if (hub.handlers.some((h) => !h.cover)) {
+  try {
+    const r = await fetch('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
+    const byId = new Map((await r.json()).handlers.map((h) => [h._id, h.gameCover]));
+    for (const h of hub.handlers) h.cover ??= byId.get(h.id) ?? undefined;
+  } catch {}
+}
+const coverDir = path.join(here, '.cache', 'covers');
+fs.mkdirSync(coverDir, { recursive: true });
+let coversFetched = 0;
+for (const h of hub.handlers) {
+  if (!h.cover || !/^\w{2,20}$/.test(h.cover)) continue;
+  const file = path.join(coverDir, `${h.cover}.jpg`);
+  if (fs.existsSync(file)) continue;
+  try {
+    const r = await fetch(`https://images.igdb.com/igdb/image/upload/t_cover_small/${h.cover}.jpg`, { headers: { 'user-agent': 'nucleus-handler-workbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)' } });
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (r.ok && /^image\//.test(r.headers.get('content-type') ?? '') && buf.length < 200_000) {
+      fs.writeFileSync(file, buf);
+      coversFetched++;
+    }
+  } catch {}
+}
+const coverFile = (h) => (h.cover && fs.existsSync(path.join(coverDir, `${h.cover}.jpg`)) ? path.join(coverDir, `${h.cover}.jpg`) : null);
+const coverCount = hub.handlers.filter(coverFile).length;
 // Example packages (examples/README.md): a verified Hub handler with the other files it ships.
 const EXAMPLE_PACKAGES = [
   { id: 'nvmp', title: 'Fallout New Vegas Multiplayer, with its files', sub: 'A verified Hub handler (v21 by Talos91) whose package adds an NVMP folder with the scripts Game.Play runs.', name: 'Fallout New Vegas Multiplayer.js', hubId: 'vnPXYhWMJJ3FNuQuS' },
@@ -271,7 +302,13 @@ for (const h of hub.handlers) {
 /** The page. inlineHub: Hub example sources in the page (one self-contained file); otherwise the page
  *  fetches hub/<id>.js when one is opened, which keeps every visit small. */
 function pageHtml(inlineHub) {
-  const handlers = inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h);
+  // Covers: files next to the page, or inside it for the one-file workbench.
+  const withCover = (h) => {
+    const f = coverFile(h);
+    const { cover, ...rest } = h;
+    return f ? { ...rest, cover: inlineHub ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : `covers/${h.cover}.jpg` } : rest;
+  };
+  const handlers = (inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
   const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/' })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`.replace(/<\/script/gi, '<\\/script');
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
@@ -336,6 +373,9 @@ if (PREVIEW) fs.rmSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), { force:
 else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
+fs.rmSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true, force: true }); // only this build's covers
+fs.mkdirSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true });
+for (const h of hub.handlers) if (coverFile(h)) fs.copyFileSync(coverFile(h), path.join(here, 'dist', 'pages', 'covers', `${h.cover}.jpg`));
 // Screenshots in What's new, loaded only when it is opened.
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'changes'), { recursive: true });
 for (const c of CHANGES) for (const it of c.items) for (const f of it.image ? [it.image.file, it.image.dark].filter(Boolean) : []) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
@@ -392,4 +432,4 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
   for (const f of files.filter((f) => !f.endsWith('build.txt')).sort()) h.update(path.relative(path.join(here, 'dist', 'pages'), f) + '\0').update(fs.readFileSync(f));
   fs.writeFileSync(path.join(here, 'dist', 'pages', 'build.txt'), h.digest('hex') + '\n');
 }
-console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);
+console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} verified Hub handlers (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

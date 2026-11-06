@@ -36,7 +36,7 @@ applyTheme();
 applyCustomTheme();
 watchPictures();
 declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
-interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; lint?: { errors: number; warnings: number } }
+interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; lint?: { errors: number; warnings: number } }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null };
 declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
@@ -1087,6 +1087,7 @@ interface OpenEntry {
   group: string; title: string; sub?: string; badges?: string; keywords?: string; run: () => void; lint?: () => string;
   /** A command's shortcut, shown like VS Code's palette. */ keys?: string;
   /** An inline SVG icon (the inside of a 24×24 viewBox), or a monogram's source text. */ icon?: string; mono?: string;
+  /** The game's cover, over the monogram (which stays if the image can't load). */ cover?: string;
   /** Small facts on the right of a row (players, downloads), as HTML. */ meta?: string;
 }
 
@@ -1108,13 +1109,14 @@ const OI = {
 };
 const svgIcon = (d: string, cls = 'oi') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
 /** Two letters and a stable hue for a name: a stand-in for game art. */
-function monogram(name: string): string {
+function monogram(name: string, cover?: string): string {
   const words = name.replace(/\(.*?\)/g, ' ').split(/[^\p{L}\p{N}]+/u).filter((w) => w && !/^(of|the|a|an|and|for|to|in|on)$/i.test(w));
   const num = words.slice(1).find((w) => /^\d+$/.test(w));
   const letters = ((words[0]?.[0] ?? '?') + (num ?? words[1]?.[0] ?? '')).toUpperCase();
   let h = 0;
   for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return `<span class="mono" style="--h:${h}" aria-hidden="true">${esc(letters)}</span>`;
+  const img = cover ? `<img class="cv" src="${esc(cover)}" alt="" loading="lazy" decoding="async">` : '';
+  return `<span class="mono${cover ? ' has-cover' : ''}" style="--h:${h}" aria-hidden="true">${esc(letters)}${img}</span>`;
 }
 const compact = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
 /** The text with every searched word marked (both already lower-cased words; the text is escaped). */
@@ -1224,6 +1226,7 @@ function entries(): OpenEntry[] {
       group: 'Hub handlers',
       title: h.title,
       mono: h.game || h.title,
+      cover: h.cover,
       sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version}`,
       meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>`,
       keywords: `${h.game} ${h.owner} hub`,
@@ -1314,7 +1317,7 @@ function renderOpen() {
       lastGroup = group;
     }
     const lay = layout(e.group);
-    const art = e.mono ? monogram(e.mono) : e.icon ? `<span class="ic" aria-hidden="true">${svgIcon(e.icon)}</span>` : '';
+    const art = e.mono ? monogram(e.mono, e.cover) : e.icon ? `<span class="ic" aria-hidden="true">${svgIcon(e.icon)}</span>` : '';
     const keys = e.keys ? `<span class="keys">${e.keys.split('+').map((k) => `<kbd>${esc(k)}</kbd>`).join('')}</span>` : '';
     const sub = e.sub ? (lay === 'chips' ? `<span class="sr-only">${esc(e.sub)}</span>` : `<span class="s">${highlight(e.sub, words)}</span>`) : '';
     const side = e.meta || e.badges || e.lint || keys ? `<span class="meta">${e.meta ?? ''}${e.badges ?? ''}${e.lint ? `<span data-lint="${i}"></span>` : ''}${keys}</span>` : '';
@@ -1323,6 +1326,8 @@ function renderOpen() {
   html += '</div></section>';
   body.innerHTML = html;
   body.querySelectorAll<HTMLButtonElement>('.entry').forEach((b) => b.addEventListener('click', () => runEntry(Number(b.dataset.e))));
+  // A cover that doesn't load leaves the initials under it.
+  body.querySelectorAll<HTMLImageElement>('img.cv').forEach((img) => img.addEventListener('error', () => (img.parentElement?.classList.remove('has-cover'), img.remove())));
   // Lint results for Hub cards fill in progressively, without blocking typing.
   const pending = shown.map((e, i) => ({ e, i })).filter(({ e }) => e.lint);
   const fill = () => {
