@@ -59,6 +59,8 @@ which are not saved here.
 20. **One stripe**: Duo is a blue ball with one white stripe wrapping vertically round the middle, a texture on his
     body, never hidden, never doubled, on every Duo (players included). The progress ring's electrons wait in line
     at the top, take turns hitting the bar and roll back; nothing vanishes. `20-…`
+21. **The white is the seam**: each piece of Duo is white underneath and its blue stops short of every cut edge,
+    so the stripe can't vanish or break up at any screen size or zoom; the four-player Duo carries a cross. `21-…`
 
 ## Lessons we kept
 
