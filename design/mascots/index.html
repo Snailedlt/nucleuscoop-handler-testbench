@@ -617,6 +617,37 @@ svg .rl { transform-origin: 0 -13px; }
 .howto { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
 .howto summary { cursor: pointer; font-weight: 700; }
 .howto code { font-size: 12.5px; word-break: break-word; }
+/* Nucli explorations */
+.nx-sub { margin: 26px 0 4px; }
+.nx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; margin-top: 12px; }
+.nx-card, .nx-anim { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; min-width: 0; }
+.nx-card.rec { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.nx-card p, .nx-anim p { font-size: 14px; color: var(--muted); }
+.nx-h { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 2px 0 8px; }
+.nx-h b { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 17px; }
+.nx-anim .nx-h { margin: 8px 0 0; }
+.nx-tag, .nx-tier { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); color: var(--ink); }
+.nx-tag.rec, .t-def { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.t-prod { border-style: dashed; }
+.nx-big { background: var(--tile); border-radius: 12px; aspect-ratio: 16 / 10; display: grid; place-items: center; }
+.nx-big svg { width: 60%; max-width: 190px; height: auto; overflow: visible; }
+.nx-pair { grid-template-columns: 1fr 1fr; padding: 0 6%; gap: 4%; }
+.nx-pair svg { width: 100%; } .nx-pair .nx-duo { width: 82%; justify-self: center; }
+.nx-strip { display: flex; gap: 10px; align-items: flex-end; justify-content: space-around; padding: 8px 6px 4px; border-radius: 10px; margin-top: 6px; }
+.nx-strip figure { margin: 0; text-align: center; line-height: 0; } .nx-strip figcaption { font-size: 11px; line-height: 1.6; }
+.nx-light { background: #eef3fa; color: #4f5b74; } .nx-dark { background: #0b1020; outline: 1px solid #29334a; color: #a7b3cb; }
+.nx-con { font-size: 12.5px !important; } .nx-con .ok { color: var(--ink); } .nx-con .low { color: var(--ink); text-decoration: underline wavy #ff434d; }
+.nx-anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; margin-top: 12px; }
+.nx-anim .stage { background: var(--tile); border-radius: 12px; aspect-ratio: 2 / 1; display: grid; place-items: center; overflow: hidden; }
+.nx-anim .stage svg { width: 46%; height: auto; overflow: visible; font-family: system-ui, sans-serif; }
+.nx-anim .stage.wide svg { width: 96%; height: auto; }
+.nx-rec { background: var(--card); border: 1px solid var(--accent); border-radius: 16px; padding: 14px 16px; margin-top: 12px; }
+.nx-rec ol { margin: 0; padding-left: 20px; } .nx-rec li { margin: 4px 0; }
+.nx-tw { overflow-x: auto; margin-top: 12px; }
+.nx-plan { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+.nx-plan caption { text-align: left; color: var(--muted); padding-bottom: 6px; }
+.nx-plan th, .nx-plan td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+.nx-plan thead th { font-weight: 700; } .nx-plan tbody th { font-weight: 600; }
 </style>
 <style id="gen"></style>
 </head>
@@ -677,6 +708,48 @@ svg .rl { transform-origin: 0 -13px; }
   <h2>Nucli's animations</h2>
   <p class="lead">For the workbench, the VS Code extension and the CLI.</p>
   <div class="lib" id="lib-nucli"></div>
+
+  <section id="nxsec"><h2 id="nucli-explore">Nucli explorations</h2>
+  <p class="lead">Ideas only: nothing here is in the product. Three directions for his look, then new animations for the workbench, with my pick at the end. Each look is shown at 48, 24 and 16 px on a light and a dark page, the sizes he has as a loader and in the status bar.</p>
+  <h3 class="nx-sub">Directions</h3>
+  <div class="nx-grid" id="nx-dirs"></div>
+  <h3 class="nx-sub">Colour: refined shape, three colours, next to Duo</h3>
+  <div class="nx-grid" id="nx-cols"></div>
+  <h3 class="nx-sub">New animations</h3>
+  <p class="lead"><b>Default</b> plays them once and keeps them short; <b>All only</b> are extras for people who turn everything on; the last two are tied to Try it and the editor. When the device asks for less motion, every card shows its still pose.</p>
+  <div class="nx-anims" id="nx-anims"></div>
+  <h3 class="nx-sub">My recommendation</h3>
+  <div class="nx-rec">
+    <ol>
+      <li><b>Keep the shape, refine it (A).</b> Same Nucli, plus a separate small build for 24 px and under. That fixes the only real problem he has today: he turns to mush as a loader.</li>
+      <li><b>Keep violet.</b> Teal makes him Duo's twin, gold hides player 1 and looks like a warning. Violet is his own and every player colour stands out on it.</li>
+      <li><b>Terminal Nucli (B) as the CLI's icon only</b>, not as the mascot.</li>
+      <li><b>Build first: startup, typing along, escalating error.</b> They are the ones you see every day, and each tells you something (ready, I'm watching, this keeps failing).</li>
+      <li><b>The rule for Default:</b> under half a second, never over the code, never in the way of a click or a key. Everything else waits for "All".</li>
+    </ol>
+    <div id="nx-plan"></div>
+  </div>
+
+  </section>
+<section id="dxsec">
+  <h2 id="duo-explore">Duo explorations</h2>
+  <p class="lead">The same exercise for Duo: ideas only, nothing here is in the product. His colour is splitscreen.me's blue, so instead of a colour swap there is a direction for one Duo per player. The animations are for the app, the Hub and the website.</p>
+  <h3 class="nx-sub">Directions</h3>
+  <div class="nx-grid" id="dx-dirs"></div>
+  <h3 class="nx-sub">New animations</h3>
+  <p class="lead">Same tiers as Nucli: <b>Default</b> plays once and stays short, <b>All only</b> are extras, the last one belongs to player setup. When the device asks for less motion, every card shows its still pose.</p>
+  <div class="nx-anims" id="dx-anims"></div>
+  <h3 class="nx-sub">My recommendation</h3>
+  <div class="nx-rec">
+    <ol>
+      <li><b>Keep Duo, add the small build (A).</b> Ball only at 24 px and under. Same fix as Nucli's, and they then behave alike as icons.</li>
+      <li><b>Player colours (C) only where one Duo means one player:</b> setup and the players bar. The brand Duo stays blue.</li>
+      <li><b>Not Screen Duo (B).</b> It is the logo with a face, and a box can't bounce, split or roll: most of his animations go.</li>
+      <li><b>Build first: splash drop-in, installed, launch failed.</b> Start, success and failure are the three moments everyone sees.</li>
+      <li><b>Same rule for Default as Nucli's:</b> under half a second, never over content, never in the way. Juggling and peeking wait for "All".</li>
+    </ol>
+  </div>
+</section>
 
   <h2>Loader experiments</h2>
   <p class="lead">Little Duos as loaders. Five tries, with my verdict on each; the winners are used below.</p>
@@ -1569,6 +1642,286 @@ document.getElementById('emoji').innerHTML = emojiBlock('duo') + emojiBlock('nuc
 
 const sz = (inner, monoInner, name) => `<div class="box"><h3>${name}</h3><div class="sizes">${[64, 32, 24, 16].map((s) => `<figure>${still(inner(), `${name} ${s} pixels`, s)}<figcaption>${s}</figcaption></figure>`).join('')}${[32, 16].map((s) => `<figure class="mono">${still(monoInner(), `${name}, one colour, ${s} pixels`, s)}<figcaption>${s}, one colour</figcaption></figure>`).join('')}</div></div>`;
 document.getElementById('sizes').innerHTML = sz(() => duo({ noShadow: true }), () => duo({ mono: true }), 'Duo') + sz(() => nucli({ still: true, noShadow: true }), () => nucli({ mono: true, still: true }), 'Nucli');
+
+// ---- Nucli explorations: ideas only, nothing here is in the product ----
+// nx() draws a Nucli variant: a palette, orbit weight, eye size, electron size, trails, and a small build for 16–24 px.
+const NX = {
+  violet: { name: 'Violet (today)', grad: ['#c9ceff', '#7f88ee', '#4f55c8'], shell: '#3c3fa8', ring: '#7f88ee' },
+  flat: { name: 'Violet, flatter', grad: ['#aab2ff', '#858ef0', '#5d64d8'], shell: '#3c3fa8', ring: '#6f78e6' },
+  teal: { name: 'Teal', grad: ['#b8f1ec', '#3fbcb6', '#17868f'], shell: '#0f5c66', ring: '#35a8ae' },
+  gold: { name: 'Soft gold', grad: ['#ffefc0', '#f4c14e', '#cc8d12'], shell: '#7e5304', ring: '#d6a238' },
+};
+const NX_EL = [[0, 0, 0], [1, .34, 1], [2, .67, 2], [0, .5, 3]];
+function nx(o = {}) {
+  const p = { ...NX.violet, ...(o.pal || {}) }, id = 'nx' + (++uid), w = o.ow || 1, er = o.er || 1, d = o.dur || 4.6, sm = !!o.small;
+  const els = (o.el || NX_EL).slice(0, o.n ?? 4);
+  const defs = `<defs><radialGradient id="${id}g" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="${p.grad[0]}"/><stop offset=".45" stop-color="${p.grad[1]}"/><stop offset="1" stop-color="${p.grad[2]}"/></radialGradient><clipPath id="${id}c"><rect x="-20" y="60" width="160" height="80"/></clipPath>${o.term ? `<filter id="${id}f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` : ''}</defs>`;
+  const half = (which) => `<path class="xo-${which}" d="${which === 'back' ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="${p.ring}" stroke-width="${n1(1.2 * w)}" opacity="${which === 'back' ? (sm ? .45 : .3) : (sm ? .8 : .55)}" stroke-linecap="round"/>`;
+  const dot = (ci) => `<circle r="${n1(5.2 * er)}" fill="${ACC[ci]}" stroke="#fff" stroke-width="${n1((sm ? 1.2 : 1.7) * er)}"/>`;
+  const one = ([k, ph, ci], i) => {
+    const dur = n1(d * (1 + k * .18)), inner = `<g class="xe xe${i}">${dot(ci)}</g>`;
+    if (o.still) { const t = (ph * 2 + .15) * Math.PI; return `<g transform="translate(${n1(60 + 52 * Math.cos(t))} ${n1(60 + 15.5 * Math.sin(t))})">${inner}</g>`; }
+    const km = o.km ? ` keyPoints="${o.km[0]}" keyTimes="${o.km[1]}" calcMode="linear"` : '';
+    const begin = o.km ? '0' : `-${n1(ph * dur)}`;
+    const tr = o.trails && !o.km ? [1, 2, 3].map((q) => `<circle class="xe xe${i}" r="${3.6 - q * .7}" fill="${ACC[ci]}" opacity="${.34 - q * .08}"><animateMotion dur="${dur}s" begin="${n1(q * .07 - ph * dur - dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`).join('') : '';
+    return `${tr}<g><animateMotion dur="${o.km ? o.kd : dur}s" begin="${begin}s" repeatCount="indefinite" path="${ORBIT}"${km}/>${inner}</g>`;
+  };
+  const orbs = o.term ? [0] : ORB3.map((_, k) => k);
+  const orb = (k, inner) => `<g class="orb orb${k} xo${k}" style="--a:${o.term ? 0 : ORB3[k]}deg">${inner}</g>`;
+  const back = `<g class="n-orbits">${orbs.map((k) => orb(k, half('back') + els.map((e, i) => e[0] === k ? one(e, i) : '').join(''))).join('')}</g>`;
+  const front = `<g class="n-orbits">${orbs.map((k) => orb(k, half('front') + `<g clip-path="url(#${id}c)">${els.map((e, i) => e[0] === k ? one(e, i) : '').join('')}</g>`)).join('')}</g>`;
+  let core, face;
+  if (o.term) {
+    // Terminal Nucli: a dark rounded square, a glowing monospace face, { } for orbits.
+    const g = '#a6f7c4';
+    core = `<rect x="38" y="38" width="44" height="44" rx="12" fill="#1b1e3a" stroke="#5c62d6" stroke-width="${sm ? 3 : 2}"/>${sm ? '' : '<rect x="42" y="41.5" width="36" height="7" rx="3.5" fill="#fff" opacity=".07"/><circle class="led" cx="75" cy="45" r="2" fill="#55d137"/>'}`;
+    face = `<g filter="url(#${id}f)"><g class="track"><g class="look look-l"><rect class="eye" x="${sm ? 47 : 48.5}" y="${sm ? 51 : 52}" width="${sm ? 8 : 6}" height="${sm ? 11 : 9}" rx="1.6" fill="${g}"/></g></g><g class="track"><g class="look look-r"><rect class="eye" x="${sm ? 65 : 65.5}" y="${sm ? 51 : 52}" width="${sm ? 8 : 6}" height="${sm ? 11 : 9}" rx="1.6" fill="${g}"/></g></g><rect class="tcur" x="${sm ? 55 : 56}" y="${sm ? 67 : 67.5}" width="${sm ? 10 : 8}" height="${sm ? 4 : 2.8}" fill="${g}"/></g>`;
+    const br = (x, ch, a) => `<text x="${x}" y="${sm ? 77 : 76}" text-anchor="${a}" font-family="ui-monospace, Consolas, monospace" font-size="${sm ? 50 : 44}" font-weight="700" fill="${p.ring}">${ch}</text>`;
+    o = { ...o, before: (o.before || '') + br(sm ? 22 : 24, '{', 'middle') + br(sm ? 98 : 96, '}', 'middle') };
+  } else {
+    core = `<circle cx="60" cy="60" r="22" fill="url(#${id}g)" stroke="${p.shell}" stroke-width="${sm ? 2.8 : 2}"/>${sm ? '' : `<path d="M78 49 A22 22 0 0 1 47 78 A26 26 0 0 0 78 49 Z" fill="${p.shell}" opacity=".2"/><path d="M42 50.5 A20 20 0 0 0 44 70" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".45"/>`}<ellipse cx="51" cy="46" rx="6" ry="3.4" fill="#fff" opacity="${sm ? .4 : .7}" transform="rotate(-32 51 46)"/>${sm ? '' : `<circle class="led" cx="74.5" cy="44.5" r="2.3" fill="#55d137" stroke="${p.shell}" stroke-width="1"/>`}`;
+    const fs = o.faces || [o.expr || 'smile'];
+    face = `<g transform="translate(60 61) scale(${o.eye || 1}) translate(-60 -61)"><g class="fw">${fs.map((ex, i) => `<g class="xf xf${i}"${i ? ' opacity="0"' : ''}>${nFace(ex)}</g>`).join('')}</g></g>`;
+  }
+  const shadow = o.noShadow ? '' : '<ellipse cx="60" cy="106" rx="16" ry="2.6" fill="#0b1a33" opacity=".12"/>';
+  return `${defs}${o.before || ''}${shadow}<g class="n-float">${back}<g class="n-core">${core}${face}${o.inCore || ''}</g>${front}${o.inFloat || ''}</g>${o.after || ''}`;
+}
+
+// Contrast (WCAG): a mascot is a graphic, so its body needs 3:1 against the page.
+const nxLum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const nxCR = (a, b) => { const [x, y] = [nxLum(a), nxLum(b)].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+const NX_TILES = { light: "#eef3fa", dark: "#0b1020" };
+const nxCon = (cols) => ['light', 'dark'].map((t) => { const r = Math.max(...cols.map((c) => nxCR(c, NX_TILES[t]))); return `<span class="${r >= 3 ? 'ok' : 'low'}">${t} ${r.toFixed(1)}:1${r >= 3 ? '' : ' (low)'}</span>`; }).join(' ');
+
+const nxStill = (inner, label, s) => still(inner, label, s);
+const nxStrips = (mk, extra = () => '') => ['light', 'dark'].map((t) => `<div class="nx-strip nx-${t}">${[48, 24, 16].map((s) => `<figure>${nxStill(mk(s), `${s} pixels on ${t}`, s)}<figcaption>${s}</figcaption></figure>`).join('')}${extra(t)}</div>`).join('');
+
+const NX_A = (s) => s <= 24 ? nx({ pal: NX.flat, still: true, small: true, ow: 3.4, eye: 1.32, er: 1.45, noShadow: true }) : nx({ pal: NX.flat, still: true, ow: 1.8, eye: 1.14, er: 1.15, noShadow: true });
+const NX_B = (s) => nx({ term: true, still: true, small: s <= 24, el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]], er: s <= 24 ? 1.35 : 1, noShadow: true, pal: { ring: '#7f88ee' } });
+const NX_DIRS = [
+  { name: 'Today', tag: '', big: () => nucli({}), small: () => nucli({ still: true, noShadow: true }), con: ['#7f88ee', '#3c3fa8'],
+    note: 'Lovely at 48 px and up. At 24 and 16 the orbits fade out, the eyes merge into one smudge and the trails turn to noise.' },
+  { name: 'A · Refined', tag: 'My pick', rec: true, big: () => nx({ pal: NX.flat, trails: true, ow: 1.8, eye: 1.14, er: 1.15 }), small: NX_A, con: ['#858ef0', '#3c3fa8'],
+    note: 'Same Nucli. Big: slightly heavier orbits and eyes, a flatter gradient. At 24 px and under, a separate small build: orbits 3× thicker, eyes a third larger, solid electrons, no trails, no shine or status light.' },
+  { name: 'B · Terminal Nucli', tag: 'Bold', big: () => nx({ term: true, el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]], pal: { ring: '#7f88ee' }, dur: 5.2 }), small: NX_B, con: ['#1b1e3a', '#5c62d6'],
+    note: 'Says "code" instantly, and the { } read at 16 px. But it is a different character: colder, more logo than friend, and the dark square vanishes on dark themes. A good icon for the CLI, not a mascot.' },
+];
+const nxDirs = () => NX_DIRS.map((v) => `<div class="nx-card${v.rec ? ' rec' : ''}"><div class="nx-h"><b>${v.name}</b>${v.tag ? `<span class="nx-tag${v.rec ? ' rec' : ''}">${v.tag}</span>` : ''}</div>
+  <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli, ${v.name}">${v.big()}</svg></div>
+  ${nxStrips(v.small)}<p class="nx-con">Body against the page: ${nxCon(v.con)}</p><p>${v.note}</p></div>`).join('');
+
+const NX_COLS = [
+  { pal: NX.flat, rec: true, note: 'His own colour: between splitscreen.me blue and Nucleus Co-op red. Every player colour stands out on it.' },
+  { pal: NX.teal, note: 'Friendly, but next to Duo they read as one family of blue balls. The teal electron (player 3) disappears into him.' },
+  { pal: NX.gold, note: 'Warm and readable, but the orange electron (player 1) blends in, and gold says "warning" next to the yellow lint markers.' },
+];
+const nxCols = () => NX_COLS.map((c) => `<div class="nx-card${c.rec ? ' rec' : ''}"><div class="nx-h"><b>${c.pal.name === 'Violet, flatter' ? 'Violet (today, refined)' : c.pal.name}</b>${c.rec ? '<span class="nx-tag rec">Keep</span>' : ''}</div>
+  <div class="nx-big nx-pair"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli in ${c.pal.name}">${nx({ pal: c.pal, trails: true, ow: 1.8, eye: 1.14, er: 1.15 })}</svg><svg class="blink nx-duo" viewBox="0 0 120 120" role="img" aria-label="Duo, for comparison">${duo({})}</svg></div>
+  ${nxStrips((s) => s <= 24 ? nx({ pal: c.pal, still: true, small: true, ow: 3.4, eye: 1.32, er: 1.45, noShadow: true }) : nx({ pal: c.pal, still: true, ow: 1.8, eye: 1.14, er: 1.15, noShadow: true }))}
+  <p class="nx-con">Body against the page: ${nxCon([c.pal.grad[1], c.pal.shell])}</p><p>${c.note}</p></div>`).join('');
+
+// ---- the new animations ----
+const NX_PANEL = (lines, o = {}) => `<rect x="124" y="16" width="108" height="88" rx="9" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/>${lines.map((w, i) => `<rect class="xl xl${i}" x="134" y="${28 + i * 13}" width="${w}" height="5" rx="2.5" fill="var(--code)"/>`).join('')}${o.extra || ''}`;
+const squig = (x, y, w, cls) => `<path class="${cls}" d="M${x} ${y} ${Array.from({ length: Math.round(w / 4) }, () => 'q1 -2 2 0 t2 0').join(' ')}" fill="none" stroke="${C.r}" stroke-width="1.5"/>`;
+const flyer = (path, kp, kt, op, ci, dur) => `<g opacity="0"><animateMotion dur="${dur}s" repeatCount="indefinite" path="${path}" keyPoints="${kp}" keyTimes="${kt}" calcMode="linear"/><animate attributeName="opacity" dur="${dur}s" repeatCount="indefinite" values="${op}" keyTimes="${kt}"/><circle r="5.2" fill="${ACC[ci]}" stroke="#fff" stroke-width="1.7"/></g>`;
+// Steps in a timeline: on/off per step; pops in with a spring, pops out with a shrink.
+const nxSteps = (name, on, cyc, sel, pop = true) => {
+  const n = on.length, st = 100 / n, fr = [];
+  const S = (v, sc) => pop ? `opacity: ${v}; transform: scale(${sc});` : `opacity: ${v};`;
+  on.forEach((v, i) => {
+    const p = +(i * st).toFixed(2), prev = on[(i - 1 + n) % n];
+    if (v && !prev) fr.push(`${p}% { ${S(0, 0)} }`, `${(p + 3).toFixed(2)}% { ${S(1, 1.35)} }`, `${(p + 6).toFixed(2)}% { ${S(1, 1)} }`);
+    else if (!v && prev) fr.push(`${p}% { ${S(1, 1)} }`, `${(p + 3).toFixed(2)}% { ${S(0, 0)} }`);
+    else fr.push(`${p}% { ${S(v ? 1 : 0, v ? 1 : 0)} }`);
+  });
+  fr.push(`100% { ${S(on[0] ? 1 : 0, on[0] ? 1 : 0)} }`);
+  return `@keyframes ${name} { ${fr.join(' ')} } ` + RMQ(`${sel} { animation: ${name} ${cyc}s infinite; }`);
+};
+const PCOUNT = [1, 2, 3, 4, 4, 3, 2, 1];
+const NX_ANIMS = [
+  { id: 'x-start', tier: 'def', name: 'Startup assembly', vb: '0 0 120 120',
+    what: 'The nucleus pops in, the orbits draw themselves, the four electrons fly in from the corners, then he opens his eyes and the status light comes on. Once per session, about 1 s.',
+    svg: () => nx({ trails: false, faces: ['smile'] }),
+    css: `.s-x-start .n-core { transform-origin: 60px 60px; }
+@keyframes xs-core { 0%, 4% { transform: scale(0); } 16% { transform: scale(1.1); } 24%, 100% { transform: scale(1); } }
+@keyframes xs-orb { 0%, 14% { stroke-dashoffset: 116; } 40%, 100% { stroke-dashoffset: 0; } }
+@keyframes xs-e { 0%, 26% { transform: translate(var(--dx), var(--dy)) scale(.4); opacity: 0; } 30% { opacity: 1; } 48%, 100% { transform: none; opacity: 1; } }
+@keyframes xs-eye { 0%, 50% { transform: scaleY(.08); } 56%, 100% { transform: scaleY(1); } }
+@keyframes xs-led { 0%, 58% { opacity: 0; } 62% { opacity: 1; } 66% { opacity: .3; } 70%, 100% { opacity: 1; } }
+.s-x-start .xe0 { --dx: 40px; --dy: -50px; } .s-x-start .xe1 { --dx: -50px; --dy: -50px; } .s-x-start .xe2 { --dx: -50px; --dy: 50px; } .s-x-start .xe3 { --dx: 50px; --dy: 50px; }
+.s-x-start [class^="xo-"] { stroke-dasharray: 116; }`
+      + RMQ(`.s-x-start .n-core { animation: xs-core 3.6s var(--spring) infinite; } .s-x-start [class^="xo-"] { animation: xs-orb 3.6s ease-out infinite; } .s-x-start .xe { animation: xs-e 3.6s cubic-bezier(.2, .7, .3, 1) infinite; } .s-x-start .eye { animation: xs-eye 3.6s infinite; } .s-x-start .led { animation: xs-led 3.6s infinite; }`) },
+  { id: 'x-type', tier: 'def', name: 'Typing along', vb: '0 0 240 120',
+    what: 'His eyes follow the cursor while you type. One electron leaves its orbit and sits in the gutter of the line you are on, bobbing with each key: taking notes. Nothing over the text.',
+    svg: () => nx({ n: 3, faces: ['smile'] }) + NX_PANEL([62, 44, 72, 0]) + `<rect class="xt-line" x="134" y="67" width="66" height="5" rx="2.5" fill="var(--code)"/><rect class="xt-car" x="133" y="65" width="2" height="9" fill="var(--ink)"/><g class="xt-pen"><circle cx="128" cy="69.5" r="3.6" fill="${ACC[3]}" stroke="#fff" stroke-width="1.3"/></g>`,
+    css: `.s-x-type .xt-line { transform-box: fill-box; transform-origin: left center; } .s-x-type .xt-car { transform: translateX(67px); } .s-x-type .xt-pen { transform-box: fill-box; transform-origin: center; }
+@keyframes xt-line { 0%, 12% { transform: scaleX(0); } 64%, 100% { transform: scaleX(1); } }
+@keyframes xt-car { 0%, 12% { transform: translateX(0); } 64%, 100% { transform: translateX(67px); } }
+@keyframes xt-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes xt-look { 0%, 10% { transform: translate(1px, 0); } 16% { transform: translate(2.2px, 1.4px); } 64% { transform: translate(3.4px, 1.6px); } 72%, 100% { transform: translate(1px, 0); } }
+@keyframes xt-pen { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.2px); } }`
+      + RMQ(`.s-x-type .xt-line { animation: xt-line 4.4s steps(11, end) infinite; } .s-x-type .xt-car { animation: xt-car 4.4s steps(11, end) infinite, xt-blink .9s step-end infinite; } .s-x-type .look { animation: xt-look 4.4s var(--soft) infinite; } .s-x-type .xt-pen { animation: xt-pen .2s ease-in-out infinite; }`) },
+  { id: 'x-err', tier: 'def', name: 'Escalating error', vb: '0 0 240 120',
+    what: 'First error: a tiny flinch. Second: a bigger flinch and a worried face. Third in a row: a facepalm (an electron slides over his eyes). Each reaction under half a second; he never covers the code.',
+    svg: () => nx({ n: 3, faces: ['smile', 'worried', 'sleep'], inCore: `<ellipse class="xr-palm" cx="60" cy="56" rx="15" ry="6.5" fill="${ACC[0]}" stroke="#fff" stroke-width="1.8"/>` }) + NX_PANEL([62, 48, 72, 40, 56]) + squig(134, 36, 62, 'xr-s xr-s0') + squig(134, 49, 48, 'xr-s xr-s1') + squig(134, 62, 72, 'xr-s xr-s2')
+      + [0, 1, 2].map((i) => `<text class="xr-n xr-n${i}" x="226" y="${38 + i * 13}" text-anchor="end" font-size="9" font-weight="700" fill="${C.r}">${i + 1}</text>`).join(''),
+    css: `.s-x-err .xr-palm { opacity: 0; transform-box: view-box; transform-origin: 60px 56px; } .s-x-err .n-core { transform-origin: 60px 82px; }
+@keyframes xr-core { 0%, 6% { transform: none; } 7.5% { transform: translateX(-2px); } 10%, 36% { transform: none; } 37.5% { transform: translate(-5px, 1px) rotate(-4deg); } 41% { transform: translateX(1px); } 44%, 66% { transform: none; } 70%, 92% { transform: rotate(7deg) translateY(2px); } 96%, 100% { transform: none; } }
+@keyframes xr-f0 { 0%, 36% { opacity: 1; } 37%, 96% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes xr-f1 { 0%, 36% { opacity: 0; } 37%, 66% { opacity: 1; } 67%, 100% { opacity: 0; } }
+@keyframes xr-f2 { 0%, 66% { opacity: 0; } 67%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xr-palm { 0%, 66% { opacity: 0; transform: translate(26px, 14px) scale(.4); } 70% { opacity: 1; transform: none; } 92% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; transform: translate(26px, 14px) scale(.4); } }
+@keyframes xr-s0 { 0%, 5% { opacity: 0; } 6%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xr-s1 { 0%, 35% { opacity: 0; } 36%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xr-s2 { 0%, 65% { opacity: 0; } 66%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }`
+      + RMQ(`.s-x-err .n-core { animation: xr-core 6s infinite; } .s-x-err .xf0 { animation: xr-f0 6s infinite; } .s-x-err .xf1 { animation: xr-f1 6s infinite; } .s-x-err .xf2 { animation: xr-f2 6s infinite; } .s-x-err .xr-palm { animation: xr-palm 6s var(--spring) infinite; } .s-x-err :is(.xr-s0, .xr-n0) { animation: xr-s0 6s infinite; } .s-x-err :is(.xr-s1, .xr-n1) { animation: xr-s1 6s infinite; } .s-x-err :is(.xr-s2, .xr-n2) { animation: xr-s2 6s infinite; }`) },
+  { id: 'x-undo', tier: 'all', name: 'Undo', vb: '0 0 120 120',
+    what: 'Ctrl+Z: the electrons run backwards for a moment, then carry on. Rewinding, literally.',
+    svg: () => nx({ n: 3, km: ['0;.55;.38;1', '0;.42;.62;1'], kd: 4.4 }) + `<g class="xu-chip"><rect x="34" y="4" width="52" height="17" rx="8.5" fill="var(--card)" stroke="var(--line)"/><text x="60" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">↶ Undo</text></g>`,
+    css: `.s-x-undo .xu-chip { opacity: 0; transform-box: fill-box; transform-origin: center; }
+@keyframes xu-chip { 0%, 40% { opacity: 0; transform: scale(.7); } 44% { opacity: 1; transform: scale(1.08); } 47%, 62% { opacity: 1; transform: none; } 68%, 100% { opacity: 0; } }
+@keyframes xu-look { 0%, 42% { transform: none; } 46%, 62% { transform: translate(-2.6px, 0); } 66%, 100% { transform: none; } }`
+      + RMQ(`.s-x-undo .xu-chip { animation: xu-chip 4.4s infinite; } .s-x-undo .look { animation: xu-look 4.4s infinite; }`) },
+  { id: 'x-copy', tier: 'all', name: 'Copy and save', vb: '0 0 240 120',
+    what: 'An electron flies to the button you pressed, taps it and flies back. The button shows the result as usual; Nucli only adds the delivery.',
+    svg: () => nx({ n: 3 }) + flyer('M110 56 Q150 4 170 58', '0;0;1;1;0;0', '0;.16;.4;.56;.82;1', '0;1;1;1;1;0', 3, 4) + `<g class="xc-btn"><rect x="146" y="48" width="76" height="26" rx="13" fill="var(--pick-bg)" stroke="var(--pick)" stroke-width="1.4"/><text class="xc-a" x="184" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pick)">Copy</text><text class="xc-b" x="184" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pick)" opacity="0">Copied ✓</text></g>`,
+    css: `.s-x-copy .xc-btn { transform-box: fill-box; transform-origin: center; }
+@keyframes xc-btn { 0%, 39% { transform: none; } 42% { transform: scale(.93); } 47%, 100% { transform: none; } }
+@keyframes xc-a { 0%, 41% { opacity: 1; } 42%, 92% { opacity: 0; } 94%, 100% { opacity: 1; } }
+@keyframes xc-b { 0%, 41% { opacity: 0; } 42%, 92% { opacity: 1; } 94%, 100% { opacity: 0; } }`
+      + RMQ(`.s-x-copy .xc-btn { animation: xc-btn 4s infinite; } .s-x-copy .xc-a { animation: xc-a 4s infinite; } .s-x-copy .xc-b { animation: xc-b 4s infinite; }`) },
+  { id: 'x-yawn', tier: 'all', name: 'Long idle: yawn, then doze', vb: '0 0 120 120',
+    what: 'After a few quiet minutes he yawns, sinks a little and dozes off. The first key or click wakes him.',
+    svg: () => nx({ faces: ['smile', 'wow', 'sleep'] }) + zzz(86, 34),
+    css: `.s-x-yawn .zz { opacity: 0; transform-box: fill-box; }
+@keyframes xy-f0 { 0%, 30% { opacity: 1; } 31%, 96% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes xy-f1 { 0%, 30% { opacity: 0; } 31%, 44% { opacity: 1; } 45%, 100% { opacity: 0; } }
+@keyframes xy-f2 { 0%, 44% { opacity: 0; } 45%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xy-core { 0%, 30% { transform: none; } 36%, 42% { transform: scale(1.05, 1.08); } 50%, 94% { transform: translateY(4px) rotate(-5deg); } 100% { transform: none; } }
+@keyframes xy-z { 0%, 52% { opacity: 0; transform: none; } 62% { opacity: 1; } 92% { opacity: .8; transform: translate(6px, -10px); } 96%, 100% { opacity: 0; } }`
+      + RMQ(`.s-x-yawn .xf0 { animation: xy-f0 8s infinite; } .s-x-yawn .xf1 { animation: xy-f1 8s infinite; } .s-x-yawn .xf2 { animation: xy-f2 8s infinite; } .s-x-yawn .n-core { animation: xy-core 8s var(--soft) infinite; } .s-x-yawn .zz { animation: xy-z 8s infinite; animation-delay: calc(var(--i) * .5s); }`) },
+  { id: 'x-fix', tier: 'all', name: 'Big fix: one orbit', vb: '0 0 240 120',
+    what: 'After a fix that clears many problems, the lines turn green in a wave, the three orbits swing into one and all four electrons do a lap together.',
+    svg: () => nx({ faces: ['smile', 'excited'], el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]] }) + NX_PANEL([62, 48, 72, 40, 56]) + [0, 1, 2, 3, 4].map((i) => `<rect class="xg xg${i}" x="134" y="${28 + i * 13}" width="${[62, 48, 72, 40, 56][i]}" height="5" rx="2.5" fill="${C.g}"/>`).join(''),
+    css: `.s-x-fix .xg { opacity: 0; } .s-x-fix .orb0 { --a: 0deg; }
+@keyframes xf-orb1 { 0%, 40% { transform: rotate(60deg); } 52%, 86% { transform: rotate(0deg); } 96%, 100% { transform: rotate(60deg); } }
+@keyframes xf-orb2 { 0%, 40% { transform: rotate(120deg); } 52%, 86% { transform: rotate(0deg); } 96%, 100% { transform: rotate(120deg); } }
+@keyframes xf-g { 0% { opacity: 0; } 6%, 90% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes xf-f0 { 0%, 44% { opacity: 1; } 45%, 90% { opacity: 0; } 91%, 100% { opacity: 1; } }
+@keyframes xf-f1 { 0%, 44% { opacity: 0; } 45%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes xf-hop { 0%, 44% { transform: none; } 48% { transform: translateY(-6px); } 52%, 100% { transform: none; } }`
+      + RMQ(`.s-x-fix .orb1 { animation: xf-orb1 6s cubic-bezier(.5, 0, .3, 1) infinite; } .s-x-fix .orb2 { animation: xf-orb2 6s cubic-bezier(.5, 0, .3, 1) infinite; } .s-x-fix .xg { animation: xf-g 6s infinite; } ${[0, 1, 2, 3, 4].map((i) => `.s-x-fix .xg${i} { animation-delay: ${(i * .32).toFixed(2)}s; }`).join(' ')} .s-x-fix .xf0 { animation: xf-f0 6s infinite; } .s-x-fix .xf1 { animation: xf-f1 6s infinite; } .s-x-fix .n-core { animation: xf-hop 6s var(--spring) infinite; }`) },
+  { id: 'x-players', tier: 'prod', name: 'Try it: player count', vb: '0 0 120 120',
+    what: 'Add a player in Try it and an electron pops out of the nucleus; remove one and it is swallowed. Nucli always shows how many players the simulation runs.',
+    svg: () => nx({}) + PCOUNT.map((n, i) => PCOUNT.indexOf(n) === i ? `<text class="xp-t xp-t${n}" x="60" y="117" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)"${n > 1 ? ' opacity="0"' : ''}>${n} player${n > 1 ? 's' : ''}</text>` : '').join(''),
+    css: [1, 2, 3].map((k) => nxSteps(`xp-e${k}`, PCOUNT.map((n) => n > k), 8, `.s-x-players .xe${k}`)).join('\n') + '\n' + [1, 2, 3, 4].map((n) => nxSteps(`xp-t${n}`, PCOUNT.map((c) => c === n), 8, `.s-x-players .xp-t${n}`, false)).join('\n') + '\n.s-x-players .xe { transform-box: fill-box; transform-origin: center; }' },
+  { id: 'x-hover', tier: 'prod', name: 'Hover a name', vb: '0 0 240 120',
+    what: 'Point at a Game or Context name and he tilts toward it, while an electron hops to that line\'s gutter: "this one". The tooltip is unchanged.',
+    svg: () => nx({ n: 3 }) + NX_PANEL([30, 0, 48, 36]) + `<rect x="134" y="41" width="22" height="5" rx="2.5" fill="var(--code)"/><rect class="xh-tok" x="158" y="39" width="46" height="9" rx="3" fill="var(--pick-bg)" stroke="var(--pick)" stroke-width="1" opacity="0"/><rect x="160" y="41" width="42" height="5" rx="2.5" fill="var(--pick)"/>`
+      + flyer('M110 56 Q122 14 128 43.5', '0;0;1;1;0;0', '0;.22;.34;.74;.86;1', '0;1;1;1;1;0', 3, 5) + `<path class="xh-cur" d="M0 0 L0 13 L3.6 9.6 L6.4 15.4 L8.6 14.4 L5.8 8.8 L10.4 8.4 Z" fill="var(--ink)" stroke="var(--card)" stroke-width="1"/>`,
+    css: `.s-x-hover .xh-cur { transform: translate(214px, 96px); } .s-x-hover .n-core { transform-origin: 60px 82px; }
+@keyframes xh-cur { 0%, 6% { transform: translate(214px, 96px); } 20%, 76% { transform: translate(178px, 44px); } 92%, 100% { transform: translate(214px, 96px); } }
+@keyframes xh-tok { 0%, 19% { opacity: 0; } 22%, 76% { opacity: 1; } 79%, 100% { opacity: 0; } }
+@keyframes xh-core { 0%, 20% { transform: none; } 27%, 76% { transform: rotate(7deg); } 84%, 100% { transform: none; } }
+@keyframes xh-look { 0%, 20% { transform: none; } 25%, 76% { transform: translate(3px, -1.4px); } 82%, 100% { transform: none; } }`
+      + RMQ(`.s-x-hover .xh-cur { animation: xh-cur 5s var(--soft) infinite; } .s-x-hover .xh-tok { animation: xh-tok 5s infinite; } .s-x-hover .n-core { animation: xh-core 5s var(--spring) infinite; } .s-x-hover .look { animation: xh-look 5s infinite; }`) },
+];
+const NX_TIER = { def: 'Default', all: 'All only', prod: 'In Try it and the editor' };
+const nxAnims = () => NX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id}${a.id === 'x-start' ? '' : ' blink'}" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${NX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
+// Where each would go in Settings → Theme → Motion (playground/src/motion.ts). Calm and Still keep the expressions, without movement.
+const NX_PLAN = [
+  ['Startup assembly', 'Plays', 'Once', 'Pose', 'Pose', '—'],
+  ['Typing along', 'Plays', 'Eyes only', 'Pose', 'Pose', '—'],
+  ['Escalating error', 'Plays', 'Plays', 'Face only', 'Face only', '—'],
+  ['Try it: player count', 'Plays', 'Plays', 'Count only', 'Count only', '—'],
+  ['Undo, copy and save, yawn, big fix, hover', 'Plays', '—', '—', '—', '—'],
+];
+const nxPlan = () => `<div class="nx-tw"><table class="nx-plan"><caption>Which preset plays what. When the device asks for less motion, everything is at most "Still".</caption><thead><tr><th scope="col">Animation</th>${['All', 'Default', 'Calm', 'Still', 'Off'].map((h) => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${NX_PLAN.map(([n, ...c]) => `<tr><th scope="row">${n}</th>${c.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+document.getElementById('nx-dirs').innerHTML = nxDirs();
+document.getElementById('nx-cols').innerHTML = nxCols();
+document.getElementById('nx-anims').innerHTML = nxAnims();
+document.getElementById('nx-plan').innerHTML = nxPlan();
+LCSS += NX_ANIMS.map((a) => a.css).join('\n') + RMQ('.nx-card svg .tcur, .nx-anim svg .tcur { animation: xt-blink 1.1s step-end infinite; }');
+
+// ---- Duo explorations: ideas only, nothing here is in the product ----
+const DX_SMALL = () => `<g transform="translate(60 62) scale(1.42) translate(-60 -62)">${duo({ arms: 'none', noFeet: true, noShadow: true })}</g>`;
+// Screen Duo: the split window of the splitscreen.me logo, with a face and feet.
+const screenDuo = (sm) => `<rect x="${sm ? 18 : 26}" y="${sm ? 22 : 30}" width="${sm ? 84 : 68}" height="${sm ? 76 : 62}" rx="${sm ? 16 : 14}" fill="url(#duoG)"/>${sm ? '' : '<rect x="30" y="34" width="60" height="7" rx="3.5" fill="#fff" opacity=".28"/>'}<rect x="${sm ? 57.5 : 58.5}" y="${sm ? 22 : 30}" width="${sm ? 5 : 3}" height="${sm ? 76 : 62}" fill="#fff"/>
+  ${eyeOf(sm ? 41 : 46, sm ? 56 : 58, sm ? 1.35 : 1, 'smile', C.ink, '#fff', 'l')}${eyeOf(sm ? 79 : 74, sm ? 56 : 58, sm ? 1.35 : 1, 'smile', C.ink, '#fff', 'r')}${sm ? '' : `${mouthOf(60, 72, 1, "smile", C.ink)}<ellipse cx="46" cy="98" rx="8.6" ry="4.6" fill="#1858c4"/><ellipse cx="74" cy="98" rx="8.6" ry="4.6" fill="#1858c4"/>`}`;
+// Player-coloured Duos: the blue turned to each player's colour.
+const DX_HUE = [[177, 1.1], [142, 1.2], [-25, 1], [-112, 1]];
+const tinted = (i, inner) => `<g style="filter: hue-rotate(${DX_HUE[i][0]}deg) saturate(${DX_HUE[i][1]})">${inner}</g>`;
+const dxFour = (sm) => [[30, 30], [90, 30], [30, 90], [90, 90]].map(([x, y], i) => tinted(i, small(sm ? duo({ arms: 'none', noFeet: true, noShadow: true }) : duo({ noShadow: true, expr: i === 1 ? 'happy' : 'smile' }), x - 60 * .5, y - 62 * .5, .5))).join('');
+const DX_DIRS = [
+  { name: 'Today', big: () => duo({}), small: () => duo({ noShadow: true }), con: ['#1c7bff'],
+    note: 'Reads well down to 24 px. At 16 the arms and feet take up a third of the box, so the ball and the stripe shrink to a dot.' },
+  { name: 'A · Refined', tag: 'My pick', rec: true, big: () => duo({}), small: (s) => s <= 24 ? DX_SMALL() : duo({ noShadow: true }), con: ['#1c7bff'],
+    note: 'No change at full size. At 24 px and under, a small build: just the ball, no arms or feet, 40 % bigger in the same box. The stripe and the eyes stay readable at 16.' },
+  { name: 'B · Screen Duo', tag: 'Bold', big: () => screenDuo(false), small: (s) => screenDuo(s <= 24), con: ['#1c7bff'],
+    note: 'The logo\'s split window, alive. Instantly "splitscreen", and crisp at 16. But it is the logo with a face: a ball bounces, splits and rolls; a box cannot, and half the animation library goes.' },
+  { name: 'C · One Duo per player', tag: 'For player UI', big: () => dxFour(false), small: (s) => s <= 24 ? tinted(0, DX_SMALL()) : dxFour(false), con: ['#1c7bff', '#fca53d'],
+    note: 'Not a new look: Duo takes the player\'s colour wherever one Duo stands for one player (setup, the players bar). The brand Duo stays blue everywhere else.' },
+];
+const dxDirs = () => DX_DIRS.map((v) => `<div class="nx-card${v.rec ? ' rec' : ''}"><div class="nx-h"><b>${v.name}</b>${v.tag ? `<span class="nx-tag${v.rec ? ' rec' : ''}">${v.tag}</span>` : ''}</div>
+  <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Duo, ${v.name}">${v.big()}</svg></div>
+  ${nxStrips(v.small)}<p class="nx-con">Body against the page: ${nxCon(v.con)}</p><p>${v.note}</p></div>`).join('');
+
+const DX_ANIMS = [
+  { id: 'y-drop', tier: 'def', name: 'Splash: drop in', vb: '0 0 120 120',
+    what: 'When the app opens, Duo drops in, squashes on landing, bounces once and settles with a blink. Once per start, under a second.',
+    svg: () => duo({}),
+    css: `.s-y-drop .d-shadow { transform-origin: 60px 105px; }
+@keyframes yd-jump { 0% { transform: translateY(-110px); animation-timing-function: cubic-bezier(.5, 0, 1, .6); } 20% { transform: none; animation-timing-function: ease-out; } 32% { transform: translateY(-14px); animation-timing-function: ease-in; } 42%, 100% { transform: none; } }
+@keyframes yd-body { 0%, 19% { transform: scale(.92, 1.1); } 22% { transform: scale(1.2, .78); } 28% { transform: scale(.96, 1.05); } 42% { transform: scale(1.08, .92); } 48%, 100% { transform: none; } }
+@keyframes yd-sh { 0% { transform: scale(.2); } 20%, 100% { transform: none; } }`
+      + RMQ(`.s-y-drop .d-jump { animation: yd-jump 3.6s infinite; } .s-y-drop .d-body { animation: yd-body 3.6s infinite; } .s-y-drop .d-shadow { animation: yd-sh 3.6s infinite; }`) },
+  { id: 'y-catch', tier: 'def', name: 'Installed: he catches it', vb: '0 0 120 120',
+    what: 'A handler from the Hub finishes installing: the package drops, Duo catches it overhead with a little squash and beams. Replaces the plain check mark, not the message.',
+    svg: () => duo({ arms: 'up', swap: ['smile', 'happy'], inJump: pkg + star(18, 30, 1, C.o) + star(100, 24, .8, C.t) }),
+    css: `.s-y-catch .box { transform: translateY(2px); } .s-y-catch .sp { opacity: 0; }
+@keyframes yc-box { 0% { transform: translateY(-60px); opacity: 0; } 8% { opacity: 1; } 30% { transform: translateY(2px); } 34% { transform: translateY(6px); } 40%, 100% { transform: translateY(2px); } }
+@keyframes yc-body { 0%, 29% { transform: none; } 34% { transform: scale(1.1, .88); } 42%, 100% { transform: none; } }
+@keyframes yc-fa { 0%, 34% { opacity: 1; } 36%, 92% { opacity: 0; } 95%, 100% { opacity: 1; } }
+@keyframes yc-fb { 0%, 34% { opacity: 0; } 36%, 92% { opacity: 1; } 95%, 100% { opacity: 0; } }
+@keyframes yc-sp { 0%, 36% { opacity: 0; transform: scale(0); } 42% { opacity: 1; transform: scale(1.3); } 50%, 80% { opacity: 1; transform: none; } 88%, 100% { opacity: 0; } }`
+      + RMQ(`.s-y-catch .box { animation: yc-box 4s infinite; } .s-y-catch .d-body { animation: yc-body 4s infinite; } .s-y-catch .fa { animation: yc-fa 4s infinite; } .s-y-catch .fb { animation: yc-fb 4s infinite; } .s-y-catch .sp { animation: yc-sp 4s infinite; }`) },
+  { id: 'y-fail', tier: 'def', name: 'Launch failed, escalating', vb: '0 0 120 120',
+    what: 'First failed launch: a shrug. Second: the oops crack. Third in a row: he holds up a "?" sign, the moment to show the help link. Each under half a second.',
+    svg: () => duo({ swap: ['smile', 'worried'], after: `<g class="yf-sign"><rect x="84" y="14" width="26" height="24" rx="5" fill="var(--card)" stroke="${C.ink}" stroke-width="2"/><text x="97" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="${C.r}">?</text><path d="M97 38 V52" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/></g>` }),
+    css: `.s-y-fail .yf-sign { opacity: 0; transform-box: fill-box; transform-origin: bottom center; }
+@keyframes yf-jump { 0%, 6% { transform: none; } 9% { transform: translateY(-5px); } 13%, 100% { transform: none; } }
+@keyframes yf-hl { 0%, 36% { transform: none; } 39% { transform: translate(-5px, 2px) rotate(-7deg); } 48% { transform: translate(-3px, 1px) rotate(-4deg); } 56%, 100% { transform: none; } }
+@keyframes yf-hr { 0%, 36% { transform: none; } 39% { transform: translate(5px, -1px) rotate(6deg); } 48% { transform: translate(3px, 0) rotate(3deg); } 56%, 100% { transform: none; } }
+@keyframes yf-fa { 0%, 6% { opacity: 1; } 7%, 94% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes yf-fb { 0%, 6% { opacity: 0; } 7%, 94% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes yf-sign { 0%, 66% { opacity: 0; transform: scale(.3) rotate(-20deg); } 71% { opacity: 1; transform: scale(1.1); } 75%, 92% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes yf-arm { 0%, 66% { transform: none; } 71%, 92% { transform: rotate(-110deg); } 96%, 100% { transform: none; } }`
+      + RMQ(`.s-y-fail .d-jump { animation: yf-jump 6s infinite; } .s-y-fail .d-hl { animation: yf-hl 6s infinite; } .s-y-fail .d-hr { animation: yf-hr 6s infinite; } .s-y-fail .fa { animation: yf-fa 6s infinite; } .s-y-fail .fb { animation: yf-fb 6s infinite; } .s-y-fail .yf-sign { animation: yf-sign 6s var(--spring) infinite; } .s-y-fail .d-arm-r { animation: yf-arm 6s var(--spring) infinite; }`) },
+  { id: 'y-juggle', tier: 'all', name: 'Idle: juggling players', vb: '0 0 120 120',
+    what: 'Left alone on the start screen, he juggles four balls in the player colours. Stops the moment you move the mouse or press a button.',
+    svg: () => duo({ expr: 'happy', arms: 'up' }) + ACC.map((c, i) => `<circle r="5" fill="${c}" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.4s" begin="-${(i * .6).toFixed(1)}s" repeatCount="indefinite" path="M30 26 Q46 -18 90 26 Q60 12 30 26" calcMode="spline" keyTimes="0;1" keySplines=".3 0 .7 1"/></circle>`).join(''),
+    css: `@keyframes yj-look { 0%, 100% { transform: translate(-2px, -2px); } 50% { transform: translate(2px, -2px); } }` + RMQ(`.s-y-juggle .look { animation: yj-look 1.2s var(--soft) infinite; }`) },
+  { id: 'y-peek', tier: 'all', name: 'Hover a game: he peeks', vb: '0 0 240 120',
+    what: 'Point at a game in the list and Duo peeks out from behind its card, tilting his head. Only in the game list, and never over the title.',
+    svg: () => `<g transform="translate(14 0)"><g class="yp-duo">${duo({ noShadow: true })}</g></g><rect x="120" y="10" width="104" height="100" rx="12" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/><rect x="128" y="18" width="88" height="56" rx="7" fill="url(#barG)" opacity=".8"/><rect x="128" y="82" width="62" height="6" rx="3" fill="var(--code)"/><rect x="128" y="94" width="40" height="5" rx="2.5" fill="var(--code)"/><path class="xh-cur" d="M0 0 L0 13 L3.6 9.6 L6.4 15.4 L8.6 14.4 L5.8 8.8 L10.4 8.4 Z" fill="var(--ink)" stroke="var(--card)" stroke-width="1"/>`,
+    css: `.s-y-peek .yp-duo { transform-box: view-box; transform-origin: 60px 96px; transform: translateX(34px) rotate(-10deg); } .s-y-peek .xh-cur { transform: translate(180px, 52px); }
+@keyframes yp-duo { 0%, 18% { transform: translateX(70px); } 30% { transform: translateX(30px) rotate(-12deg); } 36%, 74% { transform: translateX(34px) rotate(-10deg); } 86%, 100% { transform: translateX(70px); } }
+@keyframes yp-cur { 0%, 6% { transform: translate(226px, 112px); } 18%, 80% { transform: translate(180px, 52px); } 94%, 100% { transform: translate(226px, 112px); } }`
+      + RMQ(`.s-y-peek .yp-duo { animation: yp-duo 5s var(--spring) infinite; } .s-y-peek .xh-cur { animation: yp-cur 5s var(--soft) infinite; }`) },
+  { id: 'y-layout', tier: 'prod', name: 'Pick a layout: he splits into it', vb: '0 0 240 120',
+    what: 'Choosing "2 players, side by side" in setup: Duo splits and each half lands on its screen as a small Duo in the player\'s colour. Shows what the layout means before you start.',
+    svg: () => `<g class="yl-big">${duo({})}</g><rect x="128" y="18" width="104" height="66" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><path d="M180 18 V84" stroke="var(--ink)" stroke-width="2"/><path d="M170 84 L166 98 H194 L190 84" fill="var(--panel-line)"/>`
+      + [[154, 0], [206, 1]].map(([x, i]) => `<g class="yl-m yl-m${i}">${tinted(i, small(duo({ noShadow: true, expr: 'happy' }), x - 60 * .42, 52 - 62 * .42, .42))}</g>`).join(''),
+    css: `.s-y-layout .yl-m { transform-box: fill-box; transform-origin: center bottom; }
+@keyframes yl-hl { 0%, 20% { transform: none; } 28%, 40% { transform: translateX(-7px) rotate(-8deg); } 48%, 100% { transform: none; } }
+@keyframes yl-hr { 0%, 20% { transform: none; } 28%, 40% { transform: translateX(7px) rotate(8deg); } 48%, 100% { transform: none; } }
+@keyframes yl-m { 0%, 30% { opacity: 0; transform: translateY(-14px) scale(.4); } 38% { opacity: 1; transform: scale(1.15, .85); } 44%, 90% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }`
+      + RMQ(`.s-y-layout .d-hl { animation: yl-hl 5s var(--spring) infinite; } .s-y-layout .d-hr { animation: yl-hr 5s var(--spring) infinite; } .s-y-layout .yl-m { animation: yl-m 5s var(--spring) infinite; } .s-y-layout .yl-m1 { animation-delay: .12s; }`) },
+];
+const DX_TIER = { def: 'Default', all: 'All only', prod: 'In player setup' };
+document.getElementById('dx-dirs').innerHTML = dxDirs();
+document.getElementById('dx-anims').innerHTML = DX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${DX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
+LCSS += DX_ANIMS.map((a) => a.css).join('\n');
 
 document.getElementById('gen').textContent = genCSS() + LCSS;
 
