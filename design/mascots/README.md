@@ -39,6 +39,11 @@ which are not saved here.
     clicks in with a check, a better twirl, a fixed carousel, a punchier wave; Duo hops on his player's input,
     devices and electrons jiggle on input; a working player-setup example (controllers, keyboards, mice, both).
     `15-…`
+16. **An app concept**: player setup for a future Nucleus Co-op in its own tab. Press a button on any device to join
+    (a real controller works, through the Gamepad API); the screen splits for each new player and merges when one
+    leaves; devices have faces and jiggle when used; works with mouse, touch, keyboard and controller. Also: the seam
+    no longer drifts from the face when Duo turns, Nucli's kaleidoscope ends in his normal pose, Hop-in's lights flare
+    with sparkles instead of a check. `16-…`
 
 ## Lessons we kept
 
