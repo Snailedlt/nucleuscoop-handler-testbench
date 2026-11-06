@@ -16,8 +16,9 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
-- **Check Claude's docs.** Reference › Browse › "Written by Claude: please check" lists every doc Claude wrote from the Nucleus source that no person has checked yet. Confirm one with 👍, or 👎 and "Tell us what's wrong"; checked ones say who checked them.
-- **Tell us what helps.** 👍/👎 on tips, and on docs written by Claude (with a link to say what's wrong). Votes are counted anonymously: no code, no names, no cookies; off in Settings › General, and off when your browser asks not to be tracked.
+- **Help test the beta.** 🧪 in the footer (or the ⋯ menu) lists what to try, for people new to coding and for developers: what to do, the kind of testing (a task, real Nucleus, phone, keyboard only, screen reader, checking facts) and what to look for, each with a Report link. Your ticks stay in this browser.
+- **Check the AI-written docs.** Reference › "Help check AI-written docs" lists every doc AI wrote from the Nucleus source that no person has checked yet. Confirm one with 👍, or 👎 and "Tell us what's wrong"; checked ones say who checked them.
+- **Tell us what helps.** 👍/👎 on tips, and on AI-written docs (with a link to say what's wrong). Votes are counted anonymously: no code, no names, no cookies; off in Settings › General, and off when your browser asks not to be tracked.
 - **Window messages by name.** In `Game.ProtoInput.BlockedMessages`, each number shows its name (`0x0008` WM_KILLFOCUS), hovering one says what blocking it does, and a **+** before the `]` lists the messages handlers block, most used first. Check now also tells you when Proto Input never starts, when blocked messages need the message filter hook, and when a setting needs another one turned on. Suggested by messenils.
 
   <details><summary>Screenshot</summary>
@@ -62,11 +63,12 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **⌂ Home under the title.** The title is the workbench's own link now, and ⌂ Home goes to the home page (what the tools do, how to get them).
 - **Check fits more on screen.** Each problem is one row (its colour, line, what's wrong and the fix); click it for the why, other fixes and the technical details. Settings › General › Check switches to Comfortable or Detailed.
 - **One box when you hover a problem.** The problem, its fixes (all of them: "set twice" lets you keep either value) and Ctrl+. come first; the name's docs fold away below it.
 - **Reference entries stand apart.** Each name is its own card, and the `Hub.*` lines the Hub writes on upload are in Reference too (marked "written by the Hub"), with what Nucleus uses them for.
 - **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog (the separate Copy and Copy link buttons are gone): saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.
-- **Nicer docs on hover.** The signature is coloured (name, parameters, types), defaults and categories are small labels, and docs written by Claude say so at the bottom, with what they're based on. 150 more names have docs now.
+- **Nicer docs on hover.** The signature is coloured (name, parameters, types), defaults and categories are small labels, and AI-written docs say so at the bottom, with what they're based on. 150 more names have docs now.
 - **Shortcuts where you look.** Hover a button (or reach it with Tab) to see its keyboard shortcut, also outside Advanced mode.
 - **Tips point at the real button.** A tip about Lines, Try it or Save or copy highlights that button while it shows; the tip's own arrows are both ‹ and ›.
 - **Suggestions after `=`.** Typing `Game.SymlinkGame = ` offers `true` and `false`, an option with fixed values lists them (`Nucleus.DPIHandling.…`), `Game.Play = ` writes the function with the cursor inside, and `Game.ProtoInput.BlockedMessages = ` offers the set most Hub handlers block.

@@ -377,7 +377,7 @@ function pageHtml(inlineHub) {
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
-    .replace(/(<a class="link start-link" href=")[^"]*"/, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
+    .replace(/(<a class="link start-link[^"]*" href=")[^"]*"/g, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
     .replace('/*THEMES*/', () => themesCSS)
     .replace('/*CODEMIRROR_CSS*/', () => css)

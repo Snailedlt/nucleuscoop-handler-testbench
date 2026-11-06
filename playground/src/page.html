@@ -53,9 +53,13 @@ body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body);
 .app { height: 100%; display: flex; flex-direction: column; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px calc(12px + var(--devbar-h, 0px)); gap: 10px; box-sizing: border-box; }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-a.brand { color: inherit; text-decoration: none; border-radius: var(--r-ctl); }
-a.brand:hover h1 { text-decoration: underline; text-underline-offset: 3px; }
-a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.brand { flex-direction: column; align-items: flex-start; gap: 0; }
+.brand-link { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; border-radius: var(--r-ctl); }
+.brand-link:hover h1 { text-decoration: underline; text-underline-offset: 3px; }
+.brand .sub { margin-left: 40px; }
+.brand .home-link { font-size: inherit; }
+
+.brand-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .logo { width: 30px; height: 30px; flex: none; display: block; }
 .logo-v3, :root[data-site="v3"] .logo-www { display: none; }
 :root[data-site="v3"] .logo-v3 { display: block; }
@@ -422,7 +426,7 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .dc-chip code { font-size: 11px; padding: 0 3px; }
 .dc-ai { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 1.45; color: var(--muted); }
 .dc-ai .ai-spark { margin-top: 1px; }
-/* The AI mark: two four-point sparkles with a purple-to-cyan gradient, wherever something was written by Claude. */
+/* The AI mark: two four-point sparkles with a purple-to-cyan gradient, wherever something was written by AI. */
 .ai-spark, .ai-doc::before { content: ''; display: inline-block; flex: none; width: 1.1em; height: 1.1em; vertical-align: -0.18em; background: linear-gradient(135deg, #a855f7 10%, #22d3ee 90%);
   -webkit-mask: var(--spark) center / contain no-repeat; mask: var(--spark) center / contain no-repeat;
   --spark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 1.5Q15 9.5 23 10.5Q15 11.5 14 19.5Q13 11.5 5 10.5Q13 9.5 14 1.5Z'/%3E%3Cpath d='M5.5 13.5Q6 17.5 10 18Q6 18.5 5.5 22.5Q5 18.5 1 18Q5 17.5 5.5 13.5Z'/%3E%3C/svg%3E"); }
@@ -447,6 +451,22 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .keyhint { position: fixed; z-index: 90; display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 12px; pointer-events: none; white-space: nowrap; }
 .keyhint[hidden] { display: none; }
 #ai-bar:not(:has(> .btn:not([hidden]))) { display: none; }
+/* Help test this beta (testguide.ts). */
+#test-dialog { width: min(720px, calc(100vw - 32px)); }
+.tg-who { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.tg-who button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.tg-who button[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
+.tg-count { margin: 0 0 8px; }
+.tg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow: auto; }
+.tg-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
+.tg-item.done { opacity: .65; }
+.tg-item.done strong { text-decoration: line-through; }
+.tg-done input { width: 18px; height: 18px; margin-top: 2px; }
+.tg-item p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
+.tg-title { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tg-kind, .tg-for { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.tg-kind { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--fg); border-color: transparent; cursor: help; }
+.tg-legend { margin-top: 10px; font-size: 13px; } .tg-legend dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; } .tg-legend dt { font-weight: 600; } .tg-legend dd { margin: 0; color: var(--muted); }
 @media (pointer: coarse) { .no-touch { display: none !important; } }
 /* Problem cards: the text starts at the same place whatever the line number. */
 .problem .loc { min-width: 7ch; }
@@ -881,9 +901,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 /* More after BSManager: the logo kicks when clicked and beats while Test all runs; notices slide
    in from above; Test all fills a progress bar. */
 @media (prefers-reduced-motion: no-preference) {
-  a.brand .logo { transition: transform .25s var(--spring); }
-  a.brand:active .logo { transform: rotate(-12deg) scale(.94); transition-duration: .08s; }
-  html.busy a.brand .logo { animation: logo-beat .55s ease-in-out infinite; }
+  .brand-link .logo { transition: transform .25s var(--spring); }
+  .brand-link:active .logo { transform: rotate(-12deg) scale(.94); transition-duration: .08s; }
+  html.busy .brand-link .logo { animation: logo-beat .55s ease-in-out infinite; }
   @keyframes logo-beat { 50% { transform: scale(1.08); } }
   #notice:not([hidden]) { animation: notice-in .35s var(--spring); }
   @keyframes notice-in { from { opacity: 0; transform: translateY(-10px); } }
@@ -1127,14 +1147,13 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <div class="app">
   <header>
-    <a class="brand" href="./" aria-label="Nucleus Handler Workbench: home" title="Home: start a handler, open one or pick an example">
+    <div class="brand">
+      <a class="brand-link" href="./" aria-label="Nucleus Handler Workbench">
       <img class="logo logo-www" src="data:image/png;base64,/*WWW_LOGO*/" alt="" width="30" height="30">
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
-      <div>
-        <h1>Nucleus Handler Workbench</h1>
-        <div class="sub">Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
-      </div>
-    </a>
+      <h1>Nucleus Handler Workbench</h1></a>
+      <div class="sub"><a class="link start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them">⌂ Home</a><span aria-hidden="true"> · </span>Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
+    </div>
     <div class="switch" role="group" aria-label="Show">
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
       <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
@@ -1251,7 +1270,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </main>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link tg-open" id="test-open" type="button">🧪 Help test the beta</button><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -1377,7 +1396,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="more-list">
     <button class="btn no-touch" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
-    <button class="btn" type="button" data-proxy="a.start-link">About these tools</button>
+    <button class="btn" type="button" data-proxy="#test-open">🧪 Help test the beta</button>
+    <button class="btn" type="button" data-proxy="a.home-link">⌂ Home: about these tools</button>
   </div>
   <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
 </dialog>
@@ -1396,6 +1416,13 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div id="files-body"></div>
   <div class="actions"><button class="btn primary" type="button" id="files-close">Close</button></div>
 </dialog>
+<dialog id="test-dialog" aria-labelledby="test-h">
+  <h2 id="test-h">🧪 Help test this beta</h2>
+  <p class="muted" style="margin:0 0 10px">Thanks for testing! Pick what fits you: each item says what to try, what kind of testing it is, and what to look for. Your ticks stay in this browser.</p>
+  <div id="test-body"></div>
+  <div class="actions"><button class="btn primary" type="button" id="test-close">Done</button></div>
+</dialog>
+
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">
   <h2 tabindex="-1" autofocus>Keyboard shortcuts</h2>
   <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl.</p>

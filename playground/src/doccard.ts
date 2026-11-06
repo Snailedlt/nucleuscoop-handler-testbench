@@ -27,7 +27,7 @@ export function memberCard(owner: string, name: string, m: Member, opts: { head?
     + (m.doc ? m.doc.split(/\n{2,}/).map((p) => `<p>${inline(p)}</p>`).join('') : '<p class="muted">No description yet.</p>')
     + (m.example ? `<pre class="doc-code">${esc(m.example)}</pre>` : '')
     + (facts.length ? `<div class="dc-facts">${facts.join('')}</div>` : '')
-    + (note ? `<div class="dc-ai" title="${esc(note)}"><span class="ai-spark" aria-hidden="true"></span><span>${m.docCheckedBy ? `Written by Claude (AI), checked by ${esc(m.docCheckedBy)}${m.docCheckedOn ? ` on ${esc(m.docCheckedOn)}` : ''}.` : 'Written by Claude (AI), not from the official docs.'} Based on ${esc(m.docBasis ?? '')}.</span></div>`
+    + (note ? `<div class="dc-ai" title="${esc(note)}"><span class="ai-spark" aria-hidden="true"></span><span>${m.docCheckedBy ? `AI-written, checked by ${esc(m.docCheckedBy)}${m.docCheckedOn ? ` on ${esc(m.docCheckedOn)}` : ''}.` : 'AI-written, not from the official docs.'} Based on ${esc(m.docBasis ?? '')}.</span></div>`
       + `<div class="dc-check"><span>Is this right?</span>${voteButtons('doc', `${label}.${name}`, { up: 'Correct', down: 'Wrong or unclear' })}<a href="${esc(docReviewUrl(`${label}.${name}`))}" target="_blank" rel="noopener">Tell us what's wrong</a></div>` : '')
     + `</div>`;
 }

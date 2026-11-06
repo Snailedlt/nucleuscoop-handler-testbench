@@ -34,6 +34,7 @@ import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
+import { initTestGuide } from './testguide';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
@@ -989,7 +990,7 @@ $('#sim-all').addEventListener('click', testAll);
 // Reference with nothing typed: what's in it, so it's clear what can be found there.
 const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
   // The docs Claude wrote that no person has checked yet: handler authors can confirm or correct them (👍/👎, an issue).
-  { key: 'AI', title: 'Written by Claude: please check', doc: 'Docs Claude wrote from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
+  { key: 'AI', title: 'AI-written: please check', doc: 'Docs written by AI from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
   { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
   { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
   { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
@@ -1011,7 +1012,7 @@ function renderApiHome(el: HTMLElement) {
   const enums = Object.keys(api.enums).sort();
   el.innerHTML = `<div class="api-home">
     <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
-    ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check Claude's docs <span class="count">${unchecked().size}</span></span><span class="d">Claude wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
+    ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check AI-written docs <span class="count">${unchecked().size}</span></span><span class="d">AI wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
     <h3 class="api-h">Browse</h3>
     <div class="api-groups">${API_GROUPS.filter((g) => g.key !== 'AI').map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
     <h3 class="api-h">Most used in Hub handlers</h3>
@@ -1029,7 +1030,7 @@ function renderApiGroup(el: HTMLElement, key: string) {
   const g = API_GROUPS.find((x) => x.key === key)!;
   const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
   el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
-    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="Written by Claude (AI), not from the official docs" role="img" aria-label="Written by Claude (AI)"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
+    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="AI-written, not from the official docs" role="img" aria-label="AI-written"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
   el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
   wireApiLinks(el);
   el.scrollTop = 0;
@@ -1355,6 +1356,7 @@ function commandList(): OpenEntry[] {
     c('Reset panel sizes', '', 'layout resize panels reset width', () => panels.reset()),
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
+    c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
@@ -1801,6 +1803,9 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     helpDialog.showModal();
   }
 });
+
+// Help test this beta (testplan.ts: BETA). Gone at the full release.
+const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')]);
 
 // The common shortcuts, on hover or keyboard focus of the buttons they belong to (both modes).
 initKeyHints([
@@ -2412,20 +2417,16 @@ window.addEventListener('resize', () => requestAnimationFrame(placeInk));
 requestAnimationFrame(placeInk);
 // The logo is home: the start of the Open dialog (new handler, open a file, examples). A middle click
 // or Ctrl+click still opens the workbench fresh in a new tab.
-document.querySelector<HTMLAnchorElement>('a.brand')?.addEventListener('click', (e) => {
-  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-  e.preventDefault();
-  showOpen();
-});
+// The title is the workbench's own link (a fresh load keeps the draft); "⌂ Home" under it goes to the home page.
 // "About these tools" opens the start page. The single file (a release download, the Claude artifact)
 // links to the live site's; where a start page is served next to it (the artifact, a copy of the
 // site), it opens that one, so a preview stays a preview.
 {
-  const start = document.querySelector<HTMLAnchorElement>('a.start-link');
-  if (start && /^https?:/.test(location.protocol) && /^https:/.test(start.getAttribute('href') ?? '')) {
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('a.start-link')];
+  if (links.length && /^https?:/.test(location.protocol) && /^https:/.test(links[0].getAttribute('href') ?? '')) {
     fetch('start/', { method: 'HEAD', cache: 'no-store' })
       .then((r) => {
-        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) start.href = 'start/';
+        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) links.forEach((a) => (a.href = 'start/'));
       })
       .catch(() => {});
   }
