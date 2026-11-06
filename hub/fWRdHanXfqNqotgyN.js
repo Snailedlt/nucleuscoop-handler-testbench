@@ -1,0 +1,35 @@
+Hub.Handler.Version = 1; // Released at https://hub.splitscreen.me/ on Sun Oct 31 2021 07:41:05 GMT+0000 (Coordinated Universal Time).
+Hub.Handler.Id = "fWRdHanXfqNqotgyN";
+Hub.Maintainer.Name = "Talos91";
+Hub.Maintainer.Id = "eeL7HAz8zJovChWw4";
+
+Game.ExecutableContext = ["Resource"];
+Game.FileSymlinkExclusions = ["steam_appid.txt", "xinput1_3.dll"];
+Game.FileSymlinkCopyInstead = ["steam_api.dll"];
+Game.NeedsSteamEmulation = true;
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.SymlinkFolders = true;
+Game.ExecutableName = "MBF.exe";
+Game.SteamID = "292480";
+Game.CreateSteamAppIdByExe = true;
+Game.GUID = "Magical Battle Festa";
+Game.GameName = "Magical Battle Festa";
+Game.MaxPlayers = 4;
+Game.MaxPlayersOneMonitor = 4;
+Game.LauncherTitle = "MBF Config Tool";
+Game.HideTaskbar = false;
+Game.Hook.ForceFocus = true;
+Game.Hook.ForceFocusWindowName = "Magical Battle Festa STEAM EDITION Ver1.01";
+Game.HookFocus = true;
+Game.Hook.DInputEnabled = false;
+Game.Hook.XInputEnabled = true;
+Game.XInputPlusDll = ["xinput1_3.dll"];
+Game.Hook.CustomDllEnabled = false;
+Game.UserProfileSavePath = "AppData\\Roaming\\SmartSteamEmu";
+Game.Description =
+  "After running this click start in the game launcher that will open, you can change the game resolution and other settings if you click on the launcher config button, make sure fullscreen is disabled. After the game instances open select network and create a public game in one instance, use the Enter keyboard key to open the create room menu and use it after naming the room too, alt-tab to or click on an instance to use the keyboard, the room will be visible to join in the other instances. This game already has 4 player native split-screen but the split-screen is always divided in four no matter how many players you use, with this script you can also use multiple monitors.";
+Game.PromptBetweenInstances = true;
+Game.PauseBetweenProcessGrab = 20;
+Game.PauseBetweenStarts = 40;
