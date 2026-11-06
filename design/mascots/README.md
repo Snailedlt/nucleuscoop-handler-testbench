@@ -64,6 +64,10 @@ which are not saved here.
 22. **Duos in the app concept**: the players demo's Duos live under the player-setup screen. Joining splits a Duo
     off, leaving merges (into a neighbour, and the rest renumber), each Duo holds its player's devices (a touchscreen
     too) and hops on input. `22-…`
+23. **Real devices, everyone at once**: Duos react to controller buttons (A hop, B duck, X wiggle, Y cheer, Start
+    party, D-pad/stick lean). Only devices the browser has seen are listed (controllers on a button press, the
+    keyboard, the mouse, touch), unplugged ones leave; every controller gets its own cursor, so several people can
+    use the setup at the same time. `23-…`
 
 ## Lessons we kept
 
