@@ -2,6 +2,7 @@
 // niche ones (Advanced mode, the dev bar) under Advanced. Also the phone helpers it controls:
 // the symbol bar above the on-screen keyboard.
 import { applyTheme } from './devbar';
+import { initKeyboard, keyboard, onKeyboard } from './keyboard';
 
 const EDITOR_KEY = 'nucleus-workbench-editor';
 const THEME_KEY = 'nucleus-workbench-dev-mode'; // shared with the dev bar
@@ -159,119 +160,43 @@ export function initSettings(d: Deps) {
     bar.append(b);
   }
   let focused = false;
-  // The on-screen keyboard shrinks the visible area (the visual viewport), not the page: size the
-  // workbench to what's visible, so the line being typed stays above the keyboard and the symbol keys.
-  // Some browsers, and pages shown inside a frame (where the keyboard can't be measured at all),
-  // don't say how tall the keyboard is: then the symbol keys go where the keyboard most likely ends,
-  // a height learned on this device or a generous estimate, so they sit on top of it, never under.
+  // The keyboard itself is measured in keyboard.ts, for every text field: the whole workbench is
+  // sized to what's visible above it (html.kb-up, --vvh). Here: the symbol keys, which sit right on
+  // top of the keyboard while the code has focus, and the code-only layout (body.kb-open).
   let kbOpen = false;
   let lastVisible = 0;
   let wasGuess = false;
-  let baseH = window.innerHeight; // the page's height without a keyboard
-  let waited = false; // gave the keyboard time to open
-  let measurable = false; // this page has seen the keyboard's height
-  let waitTimer: number | undefined;
-  window.addEventListener('resize', () => (focused ? placeKeybar() : (baseH = window.innerHeight)));
-  const portrait = () => window.innerHeight >= window.innerWidth;
-  const LEARN_KEY = 'nucleus-workbench-kb';
-  const learned = (): number | undefined => {
-    try {
-      return JSON.parse(get(LEARN_KEY) || '{}')[portrait() ? 'p' : 'l'];
-    } catch {
-      return undefined;
-    }
-  };
-  const learn = (h: number) => {
-    try {
-      const o = JSON.parse(get(LEARN_KEY) || '{}');
-      o[portrait() ? 'p' : 'l'] = Math.round(h);
-      put(LEARN_KEY, JSON.stringify(o));
-    } catch {}
-  };
-  // Phone keyboards (with their suggestion row) take about 35-40% of a portrait screen and about
-  // half of a landscape one: lean high, so a wrong guess leaves a gap instead of hiding the keys.
-  // Inside a frame (the maintainer's preview artifact), measured on their phone: Gboard with the
-  // suggestion and number rows covers 34.4% of a portrait screen.
-  let framed = true;
-  try {
-    framed = window.self !== window.top;
-  } catch {}
-  const estimate = () => {
-    const tall = Math.max(screen.width, screen.height);
-    const short = Math.min(screen.width, screen.height);
-    return learned() ?? Math.round(Math.min(window.innerHeight * 0.6, portrait() ? (framed ? 0.344 : 0.42) * tall : 0.55 * short));
-  };
-  // Chrome on Android tells exactly how tall the keyboard is, and when it closes, through the
-  // VirtualKeyboard API: let the keyboard overlay the page and size the workbench ourselves.
-  // Elsewhere the page's or the visual viewport's height has to tell.
-  const vk: any = !framed && 'virtualKeyboard' in navigator ? (navigator as any).virtualKeyboard : null;
-  let vkH = -1; // -1: not reported yet
-  if (vk) {
-    try {
-      vk.overlaysContent = true;
-      vk.addEventListener('geometrychange', () => {
-        vkH = Math.round(vk.boundingRect?.height ?? 0);
-        placeKeybar();
-      });
-    } catch {}
-  }
-  const debug = /[?&]kb\b/.test(location.search) ? document.createElement('pre') : null;
-  if (debug) {
-    debug.style.cssText = 'position:fixed;top:0;right:0;z-index:99;margin:0;padding:4px 6px;font:11px monospace;background:#000c;color:#0f0;pointer-events:none;white-space:pre';
-    document.body.append(debug);
-  }
   function placeKeybar() {
-    const vv = window.visualViewport;
-    const byApi = vkH >= 0;
-    const visible = byApi ? window.innerHeight - vkH : vv ? vv.height : window.innerHeight;
-    const kbH = byApi ? vkH : Math.max(0, baseH - visible);
-    const seen = kbH > 120;
-    const open = focused && touch() && seen && (byApi || (!!vv && vv.height < window.innerHeight - 120));
+    const k = keyboard();
+    const up = focused && k.height > 0;
+    const open = up && !k.estimated;
     // Re-fit only when the keyboard opens, closes or changes height: these events also fire while
     // scrolling, and scrolling the cursor back into view then would undo the scroll.
-    const changed = open !== kbOpen || (open && Math.abs(visible - lastVisible) > 2);
-    lastVisible = visible;
+    const changed = open !== kbOpen || (open && Math.abs(k.visible - lastVisible) > 2);
+    lastVisible = k.visible;
     if (changed) {
       kbOpen = open;
       document.body.classList.toggle('kb-open', open);
-      if (open) {
-        document.documentElement.style.setProperty('--vvh', `${Math.round(visible)}px`);
-        if (!byApi && vv && (vv.offsetTop || window.scrollY)) window.scrollTo(0, 0); // iOS scrolls the page up instead
-      }
       d.editor.refresh();
       if (focused) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
     }
-    if (seen && focused) learn(kbH);
-    // Once this page has seen the keyboard, it can tell: no keyboard now means it was closed (Android's
-    // back gesture closes it but keeps the cursor in the code). Only guess where it never could.
-    if (seen || byApi) measurable = true;
-    const show = focused && ed.keybar && touch() && (seen || (waited && !measurable));
-    const guess = show && !seen;
+    const show = up && ed.keybar && touch();
+    const guess = show && k.estimated;
     bar.hidden = !show;
-    document.body.classList.toggle('keybar-on', show && seen);
+    document.body.classList.toggle('keybar-on', show && !guess);
     document.body.classList.toggle('keybar-est', guess);
-    if (debug) debug.textContent = `inner ${window.innerHeight} vv ${vv ? Math.round(vv.height) + '+' + Math.round(vv.offsetTop) : '-'} base ${baseH}\nvk ${vk ? vkH : 'none'} kb ${kbH} seen ${seen} meas ${measurable}\nfocus ${focused} waited ${waited} show ${show} guess ${guess}`;
     if (!show) return void (wasGuess = false);
-    const bottom = seen ? (byApi ? vkH : vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0) : estimate();
-    bar.style.bottom = `${bottom}px`;
-    document.documentElement.style.setProperty('--kb-est', guess ? `${bottom}px` : '0px');
+    bar.style.bottom = `${k.bottom}px`;
     if (guess && !wasGuess) requestAnimationFrame(() => d.editor.scrollIntoView(null, 60));
     wasGuess = guess;
   }
-  const onFocus = () => {
-    focused = true;
-    waited = false;
-    clearTimeout(waitTimer);
-    waitTimer = window.setTimeout(() => ((waited = true), placeKeybar()), 700);
-    placeKeybar();
-  };
-  d.editor.on('focus', onFocus);
-  d.editor.on('blur', () => ((focused = false), clearTimeout(waitTimer), setTimeout(placeKeybar, 150)));
+  initKeyboard();
+  onKeyboard(placeKeybar);
+  d.editor.on('focus', () => ((focused = true), placeKeybar()));
+  d.editor.on('blur', () => ((focused = false), setTimeout(placeKeybar, 150)));
   // While the keyboard is open, keep the cursor in the space above it (after CodeMirror's own scroll).
   // Not while selecting: dragging a selection handle scrolls by itself.
   d.editor.on('cursorActivity', () => kbOpen && !d.editor.somethingSelected() && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
-  window.visualViewport?.addEventListener('resize', placeKeybar);
-  window.visualViewport?.addEventListener('scroll', placeKeybar);
 
   return { open };
 }

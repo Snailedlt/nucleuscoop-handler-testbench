@@ -49,10 +49,12 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
  * Light is this page's own variant of Bezel (v3 itself is dark only): a pale bezel around white panes, still
  * monochrome; the primary button is now the darkest thing on screen. Player colours stay for players only. */
 :root[data-site="v3"][data-site] {
-  --bg: #e4e7ec; --surface: #ffffff; --surface-2: #f1f3f6; --line: #d3d8e0;
-  --fg: #0b0d12; --muted: #4d5565; --accent: #0b0d12; --accent-fg: #ffffff; --brand: #0b0d12;
-  --err: #b5162f; --err-bg: #fde9ec; --warn: #8a5200; --warn-bg: #fdf0dd; --info: #4d5565; --info-bg: #eef0f4; --ok: #11663f; --ok-bg: #e2f4ea;
-  --code-bg: #f7f8fa; --kw: #0b0d12; --str: #11663f; --num: #8a5200; --cmt: #5d6576; --prop: #353c49;
+  --bg: #eceef2; --surface: #ffffff; --surface-2: #f3f4f7; --line: #dde1e8;
+  --fg: #0b0d12; --muted: #4f5767; --accent: #0b0d12; --accent-fg: #ffffff; --brand: #0b0d12;
+  --err: #b5162f; --err-bg: #fde9ec; --warn: #8a5200; --warn-bg: #fdf0dd; --info: #1d5fd1; --info-bg: #e8f0fe; --ok: #11663f; --ok-bg: #e2f4ea;
+  /* Code: still calm, but each kind of token has its own colour, so a handler can be scanned */
+  --code-bg: #fafbfc; --kw: #6d28d9; --str: #0f6b3f; --num: #9a5200; --cmt: #626b7b; --prop: #1d5fd1;
+  --sh-1: 0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04);
   --font-display: "Archivo", system-ui, sans-serif; --font-body: "Archivo", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   --display-stretch: 125%; --display-weight: 800;
@@ -61,14 +63,14 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
 @media (prefers-color-scheme: dark) { :root[data-site="v3"][data-site]:not([data-theme="light"]) {
   --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
   --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
-  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #a3abba; --info-bg: #1b1f28; --ok: #8fe3b8; --ok-bg: #10261c;
-  --code-bg: #0e1015; --kw: #f3f4f6; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #c3c9d4;
+  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #8ab4ff; --info-bg: #111a2e; --ok: #8fe3b8; --ok-bg: #10261c;
+  --code-bg: #0e1015; --kw: #c4b5fd; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #93c5fd;
   color-scheme: dark } }
 :root[data-site="v3"][data-site][data-theme="dark"] {
   --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
   --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
-  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #a3abba; --info-bg: #1b1f28; --ok: #8fe3b8; --ok-bg: #10261c;
-  --code-bg: #0e1015; --kw: #f3f4f6; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #c3c9d4;
+  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #8ab4ff; --info-bg: #111a2e; --ok: #8fe3b8; --ok-bg: #10261c;
+  --code-bg: #0e1015; --kw: #c4b5fd; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #93c5fd;
   color-scheme: dark }
 
 html, body { height: 100%; }
@@ -341,7 +343,14 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 #keybar button { flex: none; min-width: 40px; height: 38px; padding: 0 10px; font: 600 15px var(--font-mono); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 #keybar button.kb-act { font: 600 13px var(--font-body); }
 body.keybar-on .app { padding-bottom: 52px; }
-body.keybar-est .app { padding-bottom: calc(52px + var(--kb-est, 0px)) !important; }
+body.keybar-est .app { padding-bottom: 52px !important; }
+/* The on-screen keyboard (keyboard.ts), for every text field: the workbench, its sheets and dialogs
+   fit in the space above it (--vvh), and what sits at the bottom moves up by its height (--kb). */
+html.kb-up .app { height: var(--vvh) !important; min-height: 0; box-sizing: border-box; }
+html.kb-up dialog, html.kb-up #settings-dialog, html.kb-up #news-dialog { bottom: var(--kb); max-height: calc(var(--vvh) - 16px); }
+html.kb-up #settings-dialog[open] { height: min(600px, 86vh, calc(var(--vvh) - 16px)); }
+html.kb-up #open-dialog { height: min(78vh, 740px, calc(var(--vvh) - 9vh - 12px)); }
+html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #tipbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 1.45; }
 #tipbar[hidden] { display: none; }
 #tipbar.contextual { background: var(--info-bg); border-top-color: var(--info); }
@@ -692,6 +701,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   /* Lines: a sheet over the lower part of the screen, so the code stays in view */
   #lines { position: fixed !important; left: 0 !important; right: 0 !important; bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; top: auto !important; height: min(58vh, 520px); width: auto !important; z-index: 60; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.35) !important; }
   body.keybar-on #lines { bottom: 52px !important; }
+  /* Typing (in Lines' filter, or in the code with Lines open): the sheet sits on the keyboard */
+  html.kb-up header { display: none !important; }
+  html.kb-up #lines { bottom: var(--kb) !important; height: min(58vh, 520px, calc(var(--vvh) - 12px)); }
+  html.kb-up body.keybar-on #lines, html.kb-up body.keybar-est #lines { bottom: calc(var(--kb) + 52px) !important; height: min(58vh, 520px, calc(var(--vvh) - 64px)); }
   #lines #lines-info { display: none; }
   /* Group (with the tree in Advanced mode) and Sort: one compact row */
   #lines .lines-opts { flex-wrap: nowrap; padding: 4px 8px; }
@@ -771,6 +784,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   dialog::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: -8px auto 12px; }
   /* Examples: the full height, for the long list */
   #open-dialog { width: 100vw; max-width: 100vw; top: 0; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; border: 0; padding: 0 0 env(safe-area-inset-bottom, 0px); box-shadow: none; }
+  html.kb-up #open-dialog { height: var(--vvh); max-height: var(--vvh); bottom: auto; padding-bottom: 0; }
   #open-dialog::before { display: none; }
   @media (prefers-reduced-motion: no-preference) { dialog[open], #open-dialog[open] { animation-name: sheet-in; } @keyframes sheet-in { from { opacity: 0; transform: translateY(24px); } } }
   .open-head { padding: 4px 8px 4px 14px; }
