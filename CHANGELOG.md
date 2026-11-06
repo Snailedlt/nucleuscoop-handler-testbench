@@ -12,7 +12,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
-- **Red squiggles are back.** Problems are underlined again exactly where they are in the code (wavy red for errors, yellow for warnings, dotted for tips); the style that drew them had stopped working.
+- **Red squiggles are back.** Problems are underlined again exactly where they are in the code (a thin VS Code-style wave: red for errors, yellow for warnings; dotted for tips); the style that drew them had stopped working.
 - **A typo no longer hides every other problem.** While a line doesn't parse yet (say you're halfway through `player.`), the rest is still checked, and the error sits on the unfinished code instead of on the next line.
 ## Unreleased
 
