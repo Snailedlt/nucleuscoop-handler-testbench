@@ -139,6 +139,7 @@ const PITFALLS = T('Pitfall', [
 const SHORTCUTS = T('Shortcut', [
   { id: 's-palette', text: 'Ctrl+Shift+P (or F1) opens the command palette, as in VS Code: format, fix, Try it, theme and the rest, each with its shortcut.' },
   { id: 's-open', text: 'Ctrl+P (or Ctrl+K) opens the examples, templates and Hub handlers. Type `>` there to switch to commands.', action: { label: 'Examples', run: 'examples' } },
+  { id: 'f-custom-theme', text: 'Make the workbench yours: Settings (Ctrl+,) → Appearance → "Download the current theme", change the colours in that JSON file, then "Load a theme file…".' },
   { id: 'f-ref-home', text: 'Not sure what an option is called? Open Reference with nothing typed and browse Game, Context, Player and the rest, or see the names Hub handlers use most.' },
   { id: 'f-lines-ref', text: 'Open the Reference tab, then point at names in Lines (Ctrl+B): each one\'s full docs show in Reference, on a wide screen.', action: { label: 'Lines', run: 'lines' } },
   { id: 's-open-keys', text: 'In Open (Ctrl+K), the arrow keys move between tiles, templates and Hub rows; Home and End jump to the first and last. Hover a Hub handler\'s icons for players, keyboards and mice, and downloads.', action: { label: 'Examples', run: 'examples' } },

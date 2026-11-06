@@ -102,6 +102,16 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(200);
   check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Reference lists what's in it when nothing is typed`);
   await axe(p, `${theme}, Reference`);
+  // A custom theme file: applied, unsafe values left out, removable.
+  await p.click('#settings-open');
+  await p.waitForTimeout(300);
+  await p.setInputFiles('#ct-file', { name: 't.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ name: 'T', light: { accent: '#7a1f2b', bg: 'red;}body{display:none' }, dark: { accent: '#ffb4a8' } })) });
+  await p.waitForTimeout(200);
+  const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  check(acc === (theme === 'dark' ? '#ffb4a8' : '#7a1f2b') && /Left out: light\.bg/.test(await p.innerText('#ct-msg')) && (await p.isVisible('body')), `${theme}: a custom theme file applies, and unsafe values are left out`);
+  await p.click('#ct-remove');
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(200);
   // The command palette (Ctrl+Shift+P, as in VS Code) and Format document (Shift+Alt+F).
   await p.click('.CodeMirror');
   await p.keyboard.press('Control+Shift+P');

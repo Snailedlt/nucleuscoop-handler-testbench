@@ -3,6 +3,7 @@
 // the symbol bar above the on-screen keyboard.
 import { applyTheme } from './devbar';
 import { initKeyboard, keyboard, onKeyboard } from './keyboard';
+import { contrastProblems, currentTheme, customTheme, parseTheme, saveCustomTheme } from './customtheme';
 
 const EDITOR_KEY = 'nucleus-workbench-editor';
 const THEME_KEY = 'nucleus-workbench-dev-mode'; // shared with the dev bar
@@ -64,6 +65,59 @@ export function initSettings(d: Deps) {
       applyTheme();
     }),
   );
+  // Custom theme: a JSON file of design tokens (customtheme.ts).
+  const ctMsg = $('#ct-msg');
+  const say = (text: string, kind: '' | 'warn' | 'error' = '') => ((ctMsg.textContent = text), (ctMsg.className = `ct-msg small ${kind}`));
+  function syncCustom() {
+    const t = customTheme();
+    const status = $('#ct-status');
+    status.textContent = '';
+    if (t) {
+      const b = document.createElement('strong');
+      b.textContent = t.name;
+      status.append('Custom theme: ', b, ` (${[t.light && 'light', t.dark && 'dark'].filter(Boolean).join(' and ')}).`);
+    } else status.textContent = 'Custom theme: none. A theme file (JSON) sets colours, corners, shadows and fonts.';
+    ($('#ct-remove') as HTMLButtonElement).hidden = !t;
+  }
+  syncCustom();
+  $('#ct-load').addEventListener('click', () => ($('#ct-file') as HTMLInputElement).click());
+  $('#ct-file').addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const f = input.files?.[0];
+    input.value = '';
+    if (!f) return;
+    let raw: unknown;
+    try {
+      if (f.size > 200_000) throw new Error('big');
+      raw = JSON.parse(await f.text());
+    } catch {
+      return say(`"${f.name}" can't be read as a theme: it should be a small JSON file.`, 'error');
+    }
+    const r = parseTheme(raw);
+    if ('error' in r) return say(r.error, 'error');
+    saveCustomTheme(r.theme);
+    syncCustom();
+    const bad = contrastProblems();
+    const notes = [
+      r.skipped.length ? `Left out: ${r.skipped.slice(0, 5).join(', ')}${r.skipped.length > 5 ? ` and ${r.skipped.length - 5} more` : ''}.` : '',
+      bad.length ? `Hard to read in this mode (below 4.5:1): ${bad.slice(0, 4).join(', ')}${bad.length > 4 ? '…' : ''}.` : '',
+    ].filter(Boolean);
+    say(`"${r.theme.name}" is on.${notes.length ? ' ' + notes.join(' ') : ''}`, notes.length ? 'warn' : '');
+  });
+  $('#ct-download').addEventListener('click', () => {
+    const t = currentTheme(customTheme()?.name ?? 'My theme');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(t, null, 2) + '\n'], { type: 'application/json' }));
+    a.download = 'workbench-theme.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    say('Downloaded workbench-theme.json: every value as shown now, light and dark. Edit it, then load it here.');
+  });
+  $('#ct-remove').addEventListener('click', () => {
+    saveCustomTheme(null);
+    syncCustom();
+    say('Back to the built-in theme.');
+  });
   $('#set-size').addEventListener('change', (e) => ((ed.size = (e.target as HTMLSelectElement).value as any), save(), applyEditor()));
   $('#set-wrap').addEventListener('change', (e) => ((ed.wrap = (e.target as HTMLInputElement).checked), save(), applyEditor()));
   $('#set-keybar').addEventListener('change', (e) => ((ed.keybar = (e.target as HTMLInputElement).checked), save(), placeKeybar()));

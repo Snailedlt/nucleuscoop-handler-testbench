@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Your own theme.** Settings → Appearance → Custom theme loads a theme file (JSON) that sets the colours, corners, shadows and fonts, for light, dark or both. "Download the current theme" gives you a complete file to start from; the workbench says which values it left out and which text gets hard to read.
 - **Reference shows what's in it.** With nothing typed, the Reference tab lists what you can look up: Game, Game.Hook, Context, Player, ProtoInput and .NET, each with a count (click one for all its names), the names Hub handlers use most, the Nucleus enums, and a few searches to try.
 
 ### 🛠️ Improved

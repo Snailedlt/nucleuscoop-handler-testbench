@@ -1,4 +1,5 @@
 import { applyTheme, initDevBar } from './devbar';
+import { applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
 import { clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
@@ -32,6 +33,7 @@ import { initWakaTime } from './wakatime';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
+applyCustomTheme();
 watchPictures();
 declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
 interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; lint?: { errors: number; warnings: number } }

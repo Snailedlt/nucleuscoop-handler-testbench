@@ -32,7 +32,7 @@ export const SITES: { id: Site; label: string; title: string }[] = [
 ];
 
 // Token pairs that carry text, checked against WCAG AA (4.5:1).
-const PAIRS: [string, string, string][] = [
+export const PAIRS: [string, string, string][] = [
   ['fg', 'bg', 'Text on the page'],
   ['fg', 'surface', 'Text on panes'],
   ['muted', 'surface', 'Secondary text'],
