@@ -536,8 +536,9 @@ table { border-collapse: collapse; width: 100%; }
 .lede { margin: 0 0 12px; max-width: 65ch; }
 .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
 #api-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 12px; }
-.api { border-bottom: 1px solid var(--line); padding: 8px 0; }
-.api h3 { margin: 0 0 4px; font: 600 13px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.api { border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; margin: 0 0 10px; background: var(--surface); }
+.api:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.api h3 { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font: 600 13.5px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .chip-btn { cursor: pointer; font: inherit; border: 0; }
 .chip-btn:hover { filter: brightness(1.1); }

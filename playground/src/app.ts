@@ -959,11 +959,12 @@ const API_GROUPS: { key: string; title: string; doc: string; match: (path: strin
   { key: 'Context', title: 'Context', doc: 'One player\'s instance, inside Game.Play: launch arguments, folders and files to edit.', match: (p) => p.startsWith('Context.') },
   { key: 'Player', title: 'Player', doc: 'The player Game.Play runs for (also PlayerList[i]): screen, controller, nickname.', match: (p) => p.startsWith('Player.') },
   { key: 'ProtoInput', title: 'ProtoInput', doc: 'Proto Input calls at runtime, inside Game.Play and other callbacks.', match: (p) => p.startsWith('ProtoInput.') },
+  { key: 'Hub', title: 'Hub (written by the Hub)', doc: 'Lines hub.splitscreen.me writes into a handler when it is uploaded. You don\'t add or change them.', match: (p) => p.startsWith('Hub.') },
   { key: 'System', title: '.NET (System.*)', doc: 'Files, folders, paths and the environment, through .NET.', match: (p) => p.startsWith('System.') },
 ];
 const typeOf = (e: Entry) => (e.member.kind === 'method' ? 'fn' : ((e.member as { type?: string }).type ?? ''));
 function renderApiHome(el: HTMLElement) {
-  const all = allEntries();
+  const all = allEntries(true);
   const usage = USAGE.counts as Record<string, number>;
   const top = Object.entries(usage)
     .filter(([p]) => !/^Game\.(GUID|GameName|ExecutableName|Play|Hub)$/.test(p) && all.some((e) => e.path === p && e.member.kind !== 'object'))
@@ -986,7 +987,7 @@ function renderApiHome(el: HTMLElement) {
 /** One object's members, as a compact list: click one for its docs. */
 function renderApiGroup(el: HTMLElement, key: string) {
   const g = API_GROUPS.find((x) => x.key === key)!;
-  const list = allEntries().filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
+  const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
   el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
     <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-mark" title="Written by Claude (AI), not from the official docs" aria-label="Written by Claude (AI)">✦</span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
   el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
@@ -1017,7 +1018,7 @@ function renderApi(q: string) {
     el.innerHTML =
       head +
       (entries.length || head
-        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`).join('')
+        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`).join('')
         : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
   }
   wireApiLinks(el);

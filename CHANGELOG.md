@@ -60,6 +60,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Reference entries stand apart.** Each name is its own card, and the `Hub.*` lines the Hub writes on upload are in Reference too (marked "written by the Hub"), with what Nucleus uses them for.
 - **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog (the separate Copy and Copy link buttons are gone): saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.
 - **Nicer docs on hover.** The signature is coloured (name, parameters, types), defaults and categories are small labels, and docs written by Claude say so at the bottom, with what they're based on. 150 more names have docs now.
 - **Shortcuts where you look.** Hover a button (or reach it with Tab) to see its keyboard shortcut, also outside Advanced mode.
