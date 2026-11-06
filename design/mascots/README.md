@@ -49,6 +49,9 @@ which are not saved here.
     progress ring is a relay (each electron faster, bumping the last and boosting the ring); Duo walks the loading
     bar facing his way, on top or inside, gets there first and waits; impact frames dropped (they read as
     glitches); earlier versions shown under each loader. `17-…`
+18. **The seam is the split**: each half (or quarter) keeps its half of the white line when Duo splits; in the
+    players demo each new Duo keeps a sliver of white on the side it split from until it heals round. A History
+    section at the end of the sheet holds everything dropped and every earlier step (03–16), loaded on open. `18-…`
 
 ## Lessons we kept
 
