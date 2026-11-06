@@ -97,6 +97,11 @@ for (const theme of ['light', 'dark']) {
   const typed = focused && (await p.keyboard.type('// typed'), await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue().includes('// typed')));
   check(typed, `${theme}: Tab reaches the code editor, and typing goes into it`);
   await axe(p, `${theme}, Try it`);
+  // Reference with nothing typed shows what's in it.
+  await p.click('[role=tab][data-tab=api]');
+  await p.waitForTimeout(200);
+  check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Reference lists what's in it when nothing is typed`);
+  await axe(p, `${theme}, Reference`);
   // The command palette (Ctrl+Shift+P, as in VS Code) and Format document (Shift+Alt+F).
   await p.click('.CodeMirror');
   await p.keyboard.press('Control+Shift+P');

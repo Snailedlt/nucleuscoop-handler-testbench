@@ -13,7 +13,8 @@ import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/mat
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals } from '@core/lint';
 import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
-import { search, lookup, Entry } from '@core/lookup';
+import { search, lookup, allEntries, Entry } from '@core/lookup';
+import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
@@ -793,11 +794,61 @@ $('#sim-all').addEventListener('click', testAll);
 // ---------------------------------------------------------------------------
 // API search
 
+// Reference with nothing typed: what's in it, so it's clear what can be found there.
+const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
+  { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
+  { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
+  { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
+  { key: 'Context', title: 'Context', doc: 'One player\'s instance, inside Game.Play: launch arguments, folders and files to edit.', match: (p) => p.startsWith('Context.') },
+  { key: 'Player', title: 'Player', doc: 'The player Game.Play runs for (also PlayerList[i]): screen, controller, nickname.', match: (p) => p.startsWith('Player.') },
+  { key: 'ProtoInput', title: 'ProtoInput', doc: 'Proto Input calls at runtime, inside Game.Play and other callbacks.', match: (p) => p.startsWith('ProtoInput.') },
+  { key: 'System', title: '.NET (System.*)', doc: 'Files, folders, paths and the environment, through .NET.', match: (p) => p.startsWith('System.') },
+];
+const typeOf = (e: Entry) => (e.member.kind === 'method' ? 'fn' : ((e.member as { type?: string }).type ?? ''));
+function renderApiHome(el: HTMLElement) {
+  const all = allEntries();
+  const usage = USAGE.counts as Record<string, number>;
+  const top = Object.entries(usage)
+    .filter(([p]) => !/^Game\.(GUID|GameName|ExecutableName|Play|Hub)$/.test(p) && all.some((e) => e.path === p && e.member.kind !== 'object'))
+    .slice(0, 14);
+  const enums = Object.keys(api.enums).sort();
+  el.innerHTML = `<div class="api-home">
+    <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
+    <h3 class="api-h">Browse</h3>
+    <div class="api-groups">${API_GROUPS.map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
+    <h3 class="api-h">Most used in Hub handlers</h3>
+    <div class="api-chips">${top.map(([p, n]) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${n} of ${USAGE.handlers} Hub handlers">${esc(p)}</button>`).join('')}</div>
+    <h3 class="api-h">Nucleus values (enums)</h3>
+    <div class="api-chips">${enums.map((n) => `<button type="button" class="api-chip" data-q="Nucleus.${esc(n)}">Nucleus.${esc(n)}</button>`).join('')}</div>
+    <h3 class="api-h">Try a search</h3>
+    <p class="muted">${['mutex', 'window title', 'save file', 'keyboard', 'steam'].map((q) => `<button class="link" data-q="${q}">${q}</button>`).join(' · ')}</p>
+  </div>`;
+  el.querySelectorAll<HTMLButtonElement>('[data-group]').forEach((b) => b.addEventListener('click', () => renderApiGroup(el, b.dataset.group!)));
+  wireApiLinks(el);
+}
+/** One object's members, as a compact list: click one for its docs. */
+function renderApiGroup(el: HTMLElement, key: string) {
+  const g = API_GROUPS.find((x) => x.key === key)!;
+  const list = allEntries().filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
+  el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
+    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
+  el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
+  wireApiLinks(el);
+  el.scrollTop = 0;
+}
+function wireApiLinks(el: HTMLElement) {
+  el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) =>
+    b.addEventListener('click', () => {
+      ($('#api-q') as HTMLInputElement).value = b.dataset.q!;
+      renderApi(b.dataset.q!);
+    }),
+  );
+}
+
 function renderApi(q: string) {
   const el = $('#api-results');
-  if (!q.trim()) {
-    el.innerHTML = '<p class="empty">Search option names and docs, e.g. <button class="link" data-q="mutex">mutex</button>, <button class="link" data-q="window title">window title</button>, <button class="link" data-q="Context.ModifySaveFile">Context.ModifySaveFile</button>, <button class="link" data-q="Nucleus.Folder">Nucleus.Folder</button>.</p>';
-  } else {
+  if (!q.trim()) return renderApiHome(el);
+  {
     const exact = lookup(q);
     let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
     for (const e of search(q, 30)) if (!entries.some((x) => x.path === e.path)) entries.push(e);
@@ -812,12 +863,7 @@ function renderApi(q: string) {
         ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
         : `<p class="empty">Nothing matches "${esc(q)}".</p>`);
   }
-  el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) =>
-    b.addEventListener('click', () => {
-      ($('#api-q') as HTMLInputElement).value = b.dataset.q!;
-      renderApi(b.dataset.q!);
-    }),
-  );
+  wireApiLinks(el);
 }
 $('#api-q').addEventListener('input', (e) => renderApi((e.target as HTMLInputElement).value));
 renderApi('');

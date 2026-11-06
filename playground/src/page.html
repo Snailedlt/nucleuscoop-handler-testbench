@@ -109,7 +109,6 @@ a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .logo-v3, :root[data-site="v3"] .logo-www { display: none; }
 :root[data-site="v3"] .logo-v3 { display: block; }
 /* v3: colour means a player. Player cards in Try it carry their player's colour. */
-:root[data-site="v3"] .player { border-top: 0; border-left: 3px solid var(--pc, var(--line)); padding-left: 12px; }
 .player.p1 { --pc: var(--p1); } .player.p2 { --pc: var(--p2); } .player.p3 { --pc: var(--p3); } .player.p4 { --pc: var(--p4); }
 .player.p5 { --pc: var(--p5); } .player.p6 { --pc: var(--p6); } .player.p7 { --pc: var(--p7); } .player.p8 { --pc: var(--p8); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -124,6 +123,7 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
 .btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--fg)); border-color: transparent; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:root { accent-color: var(--accent); }
 
 .main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) 12px minmax(0, 1fr); gap: 0; }
 @media (min-width: 861px) { .main:has(#lines:not([hidden])) { grid-template-columns: minmax(0, 1.5fr) 12px minmax(0, 1fr); } }
@@ -312,7 +312,16 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 .set-field input { font: 13px var(--font-mono); color: var(--fg); background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 8px; width: 100%; box-sizing: border-box; }
 .set-waka-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 #settings-dialog h2 { margin: 0 0 6px; font-size: 18px; }
-.set-sec { border-top: 1px solid var(--line); padding: 10px 0 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.set-sec { border-top: 1px solid var(--line); padding: 12px 0 10px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.set-sec > :not(.check):not(h3) { align-self: flex-start; }
+/* Settings: on/off choices as switches, each row with a soft hover */
+.set-sec .check, #lines-settings .set-row { margin: 0; padding: 6px 8px; border-radius: var(--r-ctl); cursor: pointer; }
+.set-sec .check:hover, #lines-settings .set-row:hover { background: var(--surface-2); }
+.set-sec input[type=checkbox], #lines-settings input[type=checkbox] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 32px; height: 18px; margin: 2px 0 0; border-radius: 999px; background: color-mix(in srgb, var(--fg) 22%, var(--surface-2)); cursor: pointer; transition: background-color .15s; }
+.set-sec input[type=checkbox]::after, #lines-settings input[type=checkbox]::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s var(--ease); }
+.set-sec input[type=checkbox]:checked, #lines-settings input[type=checkbox]:checked { background: var(--accent); }
+.set-sec input[type=checkbox]:checked::after, #lines-settings input[type=checkbox]:checked::after { transform: translateX(14px); background: var(--accent-fg); }
+@media (prefers-reduced-motion: reduce) { .set-sec input[type=checkbox], .set-sec input[type=checkbox]::after, #lines-settings input[type=checkbox]::after { transition: none; } }
 .set-sec h3 { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: var(--muted); }
 .set-sec summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 details.set-sec[open] summary { margin-bottom: 4px; }
@@ -394,7 +403,7 @@ a { color: var(--accent); }
 [role=tab][aria-selected=true] { color: var(--fg); border-bottom-color: var(--accent); }
 .count { font: 500 11px var(--font-mono); background: var(--surface-2); color: var(--muted); border-radius: 9px; padding: 1px 6px; margin-left: 4px; }
 [role=tabpanel] { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
-.panel-tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; }
+.panel-tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; padding: 10px 12px; background: var(--surface-2); border-radius: var(--r-pane); }
 .panel-tools label { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12.5px; }
 
 .pill, .chip { display: inline-block; border-radius: 999px; font-size: 11.5px; font-weight: 600; padding: 1px 8px; background: var(--surface-2); color: var(--muted); letter-spacing: .01em; }
@@ -420,7 +429,14 @@ a { color: var(--accent); }
 
 .banner { border-radius: var(--r-ctl); padding: 8px 12px; margin-bottom: 12px; overflow-wrap: anywhere; }
 .banner.error { background: var(--err-bg); color: var(--err); } .banner.ok { background: var(--ok-bg); color: var(--ok); }
-.player { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+/* Try it: one card per player, the player's colour as a dot by the name */
+.player { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); box-shadow: var(--sh-1); padding: 12px 14px; margin-top: 10px; }
+.player > h3 { font-size: 14px; }
+.player > h3::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--pc, var(--muted)); flex: none; }
+.player dl { margin: 8px 0 0; }
+.player dt { font-weight: 600; margin-top: 8px; }
+.player dd.mono { background: var(--code-bg); border-radius: var(--r-ctl); padding: 6px 9px; margin-top: 3px; }
+.player .effects { margin: 4px 0 0; }
 h3 { font-size: 13.5px; margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
 dl { margin: 0 0 6px; } dt { color: var(--muted); font-size: 12px; } dd { margin: 0; }
 .mono { font: 12.5px/1.5 var(--font-mono); overflow-wrap: anywhere; }
@@ -614,6 +630,26 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .entries.chips .entry .mono { width: 26px; height: 26px; border-radius: 999px; font-size: 10.5px; }
 .entries.chips .entry .t { font-weight: 500; white-space: nowrap; }
 :root[data-site="v3"] #open-dialog { border-radius: var(--r-pane); }
+/* Reference with nothing typed: what's in it */
+.api-home { display: flex; flex-direction: column; gap: 6px; }
+.api-home > p { margin: 0; }
+.api-h { margin: 14px 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.api-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.api-group { display: flex; flex-direction: column; gap: 3px; text-align: left; font: inherit; color: var(--fg); background: var(--surface-2); border: 0; border-radius: var(--r-pane); padding: 10px 12px; cursor: pointer; transition: background-color .12s; }
+.api-group:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+.api-group .t { font: 600 13.5px var(--font-mono); display: flex; gap: 6px; align-items: center; }
+.api-group .count { font: 600 11px var(--font-body); color: var(--muted); background: var(--surface); border-radius: 999px; padding: 0 7px; }
+.api-group .s { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.api-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.api-chip { font: 12px var(--font-mono); color: var(--fg); background: var(--surface-2); border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.api-chip:hover { background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); }
+.api-crumbs { font-size: 13px; }
+.api-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.api-list button { display: grid; grid-template-columns: minmax(0, auto) auto; column-gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; border-radius: var(--r-ctl); padding: 6px 8px; cursor: pointer; }
+.api-list button:hover { background: var(--surface-2); }
+.api-list .n { font: 600 12.5px var(--font-mono); overflow-wrap: anywhere; }
+.api-list .ty { font: 11.5px var(--font-mono); color: var(--muted); justify-self: end; }
+.api-list .d { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #help-dialog .keys td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
 /* --- Advanced mode off (simple-only shown) / on (dev-only shown) --- */
 :root[data-mode=simple] .dev-only, :root[data-mode=dev] .simple-only { display: none !important; }
