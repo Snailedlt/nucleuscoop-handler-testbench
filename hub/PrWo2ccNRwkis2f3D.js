@@ -1,0 +1,40 @@
+Hub.Handler.Version = 1; // Released at https://hub.splitscreen.me/ on Thu Feb 05 2026 06:55:33 GMT+0000 (Coordinated Universal Time).
+Hub.Handler.Id = "PrWo2ccNRwkis2f3D";
+Hub.Maintainer.Name = "Talos91";
+Hub.Maintainer.Id = "eeL7HAz8zJovChWw4";
+
+Game.ExecutableContext = ["love.dll"];
+Game.FileSymlinkExclusions = ["steam_api64.dll", "SDL2.dll", "SDL2.ini", "xinput1_3.dll"];
+Game.FileSymlinkCopyInstead = ["https.dll", "love.dll", "lua51.dll", "luasteam.dll", "mpg123.dll", "msvcp120.dll", "msvcr120.dll", "OpenAL32.dll", "version.dll"];
+Game.GameName = "Balatro";
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.SymlinkFolders = false;
+Game.ExecutableName = "Balatro.exe";
+Game.SteamID = "2379780";
+Game.GUID = "Balatro";
+Game.MaxPlayers = 2;
+Game.MaxPlayersOneMonitor = 2;
+Game.UseNucleusEnvironment = false;
+Game.UseGoldberg = false;
+Game.CreateSteamAppIdByExe = true;
+Game.Hook.ForceFocus = true;
+Game.Hook.ForceFocusWindowName = "Balatro";
+Game.FakeFocus = true;
+Game.FakeFocusInterval = 8000;
+Game.SendFakeFocusMsg = true;
+Game.HookFocus = false;
+Game.SetWindowHook = false;
+Game.Hook.DInputEnabled = false;
+Game.Hook.XInputEnabled = false;
+Game.Hook.SDL2Enabled = true;
+Game.Hook.CustomDllEnabled = false;
+Game.SupportsKeyboard = true;
+Game.UserProfileSavePath = "AppData\\Roaming\\Balatro";
+Game.Description =
+  "📝 Important Handler Info:\nRequires the [Balatro Multiplayer Mod]{https://balatromp.com/docs/getting-started/installation} correctly installed in your main game files. Before launching this handler run your main game with the mp mod, set it to windowed in options-settings-video and make sure you can create a lobby by selecting play. After launching this select/create a different Profile per instance, create a lobby in one instance then join in the other using the lobby code, you can select view code-copy to clipboard in the host instance then join lobby-paste from clipboard in the other instance. Using multiple/different monitors is recommended.";
+Game.PauseBetweenProcessGrab = 15;
+Game.PauseBetweenStarts = 25;
+
+Game.Play = function() {};

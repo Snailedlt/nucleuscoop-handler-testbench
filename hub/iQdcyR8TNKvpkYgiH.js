@@ -1,0 +1,80 @@
+Hub.Handler.Version = 1; // Released at https://hub.splitscreen.me/ on Tue Jul 28 2020 00:32:58 GMT+0000 (UTC).
+Hub.Handler.Id = "iQdcyR8TNKvpkYgiH";
+Hub.Maintainer.Name = "Snailedlt";
+Hub.Maintainer.Id = "SE7kdQcCoCbgkzDeH";
+
+Game.ExecutableContext = ["brainbread2"];
+Game.KillMutex = ["hl2_singleton_mutex"];
+Game.DirSymlinkExclusions = ["bg3\\cfg"];
+Game.FileSymlinkExclusions = ["360controller.cfg", "x360controller.cfg", "autoexec.cfg", "steam_appid.txt"];
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.SymlinkFolders = false;
+Game.SupportsKeyboard = true;
+Game.ExecutableName = "bb2.exe";
+Game.SteamID = "346330";
+Game.GUID = "Brainbread 2";
+Game.GameName = "Brainbread 2";
+Game.UseGoldberg = true;
+Game.NeedsSteamEmulation = false;
+Game.CreateSteamAppIdByExe = false;
+Game.HideTaskbar = true;
+Game.LauncherTitle = "";
+Game.SaveType = Nucleus.SaveType.CFG;
+Game.WorkingFolder = "";
+Game.SupportsPositioning = false;
+Game.MaxPlayersOneMonitor = 4;
+Game.MaxPlayers = 16;
+Game.Hook.ForceFocus = true;
+Game.Hook.ForceFocusWindowName = "Brainbread 2";
+Game.Hook.DInputEnabled = false;
+Game.Hook.DInputForceDisable = true;
+Game.Hook.XInputEnabled = true;
+Game.Hook.XInputReroute = false;
+Game.Hook.CustomDllEnabled = false;
+Game.Hook.UseAlpha8CustomDll = false;
+Game.PauseBetweenStarts = 20;
+Game.KillMutexType = "Mutant";
+Game.KillMutexDelay = 15;
+Game.XInputPlusDll = ["xinput1_4.dll", "xinput9_1_0.dll", "Dinput8.dll"];
+Game.UseDevReorder = false; //set on true could help for split input if you use Dinput controllers
+Game.PromptBetweenInstances = true;
+Game.PartialMutexSearch = true;
+Game.RenameNotKillMutex = false;
+Game.Hook.ForceFocus = false;
+Game.HookFocus = true;
+Game.FakeFocus = false;
+Game.Description =
+  "Start a server on the first instance. Start the next instance when you are in-game. Click on the last Nucleus prompt when all instances are set. If you use the keyboard click/alt-tab on the corresponding keyboard-player instance.";
+
+Game.Play = function() {
+  var Args = (Context.Args = " -windowed +sv_lan 1 -game brainbread2 -AlwaysFocus -insecure -novid +m_rawinput 1 " + " -w " + Context.Width + " -h " + Context.Height);
+
+  Context.StartArguments = Args;
+
+  var savePath = (Context.SavePath = Context.GetFolder(Nucleus.Folder.InstancedGameFolder) + "\\brainbread2\\cfg\\360controller.cfg");
+  var savePkgOrigin = System.IO.Path.Combine(Game.Folder, "360controller.cfg");
+  System.IO.File.Copy(savePkgOrigin, savePath, true);
+
+  var autoExec = Context.GetFolder(Nucleus.Folder.InstancedGameFolder) + "\\brainbread2\\cfg\\autoexec.cfg";
+  var lines = [
+    "engine_no_focus_sleep 0", // game will not limit fps when is not focused (must used)
+    "fps_max 60" // FPS limiter
+  ];
+
+  if (Player.IsKeyboardPlayer || Player.IsRawMouse || Player.IsRawKeyboard) {
+    lines.push("joystick 0");
+    lines.push("exec undo360controller.cfg");
+  } else {
+    lines.push("exec 360controller.cfg");
+  }
+
+  Context.WriteTextFile(autoExec, lines);
+  if (Context.PlayerID == 0) {
+  } else {
+    lines.push("connect " + Context.User.GetLocalIP());
+  }
+
+  Context.WriteTextFile(autoExec, lines);
+};

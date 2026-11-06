@@ -1,0 +1,35 @@
+Hub.Handler.Version = 2; // Released at https://hub.splitscreen.me/ on Sat Mar 23 2024 07:01:11 GMT+0000 (Coordinated Universal Time).
+Hub.Handler.Id = "Z6mco7mynDaqp8xrm";
+Hub.Maintainer.Name = "Talos91";
+Hub.Maintainer.Id = "eeL7HAz8zJovChWw4";
+
+Game.ExecutableContext = ["libEGL.dll"];
+Game.FileSymlinkExclusions = ["xinput1_4.dll", "xinput1_3.dll"];
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.SymlinkFolders = true;
+Game.ExecutableName = "rvgl.exe";
+Game.SteamID = "287310";
+Game.GUID = "Re-Volt";
+Game.GameName = "Re-Volt (RVGL)";
+Game.MaxPlayers = 24;
+Game.MaxPlayersOneMonitor = 16;
+Game.NeedsSteamEmulation = false;
+Game.LauncherTitle = "";
+Game.StartArguments = "-window -nopause -nointro";
+Game.Hook.ForceFocus = false;
+Game.Hook.ForceFocusWindowName = "RVGL";
+Game.FakeFocus = true;
+Game.FakeFocusInterval = 15000;
+Game.SendFakeFocusMsg = true;
+Game.HookFocus = true;
+Game.Hook.DInputEnabled = true;
+Game.Hook.XInputEnabled = true;
+Game.Hook.XInputReroute = false;
+Game.XInputPlusDll = ["xinput1_4.dll"];
+Game.Hook.CustomDllEnabled = false;
+Game.SupportsKeyboard = true;
+Game.Description =
+  "For RVGL only. Use the portable x64 version: https://rvgl.org/#download. Create multiple profiles in your main game first, select a different profile per Nucleus instance and enable gamepad support in the game options-controller settings by alt-tabbing between the instances and using the keyboard to navigate the menus, select the first xinput gamepad for all if you are using xinput gamepads, select keyboard for the keyboard instance. One instance creates a multiplayer LAN game and the others can join by selecting join game and leaving the host computer field blank. The host needs to press TAB on the keyboard to start the game, alt-tab to the host instance to do it.";
+Game.PauseBetweenStarts = 20;

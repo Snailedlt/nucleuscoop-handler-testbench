@@ -1,0 +1,62 @@
+Hub.Handler.Version = 1; // Released at https://hub.splitscreen.me/ on Tue May 04 2021 07:21:37 GMT+0000 (UTC).
+Hub.Handler.Id = "jnCWMa8SxNsD8Fx3C";
+Hub.Maintainer.Name = "Talos91";
+Hub.Maintainer.Id = "eeL7HAz8zJovChWw4";
+
+Game.ExecutableContext = ["YGO_2020.dat"];
+Game.KillMutex = ["YuGiOhSingleInstanceGlobalMutex"];
+Game.FileSymlinkExclusions = ["steam_api.dll", "steam_api64.dll", "steam_appid.txt"];
+Game.FileSymlinkCopyInstead = ["YGO_2020.toc"];
+Game.UseNucleusEnvironment = true;
+Game.UseGoldberg = true;
+Game.GoldbergNoLocalSave = true;
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.ExecutableName = "YuGiOh.exe";
+Game.SteamID = "1150640";
+Game.GUID = "Yu-Gi-Oh! Legacy of the Duelist Link Evolution";
+Game.GameName = "Yu-Gi-Oh! Legacy of the Duelist : Link Evolution";
+Game.MaxPlayers = 2;
+Game.MaxPlayersOneMonitor = 2;
+Game.LauncherTitle = "";
+Game.HideTaskbar = false;
+Game.Hook.ForceFocus = true;
+Game.Hook.ForceFocusWindowName = "Yu-Gi-Oh! Legacy of the Duelist : Link Evolution";
+Game.FakeFocus = true;
+Game.HookFocus = true;
+Game.RefreshWindowAfterStart = true;
+Game.Hook.DInputEnabled = false;
+Game.Hook.XInputEnabled = true;
+Game.Hook.XInputReroute = false;
+Game.XInputPlusDll = ["xinput1_4.dll", "xinput9_1_0.dll"];
+Game.Hook.CustomDllEnabled = false;
+Game.UserProfileSavePath = "AppData\\Roaming\\Goldberg SteamEmu Saves\\1150640\\remote";
+Game.Description =
+  "Create a public multiplayer game and join in the other instance. Using different monitors is recommended, select your preferred resolution in the in-game settings. If you use keyboards and mice after the instances open press the END key to lock the input for all the instances to have their own cursor. Press the END key again to unlock the input whe you finish playing. You can also use CTRL+Q to close Nucleus and all its instances.";
+Game.PauseBetweenStarts = 25;
+
+Game.SupportsMultipleKeyboardsAndMice = true;
+
+Game.HookSetCursorPos = true;
+Game.HookGetCursorPos = true;
+Game.HookGetKeyState = true;
+Game.HookGetAsyncKeyState = true;
+Game.HookGetKeyboardState = false;
+Game.HookFilterRawInput = true;
+Game.HookFilterMouseMessages = false;
+Game.HookUseLegacyInput = false;
+Game.HookDontUpdateLegacyInMouseMsg = false;
+Game.HookMouseVisibility = false;
+
+Game.SendNormalMouseInput = true;
+Game.SendNormalKeyboardInput = true;
+Game.SendScrollWheel = true;
+Game.ForwardRawKeyboardInput = false;
+Game.ForwardRawMouseInput = false;
+Game.HookReRegisterRawInput = false;
+Game.HookReRegisterRawInputMouse = false;
+Game.HookReRegisterRawInputKeyboard = false;
+Game.DrawFakeMouseCursor = true;
+Game.LockInputAtStart = false;
+Game.LockInputToggleKey = 0x23;

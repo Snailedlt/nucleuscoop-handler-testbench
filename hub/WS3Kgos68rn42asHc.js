@@ -1,0 +1,61 @@
+Hub.Handler.Version = 1; // Released at https://hub.splitscreen.me/ on Mon May 11 2020 22:23:28 GMT+0000 (UTC).
+Hub.Handler.Id = "WS3Kgos68rn42asHc";
+Hub.Maintainer.Name = "Talos91";
+Hub.Maintainer.Id = "eeL7HAz8zJovChWw4";
+
+Game.FileSymlinkExclusions = ["steam_api.dll", "steam_appid.txt", "XInput1_3.dll"];
+Game.NeedsSteamEmulation = false;
+Game.UseGoldberg = true;
+Game.UseNucleusEnvironment = true;
+Game.HandlerInterval = 100;
+Game.SymlinkExe = false;
+Game.SymlinkGame = true;
+Game.SymlinkFolders = true;
+Game.ExecutableName = "BloodandBacon.exe";
+Game.SteamID = "434570";
+Game.GUID = "Blood and Bacon";
+Game.GameName = "Blood and Bacon";
+Game.MaxPlayers = 4;
+Game.MaxPlayersOneMonitor = 4;
+Game.BinariesFolder = "";
+Game.LauncherTitle = "";
+Game.HideTaskbar = false;
+Game.Hook.ForceFocus = true;
+Game.Hook.ForceFocusWindowName = "Blood and Bacon";
+Game.HasDynamicWindowTitle = true;
+Game.Hook.DInputEnabled = false;
+Game.Hook.DInputForceDisable = true;
+Game.Hook.XInputEnabled = true;
+Game.Hook.XInputReroute = false;
+Game.XInputPlusDll = ["xinput1_3.dll"];
+Game.Hook.CustomDllEnabled = false;
+Game.FakeFocus = true;
+Game.HookFocus = true;
+Game.ForceProcessPick = true;
+Game.PromptBetweenInstances = true;
+Game.UserProfileSavePath = "AppData\\Local\\IsolatedStorage";
+Game.Description =
+  "Maintain left shift pressed when launching the script so the instances launch windowed, do that everytime you open a new instance or the game will launch fullscreen. On first launch select your custom resolution in the game gfx settings and tick no borders with the cursor, then apply. After doing that select the game process in Nucleus process picker, press refresh if you do not see it. Do that for all instances. If you use keyboards and mice after the instances open press the END key to lock the input for all instances to have their own cursor. Press the END key again to unlock the input. You can also use CTR+Q to close Nucleus and all its instances. Lower the mouse sensitivity in the game settings to control the camera better, playing with gamepads recommended.";
+Game.PauseBetweenStarts = 40;
+
+Game.SupportsMultipleKeyboardsAndMice = true;
+
+Game.HookSetCursorPos = true;
+Game.HookGetCursorPos = true;
+Game.HookGetKeyState = true;
+Game.HookGetAsyncKeyState = true;
+Game.HookGetKeyboardState = true;
+Game.HookFilterRawInput = true;
+Game.HookFilterMouseMessages = true;
+Game.HookUseLegacyInput = false;
+Game.HookDontUpdateLegacyInMouseMsg = false;
+Game.HookMouseVisibility = false;
+
+Game.SendNormalMouseInput = true;
+Game.SendNormalKeyboardInput = true;
+Game.SendScrollWheel = true;
+Game.ForwardRawKeyboardInput = false;
+Game.ForwardRawMouseInput = false;
+Game.DrawFakeMouseCursor = true;
+Game.LockInputAtStart = false;
+Game.LockInputToggleKey = 0x23;
