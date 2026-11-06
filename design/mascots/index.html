@@ -648,6 +648,36 @@ svg .rl { transform-origin: 0 -13px; }
 .nx-plan caption { text-align: left; color: var(--muted); padding-bottom: 6px; }
 .nx-plan th, .nx-plan td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
 .nx-plan thead th { font-weight: 700; } .nx-plan tbody th { font-weight: 600; }
+/* Round 2 */
+.r2-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+.r2-legend i { display: inline-block; width: 18px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+.r2-k-win, .r2-win { background: color-mix(in srgb, var(--muted) 35%, transparent); }
+.r2-k-anim, .r2-anim { background: #6d70e4; }
+.r2-axis { position: relative; height: 18px; margin-left: calc(min(38%, 300px) + 10px); margin-right: 110px; font-size: 11.5px; color: var(--muted); }
+.r2-axis span { position: absolute; transform: translateX(-50%); } .r2-axis span:first-child { transform: none; }
+.r2-rows { list-style: none; margin: 0; padding: 0; }
+.r2-rows li { display: grid; grid-template-columns: min(38%, 300px) minmax(0, 1fr) 100px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.r2-lab b { display: block; font-size: 14px; } .r2-lab span { display: block; font-size: 12px; color: var(--muted); }
+.r2-track { position: relative; height: 16px; background: repeating-linear-gradient(90deg, transparent 0 calc(33.33% - 1px), var(--line) calc(33.33% - 1px) 33.33%); border-radius: 4px; }
+.r2-track i { position: absolute; top: 3px; height: 10px; border-radius: 5px; }
+.r2-track .r2-anim { top: 5px; height: 6px; }
+.r2-val { font-size: 12.5px; color: var(--muted); }
+@media (max-width: 640px) { .r2-rows li { grid-template-columns: minmax(0, 1fr); gap: 4px; } .r2-axis { margin: 0; } .r2-val { display: none; } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.r2-rules { margin-top: 14px; } .r2-rules > b { display: block; margin-bottom: 4px; }
+.r2-v .v { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); white-space: nowrap; }
+.r2-v .v.keep { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.r2-v .v.drop { text-decoration: line-through; }
+.r2-v .v.move, .r2-v .v.re { border-style: dashed; }
+.r2-v td, .r2-v th { vertical-align: top; } .r2-v { min-width: 760px; }
+.r2-wait .r2w-stage { width: 46%; aspect-ratio: 1; display: grid; place-items: center; } .r2-wait .r2w-stage svg { width: 100%; height: auto; overflow: visible; }
+.r2w-btns { margin-top: 8px; } .r2w-btns button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.r2w-msg { min-height: 1.55em; font-weight: 600; color: var(--ink) !important; }
+.r2-ctx { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 10px; margin-top: 6px; font-size: 12.5px; }
+.r2-ctx.nx-light { color: #14203a; } .r2-ctx.nx-dark { color: #eaf0fb; }
+.r2-mtoast { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; background: rgba(127, 127, 127, .14); }
+.r2-mempty { display: flex; gap: 6px; align-items: center; }
+.r2-sizes .nx-strip figure { min-width: 40px; }
 </style>
 <style id="gen"></style>
 </head>
@@ -709,7 +739,54 @@ svg .rl { transform-origin: 0 -13px; }
   <p class="lead">For the workbench, the VS Code extension and the CLI.</p>
   <div class="lib" id="lib-nucli"></div>
 
-  <section id="nxsec"><h2 id="nucli-explore">Nucli explorations</h2>
+  <section id="r2sec">
+  <h2 id="round-2">Explorations, round 2: time first, simpler drawings</h2>
+  <p class="lead">Ideas only, nothing here is in the product. An animation only works if it fits the moment it is on screen, and if you're looking there. So first how long each moment lasts in the workbench (from its code, and timings I measured with the core), then round 1 judged against that, the ones I reworked, simpler drawings, and colours again (violet only).</p>
+
+  <h3 class="nx-sub">How long each moment is on screen</h3>
+  <div class="r2-chart" id="r2-chart"></div>
+  <div class="nx-rec r2-rules"><b>What that means</b>
+    <ol>
+      <li><b>The animation takes at most a third of the moment;</b> the rest is a still pose you can read.</li>
+      <li><b>Every frame works as a still.</b> A toast closes, a run ends, a page reloads: he can be cut off at any point.</li>
+      <li><b>Never react to a keystroke.</b> React to an action (Try it, Fix, Copy) or to something that stays, 1.5 s after you stop typing.</li>
+      <li><b>Animate where the eyes already are.</b> If Nucli isn't there, the feedback goes on the button or the line, without him.</li>
+      <li><b>Loaders by wait:</b> nothing under 0.4 s (it only flashes), a spinner up to 2 s, then progress, and past 10 s also how long it has been.</li>
+    </ol>
+  </div>
+
+  <h3 class="nx-sub">Round 1, judged by time on screen</h3>
+  <div id="r2-verdict"></div>
+
+  <h3 class="nx-sub">Reworked to fit</h3>
+  <div class="nx-anims">
+    <div class="nx-anim r2-wait" id="r2-wait"><div class="stage"><div class="r2w-stage"></div></div>
+      <div class="nx-h"><b>Loader, by how long you wait</b><span class="nx-tier t-def">Default</span></div>
+      <div class="ctl r2w-btns" role="group" aria-label="Pretend to wait"><button type="button" data-ms="200" data-what="Try it" aria-pressed="false">0.2 s</button><button type="button" data-ms="1200" data-what="Getting the handler" aria-pressed="false">1.2 s</button><button type="button" data-ms="5000" data-what="Test all" aria-pressed="false">5 s</button><button type="button" data-ms="20000" data-what="AI fix" aria-pressed="false">20 s</button></div>
+      <p class="r2w-msg" role="status" aria-live="polite"></p>
+      <p>Press a wait. Under 0.4 s nothing shows; then the spinner; past 2 s the electrons count the progress (one per quarter); past 10 s he concentrates and says how long it has been.</p></div>
+    <div id="r2-anims" style="display:contents"></div>
+  </div>
+
+  <h3 class="nx-sub">Simpler drawings, the same animations</h3>
+  <p class="lead">Flat fills, one shadow shape, no gloss, rim light, status light or blush, and eyes as dots with one glint. Duo drops to about half his shapes; Nucli loses fewer (his electrons and orbits are most of him), but his body and face go from 35 shapes to 14. Easier to edit, lighter to run, cleaner at 16 px. The parts keep their names, so every animation in the library runs on them as it is: the detail is in the timing, not in the layers.</p>
+  <div class="nx-grid" id="r2-simple"></div>
+  <div class="lib" id="r2-simple-anims"></div>
+
+  <h3 class="nx-sub">Colours, round 2: violet only</h3>
+  <p class="lead">Teal and gold are out. Six violets on the refined shape, each in a toast and the empty Check tab, light and dark.</p>
+  <div class="nx-grid" id="r2-cols"></div>
+
+  <h3 class="nx-sub">My recommendation</h3>
+  <div class="nx-rec"><ol>
+    <li><b>Simpler drawings for both</b>, small builds at 24 px and under. Keep the detail in the motion.</li>
+    <li><b>Build first:</b> the loader by wait (it replaces every spinner), startup at 0.8 s, wake-up, escalating per run.</li>
+    <li><b>Ultraviolet</b> if you want him livelier, <b>Indigo</b> if you want him calmer. Both beat today's in a toast.</li>
+    <li><b>Drop</b> undo, copy, and hover; <b>move</b> the big fix to its toast and Duo's juggling to the game launch.</li>
+  </ol></div>
+</section>
+
+<section id="nxsec"><h2 id="nucli-explore">Nucli explorations, round 1</h2>
   <p class="lead">Ideas only: nothing here is in the product. Three directions for his look, then new animations for the workbench, with my pick at the end. Each look is shown at 48, 24 and 16 px on a light and a dark page, the sizes he has as a loader and in the status bar.</p>
   <h3 class="nx-sub">Directions</h3>
   <div class="nx-grid" id="nx-dirs"></div>
@@ -732,7 +809,7 @@ svg .rl { transform-origin: 0 -13px; }
 
   </section>
 <section id="dxsec">
-  <h2 id="duo-explore">Duo explorations</h2>
+  <h2 id="duo-explore">Duo explorations, round 1</h2>
   <p class="lead">The same exercise for Duo: ideas only, nothing here is in the product. His colour is splitscreen.me's blue, so instead of a colour swap there is a direction for one Duo per player. The animations are for the app, the Hub and the website.</p>
   <h3 class="nx-sub">Directions</h3>
   <div class="nx-grid" id="dx-dirs"></div>
@@ -1922,6 +1999,214 @@ const DX_TIER = { def: 'Default', all: 'All only', prod: 'In player setup' };
 document.getElementById('dx-dirs').innerHTML = dxDirs();
 document.getElementById('dx-anims').innerHTML = DX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${DX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
 LCSS += DX_ANIMS.map((a) => a.css).join('\n');
+
+// ---- Round 2: time first ----
+// How long each moment is on screen, from the workbench's code (toast.ts, fixfx.ts, app.ts) and timings measured
+// with the core (the NVMP example, 173 lines, in Node). "est." are estimates.
+const R2_WIN = [
+  { m: 'An error appears while you type', src: 'lint runs ~8 ms after each key (measured)', win: [.12, .4], a: 0, look: 'Eyes on the code' },
+  { m: '"Copied ✓" on the button', src: 'confirmOn: 1.6 s', win: [1.6, 1.6], a: .3, look: 'Eyes on the button' },
+  { m: 'Nucli fixes lines', src: 'fixfx: 420 ms a line, up to 5', win: [.7, 2.6], a: 2.6, look: 'Eyes on the code' },
+  { m: 'Test all', src: '40 runs in 0.16 s (measured); big handlers, 8 players: est. up to 5 s', win: [.16, 5], a: 0, look: 'Waiting' },
+  { m: 'Hub: "Getting …"', src: 'shown only after 0.3 s; est. up to 3 s', win: [.3, 3], a: 0, look: 'Waiting' },
+  { m: 'A toast', src: 'toast.ts: 3.5 s + 25 ms a letter, errors 8 s', win: [3.5, 8], a: 1.2, look: 'A glance' },
+  { m: 'Start: the workbench opens', src: 'est.: you read for a few seconds before typing', win: [1, 5], a: .8, look: 'A glance' },
+  { m: 'AI fix', src: 'est.: a model call, 5 to 60 s', win: [5, 60], a: 4, look: 'Waiting' },
+  { m: 'Try it result, Check tab empty', src: 'stays until the next run or edit', win: [10, 120], a: 1, look: 'Side vision' },
+  { m: 'Duo: a game launches in Nucleus', src: 'est.: instances start one by one, 10 to 60 s', win: [10, 60], a: 4, look: 'Waiting' },
+];
+const R2_MIN = .1, R2_MAX = 120;
+const r2x = (s) => (Math.log10(s / R2_MIN) / Math.log10(R2_MAX / R2_MIN)) * 100;
+const r2fmt = (s) => s < 1 ? `${Math.round(s * 1000)} ms` : `${+s.toFixed(1)} s`;
+const r2Chart = () => `<div class="r2-legend" aria-hidden="true"><span><i class="r2-k-win"></i>On screen</span><span><i class="r2-k-anim"></i>The animation I'd give it (loops repeat inside)</span></div>
+  <div class="r2-axis" aria-hidden="true">${[.1, 1, 10, 60].map((t) => `<span style="left:${r2x(t).toFixed(1)}%">${r2fmt(t)}</span>`).join('')}</div>
+  <ul class="r2-rows">${R2_WIN.map((r) => {
+    const l = r2x(Math.max(R2_MIN, r.win[0])), w = Math.max(1.2, r2x(r.win[1]) - l);
+    const txt = `${r.win[0] === r.win[1] ? r2fmt(r.win[0]) : `${r2fmt(r.win[0])} to ${r2fmt(r.win[1])}`} on screen; ${r.a ? `animation ${r2fmt(r.a)}` : 'no animation'}. ${r.look}.`;
+    return `<li><div class="r2-lab"><b>${r.m}</b><span>${r.src}</span></div><div class="r2-track" title="${txt}"><i class="r2-win" style="left:${l.toFixed(1)}%;width:${w.toFixed(1)}%"></i>${r.a ? `<i class="r2-anim" style="left:${l.toFixed(1)}%;width:${Math.max(.8, r2x(r.a) - r2x(R2_MIN)).toFixed(1) === '0' ? .8 : Math.min(w, Math.max(.8, r2x(Math.max(R2_MIN, r.win[0]) + r.a) - l)).toFixed(1)}%"></i>` : ''}<span class="sr-only">${txt}</span></div><div class="r2-val">${r.look}</div></li>`;
+  }).join('')}</ul>`;
+
+const R2_VERDICT = [
+  ['Startup assembly', 'Header, Check tab', '1 to 5 s, a glance', 'keep', 'Keep, shorter', 'At most 0.8 s, after the editor works, and once a day: people reload the workbench a lot.'],
+  ['Typing along', 'Check tab: "Nothing to fix"', 'As long as you type, in side vision', 're', 'Eyes only', 'Movement in side vision pulls your eyes. The eyes can follow the line you\'re on (3 px at most); the note-taking electron, bobbing at every key, goes.'],
+  ['Escalating error', 'Try it result', 'Until the next run', 're', 'Per run, not per key', 'Lint runs 8 ms after each key, so errors come and go while you type. Count failed Try it runs (or an error still there 1.5 s after you stop), never keystrokes.'],
+  ['Undo', 'None near the editor', 'About 0.25 s, in bursts', 'drop', 'Drop', 'Ctrl+Z comes in bursts, and no Nucli is in view of the code to rewind.'],
+  ['Copy and save', 'The button', '"Copied ✓" for 1.6 s', 'drop', 'Drop', 'The flight needs about 0.7 s from a Nucli that isn\'t next to the button. The label already says it, where you look.'],
+  ['Yawn, then doze', 'Check tab, empty', 'Happens while nobody watches', 're', 'Wake-up instead', 'Show him already asleep. Animate waking up (0.6 s) on your first key: that is the part people see.'],
+  ['Big fix: one orbit', 'During the fix', '0.7 to 2.6 s, eyes on the code', 'move', 'Move to the toast', 'During the fix you watch the lines. The orbit lap goes in the toast after it: 1.2 s, then a still pose for the rest of its 3.5 to 8 s.'],
+  ['Try it: player count', 'Next to the player picker', 'You just clicked it', 'keep', 'Keep', 'Under 0.4 s, right where you look.'],
+  ['Hover a name', 'None near the code', 'A tooltip, within 0.3 s', 'drop', 'Drop', 'Nucli isn\'t near the code, and you hover dozens of times a minute.'],
+];
+const R2_DUO = [
+  ['Splash: drop in', 'App start', 'The app takes a few seconds to open', 'keep', 'Keep', 'Under a second, while it loads anyway.'],
+  ['Installed: he catches it', 'Install toast', '3.5 to 8 s, a glance', 'keep', 'Keep', '1.2 s, then he holds the box.'],
+  ['Launch failed, escalating', 'Error dialog', 'Until you close it', 'keep', 'Keep', 'Count failed launches of the same game, not failed instances.'],
+  ['Juggling', 'Start screen, idle', 'Nobody watching', 'move', 'Move to the launch wait', 'Starting a game takes 10 to 60 s, the longest wait in the app: one ball per instance that has started.'],
+  ['Peek on hover', 'Game list', 'Hover', 'drop', 'Drop', 'Same as Nucli\'s hover: too often, too fast.'],
+  ['Pick a layout', 'Player setup', 'You just picked it', 'keep', 'Keep', 'It explains the choice.'],
+];
+const R2_V = { keep: 'Keep', re: 'Rework', drop: 'Drop', move: 'Move' };
+const r2Table = (rows, cap) => `<div class="nx-tw"><table class="nx-plan r2-v"><caption>${cap}</caption><thead><tr><th scope="col">Animation</th><th scope="col">Where he'd be</th><th scope="col">Time on screen</th><th scope="col">Verdict</th><th scope="col">Why</th></tr></thead><tbody>${rows.map(([n, w, t, v, vl, why]) => `<tr><th scope="row">${n}</th><td>${w}</td><td>${t}</td><td><span class="v ${v}">${vl}</span></td><td>${why}</td></tr>`).join('')}</tbody></table></div>`;
+
+// Reworked to fit.
+const R2_ANIMS = [
+  { id: 'x-err', tier: 'def', name: 'Escalating, per run', vb: '0 0 240 120',
+    what: 'Counted per failed Try it run. 1st: a small flinch. 2nd: worried. 3rd in a row: the facepalm, and an "Explain" link appears. The result stays on screen, so the pose holds.',
+    svg: () => nx({ n: 3, faces: ['smile', 'worried', 'sleep'], inCore: `<ellipse class="xr-palm" cx="60" cy="56" rx="15" ry="6.5" fill="${ACC[0]}" stroke="#fff" stroke-width="1.8"/>` })
+      + `<rect x="124" y="16" width="108" height="88" rx="9" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/>`
+      + ['Run 1: failed', 'Run 2: failed', 'Run 3: failed'].map((t, i) => `<g class="xr-n${i}"><circle cx="138" cy="${36 + i * 18}" r="5" fill="${C.r}"/><path d="M135.8 ${33.8 + i * 18} l4.4 4.4 M140.2 ${33.8 + i * 18} l-4.4 4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><text x="148" y="${39.5 + i * 18}" font-size="10" fill="var(--ink)">${t}</text></g>`).join('')
+      + `<text class="xr-n2" x="148" y="92" font-size="10" font-weight="700" fill="var(--accent)" text-decoration="underline">Explain this</text>` },
+  { id: 'r2-wake', tier: 'def', name: 'Wake-up', vb: '0 0 240 120',
+    what: 'He dozes in the empty Check tab (a still pose). Your first key wakes him: a little start, eyes open, a look at the code. 0.6 s, the one moment you actually see.',
+    svg: () => nx({ faces: ['sleep', 'wow', 'smile'] }) + zzz(84, 36) + NX_PANEL([0]).replace('class="xl xl0"', 'class="xl xl0 rw-line"').replace('width="0"', 'width="58"') + `<rect class="rw-car" x="133" y="26" width="2" height="9" fill="var(--ink)"/>`,
+    css: `.s-r2-wake .rw-line { transform-box: fill-box; transform-origin: left center; } .s-r2-wake .xf0 { opacity: 0; } .s-r2-wake .xf2 { opacity: 1; } .s-r2-wake .rw-car { transform: translateX(59px); } .s-r2-wake .zz { opacity: 0; transform-box: fill-box; }
+@keyframes rw-f0 { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes rw-f1 { 0%, 49% { opacity: 0; } 50%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@keyframes rw-f2 { 0%, 55% { opacity: 0; } 56%, 100% { opacity: 1; } }
+@keyframes rw-core { 0%, 49% { transform: translateY(4px) rotate(-5deg); } 52% { transform: translateY(-5px); } 58%, 100% { transform: rotate(5deg); } }
+@keyframes rw-orb { 0%, 49% { opacity: .35; } 56%, 100% { opacity: 1; } }
+@keyframes rw-z { 0%, 4% { opacity: 0; transform: none; } 14% { opacity: 1; } 44% { opacity: .8; transform: translate(6px, -10px); } 48%, 100% { opacity: 0; } }
+@keyframes rw-line { 0%, 50% { transform: scaleX(0); } 90%, 100% { transform: scaleX(1); } }
+@keyframes rw-car { 0%, 50% { transform: translateX(0); } 90%, 100% { transform: translateX(59px); } }`
+      + RMQ(`.s-r2-wake .xf0 { animation: rw-f0 6s infinite; } .s-r2-wake .xf1 { animation: rw-f1 6s infinite; } .s-r2-wake .xf2 { animation: rw-f2 6s infinite; } .s-r2-wake .n-core { animation: rw-core 6s var(--spring) infinite; } .s-r2-wake .n-orbits { animation: rw-orb 6s infinite; } .s-r2-wake .zz { animation: rw-z 6s infinite; animation-delay: calc(var(--i) * .45s); } .s-r2-wake .rw-line { animation: rw-line 6s steps(9, end) infinite; } .s-r2-wake .rw-car { animation: rw-car 6s steps(9, end) infinite; }`) },
+  { id: 'r2-toast', tier: 'all', name: 'Big fix, in the toast', vb: '0 0 240 120',
+    what: 'After a fix that clears many problems: the toast\'s Nucli does his one-orbit lap in the first 1.2 s, then holds the pose while you read. The line under the toast is its time left.',
+    svg: () => `<g class="r2t"><rect x="14" y="32" width="212" height="54" rx="12" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>${small(nx({ faces: ['smile', 'excited'], el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]], noShadow: true }), 16, 31, .47)}<text x="76" y="56" font-size="12" font-weight="700" fill="var(--ink)">Fixed 12 problems</text><text x="76" y="72" font-size="10" fill="var(--muted)">Ready for Nucleus</text><rect class="r2t-life" x="26" y="80" width="188" height="2.5" rx="1.25" fill="var(--accent)"/></g>`,
+    css: `.s-r2-toast .r2t-life { transform-box: fill-box; transform-origin: left center; } .s-r2-toast .xf0 { opacity: 0; } .s-r2-toast .xf1 { opacity: 1; } .s-r2-toast .orb0 { --a: 0deg; } .s-r2-toast .orb1, .s-r2-toast .orb2 { transform: rotate(0deg); }
+@keyframes r2t { 0% { transform: translateY(70px); opacity: 0; } 4%, 66% { transform: none; opacity: 1; } 70%, 100% { transform: translateY(70px); opacity: 0; } }
+@keyframes r2t-life { 0%, 4% { transform: scaleX(1); } 66%, 100% { transform: scaleX(0); } }
+@keyframes r2t-o1 { 0%, 4% { transform: rotate(60deg); } 14%, 100% { transform: rotate(0deg); } }
+@keyframes r2t-o2 { 0%, 4% { transform: rotate(120deg); } 14%, 100% { transform: rotate(0deg); } }
+@keyframes r2t-f0 { 0%, 12% { opacity: 1; } 13%, 100% { opacity: 0; } }
+@keyframes r2t-f1 { 0%, 12% { opacity: 0; } 13%, 100% { opacity: 1; } }
+@keyframes r2t-hop { 0%, 12% { transform: none; } 15% { transform: translateY(-6px); } 19%, 100% { transform: none; } }`
+      + RMQ(`.s-r2-toast .r2t { animation: r2t 7s var(--soft) infinite; } .s-r2-toast .r2t-life { animation: r2t-life 7s linear infinite; } .s-r2-toast .orb1 { animation: r2t-o1 7s cubic-bezier(.5, 0, .3, 1) infinite; } .s-r2-toast .orb2 { animation: r2t-o2 7s cubic-bezier(.5, 0, .3, 1) infinite; } .s-r2-toast .xf0 { animation: r2t-f0 7s infinite; } .s-r2-toast .xf1 { animation: r2t-f1 7s infinite; } .s-r2-toast .n-core { animation: r2t-hop 7s var(--spring) infinite; }`) },
+  { id: 'r2-launch', tier: 'def', name: 'Duo: the game launch wait', vb: '0 0 120 120',
+    what: 'Juggling, moved to where there is time: while Nucleus starts the instances, one ball per instance that has started. A wait of 10 to 60 s you can read at a glance.',
+    svg: () => duo({ expr: 'happy', arms: 'up' }) + ACC.map((c, i) => `<g class="dj dj${i}"><circle r="5" fill="${c}" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.4s" begin="-${(i * .6).toFixed(1)}s" repeatCount="indefinite" path="M30 26 Q46 -18 90 26 Q60 12 30 26"/></circle></g>`).join('')
+      + [1, 2, 3, 4].map((n) => `<text class="dj-t dj-t${n}" x="60" y="117" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--ink)"${n < 4 ? ' opacity="0"' : ''}>${n < 4 ? `Starting player ${n + 1} of 4` : '4 of 4 started'}</text>`).join(''),
+    css: [1, 2, 3].map((k) => nxSteps(`dj${k}`, [1, 1, 2, 2, 3, 3, 4, 4].map((n) => n > k), 8, `.s-r2-launch .dj${k}`, false)).join('\n') + '\n' + [1, 2, 3, 4].map((n) => nxSteps(`dj-t${n}`, [1, 1, 2, 2, 3, 3, 4, 4].map((c) => c === n), 8, `.s-r2-launch .dj-t${n}`, false)).join('\n') },
+];
+const r2Anims = () => R2_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${NX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
+
+// Colours, round 2: all in the violet family (round 1's teal and gold are out), on the refined shape, in context.
+const R2_PALS = [
+  { name: 'Today', grad: ['#c9ceff', '#7f88ee', '#4f55c8'], shell: '#3c3fa8', ring: '#7f88ee', note: 'The baseline.' },
+  { name: 'Indigo', grad: ['#b9bdff', '#6d70e4', '#3b38ad'], shell: '#29257f', ring: '#6d70e4', note: 'A step deeper: holds up better on white and in a 34 px toast. Still calm.' },
+  { name: 'Ultraviolet', grad: ['#dccaff', '#9160ff', '#5b2fd6'], shell: '#3d1aa8', ring: '#9a74ff', note: 'More saturated, so he pops on dark themes. Livelier than "quiet technician".', rec: true },
+  { name: 'Violet, rose core', grad: ['#ffd3ea', '#a77cf0', '#5a4ed0'], shell: '#40339c', ring: '#a084f0', note: 'A warm centre: a hint of Nucleus Co-op red inside. Friendlier, a little sweeter.' },
+  { name: 'Lavender', grad: ['#efedff', '#bcb2f7', '#8d80e6'], shell: '#5e50c4', ring: '#a89cf0', note: 'Soft and gentle, but pale on light themes: he needs his outline to be seen.' },
+  { name: 'Slate violet', grad: ['#dcdcf0', '#9092c6', '#5b5e98'], shell: '#3d4074', ring: '#8d90c4', note: 'Muted, grown-up, the most "tool". Risks looking disabled next to coloured buttons.' },
+];
+const r2Ctx = (p, t) => `<div class="r2-ctx nx-${t}"><div class="r2-mtoast">${still(nx({ pal: p, still: true, small: true, ow: 3.4, eye: 1.32, er: 1.45, noShadow: true }), '', 26)}<span>Fixed 12 problems</span></div><div class="r2-mempty">${still(nx({ pal: p, still: true, ow: 1.8, eye: 1.14, er: 1.15, noShadow: true }), '', 56)}<span>Nothing to fix.</span></div></div>`;
+const r2Cols = () => R2_PALS.map((p) => `<div class="nx-card${p.rec ? ' rec' : ''}"><div class="nx-h"><b>${p.name}</b>${p.rec ? '<span class="nx-tag rec">My pick</span>' : ''}</div>
+  <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli in ${p.name}">${nx({ pal: p, trails: true, ow: 1.8, eye: 1.14, er: 1.15 })}</svg></div>
+  ${r2Ctx(p, 'light')}${r2Ctx(p, 'dark')}<p class="nx-con">Body against the page: ${nxCon([p.grad[1], p.shell])}</p><p>${p.note}</p></div>`).join('');
+
+document.getElementById('r2-chart').innerHTML = r2Chart();
+document.getElementById('r2-verdict').innerHTML = r2Table(R2_VERDICT, 'Nucli: round 1\'s animations against their time on screen.') + r2Table(R2_DUO, 'Duo: the same check.');
+document.getElementById('r2-anims').innerHTML = r2Anims();
+document.getElementById('r2-cols').innerHTML = r2Cols();
+LCSS += R2_ANIMS.map((a) => a.css || '').join('\n');
+
+// The loader, by how long you wait: nothing, a spinner, progress, then progress with the time so far.
+(() => {
+  const box = document.getElementById('r2-wait'), stage = box.querySelector('.r2w-stage'), msg = box.querySelector('.r2w-msg');
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let timers = [];
+  const show = (svg, text) => {
+    stage.innerHTML = svg; msg.textContent = text;
+    if (RM || document.documentElement.classList.contains('paused')) stage.querySelectorAll('svg').forEach((s) => { try { s.pauseAnimations(); } catch {} });
+  };
+  const at = (ms, f) => timers.push(setTimeout(f, ms));
+  box.querySelectorAll('button[data-ms]').forEach((b) => b.addEventListener('click', () => {
+    timers.forEach(clearTimeout); timers = [];
+    box.querySelectorAll('button[data-ms]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    const total = +b.dataset.ms, what = b.dataset.what, t0 = performance.now();
+    show('', '');
+    const sec = () => ((performance.now() - t0) / 1000).toFixed(0);
+    if (total > 400) at(400, () => show(scene('n-spin', 'Nucli, working'), `${what}…`));
+    if (total > 2000) at(2000, () => {
+      const tick = () => {
+        if (performance.now() - t0 >= total) return;
+        const p = Math.min(1, (performance.now() - t0) / total), k = Math.max(1, Math.ceil(p * 4));
+        const long = total > 10000 && performance.now() - t0 > 10000;
+        const txt = total > 10000 ? `${what}: ${long ? `still going, ${sec()} s so far` : `${Math.round(p * 100)} %`}` : `${what}: ${Math.round(p * 40)} of 40 runs`;
+        if (stage.dataset.k === `${k}${long}`) msg.textContent = txt;
+        else {
+          stage.dataset.k = `${k}${long}`;
+          show(`<svg viewBox="0 0 120 120" role="img" aria-label="Nucli, ${k} of 4 electrons: ${Math.round(p * 100)} percent">${nx({ n: k, faces: [long ? 'focus' : 'smile'] })}</svg>`, txt);
+        }
+        if (p < 1) at(total > 10000 ? 1000 : 250, tick);
+      };
+      tick();
+    });
+    at(total, () => { delete stage.dataset.k; show(scene('n-ok', 'Nucli, done'), `Done in ${total < 1000 ? total + ' ms' : total / 1000 + ' s'}.${total <= 400 ? ' No loader at all: it would only have flashed.' : ''}`); });
+  }));
+})();
+
+// ---- Simpler drawings, same animations ----
+// Flat fills, one shadow shape, no gloss, rim light, status light or blush. Same class names as duo() and nucli()
+// (.d-jump, .d-body, .d-hl, .d-arm-r, .n-float, .n-core, .orb, .look, .eye), so every existing animation runs on them.
+const sEye = (x, y, s, side, ink, sm, ex = 'smile') => {
+  if (ex === 'happy' || ex === 'sleep') return eyeOf(x, y, s, ex, ink, null, side);
+  return `<g class="track"><g class="look look-${side}"><g class="eye"><circle cx="${x}" cy="${y}" r="${n1(5.4 * s)}" fill="${ink}"/>${sm ? '' : `<circle cx="${n1(x + 1.7 * s)}" cy="${n1(y - 1.8 * s)}" r="${n1(1.6 * s)}" fill="#fff"/>`}</g></g></g>`;
+};
+function ns(o = {}) {
+  const p = { fill: '#858ef0', shade: '#5c62d6', line: '#3c3fa8', ring: '#7f88ee', ...(o.pal || {}) };
+  const sm = !!o.small, id = 'ns' + (++uid), ink = C.ink, d = 4.6, er = sm ? 1.45 : 1.1;
+  const half = (which) => `<path d="${which === 'back' ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="${p.ring}" stroke-width="${sm ? 3.4 : 1.6}" opacity="${which === 'back' ? .35 : .7}" stroke-linecap="round"/>`;
+  const one = ([k, ph, ci]) => {
+    const dot = `<circle r="${n1(5.2 * er)}" fill="${ACC[ci]}" stroke="#fff" stroke-width="${sm ? 1.6 : 1.6}"/>`;
+    if (o.still) { const t = (ph * 2 + .15) * Math.PI; return `<g transform="translate(${n1(60 + 52 * Math.cos(t))} ${n1(60 + 15.5 * Math.sin(t))})">${dot}</g>`; }
+    const dur = n1(d * (1 + k * .18));
+    return `<g><animateMotion dur="${dur}s" begin="-${n1(ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/>${dot}</g>`;
+  };
+  const orb = (k, inner) => `<g class="orb" style="--a:${ORB3[k]}deg">${inner}</g>`;
+  const els = (k) => NX_EL.filter((e) => e[0] === k).map(one).join('');
+  const back = `<g class="n-orbits">${ORB3.map((_, k) => orb(k, half('back') + els(k))).join('')}</g>`;
+  const front = `<g class="n-orbits"><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath>${ORB3.map((_, k) => orb(k, half('front') + `<g clip-path="url(#${id})">${els(k)}</g>`)).join('')}</g>`;
+  const ex = o.expr || 'smile', s = sm ? .95 : .72;
+  const core = `<circle cx="60" cy="60" r="22" fill="${p.fill}" stroke="${p.line}" stroke-width="${sm ? 2.8 : 2}"/>${sm ? '' : `<path d="M80.5 52 A22 22 0 0 1 52 80.5 A25 25 0 0 0 80.5 52 Z" fill="${p.shade}" opacity=".55"/>`}`;
+  const face = `<g class="fw">${sEye(sm ? 51.5 : 53, sm ? 57 : 57, s, 'l', ink, sm, ex)}${sEye(sm ? 68.5 : 67, sm ? 57 : 57, s, 'r', ink, sm, ex)}${sm ? '' : mouthOf(60, 66, .58, ex === 'happy' ? 'happy' : ex === 'smile' ? 'smile' : ex, ink)}</g>`;
+  const shadow = o.noShadow ? '' : '<ellipse cx="60" cy="106" rx="16" ry="2.6" fill="#0b1a33" opacity=".12"/>';
+  return `${shadow}<g class="n-float">${back}<g class="n-core">${core}${face}</g>${front}</g>${o.after || ''}`;
+}
+function ds(o = {}) {
+  const sm = !!o.small, id = 'ds' + (++uid), ink = C.ink, B = '#2b8bff', A = '#1f6fe6';
+  const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], wave: ['', ''] }[o.arms || 'down'];
+  const armL = sm ? '' : `<g class="d-arm-l"><g transform="${pose[0]}"><ellipse cx="27" cy="76" rx="5.8" ry="10.5" transform="rotate(18 27 76)" fill="${A}"/></g></g>`;
+  const armR = sm ? '' : `<g class="d-arm-r"><g transform="${pose[1]}"><ellipse cx="93" cy="76" rx="5.8" ry="10.5" transform="rotate(-18 93 76)" fill="${A}"/></g></g>`;
+  const ex = o.expr || 'smile', s = sm ? 1.3 : 1;
+  // Each half: white underneath, blue 1.5 short of the cut, so the stripe belongs to both halves when they split.
+  const halfL = `<path d="M60 28 A34 34 0 0 0 60 96 Z" fill="#fff"/><path d="M58.5 28.03 A34 34 0 0 0 58.5 95.97 Z" fill="${B}"/>${sm ? '' : '<ellipse cx="44" cy="40" rx="8" ry="4" fill="#fff" opacity=".35" transform="rotate(-38 44 40)"/>'}`;
+  const halfR = `<path d="M60 28 A34 34 0 0 1 60 96 Z" fill="#fff"/><path d="M61.5 28.03 A34 34 0 0 1 61.5 95.97 Z" fill="${B}"/>`;
+  const mouth = sm ? '' : mouthOf(60, 69, 1, ex, ink);
+  const clip = `<clipPath id="${id}l"><rect x="0" y="0" width="60" height="120"/></clipPath><clipPath id="${id}r"><rect x="60" y="0" width="60" height="120"/></clipPath>`;
+  const body = `<g class="d-hl">${armL}${halfL}${sEye(sm ? 45 : 47, sm ? 60 : 58, s, 'l', ink, sm, ex)}<g clip-path="url(#${id}l)">${mouth}</g></g><g class="d-hr">${armR}${halfR}${sEye(sm ? 75 : 73, sm ? 60 : 58, s, 'r', ink, sm, ex)}<g clip-path="url(#${id}r)">${mouth}</g></g>`;
+  const feet = sm ? '' : `<g class="d-feet"><ellipse class="d-fl" cx="48" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/><ellipse class="d-fr" cx="72" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/></g>`;
+  const shadow = o.noShadow || sm ? '' : '<ellipse class="d-shadow" cx="60" cy="105" rx="24" ry="3.4" fill="#0b1a33" opacity=".15"/>';
+  const inner = `<defs>${clip}</defs>${shadow}<g class="d-jump">${feet}<g class="d-body">${body}</g></g>${o.after || ''}`;
+  return sm ? `<g transform="translate(60 62) scale(1.4) translate(-60 -62)">${inner}</g>` : inner;
+}
+// How much is drawn: elements in the SVG (fewer = easier to edit, less to render, less to blur at 16 px).
+const svgCount = (inner) => new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${inner}</svg>`, 'image/svg+xml').getElementsByTagName('*').length - 1;
+const SIMPLE = [
+  { name: 'Nucli', before: () => nucli({ still: true, noShadow: true }), after: () => ns({ still: true, noShadow: true }), big: [() => nucli({}), () => ns({})], small: (s) => ns({ still: true, small: s <= 24, noShadow: true }), oldSmall: () => nucli({ still: true, noShadow: true }) },
+  { name: 'Duo', before: () => duo({ noShadow: true }), after: () => ds({ noShadow: true }), big: [() => duo({}), () => ds({})], small: (s) => ds({ small: s <= 24, noShadow: true }), oldSmall: () => duo({ noShadow: true }) },
+];
+const simpleCards = () => SIMPLE.map((m) => {
+  const a = svgCount(m.before()), b = svgCount(m.after());
+  return `<div class="nx-card"><div class="nx-h"><b>${m.name}: today and simpler</b><span class="nx-tag rec">${a} → ${b} shapes</span></div>
+  <div class="nx-big nx-pair"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="${m.name} today">${m.big[0]()}</svg><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="${m.name}, simpler">${m.big[1]()}</svg></div>
+  <div class="r2-sizes">${['light', 'dark'].map((t) => `<div class="nx-strip nx-${t}">${[24, 16].map((s) => `<figure>${still(m.oldSmall(), `${m.name} today, ${s} pixels on ${t}`, s)}<figcaption>today ${s}</figcaption></figure><figure>${still(m.small(s), `${m.name} simpler, ${s} pixels on ${t}`, s)}<figcaption>simpler ${s}</figcaption></figure>`).join('')}</div>`).join('')}</div></div>`;
+}).join('');
+const SIMPLE_ANIMS = [
+  ['n-idle', 'Nucli · Idle', () => ns({})], ['n-hula', 'Nucli · Hula hoop', () => ns({ expr: 'happy' })],
+  ['hello', 'Duo · Hello!', () => ds({ expr: 'happy', arms: 'wave' })], ['joy', 'Duo · Woohoo', () => ds({ expr: 'happy', after: confetti() })],
+];
+document.getElementById('r2-simple').innerHTML = simpleCards();
+document.getElementById('r2-simple-anims').innerHTML = SIMPLE_ANIMS.map(([id, name, svg]) => `<div class="scene"><div class="stage"><svg class="s-${id} blink" viewBox="0 0 120 120" role="img" aria-label="${name}, simpler drawing">${svg()}</svg></div><b>${name}</b><span>Same animation as in the library, on the simpler drawing.</span></div>`).join('');
 
 document.getElementById('gen').textContent = genCSS() + LCSS;
 
