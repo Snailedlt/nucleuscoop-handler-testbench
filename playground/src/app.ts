@@ -104,7 +104,7 @@ Game.Play = function () {
 
 /** Plain-language explanations for the Simple view. */
 const PLAIN: Record<string, { title: string; why: string }> = {
-  'syntax-error': { title: "Nucleus can't read this file", why: 'Something is missing or extra here, often a bracket, a quote or a comma. Nothing else can be checked until this is fixed.' },
+  'syntax-error': { title: "Nucleus can't read this file", why: 'Something is missing or extra here, often a bracket, a quote or a comma. The rest is still checked, but Nucleus won\'t load the file until this is fixed.' },
   'es5-only': { title: 'Newer JavaScript than Nucleus understands', why: 'Nucleus only reads an older form of JavaScript, so it stops loading the handler here.' },
   'let-const-semantics': { title: 'Written in a newer style', why: 'Nucleus treats this like a plain "var". Usually harmless.' },
   'unknown-member': { title: "A setting Nucleus doesn't know", why: "Nucleus skips it, so it does nothing. It's usually a typo." },

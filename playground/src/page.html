@@ -344,9 +344,11 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
 .cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
 .cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--code-muted, var(--muted)); }
-.CodeMirror-lint-mark-error { background: none; border-bottom: 2px wavy var(--err); }
-.CodeMirror-lint-mark-warning { background: none; border-bottom: 2px wavy var(--warn); }
-.CodeMirror-lint-mark-info { background: none; border-bottom: 2px dotted var(--info); }
+/* Squiggles under the exact code a problem is about (a border can't be wavy: text-decoration can). */
+.CodeMirror-lint-mark { background: none; text-decoration-line: underline; text-decoration-style: wavy; text-decoration-skip-ink: none; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+.CodeMirror-lint-mark-error { text-decoration-color: var(--err); }
+.CodeMirror-lint-mark-warning { text-decoration-color: var(--warn); }
+.CodeMirror-lint-mark-info { text-decoration-color: var(--info); text-decoration-style: dotted; }
 .CodeMirror-lint-tooltip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px/1.45 var(--font-body); max-width: 460px; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 50; }
 .CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px var(--font-mono); max-height: 260px; box-shadow: 0 8px 22px rgba(0,0,0,.2); z-index: 60; }
 .CodeMirror-hint { color: var(--fg); display: flex; justify-content: space-between; gap: 16px; padding: 3px 8px; }
