@@ -114,6 +114,18 @@ for (const theme of ['light', 'dark']) {
   check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) === 'Game.GUID = "A";\nGame.GameName = "A";\nGame.ExecutableName = "a.exe";\nGame.Play = function () {\n    Context.StartArguments = "-w";\n};\n', `${theme}: Shift+Alt+F formats the code`);
   check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
   // Dialogs
+  // Open: the arrow keys move through tiles, chips and rows.
+  await p.click('#doc-switch');
+  await p.waitForTimeout(300);
+  await p.focus('#open-q');
+  const kinds = [];
+  for (let k = 0; k < 5; k++) {
+    await p.keyboard.press('ArrowDown');
+    kinds.push(await p.$eval('#open-body .entry.active', (e) => e.closest('.entries').className));
+  }
+  check(kinds[0].includes('chips') && kinds.some((c) => c.includes('rows')), `${theme}: ↓ moves from the Start tiles past the templates to the Hub rows`);
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(200);
   for (const [open, name] of [['#doc-switch', 'Open'], ['#settings-open', 'Settings'], ['#news-open-2', "What's new"], ['#help-open', 'Keyboard shortcuts']]) {
     await p.click(open);
     await p.waitForTimeout(400);

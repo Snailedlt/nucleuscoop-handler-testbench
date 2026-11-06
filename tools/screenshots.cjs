@@ -189,6 +189,16 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     await p.waitForTimeout(800);
     await shot(p, `toasts-${t}.png`, '#toasts', 12);
     await ctx.close();
+    // The Open dialog (Ctrl+K): tiles, template chips and Hub rows, the first Hub row selected.
+    ({ ctx, p } = await open(b, t, CHW, 'example-mistakes'));
+    await p.click('.CodeMirror');
+    await p.keyboard.press('Control+K');
+    await p.waitForTimeout(400);
+    for (let i = 0; i < 4; i++) await p.keyboard.press('ArrowDown');
+    await p.mouse.move(2, 2);
+    await p.waitForTimeout(400);
+    await shot(p, `open-${t}.png`, '#open-dialog');
+    await ctx.close();
   }
   await b.close();
   if (!process.argv.includes('--release-shots')) require('child_process').execFileSync('python3', ['-I', path.join(__dirname, 'compose-images.py'), CH], { stdio: 'inherit' });

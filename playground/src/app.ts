@@ -1035,10 +1035,49 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 // ---------------------------------------------------------------------------
 // Open dialog (Ctrl+K): starters, Hub handlers, probes and actions in one searchable list
 
-interface OpenEntry { group: string; title: string; sub?: string; badges?: string; keywords?: string; run: () => void; lint?: () => string; /** A command's shortcut, shown like VS Code's palette. */ keys?: string }
+interface OpenEntry {
+  group: string; title: string; sub?: string; badges?: string; keywords?: string; run: () => void; lint?: () => string;
+  /** A command's shortcut, shown like VS Code's palette. */ keys?: string;
+  /** An inline SVG icon (the inside of a 24×24 viewBox), or a monogram's source text. */ icon?: string; mono?: string;
+  /** Small facts on the right of a row (players, downloads), as HTML. */ meta?: string;
+}
+
+// Icons for the Open dialog: inline SVG, drawn with the text colour (no icon font).
+const OI = {
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  folder: '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/>',
+  plus: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11.5v6M9 14.5h6"/>',
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+  bug: '<path d="M12 4 2.8 19.5h18.4L12 4z"/><path d="M12 10v4M12 17h.01"/>',
+  command: '<path d="m5 8 4 4-4 4M12 16h7"/>',
+  flask: '<path d="M9 3h6M10 3v6l-5.2 9.1A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-2.9L14 9V3M7.5 15h9"/>',
+  players: '<circle cx="9" cy="8" r="3.2"/><path d="M3 19.5a6 6 0 0 1 12 0M16 5a3.2 3.2 0 0 1 0 6.2M18 19.5a6 6 0 0 0-2.6-5"/>',
+  downloads: '<path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 20h14"/>',
+  keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7 14h10"/>',
+  ok: '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 10"/>',
+  warning: '<path d="M12 4 2.8 19.5h18.4L12 4z"/><path d="M12 10v4M12 17h.01"/>',
+  error: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+};
+const svgIcon = (d: string, cls = 'oi') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+/** Two letters and a stable hue for a name: a stand-in for game art. */
+function monogram(name: string): string {
+  const words = name.replace(/\(.*?\)/g, ' ').split(/[^\p{L}\p{N}]+/u).filter((w) => w && !/^(of|the|a|an|and|for|to|in|on)$/i.test(w));
+  const num = words.slice(1).find((w) => /^\d+$/.test(w));
+  const letters = ((words[0]?.[0] ?? '?') + (num ?? words[1]?.[0] ?? '')).toUpperCase();
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `<span class="mono" style="--h:${h}" aria-hidden="true">${esc(letters)}</span>`;
+}
+const compact = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
+/** The text with every searched word marked (both already lower-cased words; the text is escaped). */
+function highlight(text: string, words: string[]): string {
+  const ws = words.filter(Boolean).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (!ws.length) return esc(text);
+  return text.split(new RegExp(`(${ws.join('|')})`, 'gi')).map((part, i) => (i % 2 ? `<mark>${esc(part)}</mark>` : esc(part))).join('');
+}
 const click = (sel: string) => () => ($(sel) as HTMLElement).click();
 function commandList(): OpenEntry[] {
-  const c = (title: string, keys: string, keywords: string, run: () => void, sub?: string): OpenEntry => ({ group: 'Actions', title, keys, keywords, run, sub });
+  const c = (title: string, keys: string, keywords: string, run: () => void, sub?: string): OpenEntry => ({ group: 'Actions', title, keys, keywords, run, sub, icon: OI.command });
   const list: OpenEntry[] = [
     c('Format document', 'Shift+Alt+F', 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
@@ -1104,7 +1143,12 @@ function hubLintBadges(i: number): string {
     const d = h.lint ? undefined : lint(h.source ?? '');
     const e = h.lint ? h.lint.errors : d!.filter((x) => x.severity === 'error').length;
     const w = h.lint ? h.lint.warnings : d!.filter((x) => x.severity === 'warning').length;
-    html = e ? `<span class="chip error">${e} error${e === 1 ? '' : 's'}</span>` : w ? `<span class="chip warning">${w} warning${w === 1 ? '' : 's'}</span>` : '<span class="chip ok">clean</span>';
+    const pill = (kind: 'error' | 'warning' | 'ok', text: string, tip: string) => `<span class="chip ${kind}" title="${tip}">${svgIcon(OI[kind], 'ci')}${text}</span>`;
+    html = e
+      ? pill('error', `${e} error${e === 1 ? '' : 's'}`, `Check finds ${e} error${e === 1 ? '' : 's'} in this handler: Nucleus may stop on ${e === 1 ? 'it' : 'them'}.`)
+      : w
+        ? pill('warning', `${w} warning${w === 1 ? '' : 's'}`, `Check finds no errors, and ${w} warning${w === 1 ? '' : 's'} worth a look.`)
+        : pill('ok', 'clean', 'Check finds no errors or warnings in this handler.');
     hubLint.set(i, html);
   }
   return html;
@@ -1114,13 +1158,14 @@ const outcomeRank = (j: string) => (j === 'LOAD-FAIL' ? 0 : j === 'PLAY-FAIL' ? 
 function entries(): OpenEntry[] {
   const jintLabel: Record<string, string> = { OK: 'runs', LOADED: 'loads', 'LOAD-FAIL': "doesn't load", 'PLAY-FAIL': 'Game.Play throws' };
   const list: OpenEntry[] = [
-    { group: 'Start', title: 'Open a file…', sub: 'A handler .js, .zip or .nc from your device.', keywords: 'upload import file computer phone device', run: () => ($('#file-input') as HTMLInputElement).click() },
-    { group: 'Start', title: 'New handler…', sub: 'Game name, executable and features; generates a handler that passes the linter.', keywords: 'create template', run: () => newDialog.showModal() },
-    ...EXAMPLE_PACKAGES.map((e) => ({ group: 'Start', title: e.title, sub: e.sub, keywords: 'example package zip nc files folder', run: () => openExamplePackage(e.id) })),
-    { group: 'Start', title: 'Handler with common mistakes', sub: 'The mistakes Nucleus trips over most; most fix themselves in one click.', keywords: 'example buggy sample', run: () => loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' }) },
+    { group: 'Start', icon: OI.folder, title: 'Open a file…', sub: 'A handler .js, .zip or .nc from your device.', keywords: 'upload import file computer phone device', run: () => ($('#file-input') as HTMLInputElement).click() },
+    { group: 'Start', icon: OI.plus, title: 'New handler…', sub: 'Game name, executable and features; generates a handler that passes the linter.', keywords: 'create template', run: () => newDialog.showModal() },
+    ...EXAMPLE_PACKAGES.map((e) => ({ group: 'Start', icon: OI.box, title: e.title, sub: e.sub, keywords: 'example package zip nc files folder', run: () => openExamplePackage(e.id) })),
+    { group: 'Start', icon: OI.bug, title: 'Handler with common mistakes', sub: 'The mistakes Nucleus trips over most; most fix themselves in one click.', keywords: 'example buggy sample', run: () => loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' }) },
     ...BOT_TEMPLATES.templates.map((t) => ({
       group: 'Engine templates',
       title: t.name,
+      mono: t.name,
       sub: t.id === 'generic' ? 'A starting point for any game.' : `A starting point for ${t.name} games.`,
       keywords: `template engine ${t.id}`,
       run: () => openTemplate(t.id),
@@ -1130,7 +1175,9 @@ function entries(): OpenEntry[] {
     ...HUB_EXAMPLES.handlers.map((h, i) => ({
       group: 'Hub handlers',
       title: h.title,
-      sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version} · ${h.downloads.toLocaleString()} downloads${h.maxPlayers ? ` · up to ${h.maxPlayers} players` : ''}${h.multiKbm ? ' · multiple keyboards & mice' : ''}`,
+      mono: h.game || h.title,
+      sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version}`,
+      meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>`,
       keywords: `${h.game} ${h.owner} hub`,
       lint: () => hubLintBadges(i),
       run: () => openHub(i),
@@ -1140,6 +1187,7 @@ function entries(): OpenEntry[] {
       .map(({ p, i }) => ({
       group: `Engine probes: ${p.jint === 'LOAD-FAIL' ? "doesn't load" : p.jint === 'PLAY-FAIL' ? 'Game.Play throws' : 'works'}`,
       title: probeTitle(p.name),
+      icon: OI.flask,
       sub: p.detail || undefined,
       badges: `<span class="chip ${p.jint === 'LOAD-FAIL' || p.jint === 'PLAY-FAIL' ? 'error' : 'ok'}">Jint: ${jintLabel[p.jint] ?? p.jint}</span>`,
       keywords: `probe ${p.name}`,
@@ -1190,23 +1238,41 @@ function renderOpen() {
   }
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   const groupNote: Record<string, string> = {
-    'Hub handlers': `${HUB_EXAMPLES.handlers.length} most-downloaded, current version verified, as of ${esc(taken)}`,
+    'Hub handlers': `The most downloaded, current version verified, as of ${esc(taken)}`,
     'Engine templates': 'The same templates the SplitScreen.Me Discord bot sends with /create',
   };
+  // Searching: results grouped by kind (the best match's group first), each group with a count.
+  if (q && !commandMode) {
+    const order: string[] = [];
+    for (const e of shown) if (!order.includes(e.group)) order.push(e.group);
+    shown = order.flatMap((g) => shown.filter((e) => e.group === g));
+    shownEntries = shown;
+  }
+  const words = q.split(/\s+/).filter(Boolean);
+  const label = (g: string) => (g === 'Actions' ? 'Commands' : g);
+  const counts = new Map<string, number>();
+  for (const e of shown) counts.set(e.group, (counts.get(e.group) ?? 0) + 1);
+  // Browsing: Start as tiles, templates as chips, the rest as rows. Searching: rows only.
+  const layout = (g: string) => (q || commandMode ? 'rows' : g === 'Start' ? 'tiles' : g === 'Engine templates' ? 'chips' : 'rows');
   let html = '';
   let lastGroup = '';
   shown.forEach((e, i) => {
-    const group = commandMode ? 'Commands' : q ? 'Results' : e.group;
+    const group = commandMode ? 'Commands' : label(e.group);
     if (group !== lastGroup) {
-      if (lastGroup) html += '</div>';
-      html += `<div class="group-title">${esc(group)}${groupNote[group] ? ` <small>${groupNote[group]}</small>` : ''}</div><div class="entries${q || commandMode ? ' rows' : ''}${commandMode ? ' commands' : ''}">`;
+      if (lastGroup) html += '</div></section>';
+      const n = commandMode ? shown.length : counts.get(e.group)!;
+      const note = q || commandMode ? '' : groupNote[group] ?? '';
+      html += `<section class="group"><div class="group-title"><span>${esc(group)}</span>${q || commandMode || n > 6 ? `<span class="count">${n}</span>` : ''}${note ? `<small>${note}</small>` : ''}</div><div class="entries ${layout(e.group)}${e.group.startsWith('Hub') && !q ? ' two' : ''}" role="group" aria-label="${esc(group)}">`;
       lastGroup = group;
     }
-    html += `<button class="entry${i === activeEntry ? ' active' : ''}" type="button" role="option" data-e="${i}" aria-selected="${i === activeEntry}">
-      ${q && !commandMode ? `<span class="kind">${esc(e.group === 'Actions' ? 'Command' : e.group)}</span>` : ''}<span class="t">${esc(e.title)}${e.keys ? `<span class="keys">${e.keys.split('+').map((k) => `<kbd>${esc(k)}</kbd>`).join('')}</span>` : ''}</span>${e.sub ? `<span class="s">${esc(e.sub)}</span>` : ''}
-      ${e.badges || e.lint ? `<span class="b">${e.badges ?? ''}<span data-lint="${i}"></span></span>` : ''}</button>`;
+    const lay = layout(e.group);
+    const art = e.mono ? monogram(e.mono) : e.icon ? `<span class="ic" aria-hidden="true">${svgIcon(e.icon)}</span>` : '';
+    const keys = e.keys ? `<span class="keys">${e.keys.split('+').map((k) => `<kbd>${esc(k)}</kbd>`).join('')}</span>` : '';
+    const sub = e.sub ? (lay === 'chips' ? `<span class="sr-only">${esc(e.sub)}</span>` : `<span class="s">${highlight(e.sub, words)}</span>`) : '';
+    const side = e.meta || e.badges || e.lint || keys ? `<span class="meta">${e.meta ?? ''}${e.badges ?? ''}${e.lint ? `<span data-lint="${i}"></span>` : ''}${keys}</span>` : '';
+    html += `<button class="entry${i === activeEntry ? ' active' : ''}" type="button" role="option" data-e="${i}" aria-selected="${i === activeEntry}"${lay === 'chips' && e.sub ? ` title="${esc(e.sub)}"` : ''}>${art}<span class="main"><span class="t">${highlight(e.title, words)}</span>${sub}</span>${side}</button>`;
   });
-  html += '</div>';
+  html += '</div></section>';
   body.innerHTML = html;
   body.querySelectorAll<HTMLButtonElement>('.entry').forEach((b) => b.addEventListener('click', () => runEntry(Number(b.dataset.e))));
   // Lint results for Hub cards fill in progressively, without blocking typing.
@@ -1228,14 +1294,28 @@ function runEntry(i: number) {
   openDialog.close();
   e.run();
 }
-function moveActive(d: number) {
+function setActive(i: number) {
   if (!shownEntries.length) return;
-  activeEntry = (activeEntry + d + shownEntries.length) % shownEntries.length;
+  activeEntry = (i + shownEntries.length) % shownEntries.length;
   document.querySelectorAll('#open-body .entry').forEach((el, i) => {
     el.classList.toggle('active', i === activeEntry);
     el.setAttribute('aria-selected', String(i === activeEntry));
   });
   document.querySelector('#open-body .entry.active')?.scrollIntoView({ block: 'nearest' });
+}
+/** ↑ ↓ move to the nearest entry in the row above or below, whatever the layout (tiles, chips, two columns). */
+function moveVertical(dir: 1 | -1) {
+  const els = [...document.querySelectorAll<HTMLElement>('#open-body .entry')];
+  const cur = els[activeEntry];
+  if (!cur) return;
+  const r = cur.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cands = els.map((el, i) => ({ i, b: el.getBoundingClientRect() })).filter(({ b }) => (dir > 0 ? b.top >= r.bottom - 1 : b.bottom <= r.top + 1));
+  if (!cands.length) return setActive(dir > 0 ? 0 : els.length - 1);
+  const rowTop = dir > 0 ? Math.min(...cands.map((c) => c.b.top)) : Math.max(...cands.map((c) => c.b.top));
+  const row = cands.filter((c) => Math.abs(c.b.top - rowTop) < 4);
+  row.sort((a, b) => Math.abs(a.b.left + a.b.width / 2 - cx) - Math.abs(b.b.left + b.b.width / 2 - cx));
+  setActive(row[0].i);
 }
 function showOpen(mode: 'open' | 'commands' = 'open') {
   ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : '';
@@ -1253,11 +1333,13 @@ $('#open-q').addEventListener('input', () => {
   renderOpen();
 });
 $('#open-q').addEventListener('keydown', (e: KeyboardEvent) => {
-  const cols = ($('#open-q') as HTMLInputElement).value.trim() ? 1 : Math.max(1, Math.floor(($('#open-body').clientWidth || 1) / 246));
-  if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(cols); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-cols); }
-  else if (e.key === 'ArrowRight' && cols > 1) { e.preventDefault(); moveActive(1); }
-  else if (e.key === 'ArrowLeft' && cols > 1) { e.preventDefault(); moveActive(-1); }
+  const browsing = !($('#open-q') as HTMLInputElement).value.trim(); // ← → move the caret while typing
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveVertical(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveVertical(-1); }
+  else if (e.key === 'ArrowRight' && browsing) { e.preventDefault(); setActive(activeEntry + 1); }
+  else if (e.key === 'ArrowLeft' && browsing) { e.preventDefault(); setActive(activeEntry - 1); }
+  else if (e.key === 'Home' && browsing) { e.preventDefault(); setActive(0); }
+  else if (e.key === 'End' && browsing) { e.preventDefault(); setActive(shownEntries.length - 1); }
   else if (e.key === 'Enter') { e.preventDefault(); runEntry(activeEntry); }
 });
 openDialog.addEventListener('click', (e) => {

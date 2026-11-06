@@ -139,6 +139,7 @@ const PITFALLS = T('Pitfall', [
 const SHORTCUTS = T('Shortcut', [
   { id: 's-palette', text: 'Ctrl+Shift+P (or F1) opens the command palette, as in VS Code: format, fix, Try it, theme and the rest, each with its shortcut.' },
   { id: 's-open', text: 'Ctrl+P (or Ctrl+K) opens the examples, templates and Hub handlers. Type `>` there to switch to commands.', action: { label: 'Examples', run: 'examples' } },
+  { id: 's-open-keys', text: 'In Open (Ctrl+K), the arrow keys move between tiles, templates and Hub rows; Home and End jump to the first and last. Hover a Hub handler\'s icons for players, keyboards and mice, and downloads.', action: { label: 'Examples', run: 'examples' } },
   { id: 's-format', text: 'Shift+Alt+F formats the code: indentation and spacing only. Nothing moves to another line, so Nucleus reads it exactly as before.' },
   { id: 's-f8', text: 'F8 jumps to the next problem, Shift+F8 to the one before. Ctrl+. shows the fixes for the line you’re on.' },
   { id: 's-tryit', text: 'Ctrl+Enter runs Try it on the code as it is now.', action: { label: 'Try it', run: 'tryit' } },
