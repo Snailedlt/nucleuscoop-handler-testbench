@@ -843,10 +843,10 @@ function duo(o = {}) {
   // Each piece keeps its half of the white line, so a split goes right through it (shown in the scenes that split).
   const cut = (x, y, w, hh) => `<rect class="d-cut" x="${x}" y="${y}" width="${w}" height="${hh}" fill="${seamCol}" clip-path="url(#${id}b)"/>`;
   if (o.quad) {
-    body = `<g class="q1"><path d="M60 63 L60 28 A34 34 0 0 0 26 63 Z" fill="${fill}"/>${shine}${cut(58.5, 27, 1.5, 35)}${side('l', 'top')}</g>
-      <g class="q2"><path d="M60 63 L94 63 A34 34 0 0 0 60 28 Z" fill="${fill}"/>${cut(60, 27, 1.5, 35)}${side('r', 'top')}</g>
-      <g class="q3">${armL}<path d="M60 62 L26 62 A34 34 0 0 0 60 96 Z" fill="${fill}"/>${cut(58.5, 62, 1.5, 35)}${side('l', 'bottom')}</g>
-      <g class="q4">${armR}<path d="M60 62 L60 96 A34 34 0 0 0 94 62 Z" fill="${fill}"/>${m ? '' : DUO_SHADE}${cut(60, 62, 1.5, 35)}${side('r', 'bottom')}</g>`;
+    body = `<g class="q1"><path d="M60 63 L60 28 A34 34 0 0 0 26 63 Z" fill="${fill}"/>${shine}${cut(58.5, 27, 1.5, 35)}${cut(25, 60.5, 35, 1.5)}${side('l', 'top')}</g>
+      <g class="q2"><path d="M60 63 L94 63 A34 34 0 0 0 60 28 Z" fill="${fill}"/>${cut(60, 27, 1.5, 35)}${cut(60, 60.5, 35, 1.5)}${side('r', 'top')}</g>
+      <g class="q3">${armL}<path d="M60 62 L26 62 A34 34 0 0 0 60 96 Z" fill="${fill}"/>${cut(58.5, 62, 1.5, 35)}${cut(25, 62, 35, 1.5)}${side('l', 'bottom')}</g>
+      <g class="q4">${armR}<path d="M60 62 L60 96 A34 34 0 0 0 94 62 Z" fill="${fill}"/>${m ? '' : DUO_SHADE}${cut(60, 62, 1.5, 35)}${cut(60, 62, 35, 1.5)}${side('r', 'bottom')}</g>`;
     seam = '';
   } else {
     body = `<g class="d-hl">${armL}<path d="M60 28 A34 34 0 0 0 60 96 Z" fill="${fill}"/>${m ? '' : `<g clip-path="url(#${id}l)">${DUO_SHADE}</g>`}${shine}${cut(58.5, 27, 1.5, 70)}${xsec('l')}${side('l')}</g>

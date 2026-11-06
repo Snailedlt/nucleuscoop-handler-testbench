@@ -68,5 +68,6 @@ which are not saved here.
 - Impact comes from contrast: a long hold, then a snap; hit stop on the big hit. Impact frames read as glitches at
   this size, so they went.
 - Characters are 3D even when drawn flat: outlines stay round, features travel round the body.
-- Duo's stripe is a texture, not a body part: one vertical band, under the face, always there.
+- Duo's stripe is a texture, not a body part: one vertical band, under the face, always there. The four-player Duo
+  adds a horizontal band (a cross), so each quarter carries its piece.
 - Nothing is deleted: earlier versions stay next to the new ones, collapsed.
