@@ -12,6 +12,20 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## Unreleased
+
+### ✨ New
+
+- **Duo and Nucli move in.** Nucli, the tools' quiet atom, dozes in Check until there's code, cheers when there's nothing to fix, runs Test all and pops up on the "Fixed" note. Duo, splitscreen.me's split-screen ball, spins while a Hub handler downloads on a slow connection and looks worried when something won't load. Both greet you on the start page. They stand still if your device asks for less motion, and stay out of the Nucleus Co-op alpha 8 look.
+
+  <details><summary>Screenshot</summary>
+
+  ![Nucli dozing in Check while there's no code](docs/images/changelog/2026-11-06-mascots-light.png)
+
+  </details>
+
+---
+
 ## 2026-11-06
 
 ### ✨ New

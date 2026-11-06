@@ -5,12 +5,16 @@
 // The kind (info, success, warning, error) is guessed from the wording when it isn't given, so
 // every existing toast("…") call gets the right look.
 
+import { mascot, type MascotId } from './mascots';
+
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 export interface ToastOptions {
   kind?: ToastKind;
   action?: { label: string; run: () => void };
   /** Milliseconds on screen; errors stay longer by default. */
   duration?: number;
+  /** A mascot in place of the icon (Nucli for "Fixed", say). */
+  mascot?: MascotId;
 }
 
 const MAX = 5; // kept; older ones are closed
@@ -128,7 +132,8 @@ export function toast(text: string, opts: ToastOptions = {}): void {
   el.className = `toast ${kind} entering`;
   el.dataset.text = text;
   if (kind === 'error') el.setAttribute('role', 'alert');
-  el.innerHTML = `<div class="toast-inner"><svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg><div class="toast-text"></div></div>`;
+  const icon = opts.mascot ? mascot(opts.mascot, { size: 34, className: 'toast-masc' }) : `<svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg>`;
+  el.innerHTML = `<div class="toast-inner">${icon}<div class="toast-text"></div></div>`;
   const inner = el.firstElementChild as HTMLElement;
   (el.querySelector('.toast-text') as HTMLElement).textContent = text;
   let entry: Entry;
@@ -227,13 +232,18 @@ export function toast(text: string, opts: ToastOptions = {}): void {
  * A notice at the top of the code pane, for what needs reading or doing (an error, a link that
  * opens nothing): it stays until dismissed or the next handler opens. One at a time.
  */
-export function notice(text: string, opts: { kind?: ToastKind; action?: { label: string; run: () => void } } = {}) {
+export function notice(text: string, opts: { kind?: ToastKind; action?: { label: string; run: () => void }; mascot?: MascotId } = {}) {
   const el = document.getElementById('notice');
   if (!el) return toast(text, opts);
   const kind = opts.kind ?? kindOf(text);
   el.className = kind;
   el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
   (el.querySelector('.notice-icon') as SVGElement).innerHTML = ICONS[kind];
+  // Something didn't load: Duo, cracked and worried, says so instead of the icon.
+  el.querySelector('.notice-masc')?.remove();
+  const m = opts.mascot ?? (kind === 'error' ? 'oops' : null);
+  (el.querySelector('.notice-icon') as SVGElement).style.display = m ? 'none' : '';
+  if (m) el.querySelector('.notice-icon')!.insertAdjacentHTML('afterend', mascot(m, { size: 40, className: 'notice-masc' }));
   (el.querySelector('.notice-text') as HTMLElement).textContent = text;
   const act = el.querySelector('.notice-action') as HTMLButtonElement;
   act.hidden = !opts.action;

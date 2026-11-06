@@ -466,7 +466,16 @@ fs.writeFileSync(
     .replaceAll('__VSIX_URL__', escHtml(vsix.url))
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
-    .replaceAll('__PROBES__', String(probes.length)),
+    .replaceAll('__PROBES__', String(probes.length))
+    // Duo and Nucli say hello in the header (the same drawings as the workbench, src/mascots.gen.ts).
+    .replace('__MASCOTS__', (() => {
+      const gen = fs.readFileSync(path.join(here, 'src', 'mascots.gen.ts'), 'utf8');
+      const svg = JSON.parse(gen.match(/MASCOT_SVG: Record<string, string> = ([\s\S]*?);\nexport/)[1]);
+      const css = JSON.parse(gen.match(/MASCOT_CSS = (.*);/)[1]);
+      return `<style>${css} .hero-masc { float: right; display: flex; align-items: flex-end; gap: 0; margin: 0 0 8px 16px; } .hero-masc .masc { display: block; width: 132px; height: 132px; } .hero-masc .masc svg { width: 100%; height: 100%; overflow: visible; } .hero-masc .masc + .masc { width: 112px; height: 112px; margin-left: -18px; } @media (max-width: 640px) { .hero-masc { float: none; justify-content: center; margin: 0 0 4px; } .hero-masc .masc { width: 104px; height: 104px; } .hero-masc .masc + .masc { width: 88px; height: 88px; } }</style>`
+        + `<div class="hero-masc" aria-hidden="true"><span class="masc">${svg.idle}</span><span class="masc">${svg['n-idle']}</span></div>`
+        + `<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) addEventListener('DOMContentLoaded', () => document.querySelectorAll('.hero-masc svg').forEach((s) => s.pauseAnimations()));</script>`;
+    })()),
 );
 // Screenshots, each in light and dark (the page shows the viewer's theme).
 for (const [dir, names] of [

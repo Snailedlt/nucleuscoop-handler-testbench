@@ -28,6 +28,7 @@ import { initSettings } from './settings-ui';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
+import { mascot } from './mascots';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 
@@ -448,7 +449,9 @@ function renderProblems(text: string) {
   for (const k of ['error', 'warning', 'info', 'hint']) $(`#f-${k}`).textContent = String(counts[k]);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const tally = simple ? '' : ` <span class="muted">(${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}, ${counts.info} info)</span>`;
-  $('#status').innerHTML = counts.error
+  $('#status').innerHTML = !editor.getValue().trim()
+    ? `<span class="pill">No code yet</span>`
+    : counts.error
     ? `<span class="pill error">Nucleus can't use this handler yet</span><span>${plural(serious, 'thing')} to fix${tally}</span>`
     : counts.warning
       ? `<span class="pill ok">Nucleus can use this handler</span><span>but ${plural(counts.warning, 'setting')} may not work as intended${tally}</span>`
@@ -456,11 +459,17 @@ function renderProblems(text: string) {
   $('#status').querySelector('#v-try')?.addEventListener('click', () => selectTab('simulate'));
   const el = $('#problems');
   if (!list.length) {
+    // Nucli: dozing while there's no code, pleased when there's nothing to fix.
+    if (!editor.getValue().trim()) {
+      el.innerHTML = `<li class="empty masc-empty">${mascot('n-sleep', { size: 72, zoom: 1.2 })}<span><strong>Waiting for code.</strong> Type or paste a handler, or <button class="link" type="button" id="go-open">open one</button> (Ctrl+K).</span></li>`;
+      el.querySelector('#go-open')?.addEventListener('click', () => showOpen());
+      return;
+    }
     el.innerHTML =
       simple || filter === 'all'
-        ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${
+        ? `<li class="empty masc-empty">${mascot('n-ok', { size: 72, zoom: 1.2 })}<span>Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${
             simple ? '' : counts.hint ? ` There ${counts.hint === 1 ? 'is' : 'are'} also <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about outdated options.` : ''
-          }</li>`
+          }</span></li>`
         : `<li class="empty">No ${filter === 'info' ? 'info' : filter + 's'}.</li>`;
     el.querySelector('#go-sim')?.addEventListener('click', () => selectTab('simulate'));
     el.querySelector('#go-hints')?.addEventListener('click', () => setFilter('hint'));
@@ -491,7 +500,7 @@ function renderProblems(text: string) {
       editor.operation(() => {
         for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
       });
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction });
+      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction, mascot: 'n-ok' });
     }),
   );
   el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
@@ -544,7 +553,7 @@ function showLineProblems(line: number, at?: number) {
         for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
       });
       hideLinePop();
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction });
+      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction, mascot: 'n-ok' });
     }),
   );
   linePop.querySelectorAll('[data-lp-more]').forEach((b) =>
@@ -754,7 +763,9 @@ function testAll() {
         .join('')}</tr>`)
       .join('');
     const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
-    box.innerHTML = `<div class="mx-head"><strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
+    // Nucli runs the relay while it tests, then shows how it went.
+    const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc' });
+    box.innerHTML = `<div class="mx-head">${nuc}<strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
       ${finished ? '' : `<div class="mx-bar" role="progressbar" aria-label="Combinations tested" aria-valuemin="0" aria-valuemax="${jobs.length}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, jobs.length)) * 100)}%"></i></div>`}
       <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
       ${fails.length ? `<ul class="mx-fails">${fails.slice(0, 8).map((f) => { const [p, kb] = f.k.split('|'); return `<li>${p} player${p === '1' ? '' : 's'}, ${modes.find((m) => String(m.kb) === kb)!.label.toLowerCase()}, ${f.res.replace('x', '×')}: ${esc(f.why)}</li>`; }).join('')}${fails.length > 8 ? `<li>…and ${fails.length - 8} more</li>` : ''}</ul>` : ''}
@@ -1061,11 +1072,15 @@ $('#files-close').addEventListener('click', () => filesDialog.close());
 async function openHub(i: number) {
   const h = HUB_EXAMPLES.handlers[i];
   if (h.source === undefined) {
+    // On a slow connection, Duo spins while the handler downloads.
+    const slow = setTimeout(() => notice(`Getting ${h.title}…`, { kind: 'info', mascot: 'roll' }), 300);
     try {
       const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`);
       if (!r.ok) throw new Error(String(r.status));
       h.source = await r.text();
+      clearTimeout(slow); clearNotice();
     } catch {
+      clearTimeout(slow);
       notice(`Couldn't load ${h.title} from this site. Check your connection.`, { kind: 'error', action: { label: 'Try again', run: () => void openHub(i) } });
       return;
     }
