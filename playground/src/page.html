@@ -57,7 +57,10 @@ header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .brand-link { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; border-radius: var(--r-ctl); }
 .brand-link:hover h1 { text-decoration: underline; text-underline-offset: 3px; }
 .brand .sub { margin-left: 40px; }
-.brand .home-link { font-size: inherit; }
+.brand-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.home-link { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 11px; font-weight: 600; line-height: 1; color: var(--muted); text-decoration: none; padding: 2px 7px 2px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); transition: color .12s, border-color .12s, background-color .12s; }
+.home-link:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .brand-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .logo { width: 30px; height: 30px; flex: none; display: block; }
@@ -453,7 +456,17 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 #ai-bar:not(:has(> .btn:not([hidden]))) { display: none; }
 /* Help test this beta (testguide.ts). */
 #test-dialog { width: min(720px, calc(100vw - 32px)); }
-.tg-who { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.tg-qs { display: grid; gap: 8px; padding: 10px 12px; background: var(--surface-2); border-radius: var(--r-pane); margin-bottom: 10px; }
+.tg-q { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.tg-ql { font-size: 13px; font-weight: 600; min-width: 13em; }
+.tg-h { font-size: 14px; margin: 4px 0 8px; } .tg-h .muted { font-weight: 400; font-size: 12.5px; }
+.tg-more { margin-top: 10px; } .tg-more > summary { cursor: pointer; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.tg-pick { margin: 4px 0 8px; }
+.tg-area { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; cursor: help; color: var(--fg); }
+.tg-area.a-api { background: color-mix(in srgb, #a855f7 22%, transparent); }
+.tg-area.a-devx { background: color-mix(in srgb, #22c55e 22%, transparent); }
+.tg-area.a-uiux { background: color-mix(in srgb, #f59e0b 25%, transparent); }
+.tg-who { display: flex; flex-wrap: wrap; gap: 6px; }
 .tg-who button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
 .tg-who button[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
 .tg-count { margin: 0 0 8px; }
@@ -1148,11 +1161,11 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 <div class="app">
   <header>
     <div class="brand">
-      <a class="brand-link" href="./" aria-label="Nucleus Handler Workbench">
+      <div class="brand-top"><a class="brand-link" href="./" aria-label="Nucleus Handler Workbench">
       <img class="logo logo-www" src="data:image/png;base64,/*WWW_LOGO*/" alt="" width="30" height="30">
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
-      <h1>Nucleus Handler Workbench</h1></a>
-      <div class="sub"><a class="link start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them">⌂ Home</a><span aria-hidden="true"> · </span>Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
+      <h1>Nucleus Handler Workbench</h1></a><a class="start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></div>
+      <div class="sub">Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
     </div>
     <div class="switch" role="group" aria-label="Show">
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
