@@ -61,6 +61,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Check fits more on screen.** Each problem is one row (its colour, line, what's wrong and the fix); click it for the why, other fixes and the technical details. Settings › General › Check switches to Comfortable or Detailed.
 - **One box when you hover a problem.** The problem, its fixes (all of them: "set twice" lets you keep either value) and Ctrl+. come first; the name's docs fold away below it.
 - **Reference entries stand apart.** Each name is its own card, and the `Hub.*` lines the Hub writes on upload are in Reference too (marked "written by the Hub"), with what Nucleus uses them for.
 - **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog (the separate Copy and Copy link buttons are gone): saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.

@@ -912,6 +912,24 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .mode button { border: 0; background: var(--surface); padding: 6px 10px; cursor: pointer; }
 .mode button[aria-pressed=true] { background: var(--fg); color: var(--bg); font-weight: 600; }
 .plain-title { font-weight: 600; }
+/* Check cards (Settings › General › Check): a row with the essentials; open it for the why, other fixes and details. */
+.problem:has(> .pcard) { display: block; padding: 6px 10px 6px 16px; }
+.pcard > summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; min-height: 30px; }
+.pcard > summary::-webkit-details-marker { display: none; }
+.pcard > summary::after { content: '›'; color: var(--muted); font-size: 16px; transition: transform .15s; flex: none; width: 12px; text-align: center; }
+.pcard[open] > summary::after { transform: rotate(90deg); }
+.pcard .plain-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard[open] .plain-title { white-space: normal; }
+.pcard .row-fix { flex: none; }
+.pcard .row-fix .fix { white-space: nowrap; }
+.pcard .loc { flex: none; }
+.pcard .body { padding: 4px 0 6px 26px; }
+.pcard .body .plain-why { margin-top: 0; }
+.sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); }
+.problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); color: #1b1f2a; } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
+#problems[data-density="compact"] { gap: 4px; }
+#sp-general .set-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+@media (max-width: 600px) { .pcard .row-fix { display: none; } .pcard[open] .row-fix { display: inline; } }
 .plain-why { margin: 2px 0 0; }
 .tech { margin-top: 4px; font-size: 12px; color: var(--muted); }
 .banner .small { font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; font-weight: 400; }
@@ -1254,6 +1272,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <div class="set-sec"><h3>Layout</h3>
       <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
       <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
+    <div class="set-sec"><h3>Check</h3>
+      <label class="set-row">How much each problem shows <select id="set-density"><option value="compact">Compact: one line, open for more</option><option value="comfortable">Comfortable: what and why</option><option value="detailed">Detailed: everything open</option></select></label></div>
     <div class="set-sec"><h3>Feedback</h3>
       <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Send anonymous votes and usage counts<small>Your 👍/👎 on tips and docs, and which features get used (once per visit), so we see what helps. Only counts: no code, no names, no cookies, nothing that identifies you.</small></span></label>
       <p class="muted small" id="set-feedback-note" hidden></p></div>

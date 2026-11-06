@@ -597,27 +597,35 @@ function renderProblems(text: string) {
     el.querySelector('#go-hints')?.addEventListener('click', () => setFilter('hint'));
     return;
   }
+  // Settings › General › Check: compact (one row each, open for more), comfortable, detailed (everything open).
+  const density = checkDensity();
+  el.dataset.density = density;
   el.innerHTML = list
     .map((d, i) => {
       const line = lineOf(text, d.start) + 1;
       const col = d.start - (text.lastIndexOf('\n', d.start - 1) + 1) + 1;
       const plain = plainFor(d);
       const about = d.message.match(/`([^`]+)`/)?.[1];
-      const fixes = (d.fixes ?? [])
-        .map((f, j) => `<button class="fix${f.preferred ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button" title="${esc(f.title.replace(/`/g, ''))}">${f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`)
-        .join('');
+      const ordered = (d.fixes ?? []).map((f, j) => ({ f, j })).sort((a, z) => Number(!!z.f.preferred) - Number(!!a.f.preferred));
+      const fixBtn = ({ f, j }: { f: NonNullable<Diagnostic['fixes']>[number]; j: number }, main: boolean) =>
+        `<button class="fix${main ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button" title="${esc(f.title.replace(/`/g, ''))}">${main && f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`;
+      const key = `${d.rule}:${line}:${about ?? ''}`;
+      const open = density !== 'compact' || openProblems.has(key);
       // Advanced adds (never replaces): the column, severity, rule id and the technical message expanded.
       const extra = simple ? '' : `<span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>`;
-      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
-        <button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
-        <div class="body"><div class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div>
-        <p class="plain-why">${esc(plain.why)}</p>
-        <div class="meta">${fixes}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
-        <details class="tech"${simple ? '' : ' open'}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></li>`;
+      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}"><details class="pcard" data-key="${esc(key)}"${open ? ' open' : ''}>
+        <summary><span class="sev-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
+          <span class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</span>
+          <span class="row-fix">${ordered[0] ? fixBtn(ordered[0], true) : ''}</span></summary>
+        <div class="body"><p class="plain-why">${esc(plain.why)}</p>
+        <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
+        <details class="tech"${density === 'detailed' ? ' open' : ''}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></details></li>`;
     })
     .join('');
+  el.querySelectorAll<HTMLDetailsElement>('details.pcard').forEach((dt) => dt.addEventListener('toggle', () => (dt.open ? openProblems.add(dt.dataset.key!) : openProblems.delete(dt.dataset.key!))));
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
-    b.addEventListener('click', () => {
+    b.addEventListener('click', (ev) => {
+      ev.preventDefault(); // inside a summary: fix, don't fold
       const fix = list[Number(b.dataset.d)].fixes![Number(b.dataset.f)];
       fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
         editor.operation(() => {
@@ -627,7 +635,14 @@ function renderProblems(text: string) {
       codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
     }),
   );
-  el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
+  el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', (ev) => (ev.preventDefault(), jumpTo(Number(b.dataset.jump)))));
+}
+const openProblems = new Set<string>();
+type Density = 'compact' | 'comfortable' | 'detailed';
+const DENSITY_KEY = 'nucleus-workbench-check-density';
+function checkDensity(): Density {
+  try { const v = localStorage.getItem(DENSITY_KEY); if (v === 'comfortable' || v === 'detailed') return v; } catch { /* private mode */ }
+  return 'compact';
 }
 
 // ---------------------------------------------------------------------------
@@ -1781,6 +1796,14 @@ initKeyHints([
   { el: document.getElementById('help-open'), what: 'All keyboard shortcuts', keys: '?' },
 ]);
 
+{
+  const sel = $('#set-density') as HTMLSelectElement;
+  sel.value = checkDensity();
+  sel.addEventListener('change', () => {
+    try { localStorage.setItem(DENSITY_KEY, sel.value); } catch { /* private mode */ }
+    (editor as any).performLint();
+  });
+}
 // Feedback (feedback.ts): votes on tips and Claude's docs, anonymous counts. A 👎 on a doc points at the issue link.
 wireVotes((kind, _id, v, el) => {
   if (kind === 'doc' && v === 'down') el.closest('.dc-check')?.querySelector<HTMLElement>('a')?.focus();
