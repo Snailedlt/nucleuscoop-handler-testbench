@@ -44,12 +44,18 @@ which are not saved here.
     leaves; devices have faces and jiggle when used; works with mouse, touch, keyboard and controller. Also: the seam
     no longer drifts from the face when Duo turns, Nucli's kaleidoscope ends in his normal pose, Hop-in's lights flare
     with sparkles instead of a check. `16-…`
+17. **Polish round**: Nucli's kaleidoscope folds back into his rings (the hula hoop in reverse); Hop-in's lights glow
+    dim per landing and flare with sparkles on a bigger final jump; the fake-out pulls the halves apart; the
+    progress ring is a relay (each electron faster, bumping the last and boosting the ring); Duo walks the loading
+    bar facing his way, on top or inside, gets there first and waits; impact frames dropped (they read as
+    glitches); earlier versions shown under each loader. `17-…`
 
 ## Lessons we kept
 
 - One mascot per job: Duo is the fun one (splitscreen.me), Nucli the quiet technician (the tools).
 - Colours come from the splitscreen.me logo; Nucli's violet is its blue meeting Nucleus Co-op's red.
 - Duo is a bouncy ball, Nucli a basketball. Stretch only when fast, round at the top of an arc.
-- Impact comes from contrast: a long hold, then a snap; hit stop and an impact frame on the big hit.
+- Impact comes from contrast: a long hold, then a snap; hit stop on the big hit. Impact frames read as glitches at
+  this size, so they went.
 - Characters are 3D even when drawn flat: outlines stay round, features travel round the body.
-- Nothing is deleted: earlier versions stay in the archive.
+- Nothing is deleted: earlier versions stay next to the new ones, collapsed.
