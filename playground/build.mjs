@@ -299,7 +299,7 @@ function changes() {
           // x-light.png with an x-dark.png beside it: What's new shows the one for the viewer's theme.
           const dark = img[2].replace(/-light\.png$/, '-dark.png');
           const hasDark = dark !== img[2] && fs.existsSync(path.join(here, '..', 'docs', 'images', 'changelog', dark));
-          items[items.length - 1].image = { alt: img[1], file: img[2], ...(hasDark ? { dark } : {}) };
+          (items[items.length - 1].images ??= []).push({ alt: img[1], file: img[2], ...(hasDark ? { dark } : {}) });
         }
       }
     }
@@ -430,7 +430,7 @@ fs.mkdirSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true });
 for (const h of hub.handlers) if (coverFile(h)) fs.copyFileSync(coverFile(h), path.join(here, 'dist', 'pages', 'covers', `${h.cover}.jpg`));
 // Screenshots in What's new, loaded only when it is opened.
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'changes'), { recursive: true });
-for (const c of CHANGES) for (const it of c.items) for (const f of it.image ? [it.image.file, it.image.dark].filter(Boolean) : []) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
+for (const c of CHANGES) for (const it of c.items) for (const f of (it.images ?? []).flatMap((im) => [im.file, im.dark].filter(Boolean))) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
 // One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
 fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).

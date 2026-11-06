@@ -3,7 +3,7 @@
 import { picture, syncPictures } from './themed';
 
 const REPO = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench';
-declare const CHANGES: { id: string; n?: number; items: { group: string; summary: string; details: string; image?: { alt: string; file: string; dark?: string } }[] }[];
+declare const CHANGES: { id: string; n?: number; items: { group: string; summary: string; details: string; images?: { alt: string; file: string; dark?: string }[] }[] }[];
 
 const SEEN_KEY = 'nucleus-workbench-news-seen';
 const ON_KEY = 'nucleus-workbench-news';
@@ -41,7 +41,7 @@ export function initNews() {
   const latest = CHANGES[0]?.id;
   const open = () => {
     const item = (it: (typeof CHANGES)[number]['items'][number]) =>
-      `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}${it.image ? `<details class="shot"><summary>Screenshot</summary>${picture(`changes/${esc(it.image.file)}`, it.image.dark && `changes/${esc(it.image.dark)}`, esc(it.image.alt), ' loading="lazy"')}</details>` : ''}</li>`;
+      `<li><strong>${inline(it.summary)}</strong>${it.details ? `<span>${inline(it.details)}</span>` : ''}${it.images?.length ? `<details class="shot"><summary>${it.images.length > 1 ? 'Screenshots' : 'Screenshot'}</summary>${it.images.map((im) => picture(`changes/${esc(im.file)}`, im.dark && `changes/${esc(im.dark)}`, esc(im.alt), ' loading="lazy"')).join('')}</details>` : ''}</li>`;
     // One card per release so they don't run into each other: the newest open, older ones folded.
     $('#news-body').innerHTML = CHANGES.map((c, i) => {
       const groups = [...new Set(c.items.map((it) => it.group))];
