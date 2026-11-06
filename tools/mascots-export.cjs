@@ -9,7 +9,7 @@ const path = require('path');
 const SHEET = path.join(__dirname, '..', 'design', 'mascots', 'index.html');
 const OUT = path.join(__dirname, '..', 'playground', 'src', 'mascots.gen.ts');
 // The scenes the workbench shows, by the sheet's ids.
-const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 'idle', 'roll', 'oops', 'search', 'joy'];
+const IDS = ['n-sleep', 'n-ok', 'n-bad', 'n-fix', 'n-ring', 'n-spin', 'n-idle', 'idle', 'roll', 'oops', 'search', 'joy', 'get', 'think'];
 
 (async () => {
   const b = await chromium.launch();

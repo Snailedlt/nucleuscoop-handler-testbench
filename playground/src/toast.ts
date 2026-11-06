@@ -5,7 +5,7 @@
 // The kind (info, success, warning, error) is guessed from the wording when it isn't given, so
 // every existing toast("…") call gets the right look.
 
-import { mascot, type MascotId } from './mascots';
+import { mascot, mascotsOn, type MascotId } from './mascots';
 
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 export interface ToastOptions {
@@ -132,7 +132,7 @@ export function toast(text: string, opts: ToastOptions = {}): void {
   el.className = `toast ${kind} entering`;
   el.dataset.text = text;
   if (kind === 'error') el.setAttribute('role', 'alert');
-  const icon = opts.mascot ? mascot(opts.mascot, { size: 34, className: 'toast-masc' }) : `<svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg>`;
+  const icon = opts.mascot && mascotsOn() ? mascot(opts.mascot, { size: 34, className: 'toast-masc' }) : `<svg class="toast-icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg>`;
   el.innerHTML = `<div class="toast-inner">${icon}<div class="toast-text"></div></div>`;
   const inner = el.firstElementChild as HTMLElement;
   (el.querySelector('.toast-text') as HTMLElement).textContent = text;
@@ -241,7 +241,7 @@ export function notice(text: string, opts: { kind?: ToastKind; action?: { label:
   (el.querySelector('.notice-icon') as SVGElement).innerHTML = ICONS[kind];
   // Something didn't load: Duo, cracked and worried, says so instead of the icon.
   el.querySelector('.notice-masc')?.remove();
-  const m = opts.mascot ?? (kind === 'error' ? 'oops' : null);
+  const m = mascotsOn() ? (opts.mascot ?? (kind === 'error' ? 'oops' : null)) : null;
   (el.querySelector('.notice-icon') as SVGElement).style.display = m ? 'none' : '';
   if (m) el.querySelector('.notice-icon')!.insertAdjacentHTML('afterend', mascot(m, { size: 40, className: 'notice-masc' }));
   (el.querySelector('.notice-text') as HTMLElement).textContent = text;

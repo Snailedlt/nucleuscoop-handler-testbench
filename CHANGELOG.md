@@ -25,7 +25,15 @@ How to write it (people and AI agents read this, and the workbench shows it):
   ![Nucli dozing in Check while there's no code](docs/images/changelog/2026-11-06-mascots-light.png)
 
   </details>
-- **What's new can show animations.** An item can carry a GIF or a short video as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
+- **What's new can show animations.** An item can carry a GIF, a short video or an SVG (animated or not) as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
+- **Mascots your way.** Settings → Theme → Mascots: animated, still, or off. Duo and Nucli also turned up in more places: Duo cheers in Try it when every player starts (and frets when the session ends), searches when Open finds nothing and holds up the package when you save for Nucleus; Nucli wonders when Reference finds nothing.
+
+  <details><summary>Animation</summary>
+
+  ![Duo cheering and searching, Nucli pleased and dozing](docs/images/changelog/2026-11-06-mascot-modes.svg)
+
+  </details>
+- **Fewer notes that vanish.** What to do next stays where you can read it: saving the .zip, or creating a new handler, says so above the code (with a Try it button), and confirmations show on the button you pressed.
 
 ---
 

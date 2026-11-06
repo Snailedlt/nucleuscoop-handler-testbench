@@ -303,7 +303,8 @@ function changes() {
           const has = (f) => fs.existsSync(path.join(dir, f));
           const dark = img[2].replace(/-light\.(\w+)$/, '-dark.$1');
           const im = { alt: img[1], file: img[2], ...(dark !== img[2] && has(dark) ? { dark } : {}) };
-          if (/\.(gif|mp4|webm)$/.test(img[2])) {
+          // An .svg with a .png still beside it is animated too (it gets Play and Pause); without one it's a plain image.
+          if (/\.(gif|mp4|webm)$/.test(img[2]) || (/\.svg$/.test(img[2]) && has(img[2].replace(/\.svg$/, '.png')))) {
             const still = img[2].replace(/\.\w+$/, '.png'), stillDark = im.dark?.replace(/\.\w+$/, '.png');
             if (!has(still)) throw new Error(`CHANGELOG.md: ${img[2]} needs a still frame beside it, ${still} (shown until it plays, and with reduced motion)`);
             Object.assign(im, { still }, stillDark && has(stillDark) ? { stillDark } : {});

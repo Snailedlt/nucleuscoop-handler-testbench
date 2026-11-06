@@ -689,10 +689,11 @@ function runSim() {
   const simple = mode === 'simple';
   if (!r.loaded) {
     out.push(
-      `<div class="banner error"><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
+      `<div class="banner error masc-banner">${mascot('oops', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
     );
   } else {
-    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
+    // Duo, pleased when every player starts; worried when the session ends.
+    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'} masc-banner">${mascot(r.sessionEnded ? 'oops' : 'joy', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong></div></div>`);
     if (r.inputNote) out.push(`<p class="note">${esc(r.inputNote)}</p>`);
   }
   if (r.ignored.length) {
@@ -877,7 +878,7 @@ function renderApi(q: string) {
       head +
       (entries.length || head
         ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
-        : `<p class="empty">Nothing matches "${esc(q)}".</p>`);
+        : `<p class="empty masc-empty">${mascot('think', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
   }
   wireApiLinks(el);
 }
@@ -1196,7 +1197,7 @@ function formatDocument() {
   const text = editor.getValue();
   const r = formatHandler(text);
   if (!r.ok) return notice(r.reason, { kind: 'error' });
-  if (!r.changed) return toast('Already formatted.');
+  if (!r.changed) return toast('Already formatted.', { mascot: 'n-ok' });
   const cur = editor.getCursor();
   const top = editor.getScrollInfo().top;
   const d = editor.getDoc();
@@ -1306,7 +1307,7 @@ function renderOpen() {
   activeEntry = Math.min(activeEntry, Math.max(0, shown.length - 1));
   const body = $('#open-body');
   if (!shown.length) {
-    body.innerHTML = `<p class="empty">Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</p>`;
+    body.innerHTML = `<p class="empty masc-empty">${mascot('search', { size: 72, zoom: 1.2 })}<span>Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</span></p>`;
     return;
   }
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
@@ -1441,7 +1442,7 @@ $('#new-form').addEventListener('submit', (e) => {
   const features = FEATURES.filter((f) => ($(`#feat-${f.id}`) as HTMLInputElement).checked).map((f) => f.id);
   newDialog.close();
   loadSource(renderHandler({ gameName: name, executableName: exe, steamId: steam || undefined, features }), { name: `${name}.js`, kind: 'new' });
-  toast('Created. It passes the linter; next, simulate it or adjust the options.');
+  notice('Created. It passes Check; next, try it per player or adjust the options.', { kind: 'success', mascot: 'joy', action: { label: 'Try it', run: () => selectTab('simulate') } });
 });
 $('#new-open').addEventListener('click', () => newDialog.showModal());
 $('#new-cancel').addEventListener('click', () => newDialog.close());
@@ -1970,7 +1971,8 @@ $('#save-go').addEventListener('click', async () => {
     await downloads.save({ filename: `${name}.zip`, data: zip });
     waka.saved();
     saveDialog.close();
-    (errorsLeft ? notice : toast)(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
+    // What to do next, above the code (with Duo holding the package) rather than a note that goes away.
+    notice(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`, errorsLeft ? { kind: 'warning' } : { kind: 'success', mascot: 'get' });
   } catch (e: any) {
     saveDialog.close();
     if (e?.code === 'declined') return;
@@ -2127,7 +2129,7 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
     try {
       await downloads.save({ filename, data: kind === 'js' ? text : buildPackage(editor.getValue(), packageFiles) });
       waka.saved();
-      toast(`Saved ${filename}.`);
+      confirmOn($('#code-menu-open'), 'Saved ✓', `Saved ${filename}.`);
     } catch (e: any) {
       if (e?.code !== 'declined') notice("Couldn't save the file here. Use Copy the code instead.", { kind: 'error' });
     }

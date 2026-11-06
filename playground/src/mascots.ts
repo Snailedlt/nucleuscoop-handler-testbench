@@ -3,15 +3,38 @@
 // sits behind prefers-reduced-motion, and Nucli's SMIL electrons are paused here), and stay out of the alpha 8 look.
 import { MASCOT_CSS, MASCOT_SVG } from './mascots.gen';
 
-export type MascotId = 'n-sleep' | 'n-ok' | 'n-bad' | 'n-fix' | 'n-ring' | 'n-spin' | 'n-idle' | 'idle' | 'roll' | 'oops' | 'search' | 'joy';
+export type MascotId = 'n-sleep' | 'n-ok' | 'n-bad' | 'n-fix' | 'n-ring' | 'n-spin' | 'n-idle' | 'idle' | 'roll' | 'oops' | 'search' | 'joy' | 'get' | 'think';
+
+// Settings → Theme → Mascots: animated (default), still, or off. Kept in this browser.
+export type MascotMode = 'anim' | 'still' | 'off';
+const KEY = 'nucleus-workbench-mascots';
+export function mascotMode(): MascotMode {
+  try { const v = localStorage.getItem(KEY); return v === 'still' || v === 'off' ? v : 'anim'; } catch { return 'anim'; }
+}
+export function setMascotMode(m: MascotMode) {
+  try { if (m === 'anim') localStorage.removeItem(KEY); else localStorage.setItem(KEY, m); } catch { /* private mode */ }
+  applyMascotMode();
+}
+/** On only when they're not turned off (a toast then keeps its plain icon). */
+export const mascotsOn = () => mascotMode() !== 'off';
+export function applyMascotMode() {
+  const m = mascotMode();
+  if (m === 'anim') delete document.documentElement.dataset.mascots;
+  else document.documentElement.dataset.mascots = m;
+  document.querySelectorAll<SVGSVGElement>('.masc > svg').forEach((svg) => {
+    try { if (m === 'anim' && !matchMedia('(prefers-reduced-motion: reduce)').matches) svg.unpauseAnimations(); else svg.pauseAnimations(); } catch { /* not ready */ }
+  });
+}
+applyMascotMode();
 
 const LOCAL = `.masc { display: inline-block; flex: none; line-height: 0; vertical-align: middle; }
 .masc > svg { display: block; width: 100%; height: 100%; overflow: visible; }
-:root[data-site="alpha8"] .masc { display: none !important; }`;
+:root[data-site="alpha8"] .masc, :root[data-mascots="off"] .masc { display: none !important; }
+:root[data-mascots="still"] .masc, :root[data-mascots="still"] .masc * { animation-play-state: paused !important; }`;
 
 let ready = false;
 let n = 0;
-const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches || mascotMode() !== 'anim';
 
 function setup() {
   if (ready) return;
