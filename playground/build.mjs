@@ -294,12 +294,21 @@ function changes() {
         if (m && !group.includes('🙏') && !/[.!?]$/.test(m[1])) console.warn(`CHANGELOG.md: end the bold summary with a full stop and start the details as a sentence: ${l.slice(0, 70)}`);
         items.push({ group, ...(m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' }) });
       } else {
-        const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.png)\)/);
+        const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.(?:png|jpg|webp|svg|gif|mp4|webm))\)/);
         if (img && items.length) {
           // x-light.png with an x-dark.png beside it: What's new shows the one for the viewer's theme.
-          const dark = img[2].replace(/-light\.png$/, '-dark.png');
-          const hasDark = dark !== img[2] && fs.existsSync(path.join(here, '..', 'docs', 'images', 'changelog', dark));
-          (items[items.length - 1].images ??= []).push({ alt: img[1], file: img[2], ...(hasDark ? { dark } : {}) });
+          // Animations (.gif, .mp4, .webm) also need a still: the same name as .png (x-light.png beside x-light.gif),
+          // shown until they play, and instead of playing when the device asks for less motion.
+          const dir = path.join(here, '..', 'docs', 'images', 'changelog');
+          const has = (f) => fs.existsSync(path.join(dir, f));
+          const dark = img[2].replace(/-light\.(\w+)$/, '-dark.$1');
+          const im = { alt: img[1], file: img[2], ...(dark !== img[2] && has(dark) ? { dark } : {}) };
+          if (/\.(gif|mp4|webm)$/.test(img[2])) {
+            const still = img[2].replace(/\.\w+$/, '.png'), stillDark = im.dark?.replace(/\.\w+$/, '.png');
+            if (!has(still)) throw new Error(`CHANGELOG.md: ${img[2]} needs a still frame beside it, ${still} (shown until it plays, and with reduced motion)`);
+            Object.assign(im, { still }, stillDark && has(stillDark) ? { stillDark } : {});
+          }
+          (items[items.length - 1].images ??= []).push(im);
         }
       }
     }
@@ -430,7 +439,7 @@ fs.mkdirSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true });
 for (const h of hub.handlers) if (coverFile(h)) fs.copyFileSync(coverFile(h), path.join(here, 'dist', 'pages', 'covers', `${h.cover}.jpg`));
 // Screenshots in What's new, loaded only when it is opened.
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'changes'), { recursive: true });
-for (const c of CHANGES) for (const it of c.items) for (const f of (it.images ?? []).flatMap((im) => [im.file, im.dark].filter(Boolean))) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
+for (const c of CHANGES) for (const it of c.items) for (const f of (it.images ?? []).flatMap((im) => [im.file, im.dark, im.still, im.stillDark].filter(Boolean))) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
 // One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
 fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).

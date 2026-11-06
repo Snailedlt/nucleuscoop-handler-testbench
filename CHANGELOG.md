@@ -8,7 +8,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
   ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently) · ### 🙏 Thanks
 - 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". When it came through GitHub (an issue, a pull request, a review), link their profile: "- **[name](https://github.com/name)** for …". Credit them inline too ("Reported by Horah.").
 - One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
-- A screenshot (or other media) for big, visible changes, folded away in a `<details><summary>Screenshot</summary>` block indented under its line, with a blank line before and after the image and the closing `  </details>`; the image line: `  ![What it shows](docs/images/changelog/<date>-<name>-light.png)` (≈700–1000 px wide), with `<date>-<name>-dark.png` beside it: What's new shows the one for the viewer's theme (`tools/screenshots.cjs` takes both).
+- A screenshot (or other media) for big, visible changes, folded away in a `<details><summary>Screenshot</summary>` block indented under its line, with a blank line before and after the image and the closing `  </details>`; the image line: `  ![What it shows](docs/images/changelog/<date>-<name>-light.png)` (≈700–1000 px wide), with `<date>-<name>-dark.png` beside it: What's new shows the one for the viewer's theme (`tools/screenshots.cjs` takes both). An animation is a `.gif` (or `.mp4`/`.webm`, smaller) with a `.png` still of the same name beside it (`x-light.gif` + `x-light.png`, and the dark pair): What's new shows the still until the item is opened, then plays it, unless the device asks for less motion. Keep each under ~300 KB; summary `Animation`.
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
@@ -18,11 +18,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 - **Duo and Nucli move in.** Nucli, the tools' quiet atom, dozes in Check until there's code, cheers when there's nothing to fix, runs Test all and pops up on the "Fixed" note. Duo, splitscreen.me's split-screen ball, spins while a Hub handler downloads on a slow connection and looks worried when something won't load. Both greet you on the start page. They stand still if your device asks for less motion, and stay out of the Nucleus Co-op alpha 8 look.
 
-  <details><summary>Screenshot</summary>
+  <details><summary>Animation</summary>
+
+  ![Duo and Nucli say hello](docs/images/changelog/2026-11-06-mascots-anim-light.gif)
 
   ![Nucli dozing in Check while there's no code](docs/images/changelog/2026-11-06-mascots-light.png)
 
   </details>
+- **What's new can show animations.** An item can carry a GIF or a short video as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
 
 ---
 

@@ -235,6 +235,13 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #news-body details.shot { margin-top: 6px; }
 #news-body details.shot > summary { cursor: pointer; color: var(--accent); font-size: 12.5px; width: max-content; }
 #news-body details.shot img { display: block; margin-top: 6px; max-width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); }
+#news-body .anim { position: relative; display: block; width: max-content; max-width: 100%; margin-top: 6px; }
+#news-body .anim img, #news-body .anim video { display: block; margin: 0; max-width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); }
+#news-body .anim-btn { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); cursor: pointer; }
+#news-body .anim-btn:hover { background: var(--surface-2); }
+#news-body .anim-btn svg { width: 16px; height: 16px; fill: currentColor; }
+#news-body .anim .p-pause, #news-body .anim.playing .p-play { display: none; }
+#news-body .anim.playing .p-pause { display: inline; }
 #news-body .rel-count { margin-left: auto; color: var(--muted); font-size: 12px; }
 #news-body .rel-body { padding: 4px 14px 12px; }
 #news-body h3 { margin: 12px 0 4px; font-size: 13.5px; }
