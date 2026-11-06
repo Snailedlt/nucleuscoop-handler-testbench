@@ -384,6 +384,19 @@ a { color: var(--accent); }
 .masc-empty .masc { margin: -6px 0; }
 .masc-banner { display: flex; align-items: center; gap: 10px; }
 .masc-banner { overflow: visible; }
+/* Game.ProtoInput.BlockedMessages: names after the numbers, and a + to add one (src/wmhints.ts) */
+.CodeMirror .wm-hint { margin: 0 2px 0 6px; padding: 0 5px; border-radius: 4px; font-size: .82em; color: var(--muted); background: var(--surface-2); font-family: var(--font, system-ui), sans-serif; user-select: none; }
+.CodeMirror .wm-hint.bad { color: var(--warning-fg, #b45309); }
+.CodeMirror .wm-add { margin: 0 2px; padding: 0 6px; height: 1.35em; line-height: 1.2; border: 1px dashed var(--line); border-radius: 4px; background: transparent; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; vertical-align: baseline; }
+.CodeMirror .wm-add:hover, .CodeMirror .wm-add:focus-visible { border-style: solid; background: var(--surface-2); }
+.wm-menu { position: fixed; z-index: 40; width: min(420px, calc(100vw - 16px)); max-height: 60vh; overflow: auto; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--sh-3, 0 10px 30px rgba(0,0,0,.25)); }
+.wm-menu-h { padding: 6px 8px; font-weight: 700; font-size: 13px; }
+.wm-menu button { display: grid; grid-template-columns: auto auto 1fr; gap: 2px 8px; align-items: baseline; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); cursor: pointer; font: inherit; font-size: 13.5px; }
+.wm-menu button:hover, .wm-menu button:focus-visible { background: var(--surface-2); }
+.wm-menu button[disabled] { opacity: .5; cursor: default; }
+.wm-menu button small { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.wm-menu .wm-n { justify-self: end; color: var(--muted); font-size: 12px; }
+.wm-menu-f { margin: 4px 8px 6px; font-size: 12px; }
 /* A note under the line it's about (src/codenote.ts) */
 .code-note { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 4px 6px 4px 8px; width: max-content; max-width: calc(100% - 16px); font: 13px/1.4 var(--font, system-ui), sans-serif; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid #55d137; border-radius: 8px; box-shadow: var(--sh-1, 0 2px 8px rgba(0,0,0,.12)); }
 .code-note.info { border-left-color: var(--accent); }

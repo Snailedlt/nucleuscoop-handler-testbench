@@ -16,6 +16,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Window messages by name.** In `Game.ProtoInput.BlockedMessages`, each number shows its name (`0x0008` WM_KILLFOCUS), hovering one says what blocking it does, and a **+** before the `]` lists the messages handlers block, most used first. Check now also tells you when Proto Input never starts, when blocked messages need the message filter hook, and when a setting needs another one turned on. Suggested by messenils.
+
+  <details><summary>Screenshot</summary>
+
+  ![Window message names in BlockedMessages, and the + menu](docs/images/changelog/2026-11-06-window-messages-light.png)
+
+  </details>
+
 - **Duo and Nucli move in.** Nucli, the tools' quiet atom, is the workbench's: he dozes in Check until there's code, cheers when there's nothing to fix, runs Test all, reads along while Fix with AI works, spins while a Hub handler downloads, frets when something won't load and tells you how Try it went. Every spinner and loading state is his now. Duo, splitscreen.me's split-screen ball, greets you with him on the start page. Both follow Settings → Theme → Motion and stay out of the Nucleus Co-op alpha 8 look.
 
   <details><summary>Animation</summary>
@@ -110,7 +118,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🙏 Thanks
 
-- **messenils** for the video of Lines flickering, the idea of showing its docs in Reference, and for spotting that `Game.SetupSse` is never called.
+- **messenils** for the video of Lines flickering, the idea of showing its docs in Reference, for spotting that `Game.SetupSse` is never called, and for the idea of naming the window messages in `BlockedMessages`.
 
 ---
 

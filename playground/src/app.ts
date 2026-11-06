@@ -31,6 +31,8 @@ import { initTouchTitles } from './touch-titles';
 import { mascot, mascotsOn } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
 import { codeNote } from './codenote';
+import { initMessageHints } from './wmhints';
+import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 
@@ -115,6 +117,10 @@ const PLAIN: Record<string, { title: string; why: string }> = {
   'hub-install-parse': { title: 'Would break installing this handler', why: 'When installing, Nucleus reads the game name and .exe from these lines in a strict way.' },
   'guid-characters': { title: 'Special characters in the GUID', why: 'The GUID becomes a folder name. Letters, digits and spaces are safest.' },
   'protoinput-legacy-hooks': { title: 'Old input settings are still on', why: 'With Proto Input they should be turned off, or two input systems run at once.' },
+  'protoinput-inactive': { title: "Proto Input never starts", why: "None of its start options (InjectStartup or an InjectRuntime method) is on, so Nucleus ignores every Proto Input setting here." },
+  'protoinput-needs-hook': { title: 'Blocked messages and filters do nothing yet', why: "They only work inside Proto Input's message filter hook, which isn't turned on." },
+  'needs-option': { title: 'A setting that needs another one turned on', why: "Nucleus only reads it when the other setting is on, so on its own it does nothing." },
+  'blocked-message': { title: "A window message Proto Input can't block as written", why: "It isn't in Proto Input's message list (it blocks something else, or nothing), or it's in the list twice." },
   'missing-builtin': { title: "A JavaScript function Nucleus doesn't have", why: "Nucleus uses an older JavaScript engine that lacks this function, so the handler stops with an error when it reaches this line." },
   deprecated: { title: 'An outdated setting', why: 'It still works, but it has been replaced.' },
 };
@@ -339,16 +345,23 @@ editor.on('inputRead', (cm: any, change: any) => {
 });
 editor.on('cursorActivity', () => showSignature());
 
+initMessageHints(editor);
+
 // Hover docs
 const tip = $('#tip');
 let tipTimer: number | undefined;
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
   clearTimeout(tipTimer);
   tipTimer = window.setTimeout(() => {
+    // Not over the "+" or while its menu is open: the menu says it already.
+    if ((e.target as HTMLElement).closest?.('.wm-add') || document.querySelector('.wm-menu')) { tip.hidden = true; return; }
     const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
     const text = editor.getValue();
-    const r = resolveAt(text, editor.indexFromPos(pos));
-    const html = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+    const at = editor.indexFromPos(pos);
+    // A number in Game.ProtoInput.BlockedMessages: the window message and what blocking it does.
+    const msg = blockedItemAt(text, at);
+    const r = msg ? undefined : resolveAt(text, at);
+    const html = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
     if (!html) {
       tip.hidden = true;
       return;

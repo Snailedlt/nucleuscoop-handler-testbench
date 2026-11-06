@@ -175,6 +175,7 @@ const FEATURES_ = T('Feature', [
   { id: 'f-reference', text: 'The Reference tab searches every option, Context member and Nucleus enum with its docs: try "window title" or "mutex".' },
   { id: 'f-mascots', text: 'Meet Nucli, the quiet atom who checks your handler: he dozes until there\'s code, cheers when there\'s nothing to fix and runs Test all. Duo, splitscreen.me\'s split-screen ball, turns up when something won\'t load.' },
   { id: 'f-mascot-modes', text: 'Want Duo and Nucli livelier, or nothing moving at all? Settings → Theme → Motion has presets and a switch for each kind of motion, including Nucli editing the code during fixes.' },
+  { id: 'f-wm-plus', text: 'Blocking window messages with Proto Input? Each number in Game.ProtoInput.BlockedMessages shows its name, and the + before the ] adds the ones handlers block most.' },
   { id: 'f-swipe', text: 'Done with a note at the bottom right? Swipe it away to the right, or hover the stack to read them all.' },
   { id: 'f-gutter', text: 'Click a marker next to a line number for that line’s problems and fixes.' },
   { id: 'f-hub', text: 'The examples include the most-downloaded verified Hub handlers. Check and Try it work on them, so you can see how others solved a problem.', action: { label: 'Examples', run: 'examples' } },
