@@ -24,6 +24,7 @@ const set = (k: string, v: string | null) => {
     /* storage unavailable */
   }
 };
+import { PAIRS } from './themekit';
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 export const SITES: { id: Site; label: string; title: string }[] = [
@@ -31,24 +32,7 @@ export const SITES: { id: Site; label: string; title: string }[] = [
   { id: 'v3', label: 'v3.splitscreen.me', title: 'The new site ("Bezel"): monochrome, Archivo, light and dark; colour means a player' },
 ];
 
-// Token pairs that carry text, checked against WCAG AA (4.5:1).
-export const PAIRS: [string, string, string][] = [
-  ['fg', 'bg', 'Text on the page'],
-  ['fg', 'surface', 'Text on panes'],
-  ['muted', 'surface', 'Secondary text'],
-  ['accent-fg', 'accent', 'Primary button'],
-  ['accent', 'surface', 'Links and highlights'],
-  ['err', 'err-bg', 'Error'],
-  ['warn', 'warn-bg', 'Warning'],
-  ['ok', 'ok-bg', 'OK'],
-  ['info', 'info-bg', 'Info'],
-  ['fg', 'code-bg', 'Code'],
-  ['kw', 'code-bg', 'Code: keyword'],
-  ['str', 'code-bg', 'Code: string'],
-  ['num', 'code-bg', 'Code: number'],
-  ['cmt', 'code-bg', 'Code: comment'],
-  ['prop', 'code-bg', 'Code: property'],
-];
+
 
 const root = document.documentElement;
 const hostTheme = root.dataset.theme; // the viewer's own choice, restored by "Auto"
@@ -162,6 +146,7 @@ export function initDevBar(opts: { build: string; toast: (text: string) => void 
     if (t.dataset.devSite) {
       set('site', t.dataset.devSite === 'www' ? null : t.dataset.devSite);
       applyTheme();
+      window.dispatchEvent(new Event('workbench-look')); // a built-in look: no custom theme over it
       opts.toast(`Theme: ${SITES.find((s) => s.id === site())!.label}`);
     } else if (t.dataset.devMode) {
       set('mode', t.dataset.devMode === 'auto' ? null : t.dataset.devMode);

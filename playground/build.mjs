@@ -292,6 +292,11 @@ const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
 const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css'), cm('addon/dialog/dialog.css')].join('\n');
 
+// The looks (src/themes.json) as CSS, by the same code that applies a custom theme in the page.
+const themeMod = await esbuild.build({ entryPoints: [path.join(here, 'src', 'themekit.ts')], bundle: true, format: 'esm', platform: 'node', write: false, logLevel: 'warning' });
+const { builtInCSS } = await import('data:text/javascript;base64,' + Buffer.from(themeMod.outputFiles[0].text).toString('base64'));
+const THEMES = JSON.parse(fs.readFileSync(path.join(here, 'src', 'themes.json'), 'utf8'));
+const themesCSS = builtInCSS(THEMES);
 // Each Hub example's problem counts, worked out here so the Open list needs no handler sources.
 const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning' });
 const { lint: lintHandler } = await import('data:text/javascript;base64,' + Buffer.from(lintMod.outputFiles[0].text).toString('base64'));
@@ -315,6 +320,7 @@ function pageHtml(inlineHub) {
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
     .replace(/(<a class="brand" href=")[^"]*"/, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
+    .replace('/*THEMES*/', () => themesCSS)
     .replace('/*CODEMIRROR_CSS*/', () => css)
     .replace('/*PROBES_AND_BUILD*/', () => data)
     .replace('/*APP_JS*/', () => js);

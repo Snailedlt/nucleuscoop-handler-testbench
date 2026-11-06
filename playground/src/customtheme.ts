@@ -1,87 +1,157 @@
-// Custom themes: a JSON file that sets the workbench's design tokens (the CSS custom properties at
-// the top of page.html), for light, dark, or both. Missing tokens keep the built-in theme's value.
+// Looks you pick in Settings → Appearance: the built-in ones (themes.json) and your own theme files,
+// which use the same format (themekit.ts): a name, an optional base look, and the tokens it changes,
+// shared for both modes or per mode.
 //
 //   {
-//     "name": "My theme",
-//     "light": { "bg": "#f7f5f2", "accent": "#b4232c", "r-pane": "16px" },
-//     "dark":  { "bg": "#121212", "accent": "#ff8a80" }
+//     "name": "Sunset",
+//     "base": "www",
+//     "shared": { "r-pane": "18px" },
+//     "light": { "bg": "#fbf1e6", "surface": "#fffaf4", "accent": "#b4232c" },
+//     "dark":  { "bg": "#1a1210", "accent": "#ff8a65" }
 //   }
 //
-// "Download the current theme" writes this file with every token filled in, as a starting point.
-// Only known tokens are taken, and only values the browser accepts for that kind of token, with no
-// url(), so a theme file can change colours, corners, shadows and fonts, nothing else.
+// Tokens left out come from the base, or are derived from what the file sets (a new surface gets
+// matching tiles and borders). Only known tokens are taken, and only values the browser accepts
+// for that kind of token, with no url(): a file changes colours, corners, shadows and fonts, nothing
+// else. Several can be kept; one is on at a time.
 
-import { PAIRS } from './devbar';
+import THEMES from './themes.json';
+import { Look, lookCSS, Mode, PAIRS, resolve, TOKENS } from './themekit';
 
-const STORE = 'nucleus-workbench-custom-theme';
+const BUILT_IN = THEMES.looks as Record<string, Look>;
+export const BUILT_IN_LOOKS = Object.keys(BUILT_IN);
+const LIST_KEY = 'nucleus-workbench-themes';
+const PICK_KEY = 'nucleus-workbench-theme-on'; // the custom look that's on (none: a built-in one)
+const SITE_KEY = 'nucleus-workbench-dev-site'; // the built-in look (shared with the dev bar)
+const OLD_KEY = 'nucleus-workbench-custom-theme'; // one theme, before there could be several
 const STYLE_ID = 'custom-theme';
 
-type Kind = 'color' | 'length' | 'shadow' | 'font';
-/** Every token a theme can set, with the kind of value it takes. */
-export const THEME_TOKENS: Record<string, Kind> = {
-  bg: 'color', surface: 'color', 'surface-2': 'color', line: 'color', fg: 'color', muted: 'color',
-  accent: 'color', 'accent-fg': 'color', brand: 'color',
-  err: 'color', 'err-bg': 'color', warn: 'color', 'warn-bg': 'color', info: 'color', 'info-bg': 'color', ok: 'color', 'ok-bg': 'color',
-  'code-bg': 'color', kw: 'color', str: 'color', num: 'color', cmt: 'color', prop: 'color',
-  p1: 'color', p2: 'color', p3: 'color', p4: 'color', p5: 'color', p6: 'color', p7: 'color', p8: 'color',
-  'r-sm': 'length', 'r-ctl': 'length', 'r-pane': 'length', 'r-lg': 'length',
-  'sh-1': 'shadow', 'sh-2': 'shadow',
-  'font-body': 'font', 'font-display': 'font', 'font-mono': 'font',
-};
-const SUPPORTS: Record<Kind, string> = { color: 'color', length: 'border-radius', shadow: 'box-shadow', font: 'font-family' };
-
-export interface CustomTheme {
-  name: string;
-  light?: Record<string, string>;
-  dark?: Record<string, string>;
+export interface CustomLook extends Look {
+  id: string;
+  base: string;
 }
 
-const read = (): CustomTheme | null => {
+const get = (k: string) => {
   try {
-    const s = localStorage.getItem(STORE);
-    return s ? (JSON.parse(s) as CustomTheme) : null;
+    return localStorage.getItem(k);
   } catch {
     return null;
   }
 };
+const put = (k: string, v: string | null) => {
+  try {
+    if (v == null) localStorage.removeItem(k);
+    else localStorage.setItem(k, v);
+  } catch {}
+};
 
-/** Checks a parsed file; returns the theme to keep and what was left out. */
-export function parseTheme(raw: unknown): { theme: CustomTheme; skipped: string[] } | { error: string } {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: 'This file isn\'t a theme: it should be a JSON object with "light" and/or "dark".' };
+export function customLooks(): CustomLook[] {
+  try {
+    const list = JSON.parse(get(LIST_KEY) || '[]') as CustomLook[];
+    // The single theme of the first version becomes the first of the list, and stays on.
+    const old = get(OLD_KEY);
+    if (old) {
+      const o = JSON.parse(old) as Look;
+      const id = `t${Date.now().toString(36)}`;
+      list.push({ ...o, id, base: o.base && BUILT_IN[o.base] ? o.base : builtInLook() });
+      put(LIST_KEY, JSON.stringify(list));
+      put(PICK_KEY, id);
+      put(OLD_KEY, null);
+    }
+    return Array.isArray(list) ? list.filter((t) => t && t.id && t.name) : [];
+  } catch {
+    return [];
+  }
+}
+const builtInLook = () => (get(SITE_KEY) && BUILT_IN[get(SITE_KEY)!] ? get(SITE_KEY)! : THEMES.default);
+/** The look that's on: a built-in id, or a custom look's id. */
+export function currentLook(): string {
+  const list = customLooks(); // first: it also brings over a theme from the first version
+  const id = get(PICK_KEY);
+  return id && list.some((t) => t.id === id) ? id : builtInLook();
+}
+const lookById = (id: string): Look | undefined => BUILT_IN[id] ?? customLooks().find((t) => t.id === id);
+export const lookName = (id: string) => lookById(id)?.name ?? id;
+/** A look's description, its first sentence. */
+export const lookAbout = (id: string) => lookById(id)?.about?.split(/(?<=\.)\s/)[0];
+export const isCustom = (id: string) => !BUILT_IN[id];
+
+/** A look's full tokens for one mode. */
+export function lookTokens(id: string, mode: Mode) {
+  const all: Record<string, Look> = { ...BUILT_IN };
+  for (const t of customLooks()) all[t.id] = t;
+  return resolve(id, all, mode);
+}
+
+/** Checks a parsed file; returns the look to keep and what was left out. */
+export function parseTheme(raw: unknown): { look: Omit<CustomLook, 'id'>; skipped: string[] } | { error: string } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: 'This file isn\'t a theme: it should be a JSON object with "light", "dark" and/or "shared".' };
   const o = raw as Record<string, unknown>;
   const skipped: string[] = [];
-  const mode = (m: 'light' | 'dark'): Record<string, string> | undefined => {
+  const part = (m: 'light' | 'dark' | 'shared') => {
     const v = o[m];
     if (v == null) return undefined;
     if (typeof v !== 'object' || Array.isArray(v)) return void skipped.push(`"${m}" (not an object)`);
     const out: Record<string, string> = {};
     for (const [k0, val] of Object.entries(v as Record<string, unknown>)) {
       const k = k0.replace(/^--/, '');
-      const kind = THEME_TOKENS[k];
-      const value = typeof val === 'string' ? val.trim() : '';
-      // No url(), imports or anything that could close the rule: colours, sizes, shadows and fonts only.
+      const kind = TOKENS[k];
+      const value = typeof val === 'string' || typeof val === 'number' ? String(val).trim() : '';
+      // No url(), imports or anything that could close the rule.
       const safe = value && value.length <= 300 && !/[;{}<>\\]|url\s*\(|@import|expression\s*\(/i.test(value);
+      const ok =
+        kind === 'number' ? /^\d{3}$/.test(value)
+        : kind === 'percent' ? /^\d{2,3}%$/.test(value)
+        : !!safe && CSS.supports({ color: 'color', length: 'border-radius', shadow: 'box-shadow', font: 'font-family' }[kind!] ?? 'color', value);
       if (!kind) skipped.push(`${m}.${k0} (not a theme token)`);
-      else if (!safe || !CSS.supports(SUPPORTS[kind], value)) skipped.push(`${m}.${k0} (not a valid ${kind})`);
+      else if (!ok) skipped.push(`${m}.${k0} (not a valid ${kind})`);
       else out[k] = value;
     }
     return Object.keys(out).length ? out : undefined;
   };
-  const light = mode('light');
-  const dark = mode('dark');
-  if (!light && !dark) return { error: `Nothing in this file can be used${skipped.length ? `: ${skipped.slice(0, 4).join(', ')}` : ''}.` };
+  const light = part('light');
+  const dark = part('dark');
+  const shared = part('shared');
+  if (!light && !dark && !shared) return { error: `Nothing in this file can be used${skipped.length ? `: ${skipped.slice(0, 4).join(', ')}` : ''}.` };
+  let base = typeof o.base === 'string' ? o.base : '';
+  if (base && !BUILT_IN[base]) skipped.push(`base "${base}" (built-in looks: ${BUILT_IN_LOOKS.join(', ')})`), (base = '');
   const name = typeof o.name === 'string' && o.name.trim() ? o.name.trim().slice(0, 60) : 'Custom theme';
-  return { theme: { name, light, dark }, skipped };
+  const about = typeof o.about === 'string' ? o.about.trim().slice(0, 200) : undefined;
+  return { look: { name, about, base: base || builtInLook(), shared, light, dark }, skipped };
 }
 
-const decl = (t?: Record<string, string>) => (t ? Object.entries(t).map(([k, v]) => `--${k}: ${v};`).join(' ') : '');
+/** Adds a look (one with the same name is replaced) and turns it on. */
+export function addLook(look: Omit<CustomLook, 'id'>): CustomLook {
+  const list = customLooks();
+  const same = list.find((t) => t.name === look.name);
+  const t: CustomLook = { ...look, id: same?.id ?? `t${Date.now().toString(36)}` };
+  put(LIST_KEY, JSON.stringify(same ? list.map((x) => (x.id === t.id ? t : x)) : [...list, t]));
+  pickLook(t.id);
+  return t;
+}
+export function removeLook(id: string) {
+  put(LIST_KEY, JSON.stringify(customLooks().filter((t) => t.id !== id)));
+  if (get(PICK_KEY) === id) put(PICK_KEY, null);
+  applyCustomTheme();
+}
+/** Turns a look on: a built-in one (as the dev bar does), or a custom one over its base. */
+export function pickLook(id: string) {
+  const custom = customLooks().find((t) => t.id === id);
+  const site = custom ? custom.base : id;
+  put(SITE_KEY, site === THEMES.default ? null : site);
+  put(PICK_KEY, custom ? id : null);
+  applyCustomTheme();
+}
 
-/** Applies the stored custom theme (or none). Safe to call before the page renders. */
+/** Applies the look that's on. Safe to call before the page renders. */
 export function applyCustomTheme() {
-  const t = read();
   const root = document.documentElement;
+  const site = builtInLook();
+  if (site === THEMES.default) delete root.dataset.site;
+  else root.dataset.site = site;
+  const id = currentLook();
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
-  if (!t || (!t.light && !t.dark)) {
+  if (!isCustom(id)) {
     style?.remove();
     delete root.dataset.customTheme;
     return;
@@ -91,52 +161,29 @@ export function applyCustomTheme() {
     style.id = STYLE_ID;
     document.head.appendChild(style);
   }
-  // The attribute three times: these rules win over the built-in themes (www and v3, light and dark).
-  const r = ':root[data-custom-theme][data-custom-theme][data-custom-theme]';
-  const L = decl(t.light);
-  const D = decl(t.dark);
-  style.textContent = [
-    L && `@media (prefers-color-scheme: light) { ${r}:not([data-theme="dark"]) { ${L} } } ${r}[data-theme="light"] { ${L} }`,
-    D && `@media (prefers-color-scheme: dark) { ${r}:not([data-theme="light"]) { ${D} } } ${r}[data-theme="dark"] { ${D} }`,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  // The attribute three times: these rules win over every built-in look.
+  style.textContent = lookCSS(':root[data-custom-theme][data-custom-theme][data-custom-theme]', lookTokens(id, 'light'), lookTokens(id, 'dark'));
   root.dataset.customTheme = '';
 }
+// The dev bar picked a built-in look: no custom one over it.
+window.addEventListener('workbench-look', () => (put(PICK_KEY, null), applyCustomTheme()));
 
-export const customTheme = read;
-export function saveCustomTheme(t: CustomTheme | null) {
-  try {
-    if (t) localStorage.setItem(STORE, JSON.stringify(t));
-    else localStorage.removeItem(STORE);
-  } catch {}
-  applyCustomTheme();
+/** The look that's on, as a theme file: a custom one as it was loaded; a built-in one as a full starting point. */
+export function themeFile(id = currentLook()): Record<string, unknown> {
+  const about = 'A Nucleus Handler Workbench theme. "base" is the look it builds on (www or v3); change or delete any value (what you delete comes from the base), then load it in Settings → Appearance → Load a theme file. Token names: the design note, or src/themes.json.';
+  const custom = customLooks().find((t) => t.id === id);
+  if (custom) {
+    const { id: _id, ...rest } = custom;
+    return { $about: about, ...rest };
+  }
+  const L = lookTokens(id, 'light');
+  const D = lookTokens(id, 'dark');
+  const colours = (t: Record<string, string>) => Object.fromEntries(Object.entries(t).filter(([k]) => TOKENS[k] === 'color' && !/^p\d$/.test(k)));
+  const shared = Object.fromEntries(Object.entries(L).filter(([k]) => TOKENS[k] && (TOKENS[k] !== 'color' || /^p\d$/.test(k))));
+  return { $about: about, name: `My ${BUILT_IN[id].name} theme`, base: id, shared, light: colours(L), dark: colours(D) };
 }
 
-/** Every token's value as the page shows it now, for light and dark: the template to start from. */
-export function currentTheme(name = 'My theme'): CustomTheme & { $about: string } {
-  const root = document.documentElement;
-  const before = root.dataset.theme;
-  const take = (m: 'light' | 'dark') => {
-    root.dataset.theme = m;
-    const cs = getComputedStyle(root);
-    const out: Record<string, string> = {};
-    for (const k of Object.keys(THEME_TOKENS)) out[k] = cs.getPropertyValue(`--${k}`).trim();
-    return out;
-  };
-  const light = take('light');
-  const dark = take('dark');
-  if (before === undefined) delete root.dataset.theme;
-  else root.dataset.theme = before;
-  return {
-    $about: 'A Nucleus Handler Workbench theme. Change any value, delete the ones you keep as they are, then load it in Settings → Appearance → Custom theme. Token names: the design note, or the :root blocks in page.html.',
-    name,
-    light,
-    dark,
-  };
-}
-
-/** The text pairs below WCAG AA (4.5:1) in the theme the page shows now. */
+/** The text pairs below WCAG AA (4.5:1) in the look the page shows now. */
 export function contrastProblems(): string[] {
   const probe = document.createElement('span');
   probe.hidden = true;
@@ -144,7 +191,9 @@ export function contrastProblems(): string[] {
   const rgb = (v: string) => {
     probe.style.color = '';
     probe.style.color = `var(--${v})`;
-    return (getComputedStyle(probe).color.match(/[\d.]+/g) || ['0', '0', '0']).slice(0, 3).map(Number);
+    const c = getComputedStyle(probe).color; // rgb(…), or color(srgb 0–1 …) for a color-mix()
+    const n = (c.match(/[\d.]+/g) || ['0', '0', '0']).slice(0, 3).map(Number);
+    return c.startsWith('color(') ? n.map((x) => x * 255) : n;
   };
   const lum = (c: number[]) => c.map((x) => ((x /= 255) <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)).reduce((a, x, i) => a + x * [0.2126, 0.7152, 0.0722][i], 0);
   const out: string[] = [];

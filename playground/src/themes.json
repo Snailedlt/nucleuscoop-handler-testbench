@@ -1,0 +1,57 @@
+{
+  "note": "The workbench's looks: the single source for their colours, corners, shadows and fonts. build.mjs turns them into the CSS at the top of the page (themekit.ts, the same code that applies a custom theme). A look has light and dark tokens and 'shared' ones for both; 'base' builds on another look, so a look only lists what it changes. Tokens it leaves out that depend on ones it sets (surface-2, line, accent-fg, the status backgrounds, code-bg) are derived from them. A custom theme file is the same format. Check new colours with the dev bar's contrast panel and axe, light and dark.",
+  "default": "www",
+  "looks": {
+    "www": {
+      "name": "splitscreen.me",
+      "about": "The current site: brand blue, system fonts.",
+      "shared": {
+        "brand": "#10a3e8",
+        "p1": "#ff6b35", "p2": "#3b8bff", "p3": "#ffcf3a", "p4": "#3ddb86", "p5": "#ff5db1", "p6": "#9b7cff", "p7": "#23d3d3", "p8": "#c4eb45",
+        "font-display": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", sans-serif",
+        "font-body": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", sans-serif",
+        "font-mono": "SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+        "display-stretch": "100%", "display-weight": "700",
+        "r-sm": "6px", "r-ctl": "8px", "r-pane": "12px", "r-lg": "14px",
+        "sh-1": "0 1px 2px rgba(15, 23, 42, .06), 0 1px 1px rgba(15, 23, 42, .03)",
+        "sh-2": "0 24px 64px rgba(0, 0, 0, .28), 0 2px 8px rgba(0, 0, 0, .12)"
+      },
+      "light": {
+        "bg": "#f5f6f7", "surface": "#ffffff", "surface-2": "#ebedf0", "line": "#dadde1",
+        "fg": "#1c1e21", "muted": "#5c636c", "accent": "#0c76a5", "accent-fg": "#ffffff",
+        "err": "#c2262c", "err-bg": "#ffebec", "warn": "#855700", "warn-bg": "#fff6df", "info": "#0b6a8f", "info-bg": "#e9f7fc", "ok": "#0a7a2e", "ok-bg": "#e6f6e9",
+        "code-bg": "#f6f8fa", "kw": "#6f2db8", "str": "#b0175a", "num": "#0f6f6d", "cmt": "#6a737d", "prop": "#0b5c8a"
+      },
+      "dark": {
+        "bg": "#1b1b1d", "surface": "#242526", "surface-2": "#2e3033", "line": "#444950",
+        "fg": "#e3e3e3", "muted": "#b0b4ba", "accent": "#30bbf8", "accent-fg": "#06131c",
+        "err": "#ff7b7f", "err-bg": "#3d1c1e", "warn": "#ffc94d", "warn-bg": "#3a2e10", "info": "#54c7ec", "info-bg": "#15313b", "ok": "#5fd97c", "ok-bg": "#16301e",
+        "code-bg": "#282a36", "kw": "#ff79c6", "str": "#f1fa8c", "num": "#bd93f9", "cmt": "#8b96c4", "prop": "#8be9fd"
+      }
+    },
+    "v3": {
+      "name": "v3.splitscreen.me",
+      "about": "The new site (\"Bezel\"): monochrome, Archivo. Light is this page's own variant (v3 itself is dark only): a pale bezel around white panes; the primary button is the darkest thing on screen. Player colours stay for players only.",
+      "base": "www",
+      "shared": {
+        "font-display": "\"Archivo\", system-ui, sans-serif", "font-body": "\"Archivo\", system-ui, sans-serif",
+        "font-mono": "\"JetBrains Mono\", ui-monospace, Consolas, monospace",
+        "display-stretch": "125%", "display-weight": "800",
+        "r-pane": "14px",
+        "sh-1": "0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04)"
+      },
+      "light": {
+        "bg": "#eceef2", "surface": "#ffffff", "surface-2": "#f3f4f7", "line": "#dde1e8",
+        "fg": "#0b0d12", "muted": "#4f5767", "accent": "#0b0d12", "accent-fg": "#ffffff", "brand": "#0b0d12",
+        "err": "#b5162f", "err-bg": "#fde9ec", "warn": "#8a5200", "warn-bg": "#fdf0dd", "info": "#1d5fd1", "info-bg": "#e8f0fe", "ok": "#11663f", "ok-bg": "#e2f4ea",
+        "code-bg": "#fafbfc", "kw": "#6d28d9", "str": "#0f6b3f", "num": "#9a5200", "cmt": "#626b7b", "prop": "#1d5fd1"
+      },
+      "dark": {
+        "bg": "#000000", "surface": "#14171e", "surface-2": "#1b1f28", "line": "#2c3240",
+        "fg": "#f3f4f6", "muted": "#a3abba", "accent": "#f3f4f6", "accent-fg": "#07080a", "brand": "#f3f4f6",
+        "err": "#ff4d6a", "err-bg": "#2a1118", "warn": "#f5b971", "warn-bg": "#2a2012", "info": "#8ab4ff", "info-bg": "#111a2e", "ok": "#8fe3b8", "ok-bg": "#10261c",
+        "code-bg": "#0e1015", "kw": "#c4b5fd", "str": "#8fe3b8", "num": "#f5b971", "cmt": "#8b93a3", "prop": "#93c5fd"
+      }
+    }
+  }
+}

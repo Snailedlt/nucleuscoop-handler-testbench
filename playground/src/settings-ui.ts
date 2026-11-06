@@ -3,7 +3,7 @@
 // the symbol bar above the on-screen keyboard.
 import { applyTheme } from './devbar';
 import { initKeyboard, keyboard, onKeyboard } from './keyboard';
-import { contrastProblems, currentTheme, customTheme, parseTheme, saveCustomTheme } from './customtheme';
+import { addLook, BUILT_IN_LOOKS, lookAbout, contrastProblems, currentLook, customLooks, lookName, lookTokens, parseTheme, pickLook, removeLook, themeFile } from './customtheme';
 
 const EDITOR_KEY = 'nucleus-workbench-editor';
 const THEME_KEY = 'nucleus-workbench-dev-mode'; // shared with the dev bar
@@ -63,23 +63,65 @@ export function initSettings(d: Deps) {
     r.addEventListener('change', () => {
       put(THEME_KEY, r.value === 'auto' ? null : r.value);
       applyTheme();
+      syncLooks(); // the swatches show the mode on screen
     }),
   );
-  // Custom theme: a JSON file of design tokens (customtheme.ts).
+  // Looks: the built-in ones and your theme files (customtheme.ts, themekit.ts), one on at a time.
   const ctMsg = $('#ct-msg');
   const say = (text: string, kind: '' | 'warn' | 'error' = '') => ((ctMsg.textContent = text), (ctMsg.className = `ct-msg small ${kind}`));
-  function syncCustom() {
-    const t = customTheme();
-    const status = $('#ct-status');
-    status.textContent = '';
-    if (t) {
-      const b = document.createElement('strong');
-      b.textContent = t.name;
-      status.append('Custom theme: ', b, ` (${[t.light && 'light', t.dark && 'dark'].filter(Boolean).join(' and ')}).`);
-    } else status.textContent = 'Custom theme: none. A theme file (JSON) sets colours, corners, shadows and fonts.';
-    ($('#ct-remove') as HTMLButtonElement).hidden = !t;
+  const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+  function syncLooks() {
+    const box = $('#set-looks');
+    const on = currentLook();
+    const mode = isDark() ? 'dark' : 'light';
+    const row = (id: string, name: string, about: string | undefined, custom: boolean) => {
+      const t = lookTokens(id, mode);
+      const div = document.createElement('div');
+      div.className = 'look-row';
+      const label = document.createElement('label');
+      const r = document.createElement('input');
+      r.type = 'radio';
+      r.name = 'set-look';
+      r.value = id;
+      r.checked = id === on;
+      r.addEventListener('change', () => (pickLook(id), say(''), syncLooks()));
+      const sw = document.createElement('span');
+      sw.className = 'sw';
+      sw.setAttribute('aria-hidden', 'true');
+      // its page colour, its panes and its accent, in the mode shown now
+      sw.style.background = `linear-gradient(135deg, ${t.bg} 0 34%, ${t.surface} 34% 67%, ${t.accent} 67%)`;
+      const ln = document.createElement('span');
+      ln.className = 'ln';
+      const strong = document.createElement('strong');
+      strong.textContent = name;
+      ln.append(strong);
+      if (about) {
+        const small = document.createElement('small');
+        small.textContent = about;
+        small.title = about;
+        ln.append(small);
+      }
+      label.append(r, sw, ln);
+      div.append(label);
+      if (custom) {
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'link';
+        rm.textContent = 'Remove';
+        rm.setAttribute('aria-label', `Remove ${name}`);
+        rm.addEventListener('click', () => (removeLook(id), say(`"${name}" removed.`), syncLooks()));
+        div.append(rm);
+      }
+      return div;
+    };
+    box.replaceChildren(
+      ...BUILT_IN_LOOKS.map((id) => row(id, lookName(id), lookAbout(id), false)),
+      ...customLooks().map((t) => row(t.id, t.name, t.about ?? `Your theme, on ${lookName(t.base)}`, true)),
+    );
   }
-  syncCustom();
+  syncLooks();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', syncLooks);
+  window.addEventListener('workbench-look', () => setTimeout(syncLooks));
   $('#ct-load').addEventListener('click', () => ($('#ct-file') as HTMLInputElement).click());
   $('#ct-file').addEventListener('change', async (e) => {
     const input = e.target as HTMLInputElement;
@@ -95,28 +137,23 @@ export function initSettings(d: Deps) {
     }
     const r = parseTheme(raw);
     if ('error' in r) return say(r.error, 'error');
-    saveCustomTheme(r.theme);
-    syncCustom();
+    addLook(r.look);
+    syncLooks();
     const bad = contrastProblems();
     const notes = [
       r.skipped.length ? `Left out: ${r.skipped.slice(0, 5).join(', ')}${r.skipped.length > 5 ? ` and ${r.skipped.length - 5} more` : ''}.` : '',
       bad.length ? `Hard to read in this mode (below 4.5:1): ${bad.slice(0, 4).join(', ')}${bad.length > 4 ? '…' : ''}.` : '',
     ].filter(Boolean);
-    say(`"${r.theme.name}" is on.${notes.length ? ' ' + notes.join(' ') : ''}`, notes.length ? 'warn' : '');
+    say(`"${r.look.name}" is on, built on ${lookName(r.look.base)}.${notes.length ? ' ' + notes.join(' ') : ''}`, notes.length ? 'warn' : '');
   });
   $('#ct-download').addEventListener('click', () => {
-    const t = currentTheme(customTheme()?.name ?? 'My theme');
+    const t = themeFile();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(t, null, 2) + '\n'], { type: 'application/json' }));
-    a.download = 'workbench-theme.json';
+    a.download = `${String(t.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'workbench-theme'}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    say('Downloaded workbench-theme.json: every value as shown now, light and dark. Edit it, then load it here.');
-  });
-  $('#ct-remove').addEventListener('click', () => {
-    saveCustomTheme(null);
-    syncCustom();
-    say('Back to the built-in theme.');
+    say(`Downloaded ${a.download}. Edit it (delete what you keep as it is), then load it here.`);
   });
   $('#set-size').addEventListener('change', (e) => ((ed.size = (e.target as HTMLSelectElement).value as any), save(), applyEditor()));
   $('#set-wrap').addEventListener('change', (e) => ((ed.wrap = (e.target as HTMLInputElement).checked), save(), applyEditor()));

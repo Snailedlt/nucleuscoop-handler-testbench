@@ -109,7 +109,8 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(200);
   const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
   check(acc === (theme === 'dark' ? '#ffb4a8' : '#7a1f2b') && /Left out: light\.bg/.test(await p.innerText('#ct-msg')) && (await p.isVisible('body')), `${theme}: a custom theme file applies, and unsafe values are left out`);
-  await p.click('#ct-remove');
+  check((await p.$$('#set-looks .look-row')).length === 3, `${theme}: the loaded theme is listed with the built-in looks`);
+  await p.click('#set-looks .look-row:last-child button');
   await p.keyboard.press('Escape');
   await p.waitForTimeout(200);
   // The command palette (Ctrl+Shift+P, as in VS Code) and Format document (Shift+Alt+F).

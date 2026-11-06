@@ -13,65 +13,14 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
  *   v3: v3.splitscreen.me's "Bezel" (splitscreenme-hub v3 tokens.css). Dark only, monochrome chrome,
  *       Archivo + JetBrains Mono; colour means a player (--p1..--p8), used only on player cards. */
 :root {
-  /* splitscreen.me, light (Infima + the site's custom.css) */
-  --bg: #f5f6f7; --surface: #ffffff; --surface-2: #ebedf0; --line: #dadde1;
-  --fg: #1c1e21; --muted: #5c636c; --accent: #0c76a5; --accent-fg: #ffffff; --brand: #10a3e8;
-  --err: #c2262c; --err-bg: #ffebec; --warn: #855700; --warn-bg: #fff6df; --info: #0b6a8f; --info-bg: #e9f7fc; --ok: #0a7a2e; --ok-bg: #e6f6e9;
-  --code-bg: #f6f8fa; --kw: #6f2db8; --str: #b0175a; --num: #0f6f6d; --cmt: #6a737d; --prop: #0b5c8a;
-  --p1: #ff6b35; --p2: #3b8bff; --p3: #ffcf3a; --p4: #3ddb86; --p5: #ff5db1; --p6: #9b7cff; --p7: #23d3d3; --p8: #c4eb45;
-  --font-display: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
-  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --display-stretch: 100%; --display-weight: 700;
-  --r-pane: 12px; --r-ctl: 8px; --r-tag: 999px;
-  /* One scale for the whole workbench and the start page: spacing, radius, type, elevation. */
+  /* The scale every look shares (spacing, type, motion). The looks themselves (colours, corners, shadows,
+     fonts) come from themes.json, written in below by build.mjs (themekit.ts). */
+  --r-tag: 999px;
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
-  --r-sm: 6px; --r-lg: 14px;
   --fs-xs: 11.5px; --fs-sm: 12.5px; --fs-md: 14px; --fs-lg: 17px;
-  --sh-1: 0 1px 2px rgba(15, 23, 42, .06), 0 1px 1px rgba(15, 23, 42, .03);
-  --sh-2: 0 24px 64px rgba(0, 0, 0, .28), 0 2px 8px rgba(0, 0, 0, .12);
   --ease: cubic-bezier(.2, .9, .3, 1);
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  /* splitscreen.me, dark */
-  --bg: #1b1b1d; --surface: #242526; --surface-2: #2e3033; --line: #444950;
-  --fg: #e3e3e3; --muted: #b0b4ba; --accent: #30bbf8; --accent-fg: #06131c; --brand: #10a3e8;
-  --err: #ff7b7f; --err-bg: #3d1c1e; --warn: #ffc94d; --warn-bg: #3a2e10; --info: #54c7ec; --info-bg: #15313b; --ok: #5fd97c; --ok-bg: #16301e;
-  --code-bg: #282a36; --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --cmt: #8b96c4; --prop: #8be9fd;
-  color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #1b1b1d; --surface: #242526; --surface-2: #2e3033; --line: #444950;
-  --fg: #e3e3e3; --muted: #b0b4ba; --accent: #30bbf8; --accent-fg: #06131c; --brand: #10a3e8;
-  --err: #ff7b7f; --err-bg: #3d1c1e; --warn: #ffc94d; --warn-bg: #3a2e10; --info: #54c7ec; --info-bg: #15313b; --ok: #5fd97c; --ok-bg: #16301e;
-  --code-bg: #282a36; --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --cmt: #8b96c4; --prop: #8be9fd;
-  color-scheme: dark }
-/* v3.splitscreen.me "Bezel" (doubled attribute: wins over the splitscreen.me blocks above).
- * Light is this page's own variant of Bezel (v3 itself is dark only): a pale bezel around white panes, still
- * monochrome; the primary button is now the darkest thing on screen. Player colours stay for players only. */
-:root[data-site="v3"][data-site] {
-  --bg: #eceef2; --surface: #ffffff; --surface-2: #f3f4f7; --line: #dde1e8;
-  --fg: #0b0d12; --muted: #4f5767; --accent: #0b0d12; --accent-fg: #ffffff; --brand: #0b0d12;
-  --err: #b5162f; --err-bg: #fde9ec; --warn: #8a5200; --warn-bg: #fdf0dd; --info: #1d5fd1; --info-bg: #e8f0fe; --ok: #11663f; --ok-bg: #e2f4ea;
-  /* Code: still calm, but each kind of token has its own colour, so a handler can be scanned */
-  --code-bg: #fafbfc; --kw: #6d28d9; --str: #0f6b3f; --num: #9a5200; --cmt: #626b7b; --prop: #1d5fd1;
-  --sh-1: 0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04);
-  --font-display: "Archivo", system-ui, sans-serif; --font-body: "Archivo", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  --display-stretch: 125%; --display-weight: 800;
-  --r-pane: 14px; --r-ctl: 8px;
-  color-scheme: light }
-@media (prefers-color-scheme: dark) { :root[data-site="v3"][data-site]:not([data-theme="light"]) {
-  --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
-  --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
-  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #8ab4ff; --info-bg: #111a2e; --ok: #8fe3b8; --ok-bg: #10261c;
-  --code-bg: #0e1015; --kw: #c4b5fd; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #93c5fd;
-  color-scheme: dark } }
-:root[data-site="v3"][data-site][data-theme="dark"] {
-  --bg: #000000; --surface: #14171e; --surface-2: #1b1f28; --line: #2c3240;
-  --fg: #f3f4f6; --muted: #a3abba; --accent: #f3f4f6; --accent-fg: #07080a; --brand: #f3f4f6;
-  --err: #ff4d6a; --err-bg: #2a1118; --warn: #f5b971; --warn-bg: #2a2012; --info: #8ab4ff; --info-bg: #111a2e; --ok: #8fe3b8; --ok-bg: #10261c;
-  --code-bg: #0e1015; --kw: #c4b5fd; --str: #8fe3b8; --num: #f5b971; --cmt: #8b93a3; --prop: #93c5fd;
-  color-scheme: dark }
+/*THEMES*/
 
 html, body { height: 100%; }
 
@@ -644,8 +593,15 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 :root[data-site="v3"] #open-dialog { border-radius: var(--r-pane); }
 /* Settings → Appearance → Custom theme */
 .ct { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; align-self: stretch; }
-.ct-status { margin: 0; color: var(--muted); }
-.ct-status strong { color: var(--fg); }
+.ct-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.looks { display: flex; flex-direction: column; gap: 2px; }
+.look-row { display: flex; align-items: center; gap: 8px; border-radius: var(--r-ctl); padding: 4px 8px; }
+.look-row:hover { background: var(--surface-2); }
+.look-row label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 2px 0; }
+.look-row .sw { flex: none; width: 34px; height: 22px; border-radius: 6px; border: 1px solid var(--line); }
+.look-row .ln { display: flex; flex-direction: column; min-width: 0; }
+.look-row .ln small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.look-row .link { flex: none; font-size: 12.5px; }
 .ct-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .ct-msg:empty { display: none; }
 .ct-msg { padding: 6px 10px; border-radius: var(--r-ctl); background: var(--surface-2); }
@@ -1020,11 +976,11 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <label><input type="radio" name="set-theme" value="dark"> Dark</label>
       </div>
       <div class="ct">
-        <p class="ct-status small" id="ct-status">Custom theme: none. A theme file (JSON) sets colours, corners, shadows and fonts.</p>
+        <h4 class="ct-h" id="looks-h">Look</h4>
+        <div class="looks" id="set-looks" role="radiogroup" aria-labelledby="looks-h"></div>
         <div class="ct-actions">
           <button class="btn" type="button" id="ct-load">Load a theme file…</button>
-          <button class="link" type="button" id="ct-download">Download the current theme</button>
-          <button class="link" type="button" id="ct-remove" hidden>Remove the custom theme</button>
+          <button class="link" type="button" id="ct-download">Download this look as a theme file</button>
         </div>
         <input type="file" id="ct-file" accept=".json,application/json" hidden>
         <div class="ct-msg small" id="ct-msg" role="status" aria-live="polite"></div>

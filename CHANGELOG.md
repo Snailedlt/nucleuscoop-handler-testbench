@@ -16,7 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
-- **Your own theme.** Settings → Appearance → Custom theme loads a theme file (JSON) that sets the colours, corners, shadows and fonts, for light, dark or both. "Download the current theme" gives you a complete file to start from; the workbench says which values it left out and which text gets hard to read.
+- **Pick a look, or make your own.** Settings → Appearance → Look switches between splitscreen.me, v3.splitscreen.me and your own theme files (JSON), each with a swatch. A theme builds on one of the built-in looks and only lists what it changes: colours for light and dark, plus corners, shadows and fonts for both; tiles, borders and status colours follow the colours it sets. "Download this look as a theme file" gives you a file to start from, and the workbench says which values it left out and which text gets hard to read. Keep as many as you like.
 - **Reference shows what's in it.** With nothing typed, the Reference tab lists what you can look up: Game, Game.Hook, Context, Player, ProtoInput and .NET, each with a count (click one for all its names), the names Hub handlers use most, the Nucleus enums, and a few searches to try.
 
 ### 🛠️ Improved
