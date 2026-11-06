@@ -506,6 +506,11 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
     }
   };
   copy(src, dst);
+  // The download packs (the assets branch, checked out; --assets <dir>): kept off main, copied in before the fingerprint.
+  const argAssets = process.argv.indexOf('--assets');
+  const packs = argAssets > 0 ? path.join(path.resolve(process.argv[argAssets + 1]), 'mascots', 'packs') : path.join(src, 'packs');
+  if (fs.existsSync(packs)) { fs.mkdirSync(path.join(dst, 'packs'), { recursive: true }); for (const f of fs.readdirSync(packs)) if (f.endsWith('.zip')) fs.copyFileSync(path.join(packs, f), path.join(dst, 'packs', f)); }
+  else console.warn('No mascot packs (the assets branch, --assets <dir>): the Downloads buttons will lead nowhere.');
 }
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).

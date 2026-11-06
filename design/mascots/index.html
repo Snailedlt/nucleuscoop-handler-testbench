@@ -2817,6 +2817,8 @@ document.querySelectorAll('.hist').forEach((d) => d.addEventListener('toggle', (
 (() => {
   let dl = null;
   if (window.claude && window.claude.use) window.claude.use('downloads').then((d) => (dl = d)).catch(() => {});
+  // The claude.ai viewer can't serve .zip files: there the packs come from GitHub (the assets branch).
+  if (window.claude) document.querySelectorAll('.pack a[download]').forEach((a) => { a.href = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench/raw/assets/mascots/' + a.getAttribute('href'); a.removeAttribute('download'); a.target = '_blank'; a.rel = 'noopener'; });
   document.addEventListener('click', async (e) => {
     const a = e.target.closest && e.target.closest('.svgc a[download], .pack a[download]');
     if (!a || !dl) return;
