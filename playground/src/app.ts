@@ -18,7 +18,7 @@ import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
-import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
+import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
 import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFile } from './package';
@@ -1849,22 +1849,9 @@ $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUI
 // ---------------------------------------------------------------------------
 // Fix with AI (artifact `sample` capability: Claude, on the viewer's own account)
 
-const AUTO_KEY = 'nucleus-workbench-ai-auto';
 const aiBox = $('#ai-box');
 const aiBtn = $('#ai-fix') as HTMLButtonElement;
-const aiAuto = $('#ai-auto') as HTMLInputElement;
-try {
-  aiAuto.checked = localStorage.getItem(AUTO_KEY) === '1';
-} catch {
-  /* ignore */
-}
-aiAuto.addEventListener('change', () => {
-  try {
-    localStorage.setItem(AUTO_KEY, aiAuto.checked ? '1' : '0');
-  } catch {
-    /* ignore */
-  }
-});
+// Fixes are applied straight away (no "Apply without review" any more): Undo and the highlighted lines replace the review.
 
 let sample: any = null;
 let aiCtl: AbortController | null = null;
@@ -2001,45 +1988,55 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   const baseLines = base.split('\n').length;
   const bigRewrite = removed > Math.max(20, baseLines * 0.5);
   let reason = '';
-  if (edited) reason = 'You edited the handler while Claude was working, so this was not applied automatically. Accepting replaces your latest edits.';
+  if (edited) reason = 'You edited the handler while the AI was working, so this was not applied automatically. Accepting replaces your latest edits.';
   else if (introduced.length) reason = `This version adds ${introduced.length} new problem${introduced.length > 1 ? 's' : ''} (${introduced.slice(0, 2).join('; ')}${introduced.length > 2 ? '; …' : ''}), so it was not applied automatically.`;
   else if (bigRewrite) reason = `This rewrites a large part of the handler (${removed} of ${baseLines} lines removed), so it was not applied automatically.`;
   else if (!notWorse) reason = 'This version has more errors than yours, so it was not applied automatically.';
   else if (!better) reason = 'This version does not reduce the problem count, so it was not applied automatically.';
-  const auto = aiAuto.checked && !reason;
+  // Applied straight away (Undo is one click, and the changed lines light up in the code). Only an AI fix that looks
+  // risky (it adds problems, rewrites most of the file, makes it worse, or you typed meanwhile) waits for a review.
+  const risky = source === 'AI' && (edited || introduced.length > 0 || bigRewrite || !notWorse);
+  const fixedCount = source === 'Fix all' ? changes.length : 0;
+  const remaining = after.errors + after.warnings;
+  const diffTable = `<div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>`;
+  const changeList = changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
 
-  const body = (state: 'review' | 'applied') => `
-    <h3>${source === 'Fix all' ? (state === 'applied' ? 'Applied automatic fixes' : 'Automatic fixes') : state === 'applied' ? 'Applied Claude\'s fix' : "Claude's proposed fix"}</h3>
-    ${source === 'Fix all' && after.errors + after.warnings ? `<p class="muted">${after.errors + after.warnings} problem${after.errors + after.warnings === 1 ? '' : 's'} need${after.errors + after.warnings === 1 ? 's' : ''} your decision and stay${after.errors + after.warnings === 1 ? 's' : ''} listed below.</p>` : ''}
-    ${changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
-    ${delta}
-    ${reason && (aiAuto.checked || introduced.length || bigRewrite || edited) ? `<p class="note">${esc(aiAuto.checked ? reason : reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, ''))}</p>` : ''}
-    <div class="ai-actions">${
-      state === 'applied'
-        ? '<button class="btn" id="ai-undo" type="button">Undo</button><button class="btn" id="ai-close" type="button">Close</button>'
-        : '<button class="btn primary" id="ai-accept" type="button">Accept</button><button class="btn" id="ai-reject" type="button">Reject</button>'
-    }</div>
-    <div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>`;
+  const review = () => `
+    <h3>${source === 'AI' ? "AI's proposed fix" : 'Automatic fixes'}</h3>
+    ${reason ? `<p class="note">${esc(reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, '.'))} Check it before applying.</p>` : ''}
+    ${changeList}${delta}
+    <div class="ai-actions"><button class="btn primary" id="ai-accept" type="button">Apply</button><button class="btn" id="ai-reject" type="button">Discard</button></div>
+    ${diffTable}`;
+  const applied = () => `<div class="fix-done">
+    <span class="fix-ok" aria-hidden="true">✓</span>
+    <span class="fix-msg"><strong>${source === 'Fix all' ? `Fixed ${fixedCount} problem${fixedCount === 1 ? '' : 's'}` : 'Applied the AI fix'}</strong>${remaining ? ` · ${remaining} need${remaining === 1 ? 's' : ''} your decision, below` : ' · nothing left to fix'}. Changed lines are highlighted in the code.</span>
+    <button class="btn" id="ai-undo" type="button">Undo</button>
+    <button class="btn icon" id="ai-close" type="button" aria-label="Close">×</button>
+    <details class="fix-more"><summary>What changed (+${added} −${removed} lines)</summary>${changeList}${delta}${diffTable}</details></div>`;
 
   const showApplied = () => {
-    aiBox.innerHTML = body('applied');
+    aiBox.innerHTML = applied();
+    aiBox.classList.add('compact');
     boxShows = code;
+    markChanged(code, lines);
     $('#ai-undo').addEventListener('click', () => {
       if (editor.getValue() === code) {
         editor.undo();
-        aiBox.innerHTML = '<p>Undone. Your handler is back to how it was.</p>';
+        clearChanged();
+        aiBox.innerHTML = '<p class="fix-done"><span class="fix-msg">Undone. Your handler is back to how it was.</span></p>';
       } else {
-        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe. Use Ctrl+Z in the editor instead.</p>';
+        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe here. Use Ctrl+Z in the editor instead.</p>';
       }
     });
     $('#ai-close').addEventListener('click', () => (aiBox.hidden = true));
   };
-  if (auto) {
+  if (!risky) {
     applyCode(code);
     showApplied();
     return;
   }
-  aiBox.innerHTML = body('review');
+  aiBox.classList.remove('compact');
+  aiBox.innerHTML = review();
   boxShows = editor.getValue();
   aiBox.scrollIntoView({ block: 'nearest' });
   $('#ai-accept').addEventListener('click', () => {
@@ -2049,6 +2046,27 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   });
   $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
 }
+
+// The lines a fix added or changed, highlighted in the editor until you edit the code (or 12 s).
+let changedMarks: any[] = [];
+let changedTimer = 0;
+function clearChanged() {
+  changedMarks.forEach((h) => editor.removeLineClass(h, 'background', 'line-changed'));
+  changedMarks = [];
+  clearTimeout(changedTimer);
+}
+function markChanged(code: string, diff: (DiffLine | null)[]) {
+  const go = (tries = 0) => {
+    if (editor.getValue() !== code) return tries < 40 ? void setTimeout(() => go(tries + 1), 100) : undefined; // after Nucli's edit animation
+    clearChanged();
+    for (const l of diff) if (l?.kind === '+' && l.b) changedMarks.push(editor.addLineClass(l.b - 1, 'background', 'line-changed'));
+    const first = diff.find((l) => l?.kind === '+' && l.b);
+    if (first?.b) editor.scrollIntoView({ line: first.b - 1, ch: 0 }, 80);
+    changedTimer = window.setTimeout(clearChanged, 12000);
+  };
+  go();
+}
+editor.on('change', (_cm: unknown, ch: { origin?: string }) => { if (ch.origin !== '+ai-fix' && changedMarks.length) clearChanged(); });
 
 // ---------------------------------------------------------------------------
 // Advanced mode switch

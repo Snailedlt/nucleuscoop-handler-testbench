@@ -454,6 +454,16 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .keyhint { position: fixed; z-index: 90; display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 12px; pointer-events: none; white-space: nowrap; }
 .keyhint[hidden] { display: none; }
 #ai-bar:not(:has(> .btn:not([hidden]))) { display: none; }
+/* After a fix: one line (what was fixed, Undo), the details folded; the changed lines light up in the code. */
+#ai-box.compact { padding: 8px 12px; }
+.fix-done { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; }
+.fix-ok { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--ok); color: #fff; font-size: 12px; font-weight: 700; flex: none; }
+.fix-msg { flex: 1; min-width: 12em; font-size: 13px; }
+.fix-more { flex-basis: 100%; font-size: 13px; }
+.fix-more > summary { cursor: pointer; color: var(--muted); }
+.fix-more[open] > summary { margin-bottom: 6px; }
+.fix-more .diff-wrap { max-height: 260px; }
+.CodeMirror .line-changed { background: color-mix(in srgb, var(--ok) 16%, transparent); box-shadow: inset 3px 0 0 var(--ok); transition: background-color 1s; }
 /* Help test this beta (testguide.ts). */
 #test-dialog { width: min(720px, calc(100vw - 32px)); }
 .tg-qs { display: grid; gap: 8px; padding: 10px 12px; background: var(--surface-2); border-radius: var(--r-pane); margin-bottom: 10px; }
@@ -1248,7 +1258,6 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <div class="ai-bar" id="ai-bar">
             <button class="btn primary" id="fix-all" type="button" title="Apply every safe automatic fix (also in the command palette, Ctrl+Shift+P)">Fix problems</button>
             <button class="btn ai" id="ai-fix" type="button" hidden>Fix with AI</button>
-            <label class="toggle" title="Apply fixes without reviewing the diff first"><input type="checkbox" id="ai-auto"> Apply without review</label>
             <input id="ai-note" type="text" placeholder="For AI: anything else to change" aria-label="Extra instructions for Claude" hidden>
           </div>
         </div>
