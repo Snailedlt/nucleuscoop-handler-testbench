@@ -298,7 +298,7 @@ body.keybar-est .app { padding-bottom: 52px !important; }
 html.kb-up .app { height: var(--vvh) !important; min-height: 0; box-sizing: border-box; }
 html.kb-up dialog, html.kb-up #settings-dialog, html.kb-up #news-dialog { bottom: var(--kb); max-height: calc(var(--vvh) - 16px); }
 html.kb-up #settings-dialog[open] { height: min(600px, 86vh, calc(var(--vvh) - 16px)); }
-html.kb-up #open-dialog { height: min(78vh, 740px, calc(var(--vvh) - 9vh - 12px)); }
+html.kb-up #open-dialog { height: min(86vh, 960px, calc(var(--vvh) - 6vh - 12px)); }
 html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #tipbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12.5px; line-height: 1.45; }
 #tipbar[hidden] { display: none; }
@@ -536,7 +536,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 @media (prefers-reduced-motion: reduce) { #toasts, .toast, .toast-inner { transition: none; } }
 /* The Open dialog (Ctrl+K) and command palette (Ctrl+Shift+P): a palette at a fixed spot near the top,
    so it doesn't jump while the results change. Soft rows instead of an outline on every card. */
-#open-dialog { width: min(880px, calc(100vw - 24px)); height: min(78vh, 740px); max-height: none; margin: 9vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.15); }
+#open-dialog { width: min(1120px, calc(100vw - 24px)); height: min(86vh, 960px); max-height: none; margin: 6vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.15); }
 #open-dialog[open] { display: flex; }
 @media (prefers-reduced-motion: no-preference) {
   #open-dialog[open] { animation: palette-in .16s cubic-bezier(.2,.9,.3,1); }
@@ -560,7 +560,14 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .group-title .count { font: 600 11px var(--font-body); background: var(--surface-2); border-radius: 999px; padding: 0 7px; }
 .group-title small { font-weight: 400; }
 .entries { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
-.entries.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 470px), 1fr)); column-gap: 6px; }
+.entries.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); column-gap: 6px; }
+/* Hub rows: compact, so a screen holds many (two columns where there's room) */
+.entries.two .entry { padding: 5px 8px; gap: 10px; }
+.entries.two .entry .t { font-size: 13.5px; }
+.entries.two .entry .s { font-size: 12px; }
+.entries.two .entry .mono { width: 28px; height: 28px; font-size: 11.5px; border-radius: 7px; }
+.entries.two .entry .mono.has-cover { width: 28px; height: 38px; border-radius: 5px; }
+.entries.two .entry .meta { gap: 8px; }
 .entries.tiles { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-bottom: 4px; }
 .entries.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .entry { --e-bg: transparent; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; text-align: left; border: 0; border-radius: 9px; padding: 8px 10px; background: var(--e-bg); color: var(--fg); cursor: pointer; min-width: 0; font: inherit; transition: background-color .12s; }
@@ -580,9 +587,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .entry .keys { display: inline-flex; gap: 3px; }
 .entry .keys kbd { font: 11px var(--font-mono); padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--surface-2); color: var(--muted); }
 /* Start: larger tiles, the icon on top */
-.entries.tiles .entry { --e-bg: var(--surface-2); grid-template-columns: minmax(0, 1fr); align-content: start; align-items: start; gap: 10px; padding: 12px; border-radius: 11px; }
+.entries.tiles .entry { --e-bg: var(--surface-2); grid-template-columns: auto minmax(0, 1fr); align-content: start; align-items: start; gap: 10px; padding: 10px 12px; border-radius: 11px; }
 .entries.tiles .entry .ic { background: var(--surface); color: var(--accent); }
-.entries.tiles .entry .s { white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.4; }
+.entries.tiles .entry .s { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35; }
 /* Engine templates: compact chips */
 .entries.chips .entry { --e-bg: var(--surface-2); display: inline-flex; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 999px; }
 /* Game covers (Hub rows): portrait, like the Hub's; the initials stay under them while they load */
@@ -784,6 +791,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #open-close .k-esc, .open-foot { display: none; } #open-close .k-close { display: inline; }
   .open-body { padding: 2px 8px 16px; }
   .entries.tiles { grid-template-columns: 1fr 1fr; }
+  .entries.tiles .entry { grid-template-columns: minmax(0, 1fr); }
   .entry { padding: 10px; }
   .entry .t { font-size: 15px; }
   .entry .s { font-size: 13px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
