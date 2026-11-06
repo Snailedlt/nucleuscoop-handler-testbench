@@ -45,7 +45,8 @@ jobs:
       - name: Every Hub handler, from our own copy (the data branch; tools/hub-mirror.mjs keeps it, no Hub requests here)
         run: git clone -q --depth 1 --branch data "https://github.com/${{ github.repository }}.git" playground/.hubdata
       - name: The mascot download packs (the assets branch)
-        run: git clone -q --depth 1 --branch assets "https://github.com/${{ github.repository }}.git" playground/.assets || echo "No assets branch: the mascot page's Downloads stay empty."
+        run: |
+          git clone -q --depth 1 --branch assets "https://github.com/${{ github.repository }}.git" playground/.assets || echo "No assets branch, so the mascot page's Downloads stay empty."
       - name: Build (all Hub handlers from the data branch)
         run: node build.mjs --core ../core --hub-data .hubdata --assets .assets
         env:
