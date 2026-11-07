@@ -416,7 +416,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     el.append(line, sum, more);
     const row: Row = { el, entry: e, sig: '', probSig: '', ctl, probs, doc, sum, more, moreCtl, toggle };
     toggle.addEventListener('click', () => {
-      const open = row.more.hidden;
+      const open = !!row.more.hidden;
       if (open === (density() === 'detailed')) toggled.delete(row.entry.key); else toggled.add(row.entry.key);
       setOpen(row, open);
     });

@@ -238,7 +238,7 @@ function readCond(t: any, text: string, key: string): Cond {
     c.right = val(t.right, 'right', 'the second value');
     try {
       for (const tok of acorn.tokenizer(text.slice(t.left.end, t.right.start), { ecmaVersion: 'latest' })) {
-        if (tok.value === t.operator) {
+        if ((tok as any).value === t.operator) {
           c.opRange = { start: t.left.end + tok.start, end: t.left.end + tok.end };
           break;
         }
@@ -696,7 +696,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     for (const el of inner) if (el) more.append(el);
     row.append(line, h('div', 'bv-sum'), more);
     t.addEventListener('click', () => {
-      const open = more.hidden;
+      const open = !!more.hidden;
       if (open === ((host.density?.() ?? 'compact') === 'detailed')) toggled.delete(key); else toggled.add(key);
       setOpen(row, open);
     });
