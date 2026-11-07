@@ -20,6 +20,8 @@ if (!part) {
   process.exit(1);
 }
 const body = part.split('\n').slice(1).join('\n');
+// A release can open with an intro ("**The biggest update yet.** …"): its bold first sentence becomes the post's headline.
+const headline = body.split(/^### /m)[0].match(/\*\*([^*]+?)\.?\*\*/)?.[1];
 const [changes, thanksPart = ''] = body.split(/^### 🙏.*$/m);
 const items = changes
   .split('\n')
@@ -58,7 +60,7 @@ if (process.argv.includes('--json')) {
       embeds: [
         {
           author: { name: 'Browser workbench', url: SITE, icon_url: `${SITE}icon.png` },
-          title: '🌐 The Nucleus Handler Workbench is updated',
+          title: headline ? `🌐 ${headline}` : '🌐 The Nucleus Handler Workbench is updated',
           url: `${SITE}#whats-new`,
           description,
           color: 0x3ba55c, // green: the extension's posts are VS Code blue
@@ -71,7 +73,7 @@ if (process.argv.includes('--json')) {
   process.exit(0);
 }
 const more = items.length > 3 ? ` and ${items.length - 3} more` : '';
-const lines = ['**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
+const lines = [headline ? `**${headline}** 🧰` : '**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
 if (more) lines.push(`…${more}: the link opens What's new with all of them`);
 lines.push('', `<${SITE}#whats-new>`);
 if (thanks.length) lines.push(`Thanks ${thanks.join(', ')} 🙏`);

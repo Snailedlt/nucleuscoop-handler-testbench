@@ -334,7 +334,9 @@ function changes() {
     if (id !== 'Unreleased' && !/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(id)) continue;
     const items = [];
     let group = '';
+    const intro = [];
     for (const l of rest) {
+      if (!group && !l.startsWith('### ') && l.trim() && l.trim() !== '---') { intro.push(l.trim()); continue; }
       if (l.startsWith('### ')) group = l.slice(4).trim();
       else if (l.startsWith('- ')) {
         const m = l.match(/^- \*\*(.+?)\*\*\s*(.*)$/);
@@ -360,7 +362,7 @@ function changes() {
         }
       }
     }
-    if (items.length) out.push({ id, items });
+    if (items.length) out.push({ id, items, ...(intro.length ? { intro: intro.join(' ') } : {}) });
   }
   // Each dated release gets a number (the oldest is 1), shown in What's new with a link to its notes.
   const dated = out.filter((c) => c.id !== 'Unreleased');

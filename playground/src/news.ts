@@ -4,7 +4,7 @@ import { picture, syncPictures } from './themed';
 import { motion } from './motion';
 
 const REPO = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench';
-declare const CHANGES: { id: string; n?: number; items: { group: string; summary: string; details: string; images?: { alt: string; file: string; dark?: string; still?: string; stillDark?: string }[] }[] }[];
+declare const CHANGES: { id: string; n?: number; intro?: string; items: { group: string; summary: string; details: string; images?: { alt: string; file: string; dark?: string; still?: string; stillDark?: string }[] }[] }[];
 
 const SEEN_KEY = 'nucleus-workbench-news-seen';
 const ON_KEY = 'nucleus-workbench-news';
@@ -83,7 +83,8 @@ export function initNews() {
       const groups = [...new Set(c.items.map((it) => it.group))];
       const changes = c.items.filter((it) => !it.group.includes('🙏')).length;
       const badge = c.id === 'Unreleased' ? '<span class="chip info">preview</span>' : c === CHANGES.find((x) => x.id !== 'Unreleased') ? '<span class="chip ok">latest</span>' : '';
-      const body = groups.map((g) => `${g ? `<h3>${esc(g)}</h3>` : ''}<ul class="${g.includes('🙏') ? 'thanks' : ''}">${c.items.filter((it) => it.group === g).map(item).join('')}</ul>`).join('');
+      const intro = c.intro ? `<p class="rel-intro">${inline(c.intro).replace(/^([^.!?]+[.!?])/, '<strong>$1</strong>')}</p>` : '';
+      const body = intro + groups.map((g) => `${g ? `<h3>${esc(g)}</h3>` : ''}<ul class="${g.includes('🙏') ? 'thanks' : ''}">${c.items.filter((it) => it.group === g).map(item).join('')}</ul>`).join('');
       // Its number, and its notes on GitHub (the CHANGELOG.md heading's anchor).
       const anchor = c.id.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-');
       const num = c.n ? `<span class="rel-num">Release ${c.n}</span>` : '';

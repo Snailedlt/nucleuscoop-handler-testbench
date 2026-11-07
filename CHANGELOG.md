@@ -14,31 +14,35 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ## Unreleased
 
+**The biggest workbench update yet.** Step through a handler line by line, build one with Form and Blocks instead of code, open whole packages (Hub handlers too, with all their files), and work on several handlers at once. Plus Settings with search and Accessibility, Nucli and Duo, and a lot of polish. Testing the beta? Thank you! Help test this beta (at the bottom) has what to try, and you can compare with the previous version.
+
 ### ✨ New
 
 - **Step through a handler, and back.** Click beside a line number for a breakpoint, then Try it › Step through (F5): it pauses there for each player, says in plain words where it is, highlights the line, and shows the variables, Context, the options set so far and what Nucleus would have done up to that point. Next line (F10), Back (Alt+F10) and a timeline go through the whole run; Advanced mode adds Step into/out, watches, the call stack and conditional breakpoints.
-- **Hub handlers open with their whole package.** A Hub handler whose package ships other files (configs, scripts, DLLs) now lists them all in Files, as Nucleus installs them, and the Open list says "+ N files". Small files open as usual; big ones show their size with a Hub badge and a link to the original package, and Save tells you which ones it leaves out.
-- **Lines: a tree by default, grouped your way.** View picks Tree (open one group at a time, the default) or List (everything with headings), and Group sorts names by object, topic, type, or where they work (top level or inside Game.Play and other callbacks), in either view.
-- **Blocks is calmer, and Lines works in Form and Blocks.** Blocks shows each step on one line with its main problem and a Fix button; the arrow opens the rest, as in Form. Picking a name in Lines while Form shows adds that option; in Blocks it adds the callback, or the action as a step (in the part where you last added one, else Game.Play).
-- **Blocks: Game.Play as steps.** A third view next to Code and Form shows Game.Play and the other callbacks as plain steps ("If … then", "Set … to", "Do …") with pickers for values, conditions and calls, and + Add a step. It edits the code in place, keeps your comments, and anything it can't show as a step stays editable as code.
-- **Help test this beta, first.** New visitors start with two quick questions (how much you code, how well you know Nucleus handlers) as big, easy choices, then get what to test: the items that fit you, quickest and most needed first, each with how long it takes. Your answers also pick guided or Advanced mode; Change brings the questions back, and Everything else lists the rest.
-- **Files and Lines, left or right, any width.** Settings › Layout puts the Files panel and the Lines list on either side of the code (or the command palette: Move Files / Move Lines to the other side), and the Files panel now resizes like Lines: drag its edge, double-click to reset.
-- **Take your settings with you.** Settings › Updates and backup exports your settings to a file and imports them in another browser or on another computer. Your handlers, drafts and WakaTime key stay out of it.
-- **The side rail can show labels.** In the side-rail layout, the › at the bottom shows each tool's name next to its icon; ‹ hides them again (icons only is the default).
-- **Compare with the previous version.** During the beta, Help test this beta (and the command palette) opens the handler you're on in the previous release, so you can say what got better or worse. It keeps its own settings and drafts.
-- **Save and Share are two buttons.** Save (Ctrl+S) downloads straight away, as a .zip for Nucleus unless you pick .js or .nc under its arrow (Ctrl+Shift+S), and shows how to install it the first times. Share copies a link, the code, or a Discord-ready code block.
-- **Your game on this PC, in Files.** The Game folder button is now a section of the Files panel (Link the game's folder), next to the package it's about; the Files button shows + game when one is linked.
-- **Feedback that fills itself in.** Send feedback (menu and Ctrl+Shift+P), Report what you found and Tell us what's wrong now fill in the build, browser, screen, your settings and which handler is open (by name and link, never your code). A bot keeps that block as the issue's first comment, which only maintainers can change, and flags it if it was edited.
-- **Nucli says hi.** On your first visit, Nucli asks two things: how much help you want (Guide me, or I write code for Advanced mode) and where the tools go (a slim bar on top, or a rail on the side, shown as you pick). Settings › Tips and help asks again.
-- **Settings, reorganised, with search and Accessibility.** Sections in a sidebar (Look and feel, Working, You, More) and a search box that finds a setting wherever it is. The new Accessibility section: colour-blind-friendly error and warning colours, a straight, dotted or thicker underline under problems, a strong focus ring, larger buttons, an easier-to-read font (Atkinson Hyperlegible), notes that stay until you close them, slower hover cards, and problems read out when you move to their line.
-- **Whole packages, not just handler.js.** Files (above the code) shows a .zip or .nc as Nucleus installs it, with an icon per file type. Open its ini, cfg, json, xml, txt or bat files in their own tabs, with highlighting and checks (an INI line that isn't key=value, JSON that doesn't parse); DLLs and other binaries get a card with their size, where they install and which line uses them. Add files with a button or by dropping them, remove them, and Check warns about files a Hub install drops (with a fix that moves them into the folder) and files the handler uses that aren't in the package. Try it shows what Nucleus installs where, and Save writes the whole package back.
-- **Check against your game folder.** Game folder (above the code) lets you pick the game's install folder: the workbench reads only file names and sizes, in your browser, nothing is uploaded. Then it checks Game.ExecutableName and the files and folders in the symlink and copy lists against the real files (with "did you mean" fixes), notes the engine and the DLLs it finds, and the lists get a **+** to pick the game's files. Suggested by messenils.
-- **Options as a form.** Code | Form above the code: the handler's options as switches, dropdowns, fields and lists, with their docs and problems, and Add an option. Every change edits the code itself (the code stays the one true version), so you can switch back and forth. Suggested by messenils.
+  <details><summary>Screenshot</summary>
+
+  ![Paused at a breakpoint in Game.Play for player 1: the line highlighted, a plain-words banner, the timeline, the variables and what Nucleus would have done so far](docs/images/changelog/2026-11-07-debugger-light.png)
+
+  </details>
+- **Form and Blocks: a handler without writing code.** Next to Code, **Form** shows the options as switches, lists and fields, and **Blocks** shows Game.Play and the other callbacks as plain steps ("If … then", "Set … to", "Do …") with pickers for values and conditions. Each shows one line per option or step, with its main problem and a Fix button; the arrow opens the rest. Every change edits the code itself, comments stay, and Lines adds options and steps there too.
+  <details><summary>Screenshot</summary>
+
+  ![Blocks: Game.Play as steps, each on one line with its main problem and a Fix this button](docs/images/changelog/2026-11-07-blocks-light.png)
+
+  </details>
+- **Whole packages, Hub handlers included.** Files (above the code) shows a .zip or .nc as Nucleus installs it: open its ini, cfg, json, xml, txt or bat files in tabs with highlighting and checks, add and remove files, and save the whole package. Hub handlers that ship files open with all of them (the Open list says "+ N files"); big ones show their size and a link to the Hub package. Check warns about files a Hub install drops and files the handler uses that aren't there.
 - **Several handlers at once.** Open handlers are tabs above the code, each with its own code, undo history, package files and a dot for its state (red: Nucleus can't load it, yellow: warnings, green: ready). Opening something while your handler has changes opens it in a new tab instead of replacing your work; closing one can be undone. Ctrl+Shift+[ and ] switch, Alt+W closes. On phones, the handler's name switches between them.
-- **A slimmer header, or a side rail.** One row now: the open handlers, + (new, open a file, examples), Save and a menu with Settings, Advanced mode, help and Home. Or pick Settings › General › Layout › Side rail for the tools in a strip on the left, like VS Code.
-- **Help test the beta.** 🧪 in the footer (or the ⋯ menu) asks two quick questions (how much you code, how well you know Nucleus' handler API) and puts what fits you first: API and docs for Nucleus experts, developer experience for developers, look and ease of use for newcomers. Each item has what to do, the kind of testing (a task, real Nucleus, phone, keyboard only, screen reader, checking facts) and what to look for, each with a Report link. Your ticks stay in this browser.
+- **Your game on this PC.** In Files, link the folder your game is installed in: Check then compares `ExecutableName`, `BinariesFolder` and the symlink options with the real files, and those lists get a picker for the game's files. Only names and sizes are read, in your browser. Suggested by messenils.
+- **Save and Share are two buttons.** Save (Ctrl+S) downloads straight away, as a .zip for Nucleus unless you pick .js or .nc under its arrow (Ctrl+Shift+S), and shows how to install it the first times. Share copies a link, the code, or a Discord-ready code block.
+- **Settings, rebuilt, with Accessibility.** Sections in a sidebar and a search box that finds any setting. The new Accessibility section has colour-blind-friendly colours, other underlines for problems, a strong focus ring, larger buttons, an easier-to-read font, notes that stay until you close them, and problems read out as you move. Export your settings to a file and import them elsewhere.
+  <details><summary>Screenshot</summary>
+
+  ![Settings with its sidebar and search, on the new Accessibility section](docs/images/changelog/2026-11-07-settings-light.png)
+
+  </details>
+- **Make the layout yours.** A slim bar on top or a side rail (› shows its labels), Files and Lines on either side of the code, and every panel edge draggable.
+- **Lines: a tree by default, grouped your way.** View picks Tree (open one group at a time, the default) or List (everything with headings), and Group sorts names by object, topic, type, or where they work (top level or inside Game.Play and other callbacks), in either view.
 - **Check the AI-written docs.** Reference › "Help check AI-written docs" lists every doc AI wrote from the Nucleus source that no person has checked yet. Confirm one with 👍, or 👎 and "Tell us what's wrong"; checked ones say who checked them.
-- **Tell us what helps.** 👍/👎 on tips, and on AI-written docs (with a link to say what's wrong). Votes are counted anonymously: no code, no names, no cookies; off in Settings › General, and off when your browser asks not to be tracked.
 - **Window messages by name.** In `Game.ProtoInput.BlockedMessages`, each number shows its name (`0x0008` WM_KILLFOCUS), hovering one says what blocking it does, and a **+** before the `]` lists the messages handlers block, most used first. Check now also tells you when Proto Input never starts, when blocked messages need the message filter hook, and when a setting needs another one turned on. Suggested by messenils.
 
   <details><summary>Screenshot</summary>
@@ -46,7 +50,18 @@ How to write it (people and AI agents read this, and the workbench shows it):
   ![Window message names in BlockedMessages, and the + menu](docs/images/changelog/2026-11-06-window-messages-light.png)
 
   </details>
+- **Help test this beta, first.** New visitors start with two quick questions (how much you code, how well you know Nucleus handlers) as big, easy choices, then get what to test: the items that fit you, quickest and most needed first, each with how long it takes. Your answers also pick guided or Advanced mode; Change brings the questions back, and Everything else lists the rest.
+- **Compare with the previous version.** During the beta, Help test this beta (and the command palette) opens the handler you're on in the previous release, so you can say what got better or worse. It keeps its own settings and drafts.
+- **Feedback that fills itself in.** Send feedback (menu and Ctrl+Shift+P), Report what you found and Tell us what's wrong now fill in the build, browser, screen, your settings and which handler is open (by name and link, never your code). A bot keeps that block as the issue's first comment, which only maintainers can change, and flags it if it was edited.
+- **Tell us what helps.** 👍/👎 on tips, and on AI-written docs (with a link to say what's wrong). Votes are counted anonymously: no code, no names, no cookies; off in Settings › General, and off when your browser asks not to be tracked.
+- **Nucli says hi.** On your first visit, Nucli asks two things: how much help you want (Guide me, or I write code for Advanced mode) and where the tools go (a slim bar on top, or a rail on the side, shown as you pick). Settings › Tips and help asks again.
+- **Messages where it happened.** A quick fix, Format and F8 say what they did in a small note right under the line in the code, with Undo there too, instead of a note in the corner. Saving the .zip or creating a handler says what's next above the code (with a Try it button), and confirmations show on the button you pressed.
 
+  <details><summary>Screenshot</summary>
+
+  ![A note under the fixed line, with Undo](docs/images/changelog/2026-11-06-code-note-light.png)
+
+  </details>
 - **Duo and Nucli move in.** Nucli, the tools' quiet atom, is the workbench's: he dozes in Check until there's code, cheers when there's nothing to fix, runs Test all, reads along while Fix with AI works, spins while a Hub handler downloads, frets when something won't load and tells you how Try it went. Every spinner and loading state is his now. Duo, splitscreen.me's split-screen ball, greets you with him on the start page. Both follow Settings → Theme → Motion and stay out of the Nucleus Co-op alpha 8 look.
 
   <details><summary>Animation</summary>
@@ -57,7 +72,6 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
   </details>
 - **Duo and Nucli to download.** The mascot page (linked from the start page) has packs to take away: everything, Duo, Nucli, Discord emoji, loaders and spinners, avatars and a web kit, each with how to use it on a website or in an app.
-- **What's new can show animations.** An item can carry a GIF, a short video or an SVG (animated or not) as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
 - **Choose how much moves.** Settings → Theme → Motion: a preset (All, Default, Calm, Still, Off) and its switches: a moving interface, Duo and Nucli (lively, play once then rest, still or off), Nucli editing the code during fixes, and What's new playing animations by itself. Default keeps out anything that slows you down or covers the code; reduced motion on your device caps it at Still.
 
   <details><summary>Screenshot</summary>
@@ -72,25 +86,16 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
   </details>
 - **Nucli can fix it in front of you.** Turn on Settings → Theme → Motion → Nucli edits the code: when a quick fix, Fix all or Fix with AI changes the code, Nucli flies to each changed line and zaps it: the old text flashes red and shrinks away, the new text glows green. The edit itself happens at once, so typing and Undo are never held up. Off by default (it briefly covers the code): the changed lines just light up.
-- **Messages where it happened.** A quick fix, Format and F8 say what they did in a small note right under the line in the code, with Undo there too, instead of a note in the corner. Saving the .zip or creating a handler says what's next above the code (with a Try it button), and confirmations show on the button you pressed.
-
-  <details><summary>Screenshot</summary>
-
-  ![A note under the fixed line, with Undo](docs/images/changelog/2026-11-06-code-note-light.png)
-
-  </details>
-
+- **What's new can show animations.** An item can carry a GIF, a short video or an SVG (animated or not) as well as screenshots, in light and dark. It loads only when you open the item, then plays; if your device asks for less motion, it shows a still frame with a Play button instead. A button pauses it either way.
 
 ### 🛠️ Improved
 
-- **A calmer Form view.** Each option is one line: its name, its value, and its main problem with a Fix button. The description, every problem in full, the docs, Show in code and Remove open with the arrow. Groups fold, problems in other code fold into one line, and Only with problems hides the rest. Settings › Check › density applies here too.
 - **Getting started where you start reading.** The "New here?" steps sit at the top of the code instead of in Check, and closing them is no longer forever: they fly down into Getting started in the footer (or the command palette), which brings them back.
 - **Fixes go straight into the code.** Fix problems (and Fix with AI) apply right away and light up the changed lines in the editor; a one-line note has Undo, and what changed is folded under it. Only an AI fix that looks risky (new problems, a big rewrite, or you typed meanwhile) waits for you to apply it. "Apply without review" is gone.
 - **A Home button by the title.** The title is the workbench's own link now, and Home next to it goes to the home page (what the tools do, how to get them).
 - **Check fits more on screen.** Each problem is one row (its colour, line, what's wrong and the fix); click it for the why, other fixes and the technical details. Settings › General › Check switches to Comfortable or Detailed.
 - **One box when you hover a problem.** The problem, its fixes (all of them: "set twice" lets you keep either value) and Ctrl+. come first; the name's docs fold away below it.
 - **Reference entries stand apart.** Each name is its own card, and the `Hub.*` lines the Hub writes on upload are in Reference too (marked "written by the Hub"), with what Nucleus uses them for.
-- **One place to save or copy.** Save for Nucleus and the ⤓ button next to the code open the same dialog (the separate Copy and Copy link buttons are gone): saving the .zip for Nucleus comes first, copying the code or a link and the .js/.nc downloads next to it, and after saving it shows how to install it, in the same dialog.
 - **Nicer docs on hover.** The signature is coloured (name, parameters, types), defaults and categories are small labels, and AI-written docs say so at the bottom, with what they're based on. 150 more names have docs now.
 - **Shortcuts where you look.** Hover a button (or reach it with Tab) to see its keyboard shortcut, also outside Advanced mode.
 - **Tips point at the real button.** A tip about Lines, Try it or Save or copy highlights that button while it shows; the tip's own arrows are both ‹ and ›.
@@ -102,7 +107,6 @@ How to write it (people and AI agents read this, and the workbench shows it):
   ![The hover card for a misspelled Context.PlayerID, with its fix](docs/images/changelog/2026-11-06-hover-card-light.png)
 
   </details>
-
 - **The colour glow is for AI only.** Pointing at an everyday button no longer makes it glow; only Fix with AI does.
 
 ### 🐛 Fixed
