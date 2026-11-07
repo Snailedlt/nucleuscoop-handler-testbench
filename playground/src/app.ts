@@ -51,6 +51,8 @@ import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 import { mountDebugger } from './debugui';
+import { hlCode, hlHtml } from './codehl';
+import { setCodeFieldSupport } from './codefield';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -83,7 +85,7 @@ function md(src: string): string {
       }
     } else if (i % 3 === 2) out.push(`<pre class="doc-code">${esc(parts[i].trim())}</pre>`);
   }
-  return out.join('');
+  return hlHtml(out.join(''));
 }
 
 // ---------------------------------------------------------------------------
@@ -487,7 +489,7 @@ function problemCard(list: Diagnostic[]): string {
     const plain = plainFor(d);
     const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
     return `<div class="hc-item ${sevClass[d.severity]}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div class="hc-body">`
-      + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${codeIn(d.message)}</div>`
+      + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${hlHtml(codeIn(d.message))}</div>`
       + (fixes.length || mode === 'dev' ? `<div class="hc-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred ? 'Fix: ' : ''}${codeIn(f.title)}</button>`).join('')}${fixes.length && i === 0 ? '<span class="hc-key" title="Fixes from the keyboard"><kbd>Ctrl</kbd><kbd>.</kbd></span>' : ''}${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : '')
       + `</div></div>`;
   }).join('');
@@ -564,6 +566,36 @@ tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperEl
 editor.on('change', () => (tip.hidden = true));
 editor.on('scroll', () => (tip.hidden = true));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
+
+// The small code editors in Form and Blocks (codefield.ts): the same suggestions, hover docs and announcements.
+setCodeFieldSupport({
+  hint: hinter,
+  say: (msg) => announce(msg),
+  hover(cm: any, e: MouseEvent, problems) {
+    if (tip.contains(e.target as Node)) return;
+    clearTimeout(tipTimer);
+    clearTimeout(tipHideTimer);
+    tipTimer = window.setTimeout(() => {
+      const text = cm.getValue();
+      const pos = cm.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
+      const at = cm.indexFromPos(pos);
+      const end = cm.charCoords({ line: pos.line, ch: cm.getLine(pos.line).length }, 'window');
+      if (e.clientX > end.right + 4) return void (tip.hidden = true);
+      const r = resolveAt(text, at);
+      const doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+      if (!doc && !problems.length) return void (tip.hidden = true);
+      tip.innerHTML = problems.map((d) => `<div class="hc-item ${sevClass[d.severity] ?? 'info'}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hc-body"><div class="hc-msg">${hlHtml(codeIn(d.message))}</div></div></div>`).join('')
+        + (doc ? `<div class="hc-doc">${doc}</div>` : '');
+      tip.classList.toggle('has-problems', problems.length > 0);
+      tip.hidden = false;
+      placeTip(cm.charCoords(cm.posFromIndex(problems.length ? problems[0].start : r ? r.start : at), 'window'));
+    }, hoverDelay(280));
+  },
+  hoverEnd() {
+    clearTimeout(tipTimer);
+    hideTipSoon();
+  },
+});
 
 function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
@@ -1001,15 +1033,15 @@ function runSim() {
       <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
       <dt>Starts the game with</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
       ${p.effects.length ? `<dl><dt>Changes before the game starts</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : '<p class="muted">Changes no files before the game starts.</p>'}
-      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list">${p.calls.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
+      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list hl cm-s-default">${p.calls.map((c) => `<li>${hlCode(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
     </section>`);
   }
   for (const c of r.callbacks) {
     out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.note ?? '')}<div class="mono small">${esc(c.error)}</div></div>` : ''}
-      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list">${c.calls.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`}</section>`);
+      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list hl cm-s-default">${c.calls.map((x) => `<li>${hlCode(x)}</li>`).join('')}</ul></details>`}</section>`);
   }
   if (r.options.length) {
-    out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono">${esc(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</td></tr>`).join('')}</tbody></table></details>`);
+    out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono"><code class="hl cm-s-default">${hlCode(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</code></td></tr>`).join('')}</tbody></table></details>`);
   }
   $('#sim-out').innerHTML = out.join('');
   $('#sim-out').querySelector('#sim-check')?.addEventListener('click', () => selectTab('problems'));

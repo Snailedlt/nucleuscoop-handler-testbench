@@ -16,6 +16,8 @@ import { api, ownerLabel, resolveGlobal, resolveMember, type Member, type Resolv
 import { parseLikeJint } from '@core/jsparse';
 import type { Diagnostic, Fix, TextEdit } from '@core/lint';
 import { memberCard } from './doccard';
+import { CodeField, codeFieldOf, type Mark } from './codefield';
+import { fit, growField, setGrowDoc } from './growfield';
 import type { FormHost } from './formview';
 import USAGE from './usage.json';
 
@@ -598,7 +600,8 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
   const elsewhere = h('div', 'bv-elsewhere');
   const palette = h('div', 'bv-palette', { id: idOf('palette'), role: 'group', 'aria-label': 'Add a step' });
   palette.hidden = true;
-  root.append(bar, banner, sectionsEl, elsewhere);
+  // A heading for the view, so the callbacks' headings (h3) follow one (screen readers' heading list).
+  root.append(h('h2', 'sr-only', {}, 'Blocks'), bar, banner, sectionsEl, elsewhere);
   container.append(root);
 
   let model: Model = { callbacks: [], optionNames: [], varNames: [] };
@@ -729,12 +732,12 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     const common = { 'data-bv': fid, 'aria-label': v0.label, id: idOf(fid) };
     switch (kind) {
       case 'str': {
-        const inp = h('input', 'bv-input', { ...common, type: 'text', spellcheck: 'false', autocomplete: 'off' });
+        const inp = h('textarea', 'bv-input', { ...common, spellcheck: 'false', autocomplete: 'off', rows: '1' });
         inp.addEventListener('input', () => {
           const v = vals.get(k);
           if (v?.kind === 'str' && inp.value !== v.str) edit([{ start: v.start, end: v.end, text: strLit(inp.value, v.quote) }], undefined, true);
         });
-        wrapEl.append(inp);
+        wrapEl.append(growField(inp, { label: v0.label, multiline: true }));
         break;
       }
       case 'num': {
@@ -832,23 +835,23 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
         break;
       }
       case 'code': {
-        // Several lines: a text area, so the line breaks (and any // comments) stay as they are.
+        // A small code editor (codefield.ts); over several lines, so the line breaks (and any // comments) stay.
         const multi = v0.src.includes('\n');
-        const inp = multi
-          ? h('textarea', 'bv-input bv-code bv-codeblock', { ...common, spellcheck: 'false', rows: String(Math.min(8, v0.src.split('\n').length)) })
-          : h('input', 'bv-input bv-code', { ...common, type: 'text', spellcheck: 'false', autocomplete: 'off' });
-        inp.addEventListener('input', () => {
+        const f = new CodeField({ attrs: { 'data-bv': fid, id: idOf(fid) }, label: v0.label, value: v0.src, multiline: multi, baseIndent: () => indentAt(text, vals.get(k)?.start ?? 0), unit: () => indentUnit(text) });
+        f.el.classList.add('bv-code');
+        f.oninput = () => {
           const v = vals.get(k);
           if (!v) return;
-          const ok = isExpression(inp.value);
-          inp.setAttribute('aria-invalid', String(!ok));
+          const val = f.value;
+          const ok = isExpression(val);
+          f.setInvalid(!ok);
           forcedCode.add(k); // stays code while typed in, even when it reads as something else
-          if (ok && inp.value !== v.src) edit([{ start: v.start, end: v.end, text: inp.value }], undefined, true);
-        });
-        if (!allowKinds) inp.addEventListener('blur', () => {
+          if (ok && val !== v.src) edit([{ start: v.start, end: v.end, text: val }], undefined, true);
+        };
+        if (!allowKinds) f.onblur = () => {
           if (forcedCode.delete(k)) setTimeout(update);
-        });
-        wrapEl.append(inp);
+        };
+        wrapEl.append(f.el);
         break;
       }
     }
@@ -862,11 +865,28 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       return;
     }
     const el = scope.querySelector<HTMLInputElement & HTMLSelectElement>(`[data-bv="${CSS.escape(`${v.key}:v`)}"]`);
-    if (!el || el === document.activeElement) return;
     const kind = shownKind(v);
+    const cf = codeFieldOf(el);
+    if (cf) {
+      const ms = marksIn(v);
+      if (ms) cf.setMarks(ms);
+      if (cf.hasFocus()) return;
+      if (cf.value !== v.src) cf.value = v.src;
+      cf.setInvalid(false);
+      return;
+    }
+    if (!el || el === document.activeElement) return;
     const want = kind === 'str' ? v.str! : kind === 'opt' ? v.optKey! : kind === 'prop' || kind === 'enum' ? v.path! : v.src;
     if (el.value !== want) el.value = want;
+    if (el instanceof HTMLTextAreaElement) fit(el);
     el.removeAttribute('aria-invalid');
+  }
+
+  /** The problems inside `r`, in its own offsets (for a code editor's squiggles); undefined while out of date. */
+  function marksIn(r: Range): Mark[] | undefined {
+    const ds = currentDiags();
+    return ds?.filter((d) => d.start >= r.start && d.start < Math.max(r.end, r.start + 1))
+      .map((d) => ({ start: d.start - r.start, end: Math.min(d.end, r.end) - r.start, severity: d.severity, message: d.message }));
   }
 
   function changeKind(k: string, to: VKind) {
@@ -1006,21 +1026,23 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
         sentence.append(h('span', 'bv-word', {}, 'New variable'), h('span', 'bv-target bv-name', {}, s.varName!));
         if (s.value) sentence.append(h('span', 'bv-word', {}, '='), valueEditor(s.value));
       } else {
-        const ta = h('textarea', 'bv-input bv-code bv-codeblock', { 'data-bv': `${s.key}:src`, id: idOf(`${s.key}:src`), 'aria-label': 'Code of this step', spellcheck: 'false', rows: String(Math.min(12, (s.src ?? '').split('\n').length)) });
-        ta.addEventListener('blur', () => {
+        const ta = new CodeField({ attrs: { 'data-bv': `${s.key}:src`, id: idOf(`${s.key}:src`) }, label: 'Code of this step', value: s.src ?? '', multiline: true, baseIndent: () => indentAt(text, stmts.get(s.key)?.start ?? 0), unit: () => indentUnit(text) });
+        ta.el.classList.add('bv-codeblock');
+        ta.onblur = () => {
           if (codeEditing.delete(s.key)) setTimeout(update);
-        });
-        ta.addEventListener('input', () => {
+        };
+        ta.oninput = () => {
           const cur = stmts.get(s.key);
           if (!cur) return;
           codeEditing.add(s.key);
-          const ok = edit([{ start: cur.start, end: cur.end, text: ta.value }], undefined, true);
-          ta.setAttribute('aria-invalid', String(!ok && ta.value !== cur.src));
-          hint.hidden = ok || ta.value === cur.src;
-        });
+          const val = ta.value;
+          const ok = val === cur.src || edit([{ start: cur.start, end: cur.end, text: val }], undefined, true);
+          ta.setInvalid(!ok);
+          hint.hidden = ok;
+        };
         const hint = h('div', 'bv-hint', {}, 'Not valid code yet: the change is kept here and goes into the code once it reads.');
         hint.hidden = true;
-        sentence.append(ta, hint);
+        sentence.append(ta.el, hint);
       }
       head.append(tag, sentence);
       const label = s.kind === 'code' ? 'this code step' : s.path ?? s.calleeText ?? s.varName ?? 'this step';
@@ -1038,11 +1060,17 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     else {
       for (const v of [...(s.args ?? []), ...(s.value ? [s.value] : [])]) fillValue(el, v);
       if (s.kind === 'code') {
-        const ta = el.querySelector<HTMLTextAreaElement>('textarea')!;
-        if (ta !== document.activeElement && ta.value !== s.src) {
-          ta.value = s.src!;
-          ta.rows = Math.min(12, s.src!.split('\n').length);
+        const cf = codeFieldOf(el.querySelector('.bv-codeblock'));
+        if (cf) {
+          const ms = marksIn(s);
+          if (ms) cf.setMarks(ms);
+          if (!cf.hasFocus() && cf.value !== s.src) cf.value = s.src!;
         }
+      }
+      // The expand button's docs: the step's member.
+      if (s.member && s.path) {
+        const mi = memberInfo(s);
+        if (mi) el.querySelectorAll(':scope > .bv-line .xf').forEach((w) => setGrowDoc(w, () => memberCard(mi.owner, mi.name, mi.m, { head: false })));
       }
       fillProbs(el.querySelector('.bv-probs')!, [s], s.key);
     }
@@ -1663,7 +1691,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       const el = root.querySelector<HTMLElement>(`[data-bv="${CSS.escape(want)}"]`);
       if (el) {
         el.focus();
-        if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && sel && want === activeFid) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* not a text field */ }
+        if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && !codeFieldOf(el) && sel && want === activeFid) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* not a text field */ }
       }
     }
     focusTarget = undefined;

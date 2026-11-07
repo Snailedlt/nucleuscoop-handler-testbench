@@ -2,6 +2,7 @@
 // what changed (not on a first visit), with a link to the full list. Can be turned off in Settings.
 import { picture, syncPictures } from './themed';
 import { motion } from './motion';
+import { hlHtml } from './codehl';
 
 const REPO = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench';
 declare const CHANGES: { id: string; n?: number; intro?: string; items: { group: string; summary: string; details: string; images?: { alt: string; file: string; dark?: string; still?: string; stillDark?: string }[] }[] }[];
@@ -24,11 +25,11 @@ const set = (k: string, v: string) => {
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** `code` and plain text only (the changelog is ours, but keep it inert). */
 const inline = (s: string) =>
-  esc(s)
+  hlHtml(esc(s)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/&lt;(https:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    .replace(/&lt;(https:\/\/[^\s&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'));
 const when = (id: string) => {
   if (id === 'Unreleased') return 'In this preview';
   const [d, t] = id.split(' '); // "2026-11-05" or "2026-11-05 15:30" (UTC) for a second release that day

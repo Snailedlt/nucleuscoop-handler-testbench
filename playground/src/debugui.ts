@@ -6,6 +6,7 @@
 // callback), so stepping, stepping back and dragging the timeline only move through that record:
 // nothing runs again. The recording runs in a Web Worker of its own (worker.ts), so the page stays
 // responsive and a run that takes too long can be cut off; without workers it runs here.
+import { hlCode } from './codehl';
 import { traceHandler, nextStop, evaluateWatch, describeStep, describePhase, callsBefore, unpackTrace } from '@core/debug';
 import type { Trace, Step, ValueView, Breakpoint, StepMode, Stop, TraceOptions, Phase } from '@core/debug';
 import { sessionSummary } from '@core/sim';
@@ -190,7 +191,7 @@ export function mountDebugger(host: DebugHost): Debugger {
     </div>
     <div class="dbg-banner" id="dbg-banner" role="status" aria-live="polite"></div>
     <div class="dbg-body" id="dbg-body">
-      <pre class="dbg-peek" id="dbg-peek" aria-label="The line it's paused on"></pre>
+      <pre class="dbg-peek hl cm-s-default" id="dbg-peek" aria-label="The line it's paused on"></pre>
       <div class="dbg-scrub">
         <label for="dbg-range" class="dbg-scrub-l">Timeline</label>
         <div class="dbg-scrub-w">
@@ -432,7 +433,7 @@ export function mountDebugger(host: DebugHost): Debugger {
     list.innerHTML = watches
       .map((w, k) => {
         const r = s && s.trace.steps.length ? evaluateWatch(s.trace, i, w) : { error: 'Not running.' };
-        return `<li class="dbg-w"><code class="dbg-w-e">${esc(w)}</code><span class="dbg-w-v ${r.error ? 'err' : valueCls(r.value!)}">${esc(r.error ?? r.value!.text)}</span><button class="btn icon" type="button" data-unwatch="${k}" aria-label="Remove watch ${esc(w)}" title="Remove">✕</button></li>`;
+        return `<li class="dbg-w"><code class="dbg-w-e hl cm-s-default">${hlCode(w)}</code><span class="dbg-w-v ${r.error ? 'err' : valueCls(r.value!)}">${esc(r.error ?? r.value!.text)}</span><button class="btn icon" type="button" data-unwatch="${k}" aria-label="Remove watch ${esc(w)}" title="Remove">✕</button></li>`;
       })
       .join('');
   }
@@ -455,7 +456,7 @@ export function mountDebugger(host: DebugHost): Debugger {
       if (label !== last) out.push(`<li class="dbg-ph ${ph ? phaseClass(ph) : ''}">${esc(label)}</li>`), (last = label);
       const now = c.step === pos - 1 && pos > 0;
       out.push(
-        `<li class="dbg-call${now ? ' now' : ''}">${dev || !c.effect ? `<code>${esc(c.call)}</code>` : ''}${c.effect ? `<span class="dbg-eff">${esc(c.effect)}</span>` : ''}${now ? '<span class="dv-ch">just now</span>' : ''}</li>`,
+        `<li class="dbg-call${now ? ' now' : ''}">${dev || !c.effect ? `<code class="hl cm-s-default">${hlCode(c.call)}</code>` : ''}${c.effect ? `<span class="dbg-eff">${esc(c.effect)}</span>` : ''}${now ? '<span class="dv-ch">just now</span>' : ''}</li>`,
       );
     }
     const el = $('dbg-done');
@@ -470,7 +471,7 @@ export function mountDebugger(host: DebugHost): Debugger {
       ? bps
           .map(
             (b) =>
-              `<li class="dbg-bp"><button class="link" type="button" data-line="${b.line}">Line ${b.line}</button><span class="muted">${b.condition ? `when <code>${esc(b.condition)}</code>` : 'always'}</span><button class="btn small" type="button" data-cond="${b.line}">Condition…</button><button class="btn icon" type="button" data-unbp="${b.line}" aria-label="Remove the breakpoint on line ${b.line}" title="Remove">✕</button></li>`,
+              `<li class="dbg-bp"><button class="link" type="button" data-line="${b.line}">Line ${b.line}</button><span class="muted">${b.condition ? `when <code class="hl cm-s-default">${hlCode(b.condition)}</code>` : 'always'}</span><button class="btn small" type="button" data-cond="${b.line}">Condition…</button><button class="btn icon" type="button" data-unbp="${b.line}" aria-label="Remove the breakpoint on line ${b.line}" title="Remove">✕</button></li>`,
           )
           .join('')
       : '<li class="muted dbg-empty">None. Click beside a line number (or press F9 on a line) to stop there.</li>';
@@ -546,7 +547,7 @@ export function mountDebugger(host: DebugHost): Debugger {
     // The line, the timeline, the panels
     const peekLine = step ?? steps[n - 1];
     const lt = s.src[peekLine.line - 1] ?? '';
-    $('dbg-peek').innerHTML = step ? `<span class="dbg-peek-n">${peekLine.line}</span>${esc(lt) || ' '}` : '<span class="muted">The handler is done.</span>';
+    $('dbg-peek').innerHTML = step ? `<span class="dbg-peek-n">${peekLine.line}</span>${hlCode(lt) || ' '}` : '<span class="muted">The handler is done.</span>';
     if (drawnTrace !== trace) {
       renderTrack(trace);
       range.max = String(n);

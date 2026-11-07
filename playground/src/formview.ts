@@ -17,6 +17,9 @@ import { parseLikeJint } from '@core/jsparse';
 import type { Diagnostic, Fix, TextEdit } from '@core/lint';
 import { allLines, matches, USAGE_TOTAL, type Line } from './lines';
 import { memberCard } from './doccard';
+import { CodeField, codeFieldOf } from './codefield';
+import { hlCode } from './codehl';
+import { fit, growField } from './growfield';
 
 export interface FormHost {
   /** The handler text, as it is now. */
@@ -319,7 +322,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     return out;
   }
 
-  function edit(edits: TextEdit[], focusKey?: string): boolean {
+  function edit(edits: TextEdit[], focusKey?: string, quiet = false): boolean {
     const before = host.getText();
     if (before !== text) {
       // The code changed under the form (no refresh yet): read it again rather than edit stale offsets.
@@ -331,7 +334,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     try {
       parseLikeJint(after, { ecmaVersion: 'latest', sourceType: 'script', allowReturnOutsideFunction: true });
     } catch {
-      say("That change would break the code, so it wasn't made.");
+      if (!quiet) say("That change would break the code, so it wasn't made.");
       return false;
     }
     host.applyEdits([...edits].sort((a, b) => a.start - b.start));
@@ -364,7 +367,11 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     row.toggle.setAttribute('aria-expanded', String(open));
   }
 
-  const ctlSig = (e: Entry) => `${e.kind}|${e.member ? 1 : 0}|${e.elem ?? ''}|${e.items?.length ?? ''}|${e.kind === 'code' || e.kind === 'function' ? e.source : ''}`;
+  // Code values are edited in place (a small code editor), so their text isn't part of the structure.
+  const ctlSig = (e: Entry) => `${e.kind}|${e.member ? 1 : 0}|${e.elem ?? ''}|${e.items?.length ?? ''}|${e.kind === 'function' ? e.source : ''}`;
+  /** Code values being typed in: they stay code (and keep their editor) until left, even when they read as text. */
+  const codeEditing = new Set<string>();
+  const docOf = (e: Entry) => () => (e.member ? memberCard(e.owner, e.name, e.member, { head: false }) : '');
 
   function makeRow(e: Entry): Row {
     const el = h('div', 'fv-row', { 'data-key': e.key });
@@ -494,12 +501,12 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         break;
       }
       case 'string': {
-        const inp = h('input', 'fv-input', { type: 'text', id: vid, 'data-fv': `${e.key}:value`, 'aria-describedby': describedBy, spellcheck: 'false', autocomplete: 'off' });
+        const inp = h('textarea', 'fv-input', { id: vid, 'data-fv': `${e.key}:value`, 'aria-describedby': describedBy, spellcheck: 'false', autocomplete: 'off', rows: '1' });
         inp.addEventListener('input', () => {
           const cur = row.entry;
           if (cur.kind === 'string' && inp.value !== cur.str) edit([{ ...cur.value, text: strLit(inp.value, cur.quote) }]);
         });
-        c.append(inp);
+        c.append(growField(inp, { label: e.path, multiline: true, doc: docOf(e) }));
         break;
       }
       case 'list': {
@@ -508,7 +515,9 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         const n = e.items!.length;
         e.items!.forEach((_, i) => {
           const li = h('li', 'fv-item');
-          const inp = h('input', 'fv-input', { type: e.elem === 'number' ? 'number' : 'text', step: 'any', 'aria-label': `${e.name}, entry ${i + 1} of ${n}`, 'data-fv': `${e.key}:item:${i}`, spellcheck: 'false', autocomplete: 'off' });
+          const inp = e.elem === 'number'
+            ? h('input', 'fv-input', { type: 'number', step: 'any', 'aria-label': `${e.name}, entry ${i + 1} of ${n}`, 'data-fv': `${e.key}:item:${i}`, spellcheck: 'false', autocomplete: 'off' })
+            : h('textarea', 'fv-input', { rows: '1', 'aria-label': `${e.name}, entry ${i + 1} of ${n}`, 'data-fv': `${e.key}:item:${i}`, spellcheck: 'false', autocomplete: 'off' });
           inp.id = idOf(`${e.key}:item:${i}`);
           inp.addEventListener('input', () => {
             const cur = row.entry;
@@ -529,7 +538,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
             return b;
           };
           li.append(
-            inp,
+            inp instanceof HTMLTextAreaElement ? growField(inp, { label: `${e.name}, entry ${i + 1}`, multiline: true, doc: docOf(e) }) : inp,
             btn('up', 'Move up', '\u2191', i === 0, () => moveItem(row, i, -1)),
             btn('down', 'Move down', '\u2193', i === n - 1, () => moveItem(row, i, 1)),
             btn('rm', 'Remove entry', '\u00d7', false, () => removeItem(row, i)),
@@ -548,13 +557,39 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         row.moreCtl.append(group);
         break;
       }
+      case 'code': {
+        // The value, coloured like the code; Edit opens a small code editor for it under the line.
+        const src = e.source ?? '';
+        const shown = h('code', 'fv-src hl cm-s-default', { 'data-fv': `${e.key}:src` });
+        shown.innerHTML = hlCode(src);
+        const f = new CodeField({ attrs: { 'data-fv': `${e.key}:code`, id: idOf(`${e.key}:code`) }, label: `${e.path} (code)`, value: src, multiline: src.includes('\n'), baseIndent: () => indentAt(text, row.entry.value.start), unit: () => (/^\t/m.test(text) ? '\t' : /^ {2}\S/m.test(text) ? '  ' : '    ') });
+        f.el.classList.add('fv-code');
+        f.oninput = () => {
+          const cur = row.entry;
+          if (cur.kind !== 'code') return;
+          codeEditing.add(cur.key);
+          const val = f.value;
+          const ok = val === cur.source || edit([{ ...cur.value, text: val }], undefined, true);
+          f.setInvalid(!ok);
+        };
+        f.onblur = () => {
+          if (codeEditing.delete(row.entry.key)) setTimeout(update);
+        };
+        const ed = h('div', 'fv-code-ed');
+        ed.append(f.el, h('p', 'fv-code-keys', {}, 'Suggestions after . and =, Shift+Alt+F formats, Esc then Tab leaves.'));
+        row.moreCtl.append(ed);
+        const b = h('button', 'btn fv-jump', { type: 'button', id: vid, 'data-fv': `${e.key}:value`, 'aria-describedby': idOf(`${e.key}:label`), 'aria-controls': idOf(`${e.key}:more`) }, 'Edit');
+        b.addEventListener('click', () => {
+          if (row.more.hidden) row.toggle.click();
+          f.focus();
+        });
+        c.append(shown, b);
+        break;
+      }
       case 'function':
-      case 'code':
       case 'missing': {
         if (e.kind === 'missing') c.append(h('span', 'fv-muted', {}, 'Not set.'));
         else {
-          const src = e.source ?? '';
-          if (e.kind === 'code') c.append(h('code', 'fv-src', { title: src }, src.length > 60 ? src.slice(0, 57) + '\u2026' : src));
         }
         const b = h('button', 'btn fv-jump', { type: 'button', id: vid, 'data-fv': `${e.key}:value`, 'aria-describedby': idOf(`${e.key}:label`) }, e.kind === 'missing' ? `Add ${e.name}` : e.kind === 'function' ? 'Edit code' : 'Edit');
         b.addEventListener('click', () => {
@@ -575,6 +610,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     const get = (fid: string) => row.el.querySelector<HTMLInputElement & HTMLSelectElement>(`[data-fv="${CSS.escape(fid)}"]`);
     const set = (el: (HTMLInputElement & HTMLSelectElement) | null, v: string) => {
       if (el && el !== active && el.value !== v) el.value = v;
+      if (el instanceof HTMLTextAreaElement) fit(el);
     };
     if (e.kind === 'bool') {
       const inp = get(`${e.key}:value`);
@@ -585,6 +621,17 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     } else if (e.kind === 'enum') set(get(`${e.key}:value`), e.enumValue!);
     else if (e.kind === 'number') set(get(`${e.key}:value`), e.num!);
     else if (e.kind === 'string') set(get(`${e.key}:value`), e.str!);
+    else if (e.kind === 'code') {
+      const src = e.source ?? '';
+      const shown = get(`${e.key}:src`);
+      if (shown && shown.textContent !== src) shown.innerHTML = hlCode(src);
+      const f = codeFieldOf(get(`${e.key}:code`));
+      if (f) {
+        if (!f.hasFocus() && f.value !== src) f.value = src;
+        const ds = currentDiags();
+        if (ds) f.setMarks(ds.filter((d) => d.start >= e.value.start && d.start < Math.max(e.value.end, e.value.start + 1)).map((d) => ({ start: d.start - e.value.start, end: Math.min(d.end, e.value.end) - e.value.start, severity: d.severity, message: d.message })));
+      }
+    }
     else if (e.kind === 'list') {
       e.items!.forEach((it, i) => set(get(`${e.key}:item:${i}`), it.value));
       const peek = get(`${e.key}:peek`);
@@ -896,9 +943,11 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     text = host.getText();
     const active = document.activeElement as HTMLElement | null;
     const activeFid = active && root.contains(active) ? active.getAttribute('data-fv') : null;
-    const sel = active instanceof HTMLInputElement && activeFid ? (() => { try { return [active.selectionStart, active.selectionEnd]; } catch { return null; } })() : null;
+    const sel = (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) && !codeFieldOf(active) && activeFid ? (() => { try { return [active.selectionStart, active.selectionEnd]; } catch { return null; } })() : null;
 
     model = read(text);
+    // A code value being typed in stays code while it has focus (`"x"` would read as text and rebuild the row).
+    for (const e of model.entries) if (codeEditing.has(e.key) && e.kind !== 'code' && e.kind !== 'function') e.kind = 'code';
     root.dataset.density = density();
     const ds = currentDiags();
     if (model.error) {
@@ -1035,7 +1084,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
       const el = root.querySelector<HTMLElement>(`[data-fv="${CSS.escape(want)}"]`);
       if (el) {
         el.focus();
-        if (el instanceof HTMLInputElement && sel && want === activeFid) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* number inputs */ }
+        if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && !codeFieldOf(el) && sel && want === activeFid) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* number inputs */ }
       }
     }
     pendingFocus = undefined;

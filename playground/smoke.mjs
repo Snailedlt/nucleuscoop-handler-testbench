@@ -333,6 +333,54 @@ for (const theme of ['light', 'dark']) {
   await p.click('#dbg-stop');
   await p.waitForTimeout(200);
   check((await p.isHidden('#dbg')) && (await p.innerText('#sim-out')).length > 50, `${theme}: Stop closes the debugger and shows Try it's results`);
+  // Code colours everywhere, small code editors in Blocks and Form (#12), fields that grow and expand (#15).
+  {
+    const DESC = 'Java version only. If you use multiple keyboards and mice, set the input in the options first, then start the game and wait for every window to open.';
+    await p.evaluate((c) => document.querySelector('.CodeMirror').CodeMirror.setValue(c), `Game.GUID = "Demo";\nGame.GameName = "Demo";\nGame.ExecutableName = "demo.exe";\nGame.Description = "${DESC}";\nGame.HandlerInterval = 1000 * 2;\nGame.Play = function () {\n    Context.StartArguments = "-windowed";\n    for (var i = 0; i < 2; i++) { Context.StartArguments += " x"; }\n};\n`);
+    await p.waitForTimeout(1000);
+    // Hover docs and Reference: code in the editor's colours.
+    const at = await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; const r = cm.charCoords({ line: 5, ch: 6 }, 'window'); return { x: r.left + 2, y: (r.top + r.bottom) / 2 }; });
+    await p.mouse.move(at.x, at.y);
+    await p.waitForTimeout(900);
+    check(await p.isVisible('#tip') && (await p.$$('#tip code.hl .cm-property')).length > 0, `${theme}: the hover card shows code in the editor's colours`);
+    await p.mouse.move(5, 5);
+    await p.click('[role=tab][data-tab=api]');
+    await p.fill('#api-q', 'Game.PlayersPerInstance');
+    await p.waitForTimeout(400);
+    check((await p.$$('#api-results pre.doc-code.hl .cm-number')).length > 0, `${theme}: Reference shows its example coloured like the code`);
+    // Blocks: a code step is a small CodeMirror with the colours, and typing in it edits the handler.
+    await p.click('[data-view-mode=blocks]');
+    await p.waitForTimeout(800);
+    check((await p.$$('#blocksview .bv-codeblock .CodeMirror .cm-keyword')).length > 0, `${theme}: a Blocks code step is a code editor with the code colours`);
+    await p.click('#blocksview .bv-codeblock .CodeMirror');
+    await p.keyboard.press('End');
+    await p.keyboard.type(' // b');
+    await p.waitForTimeout(400);
+    check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())).includes('" x"; } // b'), `${theme}: typing in a Blocks code step edits the handler`);
+    await p.mouse.move(5, 5);
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(400);
+    await axe(p, `${theme}, Blocks with a code editor`);
+    // Form: a long Game.Description is readable in full, and expands (Alt+Enter) with its docs; Esc goes back.
+    await p.click('[data-view-mode=form]');
+    await p.waitForTimeout(600);
+    const desc = '#formview .fv-row[data-key^="Game.Description"] textarea';
+    const full = await p.$eval(desc, (t) => t.value.length > 100 && t.scrollHeight <= t.clientHeight + 2 && t.getBoundingClientRect().height > 40);
+    check(full && (await p.isVisible('#formview .fv-row[data-key^="Game.Description"] .xf-btn')), `${theme}: a long Game.Description wraps in Form and shows in full, with an expand button`);
+    check((await p.$$('#formview .fv-row[data-key^="Game.HandlerInterval"] .fv-src.hl .cm-number')).length > 0, `${theme}: a code value in Form is coloured like the code`);
+    await p.focus(desc);
+    await p.keyboard.press('Alt+Enter');
+    await p.waitForTimeout(200);
+    check(await p.isVisible('.xf-panel .xf-big') && /\S/.test(await p.innerText('.xf-panel .xf-doc').catch(() => '')), `${theme}: Alt+Enter opens the larger editor with the option's docs`);
+    await axe(p, `${theme}, Form with a value expanded`);
+    await p.keyboard.press('End');
+    await p.keyboard.type(' More.');
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(300);
+    check(!(await p.$('.xf-panel')) && (await p.evaluate(() => document.activeElement?.closest('[data-key^="Game.Description"]') !== null)) && (await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())).includes('to open. More."'), `${theme}: typing there edits the value; Esc closes it and goes back to the field`);
+    await p.click('[data-view-mode=code]');
+    await p.waitForTimeout(200);
+  }
   check(!errors.length, `${theme}: no page errors${errors.length ? `: ${errors.join('; ')}` : ''}`);
   await ctx.close();
 
@@ -359,6 +407,19 @@ await axe(m.p, 'phone');
 await m.p.tap('.switch button[data-view=code]');
 await m.p.waitForTimeout(300);
 check(await m.p.isVisible('.CodeMirror'), 'phone: the Handler view shows the code');
+await m.p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setValue('Game.GUID = "Demo";\nGame.GameName = "Demo";\nGame.ExecutableName = "demo.exe";\nGame.Description = "Java version only. If you use multiple keyboards and mice, set the input in the options first, then start the game.";\n'));
+await m.p.waitForTimeout(800);
+await m.p.$eval('[data-view-mode=form]', (b) => b.click());
+await m.p.waitForTimeout(600);
+const mDesc = '#formview .fv-row[data-key^="Game.Description"] textarea';
+check(await m.p.$eval(mDesc, (t) => t.scrollHeight <= t.clientHeight + 2 && t.getBoundingClientRect().right <= innerWidth), 'phone: a long Game.Description wraps and shows in full');
+await m.p.tap('#formview .fv-row[data-key^="Game.Description"] .xf-btn');
+await m.p.waitForTimeout(300);
+check(await m.p.isVisible('dialog.xf-dialog .xf-big'), 'phone: the expand button opens the value in a dialog');
+await axe(m.p, 'phone, expanded value');
+await m.p.keyboard.press('Escape');
+await m.p.waitForTimeout(200);
+check(!(await m.p.$('dialog.xf-dialog')), 'phone: Esc closes it');
 await m.ctx.close();
 
 await browser.close();

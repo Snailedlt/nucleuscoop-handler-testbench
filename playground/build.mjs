@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import * as esbuild from 'esbuild';
 import { fetchPackageFiles, slimFiles } from '../tools/hub-files.mjs';
 
@@ -531,6 +532,20 @@ try {
 } catch (e) {
   console.warn(`start page: no release info (${e.message}), linking the releases page`);
 }
+// Highlighted code for static pages: the editor's JavaScript mode, the same cm-* classes (codehl.ts does it in the page).
+const hlStatic = (() => {
+  const req = createRequire(import.meta.url);
+  const CM = req('codemirror/addon/runmode/runmode.node.js');
+  req('codemirror/mode/javascript/javascript.js');
+  return (src) => {
+    let out = '';
+    CM.runMode(src, 'javascript', (t, style) => {
+      const e = t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+      out += style ? `<span class="${style.split(' ').map((x) => `cm-${x}`).join(' ')}">${e}</span>` : e;
+    });
+    return out;
+  };
+})();
 const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 fs.writeFileSync(
   path.join(startDir, 'index.html'),
@@ -545,6 +560,14 @@ fs.writeFileSync(
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
     .replaceAll('__PROBES__', String(probes.length))
+    // Code in the text coloured like the workbench's editor (issue #12): CodeMirror's runMode at build time, the
+    // www look's code colours (AA on this page's code background, light and dark).
+    .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlStatic(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
+    .replace('</style>', `.hl .cm-keyword { color: var(--kw); } .hl .cm-string { color: var(--str); } .hl .cm-number, .hl .cm-atom { color: var(--num); } .hl .cm-property { color: var(--prop); } .hl .cm-comment { color: var(--cmt); }
+:root { --kw: #6f2db8; --str: #b0175a; --num: #0f6f6d; --prop: #0b5c8a; --cmt: #5c636c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; } }
+:root[data-theme="dark"] { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; }
+</style>`)
     // Duo and Nucli say hello in the header (the same drawings as the workbench, src/mascots.gen.ts).
     .replace('__MASCOTS__', (() => {
       const gen = fs.readFileSync(path.join(here, 'src', 'mascots.gen.ts'), 'utf8');

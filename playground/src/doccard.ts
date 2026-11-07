@@ -4,6 +4,7 @@
 import { withContext } from './report';
 import { claudeNote, docReviewUrl, ownerLabel, type Member } from '@core/api';
 import { voteButtons } from './feedback';
+import { hlHtml } from './codehl';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -22,7 +23,7 @@ export function memberCard(owner: string, name: string, m: Member, opts: { head?
   if (m.default !== undefined) facts.push(`<span class="dc-chip">Default <code>${esc(m.default)}</code></span>`);
   if (m.category) facts.push(`<span class="dc-chip">${esc(m.category)}</span>`);
   const note = claudeNote(m);
-  return `<div class="dc">`
+  return hlHtml(`<div class="dc">`
     + (opts.head === false ? '' : `<div class="dc-sig">${sigs.map((s) => `<div>${s}</div>`).join('')}</div>`)
     + (m.deprecated ? `<p class="dc-dep">${inline(m.deprecated)}</p>` : '')
     + (m.doc ? m.doc.split(/\n{2,}/).map((p) => `<p>${inline(p)}</p>`).join('') : '<p class="muted">No description yet.</p>')
@@ -30,5 +31,5 @@ export function memberCard(owner: string, name: string, m: Member, opts: { head?
     + (facts.length ? `<div class="dc-facts">${facts.join('')}</div>` : '')
     + (note ? `<div class="dc-ai" title="${esc(note)}"><span class="ai-spark" aria-hidden="true"></span><span>${m.docCheckedBy ? `AI-written, checked by ${esc(m.docCheckedBy)}${m.docCheckedOn ? ` on ${esc(m.docCheckedOn)}` : ''}.` : 'AI-written, not from the official docs.'} Based on ${esc(m.docBasis ?? '')}.</span></div>`
       + `<div class="dc-check"><span>Is this right?</span>${voteButtons('doc', `${label}.${name}`, { up: 'Correct', down: 'Wrong or unclear' })}<a href="${esc(withContext(docReviewUrl(`${label}.${name}`), { Doc: `${label}.${name}` }))}" target="_blank" rel="noopener">Tell us what's wrong</a></div>` : '')
-    + `</div>`;
+    + `</div>`);
 }
