@@ -109,7 +109,7 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
   <a class="brand" href="#top">Duo and Nucli UI kit</a>
   <button type="button" class="nav-open ctl-open" id="ctl-open" aria-controls="ctls" aria-expanded="false">Look and motion</button>
   <div class="ctls" id="ctls">
-    <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option><option value="mac">Mac style</option><option value="alpha8">Nucleus Co-op alpha 8</option></select></label>
+    <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option></select></label>
     <label>Mode <select id="ctl-mode" class="k-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
     <label>Motion <select id="ctl-motion" class="k-select"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label>
   </div>
@@ -125,7 +125,8 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
   </nav>
   <main class="page" id="top">
     <h1>Duo and Nucli UI kit</h1>
-    <p class="lead">Interface pieces that move the way the mascots do: springs that overshoot a little, a squash on impact, a hold, then a snap. A showcase: every piece is plain HTML, CSS and JavaScript, and <b>View code</b> shows exactly what runs here. Use it as it is, or rebuild it in your own UI library; keep the tokens and the timing notes.</p>
+    <p class="lead">The mascots are the brand: <b>Duo</b> for splitscreen.me, <b>Nucli</b> for the handler tools. Every piece here carries one of them, or a bit of them (an electron, Duo's stripe, a player's colour), and moves the way they do: springs that overshoot a little, a squash on impact, a hold, then a snap. Messages appear where you acted, said by the mascot, not in a corner.</p>
+    <p class="lead">For the Nucleus Co-op handler tools, splitscreen.me, and anyone else who uses the mascots. A showcase: every piece is plain HTML, CSS and JavaScript, and <b>View code</b> shows exactly what runs here. Use it as it is, or rebuild it in your own UI library; keep the mascots, the tokens and the timing notes. When someone turns motion or mascots off, every piece falls back to plain icons and text.</p>
     <ul class="howto">
       <li><b>Find:</b> the list at the side (<b>Contents</b> on a phone; <kbd>/</kbd> to search), or the overview below.</li>
       <li><b>Try:</b> every demo works. Switch the look, light or dark, and Motion at the top.</li>
@@ -134,7 +135,7 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
     <h2 class="glance-h">At a glance</h2>
     <div id="glance"></div>
     <div id="content" tabindex="-1"><div id="kit"></div></div>
-    <footer>Duo is splitscreen.me's mascot, Nucli the handler tools'. Colours from the workbench's looks (playground/src/themes.json); player colours are the splitscreen.me button colours.</footer>
+    <footer>Duo is splitscreen.me's mascot, Nucli the mascot of the Nucleus Co-op handler tools. Made for those tools and for anyone who uses the mascots: copy what you need. Colours from splitscreen.me and v3.splitscreen.me; the player colours are the splitscreen.me button colours.</footer>
   </main>
 </div>
 <div class="k-toasts" id="k-toasts" role="region" aria-label="Notifications"></div>
@@ -146,11 +147,10 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
 
 /** The Motion setting that applies to an element: the closest data-motion, capped by the device's preference.
  *  "all" loops mascots; "default" plays them once (loaders keep going); "calm" keeps interface motion but still
- *  mascots; "still": nothing moves; "off": no mascots, nothing moves. The alpha 8 look: nothing moves, no mascots. */
+ *  mascots; "still": nothing moves; "off": no mascots, nothing moves. */
 function kitMotion(el) {
   const m = el.closest('[data-motion]')?.dataset.motion || 'default';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (el.closest('[data-look="alpha8"]')) return 'off';
   if (reduce) return m === 'off' ? 'off' : 'still';
   return m;
 }
@@ -171,6 +171,10 @@ function kitApplyMotion(root = document) {
 }
 
 const KIT_PLAYERS = ['#fca53d', '#ff434d', '#3fbbd8', '#55d137'];
+/** Players 5 to 8 (the Nucleus Co-op setup allows up to 8). */
+const KIT_PLAYERS8 = [...KIT_PLAYERS, '#b18cff', '#ff7ac6', '#ffd84a', '#7be0a8'];
+/** A lighter (f > 0) or darker (f < 0) version of a colour. */
+function kitShade(hex, f) { const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)); return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join(''); }
 const KIT_INK = '#1f2c46';
 let kitUid = 0;
 
@@ -199,7 +203,7 @@ function kitFace(mood, lx, rx, y, s, cls = '') {
 const kitFaces = (moods, ...a) => kitFace(moods[0], ...a, 'k-fa') + (moods[1] ? kitFace(moods[1], ...a, 'k-fb') : '');
 
 /** Nucli, simple build: a flat nucleus, one shadow shape, three orbits, an electron per player (SMIL). */
-function kitNucli({ moods = ['smile'], electrons = 4, orbits = true, label = '', small = false, attrs = '' } = {}) {
+function kitNucli({ moods = ['smile'], electrons = 4, orbits = true, label = '', small = false, attrs = '', crop = false } = {}) {
   const id = 'kn' + (++kitUid), ORB = 'M112 60 A52 15.5 0 1 1 8 60 A52 15.5 0 1 1 112 60', w = small ? 3.4 : 1.8;
   const half = (back) => `<path d="${back ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="#7f88ee" stroke-width="${w}" opacity="${back ? .35 : .75}" stroke-linecap="round"/>`;
   const els = [[0, 0, 0], [1, .34, 1], [2, .67, 2], [0, .5, 3]].slice(0, electrons);
@@ -208,16 +212,17 @@ function kitNucli({ moods = ['smile'], electrons = 4, orbits = true, label = '',
   const ring = (front) => orbits ? [0, 1, 2].map((k) => orbit(k, front)).join('') : '';
   const core = `<circle cx="60" cy="60" r="22" fill="#858ef0" stroke="#3c3fa8" stroke-width="${small ? 2.8 : 2}"/>${small ? '' : '<path d="M80.5 52 A22 22 0 0 1 52 80.5 A25 25 0 0 0 80.5 52 Z" fill="#5c62d6" opacity=".55"/>'}`;
   const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
-  return `<svg class="k-mascot k-nucli" viewBox="0 0 120 120" ${a11y} ${attrs}><defs><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath></defs><g class="k-float">${ring(false)}<g class="k-body">${core}${kitFaces(moods, 53, 67, 57, small ? 1.25 : .82)}</g>${ring(true)}</g></svg>`;
+  return `<svg class="k-mascot k-nucli" viewBox="${crop ? '36 36 48 48' : '0 0 120 120'}" ${a11y} ${attrs}><defs><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath></defs><g class="k-float">${ring(false)}<g class="k-body">${core}${kitFaces(moods, 53, 67, 57, small ? 1.25 : .82)}</g>${ring(true)}</g></svg>`;
 }
 
 /** Duo, simple build: two blue halves with the white stripe between them, dot eyes, arms, feet. */
-function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, attrs = '' } = {}) {
-  const id = 'kd' + (++kitUid), B = '#2b8bff', A = '#1f6fe6';
+function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, attrs = '', tint = '' } = {}) {
+  // tint: a player's colour instead of splitscreen.me blue (one Duo per player)
+  const id = 'kd' + (++kitUid), B = tint || '#2b8bff', A = tint ? kitShade(tint, -.16) : '#1f6fe6', F = tint ? kitShade(tint, -.32) : '#1858c4';
   const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], hold: ['', 'rotate(-50 90 66)'] }[arms] || ['', ''];
   const arm = (l) => small ? '' : `<g class="k-arm-${l ? 'l' : 'r'}"><g transform="${pose[l ? 0 : 1]}"><ellipse cx="${l ? 27 : 93}" cy="76" rx="5.8" ry="10.5" transform="rotate(${l ? 18 : -18} ${l ? 27 : 93} 76)" fill="${A}"/></g></g>`;
   const half = (l) => `<path d="${l ? 'M60 28 A34 34 0 0 0 60 96 Z' : 'M60 28 A34 34 0 0 1 60 96 Z'}" fill="#fff"/><path d="${l ? 'M58.5 28.03 A34 34 0 0 0 58.5 95.97 Z' : 'M61.5 28.03 A34 34 0 0 1 61.5 95.97 Z'}" fill="${B}"/>`;
-  const feet = small ? '' : `<ellipse class="k-foot-l" cx="48" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/><ellipse class="k-foot-r" cx="72" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/>`;
+  const feet = small ? '' : `<ellipse class="k-foot-l" cx="48" cy="99" rx="8.6" ry="4.6" fill="${F}"/><ellipse class="k-foot-r" cx="72" cy="99" rx="8.6" ry="4.6" fill="${F}"/>`;
   const shine = small ? '' : '<ellipse cx="44" cy="40" rx="8" ry="4" fill="#fff" opacity=".35" transform="rotate(-38 44 40)"/>';
   const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
   const body = `${arm(true)}${arm(false)}${half(true)}${half(false)}${shine}${kitFaces(moods, 47, 73, 58, small ? 1.4 : 1.15)}`;
@@ -232,7 +237,7 @@ function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, a
 // =====================================================================================================================
 const KIT = [];
 
-KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours per look and mode (from the workbench), the player colours, corners, and the motion tokens every component uses. Durations come from how long each moment is on screen.',
+KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours for the two splitscreen.me looks, light and dark, the player colours, corners, and the motion tokens every component uses. Durations come from how long each moment is on screen.',
   timing: 'Tap feedback 120 ms. Small state changes 200 ms. Icons in buttons 340 ms. Things that enter 260 ms, leave 180 ms. A confirmation ("Copied") stays 1.6 s. Toasts 3.5 s + 25 ms a letter (errors 8 s).',
   html: `<div class="sw" id="tok-sw"></div>`,
   css: `/* Colours: one set per look and mode. The kit only reads --k-* tokens. */
@@ -241,12 +246,6 @@ KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours per look and mode (from
 .kit[data-look="v3"] { --k-font: "Archivo", system-ui, sans-serif; --k-r-ctl: 8px; --k-r-pane: 14px; }
 .kit[data-look="v3"][data-mode="light"] { --k-bg: #eceef2; --k-surface: #ffffff; --k-surface-2: #f3f4f7; --k-line: #ccd1da; --k-fg: #0b0d12; --k-muted: #4f5767; --k-accent: #0b0d12; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #0b0d12; --k-code-fg: #f3f4f6; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
 .kit[data-look="v3"][data-mode="dark"] { --k-bg: #000000; --k-surface: #14171e; --k-surface-2: #1b1f28; --k-line: #3a4254; --k-fg: #f3f4f6; --k-muted: #a3abba; --k-accent: #f3f4f6; --k-accent-fg: #07080a; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #07080a; --k-code-fg: #f3f4f6; --k-shadow: 0 6px 24px rgba(0, 0, 0, .6); color-scheme: dark; }
-.kit[data-look="mac"] { --k-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; --k-r-ctl: 6px; --k-r-pane: 12px; }
-.kit[data-look="mac"][data-mode="light"] { --k-bg: #d9dce6; --k-surface: #ffffff; --k-surface-2: #f5f5f7; --k-line: #c4c4c9; --k-fg: #1d1d1f; --k-muted: #6e6e73; --k-accent: #0a66d8; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #1d1d1f; --k-code-fg: #f5f5f7; --k-shadow: 0 0 0 .5px rgba(0, 0, 0, .12), 0 8px 28px rgba(0, 0, 0, .18); color-scheme: light; }
-.kit[data-look="mac"][data-mode="dark"] { --k-bg: #15161c; --k-surface: #1f1f21; --k-surface-2: #2c2c2e; --k-line: #4a4a4e; --k-fg: #f5f5f7; --k-muted: #a1a1a6; --k-accent: #0a84ff; --k-accent-fg: #ffffff; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #111113; --k-code-fg: #f5f5f7; --k-shadow: 0 8px 28px rgba(0, 0, 0, .6); color-scheme: dark; }
-.kit[data-look="alpha8"] { --k-font: "Segoe UI", Tahoma, Verdana, sans-serif; --k-r-ctl: 0px; --k-r-pane: 0px; }
-.kit[data-look="alpha8"][data-mode="light"] { --k-bg: #e1e1e1; --k-surface: #f5f5f5; --k-surface-2: #dcdcdc; --k-line: #8c8c8c; --k-fg: #000000; --k-muted: #454545; --k-accent: #323232; --k-accent-fg: #ffffff; --k-ok: #1a6b2f; --k-err: #b00020; --k-warn: #7a5200; --k-code-bg: #000000; --k-code-fg: #f5f5f5; --k-shadow: 0 0 0 1px #000; color-scheme: light; }
-.kit[data-look="alpha8"][data-mode="dark"] { --k-bg: #323232; --k-surface: #282828; --k-surface-2: #3c3c3c; --k-line: #6e6e6e; --k-fg: #ffffff; --k-muted: #c8c8c8; --k-accent: #ffffff; --k-accent-fg: #1e1e1e; --k-ok: #6fd38a; --k-err: #ff8a80; --k-warn: #ffd166; --k-code-bg: #1e1e1e; --k-code-fg: #ffffff; --k-shadow: 0 0 0 1px #000; color-scheme: dark; }
 
 /* Players (the electrons) and motion. */
 .kit {
@@ -259,14 +258,14 @@ KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours per look and mode (from
 }
 
 /* Motion settings. "still" and "off": nothing moves (every state still shows). The device's preference wins. */
-.kit[data-motion="still"] *, .kit[data-motion="off"] *, .kit[data-look="alpha8"] * { animation: none !important; transition: none !important; }
+.kit[data-motion="still"] *, .kit[data-motion="off"] * { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .kit *, .kit *::before, .kit *::after { animation: none !important; transition: none !important; } }
 .kit[data-motion="calm"] .k-mascot * { animation: none !important; }
 .kit[data-motion="default"] .k-mascot:not(.k-busy *):not(.k-busy) * { animation-iteration-count: 1 !important; }
-/* "off" and alpha 8: the mascots step aside; a .k-plain fallback takes their place. */
+/* "off": the mascots step aside; a .k-plain fallback takes their place. */
 .k-plain { display: none; }
-.kit:is([data-motion="off"], [data-look="alpha8"]) .k-mascot { display: none !important; }
-.kit:is([data-motion="off"], [data-look="alpha8"]) .k-plain { display: inline-flex; }`,
+.kit[data-motion="off"] .k-mascot { display: none !important; }
+.kit[data-motion="off"] .k-plain { display: inline-flex; }`,
   js: function setupTokens(root) {
     const names = ['bg', 'surface', 'surface-2', 'line', 'fg', 'muted', 'accent', 'ok', 'err', 'warn', 'p1', 'p2', 'p3', 'p4'];
     const draw = () => { const cs = getComputedStyle(document.body); root.querySelector('#tok-sw').innerHTML = names.map((n) => `<div><i style="background:var(--k-${n})"></i>--k-${n}<br><code>${cs.getPropertyValue('--k-' + n).trim()}</code></div>`).join(''); };
@@ -280,7 +279,8 @@ KIT.push({ id: 'mascots', name: 'Mascots', about: 'Nucli and Duo as simple drawi
 <span class="k-m" style="width:24px;height:24px" data-nucli-small></span>
 <span class="k-m" style="width:24px;height:24px" data-duo-small></span>
 <span class="k-m" style="width:16px;height:16px" data-nucli-small></span>
-<span class="k-m" style="width:16px;height:16px" data-duo-small></span>`,
+<span class="k-m" style="width:16px;height:16px" data-duo-small></span>
+<span class="k-plain">The mascots are off (Motion: Off). Everywhere else, plain icons and text take their place.</span>`,
   css: `.k-m { display: inline-block; line-height: 0; flex: none; }
 .k-mascot { width: 100%; height: 100%; overflow: visible; display: block; }
 /* Only the parts that animate get an origin: the drawings' own transform attributes must keep theirs. */
@@ -300,7 +300,7 @@ KIT.push({ id: 'mascots', name: 'Mascots', about: 'Nucli and Duo as simple drawi
   } });
 
 KIT.push({ id: 'buttons', name: 'Buttons', about: 'Primary, secondary, quiet and danger, in two sizes. They squash a little under your finger and spring back. Each icon has its own short animation inside the button; copy, save and share confirm in the label. A busy button shows a tiny Nucli.',
-  timing: 'Press 120 ms down, spring back 260 ms. Icons 0.34 to 0.6 s, restarted by the next click (undo comes in bursts). The confirmation stays 1.6 s, as the workbench does.',
+  timing: 'Press 120 ms down, spring back 260 ms. Icons 0.34 to 0.6 s, restarted by the next click (undo comes in bursts). The confirmation stays 1.6 s.',
   html: `<button class="k-btn k-primary" data-icon="run">Try it</button>
 <button class="k-btn" data-icon="copy" data-done="Copied">Copy</button>
 <button class="k-btn" data-icon="save" data-done="Saved">Save</button>
@@ -314,7 +314,7 @@ KIT.push({ id: 'buttons', name: 'Buttons', about: 'Primary, secondary, quiet and
 <button class="k-btn k-sm" data-icon="copy" data-done="Copied">Small</button>
 <button class="k-btn" disabled>Disabled</button>
 <button class="k-btn k-primary" data-busy-demo>Test all</button>`,
-  css: `.k-btn { font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 14px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; transition: transform var(--k-enter) var(--k-spring), border-color var(--k-quick), background var(--k-quick); }
+  css: `.k-btn { font: inherit; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 14px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; transition: transform var(--k-enter) var(--k-spring), border-color var(--k-quick), background var(--k-quick); }
 .k-btn:hover:not(:disabled) { border-color: var(--k-accent); }
 .k-btn:active:not(:disabled) { transform: scale(.95, .92); transition-duration: var(--k-tap); transition-timing-function: var(--k-out); }
 .k-btn:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
@@ -383,46 +383,96 @@ KIT.push({ id: 'buttons', name: 'Buttons', about: 'Primary, secondary, quiet and
     }));
   } });
 
-KIT.push({ id: 'toggles', name: 'Switch, checkbox, radio', about: 'The switch\'s knob is an electron: it stretches as it travels and squashes when it lands. The check draws itself with a little pop; the radio\'s dot pops in like an electron joining.',
-  timing: 'Switch 260 ms with a stretch in the middle. Check 200 ms. Radio 260 ms, springy.',
-  html: `<button class="k-switch" role="switch" aria-checked="false" aria-label="Electrons in the look's colours"><i></i></button>
-<label class="k-check"><input type="checkbox" checked><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg>Lint as I type</label>
-<label class="k-check"><input type="checkbox"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg>Show hints</label>
+KIT.push({ id: 'toggles', name: 'Switch, checkbox, players', about: 'The switch\'s knob is a tiny Nucli: asleep when off, awake when on, and he stretches as he travels. When you tick a box, an electron runs along the check. Choosing how many players: one Duo per player, in the players\' colours; they hop in a wave when you pick.',
+  timing: 'Switch 260 ms with a stretch in the middle. Check 200 ms, the electron 280 ms. Players: a hop each, 60 ms apart.',
+  html: `<button class="k-switch" role="switch" aria-checked="false" aria-label="Lint as I type"><i class="k-knob"></i></button>
+<label class="k-check"><input type="checkbox" checked><span class="k-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg><i class="k-check-e"></i></span>Show hints</label>
 <fieldset class="k-radios"><legend>Players</legend>
-  <label class="k-radio"><input type="radio" name="kp" checked>2</label>
-  <label class="k-radio"><input type="radio" name="kp">3</label>
-  <label class="k-radio"><input type="radio" name="kp">4</label>
+  <label class="k-radio"><input type="radio" name="kp" value="2" checked><span class="k-duos" data-n="2" aria-hidden="true"></span>2</label>
+  <label class="k-radio"><input type="radio" name="kp" value="3"><span class="k-duos" data-n="3" aria-hidden="true"></span>3</label>
+  <label class="k-radio"><input type="radio" name="kp" value="4"><span class="k-duos" data-n="4" aria-hidden="true"></span>4</label>
 </fieldset>`,
-  css: `.k-switch { position: relative; width: 44px; height: 26px; flex: none; border-radius: 13px; border: 1px solid var(--k-line); background: var(--k-surface-2); cursor: pointer; padding: 0; transition: background var(--k-quick), border-color var(--k-quick); }
-.k-switch i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--k-muted); box-shadow: 0 0 0 2px var(--k-surface); }
+  css: `.k-switch { position: relative; width: 50px; height: 28px; flex: none; border-radius: 14px; border: 1px solid var(--k-line); background: var(--k-surface-2); cursor: pointer; padding: 0; transition: background var(--k-quick), border-color var(--k-quick); }
+.k-switch .k-knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; line-height: 0; }
 .k-switch[aria-checked="true"] { background: var(--k-accent); border-color: var(--k-accent); }
-.k-switch[aria-checked="true"] i { transform: translateX(18px); background: var(--k-p4); }
+.k-switch[aria-checked="true"] .k-knob { transform: translateX(22px); }
 .k-switch:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-switch .k-plain { width: 100%; height: 100%; border-radius: 50%; background: var(--k-muted); box-shadow: 0 0 0 2px var(--k-surface); }
+.k-switch[aria-checked="true"] .k-plain { background: var(--k-surface); }
 .k-check, .k-radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; position: relative; }
 .k-check input, .k-radio input { appearance: none; margin: 0; width: 20px; height: 20px; border: 2px solid var(--k-muted); border-radius: calc(var(--k-r-ctl) * .6); background: var(--k-surface); cursor: pointer; transition: background var(--k-quick), border-color var(--k-quick); }
 .k-check input:checked { background: var(--k-accent); border-color: var(--k-accent); animation: k-pop var(--k-enter) var(--k-spring); }
-.k-check svg { position: absolute; left: 0; top: 50%; width: 20px; height: 20px; margin-top: -10px; pointer-events: none; fill: none; stroke: var(--k-accent-fg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.k-check svg path { stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset var(--k-quick) var(--k-out); }
-.k-check input:checked + svg path { stroke-dashoffset: 0; }
-.k-radios { display: inline-flex; gap: 12px; border: 0; padding: 0; margin: 0; align-items: center; }
-.k-radios legend { float: left; margin-right: 10px; color: var(--k-muted); }
-.k-radio input { border-radius: 50%; display: grid; place-items: center; }
-.k-radio input::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--k-accent); transform: scale(0); transition: transform var(--k-enter) var(--k-spring); }
-.k-radio input:checked { border-color: var(--k-accent); }
-.k-radio input:checked::after { transform: scale(1); }
-:is(.k-check, .k-radio) input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-check-box { position: absolute; left: 0; top: 50%; width: 20px; height: 20px; margin-top: -10px; pointer-events: none; }
+.k-check-box svg { width: 20px; height: 20px; fill: none; stroke: var(--k-accent-fg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.k-check-box path { stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset var(--k-quick) var(--k-out); }
+.k-check input:checked + .k-check-box path { stroke-dashoffset: 0; }
+.k-check-e { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--k-p4); box-shadow: 0 0 0 1.5px #fff; offset-path: path('M5 10.5 l3.2 3.2 l6.8 -7'); offset-rotate: 0deg; opacity: 0; }
+.k-radios { display: inline-flex; gap: 10px; border: 0; padding: 0; margin: 0; align-items: center; flex-wrap: wrap; }
+.k-radios legend { float: left; margin-right: 6px; color: var(--k-muted); }
+.k-radio { padding: 4px 10px 4px 6px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); }
+.k-radio:has(input:checked) { border-color: var(--k-accent); box-shadow: inset 0 0 0 1px var(--k-accent); }
+.k-radio:has(input:focus-visible) { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-radio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.k-duos { display: inline-flex; gap: 1px; }
+.k-duos .k-m { width: 20px; height: 20px; }
+.k-radio:not(:has(input:checked)) .k-duos { filter: saturate(.35); opacity: .7; }
+.kit[data-motion="off"] .k-radio input { position: static; opacity: 1; width: 20px; height: 20px; border-radius: 50%; }
 @keyframes k-pop { 40% { transform: scale(.82); } 75% { transform: scale(1.1); } }`,
   js: function setupToggles(root) {
-    root.querySelectorAll('.k-switch').forEach((s) => s.addEventListener('click', () => {
-      const on = s.getAttribute('aria-checked') !== 'true';
-      s.setAttribute('aria-checked', String(on));
-      if (!kitMoves(s)) return;
-      const [a, b] = on ? [0, 18] : [18, 0];
-      s.querySelector('i').animate([{ transform: `translateX(${a}px)` }, { transform: `translateX(${(a + b) / 2}px) scale(1.4, .78)`, offset: .45 }, { transform: `translateX(${b}px) scale(.86, 1.12)`, offset: .78 }, { transform: `translateX(${b}px)` }], { duration: 260, easing: 'ease-out' });
+    root.querySelectorAll('.k-switch').forEach((s) => {
+      const knob = s.querySelector('.k-knob');
+      knob.innerHTML = kitNucli({ moods: ['sleep', 'happy'], orbits: false, crop: true }) + '<span class="k-plain"></span>';
+      s.addEventListener('click', () => {
+        const on = s.getAttribute('aria-checked') !== 'true';
+        s.setAttribute('aria-checked', String(on)); s.classList.toggle('k-alt', on);
+        if (!kitMoves(s)) return;
+        const [a, b] = on ? [0, 22] : [22, 0];
+        knob.animate([{ transform: `translateX(${a}px)` }, { transform: `translateX(${(a + b) / 2}px) scale(1.35, .8)`, offset: .45 }, { transform: `translateX(${b}px) scale(.88, 1.1)`, offset: .78 }, { transform: `translateX(${b}px)` }], { duration: 260, easing: 'ease-out' });
+      });
+    });
+    root.querySelectorAll('.k-check input').forEach((c) => c.addEventListener('change', () => {
+      if (c.checked && kitMoves(c)) c.parentElement.querySelector('.k-check-e').animate([{ offsetDistance: '0%', opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { offsetDistance: '100%', opacity: 0 }], { duration: 280, delay: 60, easing: 'ease-in-out' });
+    }));
+    root.querySelectorAll('.k-duos').forEach((d) => { d.innerHTML = Array.from({ length: +d.dataset.n }, (_, i) => `<span class="k-m">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span>`).join(''); });
+    root.querySelectorAll('.k-radio input').forEach((r) => r.addEventListener('change', () => {
+      if (!kitMoves(r)) return;
+      r.parentElement.querySelectorAll('.k-duos .k-m').forEach((m, i) => m.animate([{ transform: 'none' }, { transform: 'translateY(-7px) scale(.92, 1.1)', offset: .4 }, { transform: 'scale(1.12, .86)', offset: .75 }, { transform: 'none' }], { duration: 360, delay: i * 60, easing: 'ease-out' }));
     }));
   } });
 
-KIT.push({ id: 'tabs', name: 'Tabs', about: 'The underline travels like a body with weight: the edge in front leads, the back one follows, so it stretches on the way and settles on arrival. Arrow keys move between tabs.',
+KIT.push({ id: 'slider', name: 'Player slider', about: 'Picking a number of players from 1 to 8: the handle is Duo\'s ball with its white stripe, and a Duo in each player\'s colour pops in, or out, as you slide. The number is always written too.',
+  timing: 'A Duo pops in 300 ms (springy), out 180 ms. Pressing the handle squashes it.',
+  html: `<div class="k-slider">
+  <label for="ks-n">Players</label>
+  <div class="k-slider-duos" aria-hidden="true"></div>
+  <input type="range" id="ks-n" min="1" max="8" value="2">
+  <output for="ks-n">2 players</output>
+</div>`,
+  css: `.k-slider { display: grid; gap: 6px; width: min(100%, 380px); }
+.k-slider label { font-weight: 600; font-size: 14px; }
+.k-slider-duos { display: flex; gap: 6px; height: 34px; align-items: flex-end; }
+.k-slider-duos .k-m { width: 32px; height: 32px; }
+.k-slider input { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; margin: 8px 0; border-radius: 4px; background: linear-gradient(var(--k-accent), var(--k-accent)) 0 / var(--fill, 14%) 100% no-repeat, color-mix(in srgb, var(--k-fg) 14%, transparent); }
+.k-slider input::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; background: linear-gradient(90deg, #2b8bff 0 44%, #fff 44% 56%, #2b8bff 56%); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); cursor: grab; transition: transform var(--k-tap) var(--k-out); }
+.k-slider input:active::-webkit-slider-thumb { transform: scale(1.15, .88); cursor: grabbing; }
+.k-slider input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; background: linear-gradient(90deg, #2b8bff 0 44%, #fff 44% 56%, #2b8bff 56%); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.k-slider input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 6px; }
+.k-slider output { font-size: 14px; color: var(--k-muted); }
+.kit[data-motion="off"] .k-slider input::-webkit-slider-thumb { background: var(--k-accent); }
+.kit[data-motion="off"] .k-slider-duos { display: none; }`,
+  js: function setupSlider(root) {
+    const input = root.querySelector('#ks-n'), out = root.querySelector('output'), row = root.querySelector('.k-slider-duos');
+    const duo = (i) => { const s = document.createElement('span'); s.className = 'k-m'; s.innerHTML = kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] }); return s; };
+    const sync = (first) => {
+      const n = +input.value;
+      out.textContent = n + (n === 1 ? ' player' : ' players');
+      input.style.setProperty('--fill', ((n - 1) / 7 * 100) + '%');
+      while (row.children.length < n) { const s = duo(row.children.length); row.append(s); if (!first && kitMoves(row)) s.animate([{ transform: 'translateY(-14px) scale(.5)', opacity: 0 }, { transform: 'scale(1.15, .85)', opacity: 1, offset: .6 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' }); }
+      [...row.children].slice(n).forEach((s) => { if (s.dataset.out) return; s.dataset.out = '1'; if (kitMoves(row)) s.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.3)', opacity: 0 }], { duration: 180, easing: 'ease-in' }).finished.then(() => s.remove()); else s.remove(); });
+    };
+    input.addEventListener('input', () => sync(false)); sync(true);
+  } });
+KIT.push({ id: 'tabs', name: 'Tabs', about: 'The underline travels like a body with weight: the edge in front leads, the back one follows, so it stretches on the way and settles on arrival. An electron rides its end. Arrow keys move between tabs.',
   timing: 'Lead edge 220 ms, trailing edge 300 ms, both springy.',
   html: `<div class="k-tabs" role="tablist" aria-label="Panels">
   <button role="tab" aria-selected="true" aria-controls="kt1" id="kt1t">Check</button>
@@ -439,6 +489,8 @@ KIT.push({ id: 'tabs', name: 'Tabs', about: 'The underline travels like a body w
 .k-tabs [role="tab"]:hover { color: var(--k-fg); }
 .k-tabs [role="tab"]:focus-visible { outline: 2px solid var(--k-accent); outline-offset: -2px; }
 .k-tabs-bar { position: absolute; bottom: -1px; left: 0; height: 3px; width: 0; border-radius: 2px; background: var(--k-accent); }
+.k-tabs-bar::after { content: ""; position: absolute; right: -5px; top: -3.5px; width: 10px; height: 10px; border-radius: 50%; background: var(--k-p1); box-shadow: 0 0 0 2px var(--k-surface); }
+.kit[data-motion="off"] .k-tabs-bar::after { display: none; }
 .k-tabpanel { width: 100%; padding: 6px 2px; color: var(--k-muted); }`,
   js: function setupTabs(root) {
     const list = root.querySelector('.k-tabs'), tabs = [...list.querySelectorAll('[role="tab"]')], bar = list.querySelector('.k-tabs-bar');
@@ -464,31 +516,37 @@ KIT.push({ id: 'tabs', name: 'Tabs', about: 'The underline travels like a body w
     document.addEventListener('kit-look', () => requestAnimationFrame(() => place(tabs.find((x) => x.getAttribute('aria-selected') === 'true'))));
   } });
 
-KIT.push({ id: 'fields', name: 'Text field', about: 'A label above, a hint below. On a wrong submit the field gives one small shake (no more: it\'s your mistake, not a party) and says what\'s wrong; when it\'s right a check pops in.',
-  timing: 'Shake 280 ms, 3 px. Check 260 ms, springy. Never on every keystroke: only on submit, or when you leave the field.',
+KIT.push({ id: 'fields', name: 'Text field', about: 'A small Nucli sits at the end of the field and helps: he concentrates while you type, beams when it\'s right, and looks worried (with one small shake of the field) when it\'s wrong. The message is written under the field, where the mistake is.',
+  timing: 'Face changes instantly; shake 280 ms, 3 px; never on every keystroke, only when you submit or leave the field.',
   html: `<form class="k-form" novalidate>
   <div class="k-field">
     <label for="kf-exe">Game.ExecutableName</label>
-    <div class="k-input"><input id="kf-exe" placeholder="Game.exe" aria-describedby="kf-exe-hint"><svg class="k-ok-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg></div>
+    <div class="k-input"><input id="kf-exe" placeholder="Game.exe" aria-describedby="kf-exe-hint"><span class="k-m k-field-m"></span><svg class="k-ok-ico k-plain" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg></div>
     <p class="k-hint" id="kf-exe-hint">The game's .exe file name.</p>
   </div>
   <button class="k-btn k-primary">Save</button>
 </form>`,
   css: `.k-form { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
-.k-field { display: grid; gap: 4px; min-width: min(100%, 260px); }
+.k-field { display: grid; gap: 4px; min-width: min(100%, 280px); }
 .k-field label { font-weight: 600; font-size: 14px; }
 .k-input { position: relative; }
-.k-input input { font: inherit; width: 100%; padding: 7px 34px 7px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); transition: border-color var(--k-quick), box-shadow var(--k-quick); }
+.k-input input { font: inherit; width: 100%; padding: 7px 40px 7px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); transition: border-color var(--k-quick), box-shadow var(--k-quick); }
 .k-input input:focus { outline: none; border-color: var(--k-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-accent) 25%, transparent); }
 .k-input input[aria-invalid="true"] { border-color: var(--k-err); }
+.k-field-m { position: absolute; right: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; pointer-events: none; }
 .k-hint { margin: 0; font-size: 13px; color: var(--k-muted); }
 .k-hint.k-err { color: var(--k-err); }
-.k-ok-ico { position: absolute; right: 8px; top: 50%; width: 20px; height: 20px; margin-top: -10px; fill: none; stroke: var(--k-ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transform: scale(0); transition: transform var(--k-enter) var(--k-spring); }
+.k-ok-ico { position: absolute; right: 8px; top: 50%; width: 20px; height: 20px; margin-top: -10px; fill: none; stroke: var(--k-ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transform: scale(0); }
 .k-field.k-valid .k-ok-ico { transform: scale(1); }
 .k-form > .k-btn { margin-top: 26px; }`,
   js: function setupFields(root) {
-    const form = root.querySelector('.k-form'), input = form.querySelector('input'), hint = form.querySelector('.k-hint'), field = form.querySelector('.k-field');
+    const form = root.querySelector('.k-form'), input = form.querySelector('input'), hint = form.querySelector('.k-hint'), field = form.querySelector('.k-field'), m = form.querySelector('.k-field-m');
     const original = hint.textContent;
+    const face = (mood) => { if (m.dataset.mood === mood) return; m.dataset.mood = mood; m.innerHTML = kitNucli({ moods: [mood], orbits: false, crop: true }); };
+    face('smile');
+    input.addEventListener('focus', () => !field.classList.contains('k-valid') && face('focus'));
+    input.addEventListener('blur', () => !field.classList.contains('k-valid') && input.getAttribute('aria-invalid') !== 'true' && face('smile'));
+    input.addEventListener('input', () => { field.classList.remove('k-valid'); face('focus'); });
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const ok = /\.exe$/i.test(input.value.trim());
@@ -496,12 +554,12 @@ KIT.push({ id: 'fields', name: 'Text field', about: 'A label above, a hint below
       field.classList.toggle('k-valid', ok);
       hint.classList.toggle('k-err', !ok);
       hint.textContent = ok ? original : input.value.trim() ? 'End it with .exe, like Game.exe.' : 'Type the game\'s .exe file name.';
+      face(ok ? 'happy' : 'worried');
+      if (kitMoves(form)) m.animate(ok ? [{ transform: 'none' }, { transform: 'translateY(-4px) scale(1.15)', offset: .4 }, { transform: 'none' }] : [{ transform: 'none' }, { transform: 'rotate(-12deg)', offset: .3 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
       if (!ok) { input.focus(); if (kitMoves(form)) input.animate([{ transform: 'none' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(-2px)' }, { transform: 'none' }], { duration: 280, easing: 'ease-out' }); }
     });
-    input.addEventListener('input', () => field.classList.remove('k-valid'));
   } });
-
-KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from its button with a little spring; arrow keys, Enter and Escape work. A tooltip waits 0.3 s before it shows (so passing over doesn\'t flash it) and slides 4 px into place.',
+KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from its button with a little spring; arrow keys, Enter and Escape work. A tooltip waits 0.3 s before it shows (so passing over doesn\'t flash it) and slides 4 px into place; Nucli says it.',
   timing: 'Menu 200 ms in, 140 ms out. Tooltip after 300 ms, 120 ms in.',
   html: `<div class="k-menu">
   <button class="k-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="km1">Open ▾</button>
@@ -511,7 +569,7 @@ KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from it
     <li role="menuitem" tabindex="-1">A file from this computer</li>
   </ul>
 </div>
-<span class="k-tip-wrap"><button class="k-btn k-quiet" aria-describedby="ktip1">Hover me</button><span class="k-tip" role="tooltip" id="ktip1">Runs the handler once per player</span></span>`,
+<span class="k-tip-wrap"><button class="k-btn k-quiet" aria-describedby="ktip1">Hover me</button><span class="k-tip" role="tooltip" id="ktip1"><span class="k-m k-tip-m"></span>Runs the handler once per player</span></span>`,
   css: `.k-menu { position: relative; }
 .k-menu-list { position: absolute; z-index: 5; top: calc(100% + 6px); left: 0; min-width: 220px; margin: 0; padding: 4px; list-style: none; background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); box-shadow: var(--k-shadow); transform-origin: top left; }
 .k-menu-list [role="menuitem"] { padding: 7px 10px; border-radius: calc(var(--k-r-ctl) - 2px); cursor: pointer; }
@@ -519,7 +577,8 @@ KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from it
 .k-menu-list [role="menuitem"]:focus-visible { box-shadow: inset 0 0 0 2px var(--k-accent); }
 .k-tip-wrap { position: relative; display: inline-flex; }
 .k-tip { position: absolute; bottom: calc(100% + 6px); left: 50%; width: max-content; max-width: 220px; padding: 5px 9px; font-size: 13px; border-radius: 6px; background: var(--k-fg); color: var(--k-bg); opacity: 0; transform: translate(-50%, 4px); pointer-events: none; transition: opacity 120ms var(--k-out), transform 120ms var(--k-out); }
-.k-tip.k-show { opacity: 1; transform: translate(-50%, 0); }`,
+.k-tip.k-show { opacity: 1; transform: translate(-50%, 0); }
+.k-tip { display: flex; gap: 6px; align-items: center; } .k-tip-m { width: 20px; height: 20px; flex: none; }`,
   js: function setupMenus(root) {
     const btn = root.querySelector('[aria-haspopup="menu"]'), list = root.querySelector('.k-menu-list'), items = [...list.children];
     const open = () => { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); items[0].focus(); if (kitMoves(btn)) list.animate([{ opacity: 0, transform: 'scale(.92, .85)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.34, 1.4, .64, 1)' }); };
@@ -528,6 +587,7 @@ KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from it
     list.addEventListener('keydown', (e) => { const i = items.indexOf(document.activeElement); if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); } if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); } if (e.key === 'Escape' || e.key === 'Enter') close(); });
     items.forEach((it) => it.addEventListener('click', () => close()));
     document.addEventListener('click', (e) => { if (!e.target.closest('.k-menu')) close(false); });
+    root.querySelectorAll('.k-tip-m').forEach((m) => (m.innerHTML = kitNucli({ moods: ['smile'], orbits: false, crop: true })));
     root.querySelectorAll('.k-tip-wrap').forEach((w) => {
       const tip = w.querySelector('.k-tip'); let t;
       const show = () => { clearTimeout(t); t = setTimeout(() => tip.classList.add('k-show'), 300); };
@@ -537,76 +597,133 @@ KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from it
     });
   } });
 
-KIT.push({ id: 'badges', name: 'Badges and counters', about: 'Status pills, and a counter that bumps when its number changes: up with a little jump, down with a small dip.',
-  timing: 'Bump 300 ms, springy.',
-  html: `<span class="k-pill k-pill-ok">Ready for Nucleus</span>
-<span class="k-pill k-pill-err">Nucleus can't use this handler yet</span>
-<span class="k-pill k-pill-warn">2 settings may not work</span>
-<span class="k-count-demo"><button class="k-btn k-sm" data-d="-1" aria-label="One problem fewer">−</button> Problems <span class="k-count" aria-live="polite">3</span> <button class="k-btn k-sm" data-d="1" aria-label="One more problem">+</button></span>`,
-  css: `.k-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid currentColor; }
-.k-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+KIT.push({ id: 'badges', name: 'Badges and counters', about: 'Status pills wear Nucli\'s face for their mood. The problem counter bumps when its number changes, and when it reaches zero Nucli takes its place, pleased.',
+  timing: 'Bump 300 ms, springy; Nucli pops in at zero in 300 ms.',
+  html: `<span class="k-pill k-pill-ok" data-mood="happy">Ready for Nucleus</span>
+<span class="k-pill k-pill-err" data-mood="worried">Nucleus can't use this handler yet</span>
+<span class="k-pill k-pill-warn" data-mood="focus">2 settings may not work</span>
+<span class="k-count-demo"><button class="k-btn k-sm" data-d="-1" aria-label="One problem fewer">−</button> Problems <span class="k-count" aria-live="polite">2</span> <button class="k-btn k-sm" data-d="1" aria-label="One more problem">+</button></span>`,
+  css: `.k-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 4px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid currentColor; }
+.k-pill .k-m { width: 20px; height: 20px; }
+.k-pill .k-plain { width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; background: currentColor; }
 .k-pill-ok { color: var(--k-ok); } .k-pill-err { color: var(--k-err); } .k-pill-warn { color: var(--k-warn); }
 .k-count-demo { display: inline-flex; align-items: center; gap: 8px; }
-.k-count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--k-err); color: #fff; font-weight: 700; font-size: 13px; }
-.k-count.k-zero { background: var(--k-ok); }`,
+.k-count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--k-err); color: #fff; font-weight: 700; font-size: 13px; }
+.k-count.k-zero { background: transparent; padding: 0; }
+.k-count .k-m { width: 26px; height: 26px; }
+.k-count.k-zero .k-plain { background: var(--k-ok); color: #fff; min-width: 26px; height: 26px; border-radius: 13px; align-items: center; justify-content: center; }`,
   js: function setupBadges(root) {
+    root.querySelectorAll('.k-pill[data-mood]').forEach((p) => p.insertAdjacentHTML('afterbegin', `<span class="k-m">${kitNucli({ moods: [p.dataset.mood], orbits: false, crop: true })}</span><span class="k-plain"></span>`));
     const c = root.querySelector('.k-count');
     root.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
-      const n = Math.max(0, +c.textContent + +b.dataset.d), up = +b.dataset.d > 0;
-      c.textContent = n; c.classList.toggle('k-zero', n === 0);
-      if (kitMoves(c)) c.animate(up ? [{ transform: 'none' }, { transform: 'translateY(-4px) scale(1.25)', offset: .35 }, { transform: 'none' }] : [{ transform: 'none' }, { transform: 'translateY(2px) scale(.85)', offset: .35 }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.34, 1.56, .64, 1)' });
+      const was = c.classList.contains('k-zero') ? 0 : +c.textContent, n = Math.max(0, was + +b.dataset.d), up = n > was;
+      if (n === was) return;
+      c.classList.toggle('k-zero', n === 0);
+      c.innerHTML = n === 0 ? `<span class="k-m">${kitNucli({ moods: ['happy'], orbits: false, crop: true, label: 'No problems' })}</span><span class="k-plain">0</span>` : n;
+      if (!kitMoves(c)) return;
+      if (n === 0) c.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.2)', opacity: 1, offset: .6 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
+      else c.animate(up ? [{ transform: 'none' }, { transform: 'translateY(-4px) scale(1.25)', offset: .35 }, { transform: 'none' }] : [{ transform: 'none' }, { transform: 'translateY(2px) scale(.85)', offset: .35 }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.34, 1.56, .64, 1)' });
     }));
   } });
-
-KIT.push({ id: 'toasts', name: 'Toasts', about: 'They slide up with a little overshoot. The mascot reacts once in the first second (a hop for good news, a flinch for bad), then holds his face while you read. The line at the bottom is the time left; hovering or focusing it pauses. Close with the button or Escape.',
-  timing: 'In 260 ms, out 180 ms. Reaction ≤ 1 s, then a still pose. Shown 3.5 s + 25 ms a letter, errors 8 s (as the workbench).',
-  html: `<button class="k-btn" data-toast="ok">Fixed 12 problems</button>
-<button class="k-btn" data-toast="err">Try it failed</button>
-<button class="k-btn" data-toast="info">Duo: handler installed</button>`,
-  css: `.k-toasts { position: fixed; z-index: 50; right: 16px; bottom: 16px; display: grid; gap: 8px; width: min(360px, calc(100vw - 32px)); }
-.k-toast { position: relative; display: flex; gap: 10px; align-items: center; padding: 10px 12px 12px; background: var(--k-surface); color: var(--k-fg); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); box-shadow: var(--k-shadow); overflow: hidden; }
-.k-toast .k-m { width: 40px; height: 40px; }
-.k-toast p { margin: 0; flex: 1; font-size: 14px; }
-.k-toast .k-x { font: inherit; background: none; border: 0; color: var(--k-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; border-radius: 6px; }
-.k-toast .k-x:focus-visible { outline: 2px solid var(--k-accent); }
-.k-toast .k-life { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--k-accent); transform-origin: left; }
-.k-toast.k-err .k-life { background: var(--k-err); } .k-toast.k-ok .k-life { background: var(--k-ok); }
-.k-toast .k-plain { width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; font-size: 13px; }
-.k-toast.k-ok .k-plain { background: var(--k-ok); } .k-toast.k-err .k-plain { background: var(--k-err); } .k-toast.k-info .k-plain { background: var(--k-accent); color: var(--k-accent-fg); }
+KIT.push({ id: 'toasts', name: 'Messages near the action', about: 'Say it where it happened. A message appears next to the button you pressed or in the row it concerns: the mascot says it in a small speech bubble that never covers what you clicked. A toast in the corner is only the fallback, when that place is gone (a menu that closed, a page you left).',
+  timing: 'Bubble in 220 ms with a little spring; the mascot reacts once, then holds. It stays 3.5 s + 25 ms a letter (errors until you close them or click elsewhere). Hovering or focusing it keeps it. Toast (fallback only): in 260 ms, out 180 ms.',
+  html: `<div class="k-say-demo">
+  <button class="k-btn k-primary" data-say="fix">Fix all</button>
+  <button class="k-btn" data-say="try">Try it</button>
+</div>
+<ul class="k-rows">
+  <li><span>Borderlands 2</span><span class="k-row-act"><button class="k-btn k-sm" data-install>Install</button></span></li>
+  <li><span>Terraria</span><span class="k-row-act"><button class="k-btn k-sm" data-install>Install</button></span></li>
+</ul>
+<div class="k-menu">
+  <button class="k-btn k-quiet" aria-haspopup="menu" aria-expanded="false" aria-controls="ksm">More ▾</button>
+  <ul class="k-menu-list" role="menu" id="ksm" hidden><li role="menuitem" tabindex="-1" data-fallback>Copy share link</li></ul>
+</div>`,
+  css: `.k-say-demo { display: flex; gap: 10px; flex-wrap: wrap; }
+.k-say { position: absolute; z-index: 45; display: flex; gap: 8px; align-items: center; max-width: min(320px, calc(100vw - 24px)); padding: 7px 10px 7px 6px; border-radius: 14px; background: var(--k-surface); color: var(--k-fg); border: 1px solid var(--k-line); box-shadow: var(--k-shadow); font-size: 14px; }
+.k-say::before { content: ""; position: absolute; top: -7px; left: var(--tail, 22px); width: 12px; height: 12px; background: inherit; border-left: 1px solid var(--k-line); border-top: 1px solid var(--k-line); transform: rotate(45deg); }
+.k-say.k-above::before { top: auto; bottom: -7px; transform: rotate(225deg); }
+.k-say .k-m { width: 34px; height: 34px; }
+.k-say.k-err { border-color: var(--k-err); } .k-say.k-err::before { border-color: var(--k-err); }
+.k-say .k-x { font: inherit; background: none; border: 0; color: var(--k-muted); cursor: pointer; font-size: 17px; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+.k-say .k-x:focus-visible { outline: 2px solid var(--k-accent); }
+.k-say .k-plain { width: 20px; height: 20px; flex: none; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 700; background: var(--k-ok); }
+.k-say.k-err .k-plain { background: var(--k-err); }
+.k-rows { list-style: none; margin: 0; padding: 0; width: min(100%, 420px); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); }
+.k-rows li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; min-height: 52px; }
+.k-rows li + li { border-top: 1px solid var(--k-line); }
+.k-row-act { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.k-row-act .k-m { width: 34px; height: 34px; }
+.k-row-act .k-done-t { color: var(--k-ok); font-weight: 600; }
+.k-toasts { position: fixed; z-index: 50; right: 16px; bottom: 16px; display: grid; gap: 8px; width: min(340px, calc(100vw - 32px)); }
+.k-toast { position: relative; display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--k-surface); color: var(--k-fg); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); box-shadow: var(--k-shadow); font-size: 14px; }
+.k-toast .k-m { width: 34px; height: 34px; }
+.k-toast p { margin: 0; flex: 1; }
 .k-react-ok .k-body { animation: k-hop .7s var(--k-spring) 1; }
 .k-react-err .k-body { animation: k-flinch .5s ease-out 1; }
 @keyframes k-hop { 0% { transform: none; } 20% { transform: scale(1.12, .86); } 45% { transform: translateY(-9px) scale(.95, 1.06); } 70% { transform: scale(1.06, .94); } 100% { transform: none; } }
 @keyframes k-flinch { 0% { transform: none; } 18% { transform: translateX(-4px) rotate(-6deg); } 40% { transform: translateX(2px); } 100% { transform: none; } }`,
-  js: function setupToasts(root) {
-    const box = document.getElementById('k-toasts');
-    function toast(text, kind = 'info', who = 'nucli') {
-      const ms = kind === 'err' ? 8000 : Math.min(8000, 3500 + text.length * 25);
+  js: function setupMessages(root) {
+    /** The mascot says it next to `anchor` (below it, or above when there's no room). Falls back to a toast when the
+     *  anchor is gone or hidden. kind: 'ok' | 'err' | 'info'; who: 'nucli' | 'duo'. */
+    function kitSay(anchor, text, { kind = 'ok', who = 'nucli' } = {}) {
+      const r = anchor?.isConnected && anchor.offsetParent ? anchor.getBoundingClientRect() : null;
+      if (!r || r.bottom < 0 || r.top > innerHeight) return kitToast(text, { kind, who });
+      document.querySelectorAll('.k-say').forEach((b) => b._close?.());
       const mood = kind === 'err' ? ['worried'] : ['smile', 'happy'];
-      const m = who === 'duo' ? kitDuo({ moods: mood, arms: kind === 'ok' ? 'up' : 'down' }) : kitNucli({ moods: mood, small: true });
       const el = document.createElement('div');
+      el.className = `k-say k-${kind}`; el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+      el.innerHTML = `<span class="k-m k-react-${kind === 'err' ? 'err' : 'ok'}">${who === 'duo' ? kitDuo({ small: true, moods: mood }) : kitNucli({ small: true, moods: mood })}</span><span class="k-plain" aria-hidden="true">${kind === 'err' ? '!' : '✓'}</span><span>${text}</span><button class="k-x" aria-label="Close">×</button>`;
+      document.body.append(el); kitApplyMotion(el);
+      const w = el.offsetWidth, h = el.offsetHeight, below = r.bottom + h + 14 < innerHeight;
+      const left = Math.min(Math.max(8, r.left + r.width / 2 - 28), innerWidth - w - 8);
+      el.style.left = left + scrollX + 'px';
+      el.style.top = (below ? r.bottom + 10 : r.top - h - 10) + scrollY + 'px';
+      el.style.setProperty('--tail', Math.min(w - 24, Math.max(10, r.left + r.width / 2 - left - 6)) + 'px');
+      el.classList.toggle('k-above', !below);
+      if (kind !== 'err') setTimeout(() => el.classList.add('k-alt'), 250);
+      const moves = kitMoves(el);
+      if (moves) el.animate([{ opacity: 0, transform: `translateY(${below ? -6 : 6}px) scale(.94)` }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      let timer, closed = false;
+      const close = () => { if (closed) return; closed = true; clearTimeout(timer); removeEventListener('pointerdown', outside, true); if (moves) el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).finished.then(() => el.remove()); else el.remove(); };
+      const arm = () => { clearTimeout(timer); if (kind !== 'err') timer = setTimeout(close, Math.min(8000, 3500 + text.length * 25)); };
+      const outside = (e) => { if (!el.contains(e.target) && e.target !== anchor) close(); };
+      setTimeout(() => addEventListener('pointerdown', outside, true), 0);
+      el._close = close; arm();
+      el.querySelector('.k-x').addEventListener('click', () => { close(); anchor.focus(); });
+      el.addEventListener('keydown', (e) => e.key === 'Escape' && (close(), anchor.focus()));
+      ['pointerenter', 'focusin'].forEach((t) => el.addEventListener(t, () => clearTimeout(timer)));
+      ['pointerleave', 'focusout'].forEach((t) => el.addEventListener(t, arm));
+      return el;
+    }
+    /** Only when the place is gone. */
+    function kitToast(text, { kind = 'ok', who = 'nucli' } = {}) {
+      const box = document.getElementById('k-toasts'), el = document.createElement('div');
       el.className = `k-toast k-${kind}`; el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
-      el.innerHTML = `<span class="k-m k-react-${kind === 'err' ? 'err' : 'ok'}">${m}</span><span class="k-plain" aria-hidden="true">${kind === 'err' ? '!' : '✓'}</span><p>${text}</p><button class="k-x" aria-label="Close">×</button><i class="k-life"></i>`;
+      el.innerHTML = `<span class="k-m k-react-${kind === 'err' ? 'err' : 'ok'}">${who === 'duo' ? kitDuo({ small: true }) : kitNucli({ small: true, moods: [kind === 'err' ? 'worried' : 'happy'] })}</span><span class="k-plain" aria-hidden="true">✓</span><p>${text}</p><button class="k-x" aria-label="Close">×</button>`;
       box.append(el); kitApplyMotion(el);
       const moves = kitMoves(el);
-      if (kind !== 'err') setTimeout(() => el.classList.add('k-alt'), 250);
-      if (moves) el.animate([{ opacity: 0, transform: 'translateY(24px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
-      const life = el.querySelector('.k-life').animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: ms, easing: 'linear', fill: 'forwards' });
-      const close = () => { life.cancel(); if (moves) el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(24px)' }], { duration: 180, easing: 'ease-in' }).finished.then(() => el.remove()); else el.remove(); };
-      life.finished.then(close).catch(() => {});
+      if (moves) el.animate([{ opacity: 0, transform: 'translateY(20px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      const close = () => (moves ? el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(20px)' }], { duration: 180 }).finished.then(() => el.remove()) : el.remove());
       el.querySelector('.k-x').addEventListener('click', close);
-      el.addEventListener('keydown', (e) => e.key === 'Escape' && close());
-      ['pointerenter', 'focusin'].forEach((t) => el.addEventListener(t, () => life.pause()));
-      ['pointerleave', 'focusout'].forEach((t) => el.addEventListener(t, () => life.play()));
+      setTimeout(close, kind === 'err' ? 8000 : Math.min(8000, 3500 + text.length * 25));
     }
-    window.kitToast = toast;
-    root.querySelectorAll('[data-toast]').forEach((b) => b.addEventListener('click', () => {
-      const k = b.dataset.toast;
-      if (k === 'ok') toast('Fixed 12 problems. Ready for Nucleus.', 'ok');
-      else if (k === 'err') toast('Try it failed for player 2: Context.PlayerID is undefined.', 'err');
-      else toast('Borderlands 2 is installed.', 'ok', 'duo');
+    window.kitSay = kitSay; window.kitToast = kitToast;
+    root.querySelector('[data-say="fix"]').addEventListener('click', (e) => kitSay(e.currentTarget, 'Fixed 12 problems. Ready for Nucleus.'));
+    root.querySelector('[data-say="try"]').addEventListener('click', (e) => kitSay(e.currentTarget, 'Player 2 failed: Context.PlayerID is undefined.', { kind: 'err' }));
+    // In a row: the result replaces the button, right where you clicked.
+    root.querySelectorAll('[data-install]').forEach((b) => b.addEventListener('click', () => {
+      const act = b.parentElement;
+      act.innerHTML = `<span class="k-m k-busy">${kitDuo({ small: true, moods: ['focus'] })}</span><span>Installing…</span>`; kitApplyMotion(act);
+      if (kitMoves(act)) act.querySelector('svg').animate([{ transform: 'rotate(-8deg)' }, { transform: 'rotate(8deg)' }], { duration: 300, iterations: 4, direction: 'alternate', easing: 'ease-in-out' });
+      setTimeout(() => { act.innerHTML = `<span class="k-m k-react-ok">${kitDuo({ small: true, moods: ['happy'] })}</span><span class="k-plain" aria-hidden="true">✓</span><span class="k-done-t" role="status">Installed</span>`; kitApplyMotion(act); }, 1300);
     }));
+    // From a menu: the menu is gone once you pick, so the confirmation is the one place a toast is right.
+    const mb = root.querySelector('[aria-haspopup="menu"]'), ml = root.querySelector('#ksm');
+    mb.addEventListener('click', () => { ml.hidden = !ml.hidden; mb.setAttribute('aria-expanded', String(!ml.hidden)); if (!ml.hidden) ml.firstElementChild.focus(); });
+    ml.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ml.hidden = true; mb.setAttribute('aria-expanded', 'false'); mb.focus(); } if (e.key === 'Enter') e.target.click(); });
+    ml.querySelector('[data-fallback]').addEventListener('click', () => { ml.hidden = true; mb.setAttribute('aria-expanded', 'false'); mb.focus(); kitToast('Share link copied.'); });
   } });
-
 KIT.push({ id: 'banners', name: 'Banners', about: 'Results that stay on the page (Try it, Test all). Nucli\'s face says it at a glance; on repeated failures he escalates once per run, never per keystroke: a flinch, then worried, then he offers help.',
   timing: 'Reaction ≤ 0.5 s when the result changes, then a still pose: the banner can stay for minutes.',
   html: `<div class="k-banner k-ok"><span class="k-m" data-mood="happy"></span><span class="k-plain">✓</span><div><b>All 4 players start.</b> Nucleus can use this handler.</div></div>
@@ -683,7 +800,7 @@ KIT.push({ id: 'progress-ring', name: 'Progress ring (Nucli)', about: 'For known
 .k-ring-e { transform-box: view-box; transform-origin: 60px 60px; }
 .k-ring-e > g { transform-box: fill-box; transform-origin: center; }
 .k-ring-e circle { stroke: #fff; stroke-width: 2; }
-.kit:is([data-motion="off"], [data-look="alpha8"]) :is(.k-ring-e, .k-ring-face) { display: none; }
+.kit[data-motion="off"] :is(.k-ring-e, .k-ring-face) { display: none; }
 .k-ring-pct { position: absolute; left: 0; right: 0; bottom: -22px; text-align: center; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }`,
   js: function setupRing(root) {
     function kitRing(el) {
@@ -840,20 +957,22 @@ KIT.push({ id: 'wait', name: 'Waiting, by how long', about: 'One helper for ever
     }));
   } });
 
-KIT.push({ id: 'empty', name: 'Empty state', about: 'When there is nothing to show, Nucli dozes (a still pose). The moment you start, he wakes: a little start, eyes open, and he looks at what you\'re doing. The wake-up is the part people see, so that is what is animated.',
-  timing: 'Wake-up 0.6 s, once, on the first key or click. Asleep is a still pose: nothing loops while nobody watches.',
-  html: `<div class="k-empty"><span class="k-m"></span><span class="k-plain">…</span><div><b>Waiting for code.</b><br><span>Type or paste a handler.</span></div></div>
-<textarea class="k-empty-input" rows="2" aria-label="Type here to wake Nucli" placeholder="Type here…"></textarea>`,
-  css: `.k-empty { display: flex; gap: 12px; align-items: center; }
+KIT.push({ id: 'empty', name: 'Empty states', about: 'When there is nothing to show, the mascot of that product keeps you company. Nucli dozes in an empty editor and wakes the moment you start (the wake-up is the part people see). Duo waits for your first game and perks up when you point at the button that adds one.',
+  timing: 'Wake-up 0.6 s, once. Asleep and waiting are still poses: nothing loops while nobody watches.',
+  html: `<div class="k-empty"><span class="k-m" data-empty="nucli"></span><span class="k-plain">…</span><div><b>Waiting for code.</b><br><span>Type or paste a handler.</span></div></div>
+<textarea class="k-empty-input" rows="2" aria-label="Type here to wake Nucli" placeholder="Type here…"></textarea>
+<div class="k-empty k-empty-duo"><span class="k-m" data-empty="duo"></span><span class="k-plain">…</span><div><b>No games yet.</b><br><span>Add one from the Hub to get started.</span></div><button class="k-btn k-primary" data-add-game>Add a game</button></div>`,
+  css: `.k-empty { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .k-empty .k-m { width: 72px; height: 72px; }
 .k-empty span { color: var(--k-muted); }
+.k-empty-duo { width: 100%; padding-top: 10px; border-top: 1px solid var(--k-line); }
 .k-empty-input { font: 13px ui-monospace, Consolas, monospace; padding: 8px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); min-width: min(100%, 260px); }
 .k-empty-input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 1px; }
 .k-empty .k-asleep .k-float { animation: none; transform: translateY(3px) rotate(-5deg); }
 .k-empty .k-asleep g[transform^="rotate"] { opacity: .35; }`,
   js: function setupEmpty(root) {
-    const m = root.querySelector('.k-empty .k-m'), input = root.querySelector('.k-empty-input'), text = root.querySelector('.k-empty b');
-    const sleep = () => { m.innerHTML = kitNucli({ moods: ['sleep'], label: 'Nucli, dozing' }); m.querySelector('svg').classList.add('k-asleep'); kitApplyMotion(m); text.textContent = 'Waiting for code.'; };
+    const m = root.querySelector('[data-empty="nucli"]'), input = root.querySelector('.k-empty-input'), text = root.querySelector('.k-empty b');
+    const sleep = () => { m.innerHTML = kitNucli({ moods: ['sleep'], label: 'Nucli, dozing' }); m.querySelector('svg').classList.add('k-asleep'); kitApplyMotion(m); text.textContent = 'Waiting for code.'; m.classList.remove('k-alt'); };
     sleep();
     let awake = false;
     input.addEventListener('input', () => {
@@ -862,48 +981,210 @@ KIT.push({ id: 'empty', name: 'Empty state', about: 'When there is nothing to sh
       m.innerHTML = kitNucli({ moods: ['wow', 'smile'], label: 'Nucli, awake' }); kitApplyMotion(m); text.textContent = 'Checking as you type.';
       const svg = m.querySelector('svg');
       if (kitMoves(m)) svg.animate([{ transform: 'translateY(3px) rotate(-5deg)' }, { transform: 'translateY(-6px) scale(1.04)', offset: .3 }, { transform: 'rotate(4deg)' }], { duration: 600, easing: 'cubic-bezier(.34, 1.4, .64, 1)', fill: 'forwards' });
-      setTimeout(() => svg.closest('.k-m').classList.add('k-alt'), kitMoves(m) ? 350 : 0);
+      setTimeout(() => m.classList.add('k-alt'), kitMoves(m) ? 350 : 0);
     });
+    const d = root.querySelector('[data-empty="duo"]'), add = root.querySelector('[data-add-game]');
+    d.innerHTML = kitDuo({ moods: ['smile', 'happy'], label: 'Duo, waiting for a game' }); kitApplyMotion(d);
+    const perk = (on) => { d.classList.toggle('k-alt', on); if (on && kitMoves(d)) d.querySelector('.k-jump').animate([{ transform: 'none' }, { transform: 'translateY(-8px)', offset: .4 }, { transform: 'none' }], { duration: 380, easing: 'ease-out' }); };
+    ['pointerenter', 'focus'].forEach((t) => add.addEventListener(t, () => perk(true)));
+    ['pointerleave', 'blur'].forEach((t) => add.addEventListener(t, () => perk(false)));
+    add.addEventListener('click', () => kitSay(add, 'The Hub opens in the real app.', { who: 'duo' }));
   } });
-
-KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lift a little when you point at them and press down when you click: the same squash as the buttons, smaller.',
-  timing: 'Lift 200 ms; press 120 ms.',
+KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lift a little when you point at them. A game\'s player count is its Duos, in the players\' colours (the number is written too); point at the card and they hop, one after another.',
+  timing: 'Lift 200 ms; press 120 ms; the Duos hop 360 ms each, 60 ms apart, once per hover.',
   html: `<ul class="k-cards">
-  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p1)"></span><b>Borderlands 2</b><span>Talos91 · 4 players</span></a></li>
-  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p3)"></span><b>Left 4 Dead 2</b><span>Talos91 · 4 players</span></a></li>
-  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p4)"></span><b>Terraria</b><span>Talos91 · 8 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p1)"></span><b>Borderlands 2</b><span class="k-card-meta"><span class="k-duos" data-n="4" aria-hidden="true"></span>4 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p3)"></span><b>Left 4 Dead 2</b><span class="k-card-meta"><span class="k-duos" data-n="4" aria-hidden="true"></span>4 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p4)"></span><b>Terraria</b><span class="k-card-meta"><span class="k-duos" data-n="8" aria-hidden="true"></span>8 players</span></a></li>
 </ul>`,
-  css: `.k-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; list-style: none; margin: 0; padding: 0; width: 100%; }
-.k-card { display: grid; gap: 2px; padding: 10px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); text-decoration: none; transition: transform var(--k-quick) var(--k-out), box-shadow var(--k-quick), border-color var(--k-quick); }
+  css: `.k-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; list-style: none; margin: 0; padding: 0; width: 100%; }
+.k-card { display: grid; gap: 4px; padding: 10px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); text-decoration: none; transition: transform var(--k-quick) var(--k-out), box-shadow var(--k-quick), border-color var(--k-quick); }
 .k-card:hover { transform: translateY(-2px); box-shadow: var(--k-shadow); border-color: var(--k-accent); }
 .k-card:active { transform: scale(.98); transition-duration: var(--k-tap); }
 .k-card:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
-.k-card span { color: var(--k-muted); font-size: 13px; }
-.k-card .k-card-art { display: block; aspect-ratio: 16 / 9; border-radius: calc(var(--k-r-pane) - 4px); background: linear-gradient(135deg, var(--a), color-mix(in srgb, var(--a) 40%, var(--k-surface-2))); margin-bottom: 6px; }`,
-  js: function setupCards() {} });
+.k-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: var(--k-muted); font-size: 13px; }
+.k-card .k-duos .k-m { width: 18px; height: 18px; }
+.k-card .k-card-art { display: block; aspect-ratio: 16 / 9; border-radius: calc(var(--k-r-pane) - 4px); background: linear-gradient(135deg, var(--a), color-mix(in srgb, var(--a) 40%, var(--k-surface-2))); margin-bottom: 4px; }`,
+  js: function setupCards(root) {
+    root.querySelectorAll('.k-duos').forEach((d) => { d.innerHTML = Array.from({ length: +d.dataset.n }, (_, i) => `<span class="k-m">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span>`).join(''); });
+    root.querySelectorAll('.k-card').forEach((c) => {
+      const hop = () => { if (!kitMoves(c) || c._hopping) return; c._hopping = true; const ms = [...c.querySelectorAll('.k-duos .k-m')]; ms.forEach((m, i) => m.animate([{ transform: 'none' }, { transform: 'translateY(-6px) scale(.92, 1.1)', offset: .4 }, { transform: 'scale(1.12, .86)', offset: .75 }, { transform: 'none' }], { duration: 360, delay: i * 60, easing: 'ease-out' })); setTimeout(() => (c._hopping = false), 360 + ms.length * 60); };
+      c.addEventListener('pointerenter', hop); c.addEventListener('focus', hop);
+    });
+  } });
+KIT.push({ id: 'appbar', name: 'App bars', about: 'Each product wears its mascot in its header: Nucli for the handler tools, Duo for splitscreen.me. The mascot is also the status light: Nucli is pleased when the handler is ready, worried when there are problems, and concentrates (electrons running) while something works. Point at the logo and it says hello.',
+  timing: 'Mood changes instantly; the hello on hover is a 0.6 s hop, once. The status is written next to it too.',
+  html: `<header class="k-appbar">
+  <a class="k-brand" href="#appbar"><span class="k-m" data-brand="nucli"></span><span class="k-plain k-brand-plain">N</span><b>Nucleus handler tools</b></a>
+  <nav aria-label="Handler tools (example)"><a href="#appbar" aria-current="page">Editor</a><a href="#appbar">Hub</a><a href="#appbar">Help</a></nav>
+  <span class="k-status" role="status">Ready</span>
+</header>
+<header class="k-appbar k-appbar-duo">
+  <a class="k-brand" href="#appbar"><span class="k-m" data-brand="duo"></span><span class="k-plain k-brand-plain">S</span><b>splitscreen.me</b></a>
+  <nav aria-label="splitscreen.me (example)"><a href="#appbar" aria-current="page">Games</a><a href="#appbar">Hub</a><a href="#appbar">Discord</a></nav>
+</header>
+<div class="k-appbar-ctl" role="group" aria-label="Pretend status"><button class="k-btn k-sm" data-st="ready">Ready</button><button class="k-btn k-sm" data-st="problems">3 problems</button><button class="k-btn k-sm" data-st="working">Working</button></div>`,
+  css: `.k-appbar { display: flex; align-items: center; gap: 8px 18px; flex-wrap: wrap; width: 100%; padding: 8px 14px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); }
+.k-brand { display: inline-flex; align-items: center; gap: 8px; color: var(--k-fg); text-decoration: none; font-family: Fredoka, var(--k-font); font-size: 17px; }
+.k-brand b { font-weight: 600; }
+.k-brand .k-m { width: 40px; height: 40px; }
+.k-brand:hover .k-body, .k-brand:focus-visible .k-body { animation: k-hop .6s var(--k-spring) 1; }
+.k-brand:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 3px; border-radius: 6px; }
+.k-brand-plain { width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: var(--k-r-ctl); background: var(--k-accent); color: var(--k-accent-fg); font-weight: 700; }
+.k-appbar nav { display: flex; gap: 4px; }
+.k-appbar nav a { padding: 5px 10px; border-radius: var(--k-r-ctl); color: var(--k-muted); text-decoration: none; font-size: 14px; }
+.k-appbar nav a:hover { color: var(--k-fg); background: var(--k-surface-2); }
+.k-appbar nav a[aria-current="page"] { color: var(--k-fg); font-weight: 600; box-shadow: inset 0 -2px 0 var(--k-accent); }
+.k-appbar nav a:focus-visible { outline: 2px solid var(--k-accent); }
+.k-status { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--k-ok); }
+.k-status.k-st-problems { color: var(--k-err); } .k-status.k-st-working { color: var(--k-muted); }
+.k-appbar-duo .k-brand b { color: #2b8bff; }
+.k-appbar-ctl { display: flex; gap: 6px; }`,
+  js: function setupAppbar(root) {
+    const n = root.querySelector('[data-brand="nucli"]'), status = root.querySelector('.k-status');
+    const set = (st) => {
+      const mood = { ready: 'happy', problems: 'worried', working: 'focus' }[st];
+      n.classList.toggle('k-busy', st === 'working');
+      n.innerHTML = kitNucli({ moods: [mood], small: true, electrons: st === 'working' ? 4 : 3, label: 'Nucli: ' + { ready: 'ready', problems: 'problems', working: 'working' }[st] });
+      status.textContent = { ready: 'Ready', problems: '3 problems', working: 'Working…' }[st];
+      status.className = 'k-status k-st-' + st;
+      kitApplyMotion(n);
+    };
+    set('ready');
+    root.querySelector('[data-brand="duo"]').innerHTML = kitDuo({ small: true, label: 'Duo' });
+    root.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', () => set(b.dataset.st)));
+  } });
+
+KIT.push({ id: 'players', name: 'Player chips', about: 'One Duo per player, in that player\'s colour, with their device. A new player drops in (and lands with a squash); one who leaves shrinks away. Up to 8, as in Nucleus Co-op.',
+  timing: 'Join: drop 520 ms with a landing squash. Leave: 180 ms. The chip itself scales in 300 ms.',
+  html: `<ul class="k-players" aria-label="Players" aria-live="polite"></ul>
+<div class="k-players-ctl"><button class="k-btn k-sm" data-pl="add">A player joins</button><button class="k-btn k-sm k-quiet" data-pl="rm">One leaves</button></div>`,
+  css: `.k-players { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; width: 100%; min-height: 40px; }
+.k-player { display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px 3px 4px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); font-size: 14px; }
+.k-player .k-m { width: 32px; height: 32px; }
+.k-player svg { transform-origin: 50% 100%; }
+.k-player .k-plain { width: 22px; height: 22px; border-radius: 50%; background: var(--c); }
+.k-player small { color: var(--k-muted); margin-left: 4px; }
+.k-players-ctl { display: flex; gap: 6px; }`,
+  js: function setupPlayers(root) {
+    const list = root.querySelector('.k-players'), DEV = ['Controller', 'Keyboard and mouse', 'Controller', 'Controller', 'Controller', 'Keyboard', 'Controller', 'Mouse'];
+    const add = () => {
+      const i = list.children.length; if (i >= 8) return;
+      const li = document.createElement('li');
+      li.className = 'k-player'; li.style.setProperty('--c', KIT_PLAYERS8[i]);
+      li.innerHTML = `<span class="k-m">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span><span class="k-plain" aria-hidden="true"></span><span>Player ${i + 1}<small>${DEV[i]}</small></span>`;
+      list.append(li); kitApplyMotion(li);
+      if (!kitMoves(li)) return;
+      li.animate([{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'scale(1.05)', offset: .6 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
+      li.querySelector('svg').animate([{ transform: 'translateY(-22px) scale(.9, 1.1)' }, { transform: 'scale(1.25, .72)', offset: .55 }, { transform: 'scale(.94, 1.06)', offset: .8 }, { transform: 'none' }], { duration: 520, easing: 'ease-in' });
+    };
+    const rm = () => {
+      const li = list.lastElementChild; if (!li || list.children.length <= 1) return;
+      if (kitMoves(li)) li.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.6)' }], { duration: 180, easing: 'ease-in' }).finished.then(() => li.remove()); else li.remove();
+    };
+    add(); add();
+    root.querySelector('[data-pl="add"]').addEventListener('click', add);
+    root.querySelector('[data-pl="rm"]').addEventListener('click', rm);
+  } });
+
+KIT.push({ id: 'stepper', name: 'Stepper', about: 'Steps through a setup (pick a game, players, screens, start). Duo stands on the step you\'re on and hops to the next one; steps behind you get a check.',
+  timing: 'The hop takes 420 ms: up, across, a landing squash. Going back is the same hop the other way.',
+  html: `<div class="k-stepper">
+  <span class="k-step-duo" aria-hidden="true"></span>
+  <ol class="k-steps"><li aria-current="step">Pick a game</li><li>Players</li><li>Screens</li><li>Start</li></ol>
+</div>
+<div class="k-step-ctl"><button class="k-btn k-sm" data-step="-1">Back</button><button class="k-btn k-sm k-primary" data-step="1">Next</button></div>`,
+  css: `.k-stepper { position: relative; width: 100%; padding-top: 40px; }
+.k-steps { display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; margin: 0; padding: 0; counter-reset: s; }
+.k-steps li { counter-increment: s; display: grid; justify-items: center; gap: 4px; font-size: 13px; color: var(--k-muted); text-align: center; position: relative; }
+.k-steps li::before { content: counter(s); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--k-line); background: var(--k-surface); font-weight: 700; font-size: 12px; position: relative; z-index: 1; }
+.k-steps li::after { content: ""; position: absolute; top: 12px; left: calc(-50% + 14px); right: calc(50% + 14px); height: 2px; background: var(--k-line); }
+.k-steps li:first-child::after { display: none; }
+.k-steps li[aria-current="step"] { color: var(--k-fg); font-weight: 600; }
+.k-steps li[aria-current="step"]::before { border-color: var(--k-accent); color: var(--k-accent); }
+.k-steps li.k-did { color: var(--k-fg); }
+.k-steps li.k-did::before { content: "✓"; background: var(--k-ok); border-color: var(--k-ok); color: #fff; }
+.k-steps li.k-did::after, .k-steps li[aria-current="step"]::after { background: var(--k-ok); }
+.k-step-duo { position: absolute; top: 0; left: 0; width: 38px; height: 38px; margin-left: -19px; }
+.k-step-duo svg { transform-origin: 50% 100%; }
+.k-step-ctl { display: flex; gap: 6px; }`,
+  js: function setupStepper(root) {
+    const wrap = root.querySelector('.k-stepper'), steps = [...root.querySelectorAll('.k-steps li')], duo = root.querySelector('.k-step-duo');
+    duo.innerHTML = kitDuo({ small: true, moods: ['smile', 'happy'] });
+    let at = 0;
+    const x = (i) => steps[i].offsetLeft + steps[i].offsetWidth / 2;
+    const place = () => (duo.style.transform = `translateX(${x(at)}px)`);
+    const go = (d) => {
+      const to = Math.min(steps.length - 1, Math.max(0, at + d)); if (to === at) return;
+      const from = x(at), dest = x(to);
+      at = to;
+      steps.forEach((s, i) => { s.classList.toggle('k-did', i < at); i === at ? s.setAttribute('aria-current', 'step') : s.removeAttribute('aria-current'); });
+      duo.classList.toggle('k-alt', at === steps.length - 1);
+      place();
+      if (!kitMoves(wrap)) return;
+      duo.animate([{ transform: `translateX(${from}px)` }, { transform: `translate(${(from + dest) / 2}px, -22px)`, offset: .5, easing: 'ease-in' }, { transform: `translateX(${dest}px)` }], { duration: 420, easing: 'ease-out' });
+      duo.querySelector('svg').animate([{ transform: 'scale(1.1, .9)' }, { transform: 'scale(.92, 1.1)', offset: .3 }, { transform: 'none', offset: .85 }, { transform: 'scale(1.2, .78)', offset: .92 }, { transform: 'none' }], { duration: 480, easing: 'ease-out' });
+    };
+    root.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => go(+b.dataset.step)));
+    requestAnimationFrame(place); addEventListener('resize', place); document.addEventListener('kit-look', () => requestAnimationFrame(place));
+  } });
+
+KIT.push({ id: 'notfound', name: 'Not found (404)', about: 'A page that isn\'t there: Duo looks around for it, worried; Nucli checks the links. One clear way back. A brand moment, but the message and the button come first.',
+  timing: 'Duo looks left and right every 3 s; in "Default" they play for 5 s, then hold.',
+  html: `<div class="k-404">
+  <div class="k-404-art"><span class="k-m k-404-duo"></span><span class="k-m k-404-nucli"></span><span class="k-plain k-404-plain">404</span></div>
+  <div><h3>This page wandered off</h3><p>Duo is looking for it and Nucli is checking the links. It may have moved, or the address has a typo.</p><a class="k-btn k-primary" href="#top">Back to the start</a></div>
+</div>`,
+  css: `.k-404 { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; width: 100%; }
+.k-404-art { display: flex; align-items: flex-end; gap: 4px; }
+.k-404-duo { width: 110px; height: 110px; } .k-404-nucli { width: 72px; height: 72px; }
+.k-404-plain { font: 700 44px/1 var(--k-font); color: var(--k-muted); }
+.k-404 h3 { margin: 0 0 4px; font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 22px; }
+.k-404 p { margin: 0 0 10px; color: var(--k-muted); max-width: 46ch; }
+.k-404-duo .k-face { animation: k-lookabout 3s var(--k-soft) infinite; }
+@keyframes k-lookabout { 0%, 20% { transform: translateX(-4px); } 50%, 70% { transform: translateX(4px); } 100% { transform: translateX(-4px); } }`,
+  js: function setupNotFound(root) {
+    root.querySelector('.k-404-duo').innerHTML = kitDuo({ moods: ['worried'], label: 'Duo, looking around' });
+    root.querySelector('.k-404-nucli').innerHTML = kitNucli({ moods: ['focus'], label: 'Nucli, checking' });
+  } });
+
+KIT.push({ id: 'skeleton', name: 'Skeleton', about: 'Before a list arrives, grey lines hold its place. The shimmer is an electron running along each line with a soft trail, in the players\' colours, so even waiting looks like Nucli.',
+  timing: 'One run per line every 1.6 s, the lines 0.2 s apart. Without motion, plain grey lines.',
+  html: `<div class="k-skel" role="status" aria-label="Loading handlers"><i style="width:72%"></i><i style="width:92%"></i><i style="width:56%"></i><i style="width:80%"></i></div>`,
+  css: `.k-skel { display: grid; gap: 12px; width: min(100%, 380px); padding: 16px; border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); }
+.k-skel i { position: relative; display: block; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--k-fg) 10%, transparent); overflow: hidden; }
+.k-skel i::after { content: ""; position: absolute; top: 2px; left: -12px; width: 6px; height: 6px; border-radius: 50%; background: var(--c, var(--k-p3)); box-shadow: -10px 0 8px 3px color-mix(in srgb, var(--c, var(--k-p3)) 40%, transparent); animation: k-skel 1.6s var(--k-soft) infinite; }
+.k-skel i:nth-child(1) { --c: var(--k-p1); } .k-skel i:nth-child(2) { --c: var(--k-p2); } .k-skel i:nth-child(3) { --c: var(--k-p3); } .k-skel i:nth-child(4) { --c: var(--k-p4); }
+.k-skel i:nth-child(2)::after { animation-delay: .2s; } .k-skel i:nth-child(3)::after { animation-delay: .4s; } .k-skel i:nth-child(4)::after { animation-delay: .6s; }
+@keyframes k-skel { from { left: -12px; } to { left: calc(100% + 12px); } }
+.kit:is([data-motion="still"], [data-motion="off"]) .k-skel i::after { display: none; }
+@media (prefers-reduced-motion: reduce) { .k-skel i::after { display: none; } }`,
+  js: function setupSkeleton() {} });
 
 // The showcase: groups, an overview, navigation with the current section marked, each entry and its code.
 (() => {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
-    + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitFaces = ${kitFaces.toString()};`;
+  const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitShade, kitFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
+    + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_PLAYERS8 = ${JSON.stringify(KIT_PLAYERS8)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitFaces = ${kitFaces.toString()};`;
   KIT.push({ id: 'motion', name: 'Motion settings', about: 'The motion settings and the two mascots\' code, which every component uses. "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface\'s motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device\'s "reduce motion" always wins.',
     timing: 'Default for new users: "Default". Nothing that slows people down or covers content.',
-    html: `<table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off, alpha 8</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>`,
+    html: `<table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>`,
     css: '/* The rules for the Motion settings are in Tokens, at the end. */', js: function setupMotion() {}, code: [['JavaScript', FOUNDATION]] });
   const GROUPS = [
-    ['foundations', 'Foundations', 'Colours, motion and the mascots everything is built on.', ['tokens', 'motion', 'mascots']],
+    ['foundations', 'Foundations', 'Colours, motion and the two mascots everything is built on.', ['tokens', 'motion', 'mascots']],
+    ['brand', 'Brand', 'Where the mascots are the interface: headers, players, the moments people remember.', ['appbar', 'players', 'notfound']],
     ['actions', 'Actions', 'Things you press.', ['buttons']],
-    ['inputs', 'Inputs', 'Things you set, type and choose.', ['toggles', 'fields', 'tabs', 'menus']],
-    ['feedback', 'Feedback', 'How the interface answers: counts, messages, results, questions, nothing yet.', ['badges', 'toasts', 'banners', 'dialog', 'empty']],
-    ['progress', 'Progress and waiting', 'Known progress, downloads, and waits of any length.', ['progress-ring', 'progress-bar', 'wait']],
+    ['inputs', 'Inputs', 'Things you set, type and choose.', ['toggles', 'slider', 'fields', 'menus']],
+    ['navigation', 'Navigation', 'Getting around and through a setup.', ['tabs', 'stepper']],
+    ['feedback', 'Feedback', 'How the interface answers, close to where you acted.', ['toasts', 'badges', 'banners', 'dialog', 'empty']],
+    ['progress', 'Progress and waiting', 'Known progress, downloads, and waits of any length.', ['progress-ring', 'progress-bar', 'wait', 'skeleton']],
     ['content', 'Content', 'Lists of things to open.', ['cards']],
   ];
   const SUM = {
     tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
-    buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'Switch with an electron knob, check, radio.', fields: 'One small shake when wrong, a check when right.', tabs: 'An underline with weight: stretch, settle.', menus: 'Springs from its button; tooltip after 0.3 s.',
-    badges: 'Status pills; a counter that bumps.', toasts: 'Slide up; the mascot reacts once, then holds.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes; wakes when you start.',
-    'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Lift on hover, press on click.',
+    buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'A Nucli knob, an electron check, Duos per player.', slider: '1 to 8 players: a Duo-ball handle, a Duo each.', fields: 'Nucli helps: concentrates, beams, worries.', tabs: 'An underline with weight; an electron rides it.', menus: 'Springs from its button; Nucli says the tooltip.', appbar: 'The mascot is the logo and the status light.', players: 'One Duo per player: they drop in and leave.', notfound: 'Duo looks around, Nucli checks the links.', stepper: 'Duo hops from step to step.', skeleton: 'Grey lines; an electron is the shimmer.',
+    badges: 'Pills with Nucli\'s face; a counter that turns into him at zero.', toasts: 'The mascot says it next to what you clicked.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes and wakes; Duo waits for a game.',
+    'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Player counts as Duos; they hop on hover.',
   };
   const mini = (svg) => `<span class="t-m">${svg}</span>`;
   const THUMB = {
@@ -911,19 +1192,25 @@ KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lif
     motion: ['All', 'Default', 'Calm', 'Still', 'Off'].map((v, i) => `<span class="t-btn${i === 1 ? ' p' : ''}">${v}</span>`).join(''),
     mascots: mini(kitNucli({ small: true })) + mini(kitDuo({ small: true })),
     buttons: '<span class="t-btn p">▶ Try it</span><span class="t-btn">Copy</span><span class="t-btn">↶ Undo</span>',
-    toggles: '<span class="k-switch" aria-checked="true" style="pointer-events:none"><i></i></span><span class="t-btn">✓ Lint</span>',
+    toggles: `<span class="t-m" style="width:28px;height:28px">${kitNucli({ moods: ['happy'], orbits: false, crop: true })}</span>${[0, 1, 2].map((i) => `<span class="t-m" style="width:22px;height:22px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span>`).join('')}`,
+    slider: `<span style="display:grid;gap:4px;width:140px"><span style="display:flex;gap:2px">${[0, 1, 2, 3].map((i) => `<span class="t-m" style="width:20px;height:20px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i] })}</span>`).join('')}</span><i class="t-line" style="background:linear-gradient(var(--k-accent),var(--k-accent)) 0/45% 100% no-repeat, color-mix(in srgb, var(--k-fg) 18%, transparent)"></i></span>`,
+    appbar: `<span class="t-box" style="grid-auto-flow:column;align-items:center;gap:6px;width:160px"><span class="t-m" style="width:26px;height:26px">${kitNucli({ small: true, moods: ['happy'] })}</span><i class="t-line" style="width:80px"></i></span>`,
+    players: [0, 1, 2].map((i) => `<span class="t-box" style="grid-auto-flow:column;align-items:center;gap:4px;border-radius:999px;padding:2px 8px 2px 2px"><span class="t-m" style="width:22px;height:22px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span><i class="t-line" style="width:18px"></i></span>`).join(''),
+    notfound: `<span class="t-m" style="width:48px;height:48px">${kitDuo({ moods: ['worried'] })}</span><span class="t-m" style="width:34px;height:34px">${kitNucli({ moods: ['focus'], small: true })}</span>`,
+    stepper: `<span style="display:grid;justify-items:start;gap:2px"><span class="t-m" style="width:22px;height:22px;margin-left:34px">${kitDuo({ small: true })}</span><span style="display:flex;gap:18px">${'<i class="t-sw" style="width:14px;height:14px;background:var(--k-ok)"></i>'.repeat(2)}<i class="t-sw" style="width:14px;height:14px"></i><i class="t-sw" style="width:14px;height:14px"></i></span></span>`,
+    skeleton: '<span class="t-box" style="width:150px"><i class="t-line"></i><i class="t-line" style="width:70%"></i><i class="t-line" style="width:85%"></i></span>',
     fields: '<span class="t-box" style="width:140px"><i class="t-line" style="width:60%"></i></span><span style="color:var(--k-ok);font-weight:700">✓</span>',
     tabs: '<span class="t-box" style="grid-auto-flow:column;gap:10px;font-size:12px">Check <b style="border-bottom:3px solid var(--k-accent)">Try it</b> Players</span>',
     menus: '<span class="t-box" style="width:120px"><i class="t-line"></i><i class="t-line" style="width:70%"></i><i class="t-line" style="width:85%"></i></span>',
-    badges: '<span class="k-pill k-pill-ok" style="font-size:11px">Ready</span><span class="k-count">3</span>',
-    toasts: `<span class="t-box" style="grid-auto-flow:column;align-items:center;gap:6px;width:150px;box-shadow:var(--k-shadow)"><span class="t-m" style="width:22px;height:22px">${kitNucli({ small: true, moods: ['happy'] })}</span><i class="t-line" style="width:90px"></i></span>`,
+    badges: `<span class="k-pill k-pill-ok" style="font-size:11px"><span class="t-m" style="width:16px;height:16px">${kitNucli({ moods: ['happy'], orbits: false, crop: true })}</span>Ready</span><span class="k-count">3</span>`,
+    toasts: `<span class="t-btn p" style="align-self:start">Fix all</span><span class="t-box" style="grid-auto-flow:column;align-items:center;gap:6px;width:120px;border-radius:12px;box-shadow:var(--k-shadow);align-self:end"><span class="t-m" style="width:22px;height:22px">${kitNucli({ small: true, moods: ['happy'] })}</span><i class="t-line" style="width:70px"></i></span>`,
     banners: '<span class="t-box" style="width:160px;border-left:4px solid var(--k-err)"><i class="t-line"></i><i class="t-line" style="width:60%"></i></span>',
     dialog: '<span class="t-box" style="width:120px;box-shadow:var(--k-shadow)"><i class="t-line"></i><i class="t-line" style="width:70%"></i><span style="justify-self:end" class="t-btn p">OK</span></span>',
-    empty: mini(kitNucli({ moods: ['sleep'] })),
+    empty: mini(kitNucli({ moods: ['sleep'] })) + mini(kitDuo({ moods: ['smile'] })),
     'progress-ring': `<svg viewBox="0 0 120 120" width="62" height="62" aria-hidden="true"><circle cx="60" cy="60" r="44" fill="none" stroke="color-mix(in srgb, var(--k-fg) 14%, transparent)" stroke-width="9"/><circle cx="60" cy="60" r="44" fill="none" stroke="var(--k-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="110" transform="rotate(-90 60 60)"/>${[0, 1, 2, 3].map((k) => `<circle cx="60" cy="16" r="7" fill="var(--k-p${k + 1})" stroke="#fff" stroke-width="2" transform="rotate(${(0.6 - .034 - k * .046) * 360} 60 60)"/>`).join('')}</svg>`,
     'progress-bar': `<span style="position:relative;width:150px;height:44px"><i class="t-line" style="position:absolute;left:0;right:0;bottom:4px;height:8px"></i><i style="position:absolute;left:0;bottom:4px;height:8px;width:60%;border-radius:4px;background:var(--k-accent)"></i><span class="t-m" style="position:absolute;left:58px;bottom:8px;width:34px;height:34px">${kitDuo({ arms: 'hold', moods: ['focus'] })}</span></span>`,
     wait: '<span style="font-size:11.5px;display:grid;grid-template-columns:auto auto;gap:2px 8px;color:var(--k-muted)"><b>0.4 s</b><span>spinner</span><b>2 s</b><span>progress</span><b>10 s</b><span>time so far</span></span>',
-    cards: ['--k-p1', '--k-p3', '--k-p4'].map((v) => `<span class="t-box" style="width:46px;height:52px;padding:4px"><i style="display:block;height:24px;border-radius:4px;background:var(${v})"></i></span>`).join(''),
+    cards: ['--k-p1', '--k-p3'].map((v) => `<span class="t-box" style="width:64px;padding:4px"><i style="display:block;height:22px;border-radius:4px;background:var(${v})"></i><span style="display:flex">${[0, 1, 2].map((i) => `<span class="t-m" style="width:12px;height:12px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i] })}</span>`).join('')}</span></span>`).join(''),
   };
   const byId = Object.fromEntries(KIT.map((c) => [c.id, c]));
   document.getElementById('kit-css').textContent = KIT.map((c) => `/* ${c.name} */\n${c.css}`).join('\n\n');
@@ -977,7 +1264,7 @@ KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lif
   [['ctl-look', 'look'], ['ctl-mode', 'mode'], ['ctl-motion', 'motion']].forEach(([id, key]) => {
     const sel = document.getElementById(id), saved = store.get('kit-' + key);
     if (key === 'mode' && !saved && matchMedia('(prefers-color-scheme: dark)').matches) sel.value = 'dark';
-    if (saved) sel.value = saved;
+    if (saved && [...sel.options].some((o) => o.value === saved)) sel.value = saved;
     b.dataset[key] = sel.value;
     sel.addEventListener('change', () => { b.dataset[key] = sel.value; store.set('kit-' + key, sel.value); kitApplyMotion(); document.dispatchEvent(new Event('kit-look')); });
   });
