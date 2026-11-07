@@ -1726,7 +1726,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help">Tips and help</button>
       <button type="button" role="tab" id="st-feedback" data-st="feedback" aria-controls="sp-feedback">Feedback and privacy</button>
       <span class="set-g" role="presentation">More</span>
-      <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general">Updates</button>
+      <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general">Updates and backup</button>
       <button type="button" role="tab" id="st-advanced" data-st="advanced" aria-controls="sp-advanced">Advanced</button>
     </div>
   </nav>
@@ -1819,10 +1819,14 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Share my votes and feature use, anonymously<small><b>On:</b> your 👍/👎 on tips and docs, and which features you used (each counted once per visit), are added to the project's anonymous counts, so we see what helps. <b>Off:</b> nothing leaves your browser; your votes still show here, only to you. Either way: no code, no names, no cookies.</small></span></label>
       <p class="muted small" id="set-feedback-note" hidden></p></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general" data-label="Updates" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general" data-label="Updates and backup" hidden>
     <div class="set-sec"><h3>Updates</h3>
       <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
       <button class="link" type="button" id="set-news-open">What's new</button></div>
+    <div class="set-sec"><h3>Back up or move your settings</h3>
+      <p class="muted small" style="margin:0 0 8px">A file with your settings (look, layout, editor, Check, Lines, accessibility, tips), to use in another browser or on another computer. Your handlers, drafts and WakaTime key aren't in it.</p>
+      <div class="set-row"><button class="btn" type="button" id="set-export">Export settings…</button><button class="btn" type="button" id="set-import">Import settings…</button><input type="file" id="set-import-file" accept=".json,application/json" hidden></div>
+      <p class="small" id="set-io-msg" role="status" aria-live="polite"></p></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-advanced" aria-labelledby="st-advanced" data-label="Advanced" hidden>
 

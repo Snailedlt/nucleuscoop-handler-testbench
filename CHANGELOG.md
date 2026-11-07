@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Take your settings with you.** Settings › Updates and backup exports your settings to a file and imports them in another browser or on another computer. Your handlers, drafts and WakaTime key stay out of it.
 - **The side rail can show labels.** In the side-rail layout, the › at the bottom shows each tool's name next to its icon; ‹ hides them again (icons only is the default).
 - **Compare with the previous version.** During the beta, Help test this beta (and the command palette) opens the handler you're on in the previous release, so you can say what got better or worse. It keeps its own settings and drafts.
 - **Save and Share are two buttons.** Save (Ctrl+S) downloads straight away, as a .zip for Nucleus unless you pick .js or .nc under its arrow (Ctrl+Shift+S), and shows how to install it the first times. Share copies a link, the code, or a Discord-ready code block.

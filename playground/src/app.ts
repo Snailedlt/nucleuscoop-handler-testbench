@@ -41,6 +41,7 @@ import { installMap, type PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
+import { exportSettings, importSettings } from './settingsio';
 import { BETA } from './testplan';
 import { feedbackUrl, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
@@ -2240,6 +2241,34 @@ wireVotes((kind, _id, v, el) => {
 }
 
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
+// Settings › Updates and backup: export and import the settings (settingsio.ts).
+$('#set-export').addEventListener('click', async () => {
+  const msg = $('#set-io-msg');
+  try {
+    if (!downloads) throw new Error('no downloads');
+    await downloads.save({ filename: 'nucleus-workbench-settings.json', data: new TextEncoder().encode(exportSettings()) });
+    msg.textContent = 'Saved nucleus-workbench-settings.json.';
+  } catch (e: any) {
+    if (e?.code === 'declined') return;
+    try { await navigator.clipboard.writeText(exportSettings()); msg.textContent = "Couldn't save a file here, so the settings were copied: paste them into a .json file."; }
+    catch { msg.textContent = "Couldn't save or copy the settings in this browser."; }
+  }
+});
+$('#set-import').addEventListener('click', () => ($('#set-import-file') as HTMLInputElement).click());
+$('#set-import-file').addEventListener('change', async () => {
+  const input = $('#set-import-file') as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  const msg = $('#set-io-msg');
+  try {
+    const n = importSettings(await file.text());
+    msg.textContent = n ? `Imported ${n} setting${n === 1 ? '' : 's'}. Reloading to apply them…` : 'Nothing to import: the file has no settings this version knows.';
+    if (n) setTimeout(() => location.reload(), 900);
+  } catch (e: any) {
+    msg.textContent = e?.message ?? "Couldn't read that file.";
+  }
+});
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 
 // ---------------------------------------------------------------------------
