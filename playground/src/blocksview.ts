@@ -674,6 +674,35 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     return b;
   };
 
+  // Like the Form view and Check: each step is one line (and its main problem, with a fix); the description, every
+  // problem in full, docs and the move / edit / remove buttons open with the arrow. Settings › Check › Detailed opens
+  // them all.
+  const toggled = new Set<string>();
+  const isOpen = (key: string) => ((host.density?.() ?? 'compact') === 'detailed') !== toggled.has(key);
+  function setOpen(row: HTMLElement, open: boolean) {
+    const more = row.querySelector<HTMLElement>(':scope > .bv-more');
+    const t = row.querySelector<HTMLElement>(':scope > .bv-line > .bv-toggle');
+    if (!more || !t) return;
+    more.hidden = !open;
+    row.classList.toggle('bv-open', open);
+    t.setAttribute('aria-expanded', String(open));
+  }
+  function collapsible(row: HTMLElement, line: HTMLElement, key: string, label: string, inner: (HTMLElement | undefined)[]) {
+    const moreId = idOf(`${key}:more`);
+    const t = h('button', 'bv-toggle', { type: 'button', 'aria-expanded': 'false', 'aria-controls': moreId, 'aria-label': `More about ${label}`, title: 'More', 'data-bv': `${key}:more` });
+    t.id = idOf(`${key}:more-btn`);
+    line.append(t);
+    const more = h('div', 'bv-more', { id: moreId });
+    for (const el of inner) if (el) more.append(el);
+    row.append(line, h('div', 'bv-sum'), more);
+    t.addEventListener('click', () => {
+      const open = more.hidden;
+      if (open === ((host.density?.() ?? 'compact') === 'detailed')) toggled.delete(key); else toggled.add(key);
+      setOpen(row, open);
+    });
+    setOpen(row, isOpen(key));
+  }
+
   // --- value slots ---------------------------------------------------------------
 
   const valSig = (v: Val): string => forcedCode.has(v.key) || v.kind === 'code' ? `C${v.src.includes('\n') ? 'M' : ''}` : `${v.kind}${v.kind === 'prop' || v.kind === 'enum' ? v.path : ''}${v.kind === 'enum' ? v.enumName : ''}${v.parts ? `(${v.parts.map(valSig).join(',')})` : ''}`;
@@ -993,15 +1022,18 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
         hint.hidden = true;
         sentence.append(ta, hint);
       }
-      head.append(tag, sentence, rowTools(s, siblings, index, mi, card));
-      li.append(head);
-      if (s.kind !== 'code') li.append(docLine(s.member, s.path ? `Not something Nucleus knows on ${s.path.slice(0, s.path.lastIndexOf('.'))}.` : ''));
-      if (card) li.append(card);
-      li.append(h('div', 'bv-probs'));
+      head.append(tag, sentence);
+      const label = s.kind === 'code' ? 'this code step' : s.path ?? s.calleeText ?? s.varName ?? 'this step';
+      const acts = rowTools(s, siblings, index, mi, card);
+      acts.classList.add('bv-acts');
+      collapsible(li, head, s.key, label, [
+        s.kind !== 'code' ? docLine(s.member, s.path ? `Not something Nucleus knows on ${s.path.slice(0, s.path.lastIndexOf('.'))}.` : '') : undefined,
+        h('div', 'bv-probs'), acts, card]);
       li.addEventListener('keydown', (ev) => rowKeys(ev, s.key));
       return li;
     });
     el.style.setProperty('--depth', String(depth));
+    if (s.kind !== 'if' && !el.querySelector(':scope > .bv-more')?.hasAttribute('hidden') !== isOpen(s.key)) setOpen(el, isOpen(s.key));
     if (s.kind === 'if') renderIf(el, s, siblings, index, depth);
     else {
       for (const v of [...(s.args ?? []), ...(s.value ? [s.value] : [])]) fillValue(el, v);
@@ -1107,8 +1139,9 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       del.addEventListener('click', () => removeClause(s.key, ci));
       tools.append(code, del);
     }
-    line.append(sentence, tools);
-    d.append(line, h('div', 'bv-probs'));
+    line.append(sentence);
+    tools.classList.add('bv-acts');
+    collapsible(d, line, ck, ci ? 'this otherwise-if' : 'this condition', [h('div', 'bv-probs'), tools]);
     if (ci === 0) d.addEventListener('keydown', (ev) => rowKeys(ev, s.key));
     return d;
   }
@@ -1181,27 +1214,41 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     const row = box.closest('.bv-row, .bv-clause');
     row?.classList.toggle('bv-has-err', mine.some((d) => d.severity === 'error'));
     row?.classList.toggle('bv-has-warn', !mine.some((d) => d.severity === 'error') && mine.some((d) => d.severity === 'warning'));
+    row?.classList.toggle('bv-has-prob', mine.some((d) => d.severity === 'error' || d.severity === 'warning'));
     const sig = mine.map((d) => `${d.severity}${d.message}${(d.fixes ?? []).map((f) => f.title).join()}`).join('\n');
     (box as any)._diags = mine;
     if ((box as any)._sig === sig) return;
     (box as any)._sig = sig;
     box.textContent = '';
+    const sum = row?.querySelector<HTMLElement>(':scope > .bv-sum');
+    if (sum) sum.textContent = '';
+    const plainOf = (d: Diagnostic) => host.plain?.(d) ?? { title: firstSentence(d.message.replace(/`/g, '')), why: '' };
+    const ordered = (d: Diagnostic) => [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
+    const fixBtn = (d: Diagnostic, di: number, f: Fix, main: boolean) => {
+      const fi = (d.fixes ?? []).indexOf(f);
+      const fid = `${key}:fix:${di}:${fi}${main ? ':main' : ''}`;
+      const b = h('button', `btn bv-fix${main ? ' primary' : ''}`, { type: 'button', 'data-bv': fid, id: idOf(fid), title: f.title.replace(/`/g, '') });
+      b.innerHTML = main && f.preferred ? 'Fix this' : inline(f.title);
+      b.addEventListener('click', () => {
+        const fix: Fix | undefined = (box as any)._diags?.[di]?.fixes?.[fi];
+        if (!fix) return say('That fix is out of date; check again in a moment.');
+        if (edit(fix.edits, `${key}:more`)) say(`Fixed: ${f.title.replace(/`/g, '')}`);
+      });
+      return b;
+    };
+    if (sum && mine.length) {
+      const w = mine[0];
+      const p = h('div', `bv-prob bv-sev-${w.severity}`);
+      p.innerHTML = `<span class="bv-sev" aria-hidden="true"></span><span class="bv-msg"><span class="bv-sr">${SEV_LABEL[w.severity]}: </span>${esc(plainOf(w).title)}${mine.length > 1 ? ` <span class="bv-more-n">+${mine.length - 1} more</span>` : ''}</span>`;
+      const main = ordered(w)[0];
+      if (main) p.append(fixBtn(w, 0, main, true));
+      sum.append(p);
+    }
     mine.forEach((d, di) => {
       const p = h('div', `bv-prob bv-sev-${d.severity}`);
-      p.innerHTML = `<span class="bv-sev" aria-hidden="true"></span><span class="bv-msg"><span class="bv-sr">${SEV_LABEL[d.severity]}: </span>${inline(d.message)}</span>`;
-      const fixes = d.fixes ?? [];
-      const offer = fixes.filter((f) => f.preferred).length ? fixes.filter((f) => f.preferred) : fixes.slice(0, 2);
-      for (const f of offer) {
-        const fi = fixes.indexOf(f);
-        const b = h('button', 'btn bv-fix', { type: 'button', 'data-bv': `${key}:fix:${di}:${fi}`, id: idOf(`${key}:fix:${di}:${fi}`) });
-        b.innerHTML = inline(f.title);
-        b.addEventListener('click', () => {
-          const fix: Fix | undefined = (box as any)._diags?.[di]?.fixes?.[fi];
-          if (!fix) return say('That fix is out of date; check again in a moment.');
-          if (edit(fix.edits, `${key}:code`)) say(`Fixed: ${f.title.replace(/`/g, '')}`);
-        });
-        p.append(b);
-      }
+      const pl = plainOf(d);
+      p.innerHTML = `<span class="bv-sev" aria-hidden="true"></span><span class="bv-msg"><span class="bv-sr">${SEV_LABEL[d.severity]}: </span><strong>${esc(pl.title)}</strong>${pl.why ? ` ${esc(pl.why)}` : ''}<span class="bv-tech">${inline(d.message)}</span></span>`;
+      ordered(d).slice(0, 3).forEach((f, k) => { const b = fixBtn(d, di, f, false); if (k === 0 && f.preferred) b.classList.add('primary'); p.append(b); });
       box.append(p);
     });
   }
@@ -1513,6 +1560,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
 
   function update() {
     text = host.getText();
+    root.dataset.density = host.density?.() ?? 'compact';
     const active = document.activeElement as HTMLElement | null;
     const activeFid = active && root.contains(active) ? active.getAttribute('data-bv') : null;
     const sel = (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) && activeFid ? (() => { try { return [active.selectionStart, active.selectionEnd]; } catch { return null; } })() : null;

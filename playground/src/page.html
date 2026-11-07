@@ -1515,8 +1515,23 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 #formview[hidden] { display: none; }
 #blocksview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
 #blocksview[hidden] { display: none; }
-/* Calm by default: a step's move, edit and remove buttons show on hover or focus (always on touch screens). */
-@media (hover: hover) { #blocksview .bv-row:not(:hover):not(:focus-within) > .bv-line .bv-tools { opacity: 0; } #blocksview .bv-tools { transition: opacity .12s; } }
+/* Blocks, compact like Form: one line per step; the arrow opens the rest (blocksview.ts collapsible). */
+#blocksview .bv-toggle { flex: none; width: 28px; height: 28px; margin-left: auto; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; display: inline-grid; place-items: center; color: var(--muted); align-self: center; }
+#blocksview .bv-toggle::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.6px 1.6px 0; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+#blocksview .bv-toggle[aria-expanded=true]::before { transform: translateY(2px) rotate(-135deg); }
+#blocksview .bv-toggle:hover { background: var(--surface-2); border-color: var(--line); color: var(--fg); }
+#blocksview .bv-sum:empty { display: none; }
+#blocksview .bv-sum { padding: 4px 0 2px; }
+#blocksview .bv-sum .bv-prob { align-items: center; padding: 4px 8px; }
+#blocksview .bv-open > .bv-sum { display: none; }
+#blocksview .bv-more { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 4px; }
+#blocksview .bv-more[hidden] { display: none; }
+#blocksview .bv-acts { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+#blocksview .bv-probs:empty { display: none; }
+#blocksview .bv-more-n { color: var(--muted); font-size: 12px; white-space: nowrap; }
+#blocksview .bv-tech { display: none; }
+#blocksview .bv[data-density=detailed] .bv-tech, #blocksview[data-density=detailed] .bv-tech { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { #blocksview .bv-toggle::before { transition: none; } }
 /* Blocks view (src/blocksview.ts). Uses the page's variables only. */
 .bv { container-type: inline-size; font: 14px/1.45 var(--font-body); color: var(--fg); padding: 12px 14px 32px; overflow: auto; box-sizing: border-box; height: 100%; }
 .bv [hidden] { display: none !important; }
