@@ -7,6 +7,7 @@
 // the tester feedback form filled in (report.ts).
 import { mascot } from './mascots';
 import { feedbackUrl } from './report';
+import { totalsUrl } from './feedback';
 import { AREAS, BETA, EFFORT, fit, KINDS, priority, TEST_PLAN, type Coding, type NucleusKnow, type Profile, type TestItem } from './testplan';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -90,6 +91,7 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
       <h3 class="tg-h" tabindex="-1">Recommended for you <span class="muted">· quickest and most needed first · ${tried} of ${mine.length} tried</span></h3>
       <ol class="tg-list">${mine.map(item).join('')}</ol>
       <details class="tg-more"><summary>Everything else (${rest.length})</summary><ol class="tg-list">${rest.map(item).join('')}</ol></details>
+      ${totalsUrl() ? `<p class="muted small tg-totals">Your 👍 and 👎 on tips and docs count (anonymously): <a href="${esc(totalsUrl()!)}" target="_blank" rel="noopener">see the totals</a>.</p>` : ''}
       <details class="tg-legend"><summary>What the labels mean</summary><dl>${Object.values(EFFORT).map((e) => `<dt>${esc(e.label)}</dt><dd>${esc(e.how)}</dd>`).join('')}${Object.values(AREAS).map((a) => `<dt>${esc(a.label)}</dt><dd>${esc(a.who)}</dd>`).join('')}${Object.values(KINDS).map((k) => `<dt>${esc(k.label)}</dt><dd>${esc(k.how)}</dd>`).join('')}</dl></details>`;
     body.querySelector('#tg-change')!.addEventListener('click', () => { asking = true; pending = { ...p }; ask(); body.querySelector<HTMLInputElement>('input:checked')?.focus(); });
     body.querySelectorAll<HTMLInputElement>('input[data-id]').forEach((cb) => cb.addEventListener('change', () => {

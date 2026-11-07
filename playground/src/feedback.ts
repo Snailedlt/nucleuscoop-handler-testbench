@@ -19,6 +19,8 @@ const browserSaysNo = () => navigator.doNotTrack === '1' || (navigator as any).g
 /** Whether counts are sent: a site is set, the browser doesn't object, and it isn't switched off. */
 export const feedbackOn = () => !!BUILD.feedback && !browserSaysNo() && get(OFF_KEY) !== '1';
 export const feedbackAvailable = () => !!BUILD.feedback;
+/** The public dashboard with the totals (GoatCounter's, made public by the maintainer). */
+export const totalsUrl = () => (BUILD.feedback ? `https://${BUILD.feedback}.goatcounter.com/` : null);
 export const feedbackBlockedByBrowser = browserSaysNo;
 export function setFeedback(on: boolean) { set(OFF_KEY, on ? null : '1'); }
 

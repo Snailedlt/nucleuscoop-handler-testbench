@@ -46,7 +46,7 @@ import { exportSettings, importSettings } from './settingsio';
 import { BETA } from './testplan';
 import { feedbackUrl, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
-import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
+import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
@@ -2308,6 +2308,8 @@ wireVotes((kind, _id, v, el) => {
   };
   box.addEventListener('change', () => (setFeedback(box.checked), sync()));
   sync();
+  const totals = totalsUrl();
+  if (totals) { ($('#set-feedback-totals-link') as HTMLAnchorElement).href = totals; $('#set-feedback-totals').hidden = false; }
 }
 
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
