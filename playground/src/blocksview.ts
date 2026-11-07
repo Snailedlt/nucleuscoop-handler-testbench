@@ -91,6 +91,8 @@ interface Stmt extends Range {
   otherwise?: Branch;
   // code
   src?: string;
+  /** The comments right above the statement, shown with it (read-only). */
+  note?: string;
 }
 interface Callback {
   key: string;
@@ -260,8 +262,34 @@ function readCond(t: any, text: string, key: string): Cond {
   return c;
 }
 
+/** The comments in `text` between `from` and `to`, as plain lines. */
+function commentsIn(text: string, from: number, to: number): string | undefined {
+  const out: string[] = [];
+  for (const m of text.slice(from, to).matchAll(/\/\/(.*)|\/\*([\s\S]*?)\*\//g)) {
+    const c = (m[1] ?? m[2] ?? '').split('\n').map((l) => l.replace(/^\s*\*?\s?/, '').trimEnd()).join('\n').trim();
+    if (c) out.push(c);
+  }
+  return out.length ? out.join('\n') : undefined;
+}
+
 function readBranch(node: any, text: string, key: string): Branch {
-  if (node.type === 'BlockStatement') return { key, block: { start: node.start, end: node.end }, stmts: node.body.map((s: any, i: number) => readStmt(s, text, `${key}/${i}`)) };
+  if (node.type === 'BlockStatement') {
+    return {
+      key,
+      block: { start: node.start, end: node.end },
+      stmts: node.body.map((s: any, i: number) => {
+        const st = readStmt(s, text, `${key}/${i}`);
+        st.note = commentsIn(text, i ? node.body[i - 1].end : node.start + 1, s.start);
+        // A comment after the previous statement on its own line belongs to that one.
+        if (i && st.note) {
+          const between = text.slice(node.body[i - 1].end, s.start);
+          const nl = between.indexOf('\n');
+          if (nl >= 0) st.note = commentsIn(text, node.body[i - 1].end + nl, s.start);
+        }
+        return st;
+      }),
+    };
+  }
   return { key, single: { start: node.start, end: node.end }, stmts: [readStmt(node, text, `${key}/0`)] };
 }
 
@@ -329,9 +357,13 @@ function readStmt(s: any, text: string, key: string): Stmt {
     st.calleeText = text.slice(e.callee.start, e.callee.end);
     const r = resolvePath(parts);
     if (r?.kind === 'member') Object.assign(st, { owner: r.owner, name: r.name, member: r.member, path: labelOf(r.owner, r.name) });
-    const ov = st.member?.overloads?.find((o) => o.params.length === e.arguments.length && !o.params.some((p) => p.rest));
-    st.argNames = e.arguments.map((_: any, i: number) => ov?.params[i]?.name ?? `value ${i + 1}`);
-    st.args = e.arguments.map((a: any, i: number) => readVal(a, text, `${key}:arg${i}`, st.argNames![i], ov?.params[i]?.type));
+    const n = e.arguments.length;
+    const ovs = st.member?.overloads ?? [];
+    // Jint matches by the number of arguments; a `params` array takes the rest.
+    const ov = ovs.find((o) => o.params.length === n && !o.params.some((p) => p.rest)) ?? ovs.find((o) => o.params.some((p) => p.rest) && n >= o.params.length - 1);
+    const param = (i: number) => ov && (ov.params[i] && !ov.params[i].rest ? ov.params[i] : ov.params.find((p) => p.rest));
+    st.argNames = e.arguments.map((_: any, i: number) => param(i)?.name ?? `value ${i + 1}`);
+    st.args = e.arguments.map((a: any, i: number) => readVal(a, text, `${key}:arg${i}`, st.argNames![i], param(i)?.type));
   }
   return st;
 }
@@ -469,7 +501,7 @@ function mapDiag(d: Diagnostic, edits: TextEdit[]): Diagnostic | undefined {
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 const firstSentence = (s: string) => {
-  const t = s.replace(/\s+/g, ' ').trim();
+  const t = s.split(/\n\s*\n/)[0].replace(/\s+/g, ' ').trim();
   const m = t.match(/^.*?[.!?](\s|$)/);
   return (m ? m[0] : t).trim();
 };
@@ -644,7 +676,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
 
   // --- value slots ---------------------------------------------------------------
 
-  const valSig = (v: Val): string => forcedCode.has(v.key) ? 'C' : `${v.kind}${v.kind === 'prop' || v.kind === 'enum' ? v.path : ''}${v.kind === 'enum' ? v.enumName : ''}${v.parts ? `(${v.parts.map(valSig).join(',')})` : ''}`;
+  const valSig = (v: Val): string => forcedCode.has(v.key) || v.kind === 'code' ? `C${v.src.includes('\n') ? 'M' : ''}` : `${v.kind}${v.kind === 'prop' || v.kind === 'enum' ? v.path : ''}${v.kind === 'enum' ? v.enumName : ''}${v.parts ? `(${v.parts.map(valSig).join(',')})` : ''}`;
   const shownKind = (v: Val): VKind => (forcedCode.has(v.key) ? 'code' : v.kind);
 
   function valueEditor(v0: Val, allowKinds = true, inPart = false): HTMLElement {
@@ -771,7 +803,11 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
         break;
       }
       case 'code': {
-        const inp = h('input', 'bv-input bv-code', { ...common, type: 'text', spellcheck: 'false', autocomplete: 'off' });
+        // Several lines: a text area, so the line breaks (and any // comments) stay as they are.
+        const multi = v0.src.includes('\n');
+        const inp = multi
+          ? h('textarea', 'bv-input bv-code bv-codeblock', { ...common, spellcheck: 'false', rows: String(Math.min(8, v0.src.split('\n').length)) })
+          : h('input', 'bv-input bv-code', { ...common, type: 'text', spellcheck: 'false', autocomplete: 'off' });
         inp.addEventListener('input', () => {
           const v = vals.get(k);
           if (!v) return;
@@ -866,10 +902,12 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       });
       tools.append(info);
     }
-    const up = icon(`${k}:up`, 'Move up', '↑');
+    const up = icon(`${k}:up`, 'Move up (Alt+↑)', '↑');
+    up.setAttribute('aria-keyshortcuts', 'Alt+ArrowUp');
     up.disabled = index === 0;
     up.addEventListener('click', () => move(k, -1));
-    const down = icon(`${k}:down`, 'Move down', '↓');
+    const down = icon(`${k}:down`, 'Move down (Alt+↓)', '↓');
+    down.setAttribute('aria-keyshortcuts', 'Alt+ArrowDown');
     down.disabled = index === siblings - 1;
     down.addEventListener('click', () => move(k, 1));
     const code = h('button', 'bv-link', { type: 'button', 'data-bv': `${k}:code`, id: idOf(`${k}:code`) }, 'Edit in code');
@@ -893,6 +931,11 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     if (!s) d.hidden = true;
     return d;
   }
+  const noteEl = (note: string) => {
+    const n = h('div', 'bv-note');
+    n.append(h('span', 'bv-sr', {}, 'Comment: '), document.createTextNode(note));
+    return n;
+  };
   const pathLabel = (p: string) => {
     const i = p.lastIndexOf('.');
     return `<span class="bv-owner">${esc(p.slice(0, i + 1))}</span><span class="bv-name">${esc(p.slice(i + 1))}</span>`;
@@ -902,13 +945,15 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
   function renderStmt(s: Stmt, siblings: number, index: number, depth: number): HTMLElement {
     if (codeEditing.has(s.key) && s.kind !== 'code') s = { key: s.key, start: s.start, end: s.end, kind: 'code', src: text.slice(s.start, s.end) };
     stmts.set(s.key, s);
-    const sig = `${stmtSig(s)}|${siblings}|${index}|${model.varNames.join()}|${model.optionNames.join()}`;
+    const sig = `${stmtSig(s)}|${s.note ?? ''}|${siblings}|${index}|${model.varNames.join()}|${model.optionNames.join()}`;
     const el = part(`row:${s.key}`, sig, () => {
       const li = h('li', `bv-row bv-k-${s.kind === 'if' ? 'if' : s.kind === 'code' ? 'code' : 'action'}`, { 'data-key': s.key });
       if (s.kind === 'if') {
+        if (s.note) li.append(noteEl(s.note));
         li.append(h('div', 'bv-clauses'));
         return li;
       }
+      if (s.note) li.append(noteEl(s.note));
       const head = h('div', 'bv-line');
       const tag = h('span', 'bv-tag', {}, s.kind === 'code' ? 'Code' : 'Action');
       const sentence = h('div', 'bv-sentence');
@@ -916,7 +961,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       const card = mi ? h('div', 'bv-card', { id: idOf(`${s.key}:card`) }) : undefined;
       if (card) card.hidden = true;
       if (s.kind === 'call') {
-        const name = h('span', 'bv-target');
+        const name = h('span', 'bv-target', s.member ? { title: firstSentence(s.member.doc || '') } : {});
         name.innerHTML = pathLabel(s.path ?? s.calleeText!);
         sentence.append(h('span', 'bv-word', {}, 'Do'), name);
         (s.args ?? []).forEach((a, i) => {
@@ -925,7 +970,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
           sentence.append(arg);
         });
       } else if (s.kind === 'set') {
-        const name = h('span', 'bv-target');
+        const name = h('span', 'bv-target', s.member ? { title: firstSentence(s.member.doc || '') } : {});
         name.innerHTML = s.path ? pathLabel(s.path) : `<span class="bv-name">${esc(s.calleeText!)}</span>`;
         sentence.append(h('span', 'bv-word', {}, s.op === '+=' ? 'Add to' : 'Set'), name, h('span', 'bv-word', {}, s.op === '+=' ? 'the value' : 'to'), valueEditor(s.value!));
       } else if (s.kind === 'var') {
@@ -1201,13 +1246,37 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     const b = at.b.stmts[j];
     if (!b) return;
     const t = host.getText();
-    const ok = edit([{ start: a.start, end: a.end, text: t.slice(b.start, b.end) }, { start: b.start, end: b.end, text: t.slice(a.start, a.end) }].sort((x, y) => x.start - y.start));
+    // Statements alone on their lines move with their whole lines: the comment at the end and the comment lines
+    // right above them go along. Otherwise just the statements swap.
+    const lo = Math.min(a.start, b.start) === a.start ? a : b;
+    const hi = lo === a ? b : a;
+    const prevEnd = at.b.stmts[Math.min(at.i, j) - 1]?.end ?? (at.b.block ? at.b.block.start + 1 : 0);
+    let ra: Range = lo;
+    let rb: Range = hi;
+    const ca = lineChunk(t, lo, prevEnd);
+    const cb = lineChunk(t, hi, lo.end);
+    if (ca && cb && ca.end < cb.start) [ra, rb] = [ca, cb];
+    const ok = edit([{ ...ra, text: t.slice(rb.start, rb.end) }, { ...rb, text: t.slice(ra.start, ra.end) }]);
     if (ok) {
       const n = at.b.stmts.length;
       const btn = j === 0 || j === n - 1 ? (dir < 0 ? 'down' : 'up') : dir < 0 ? 'up' : 'down';
       focusTo(`${at.b.key}/${j}:${btn}`);
       say(`Moved to position ${j + 1} of ${n}.`);
     }
+  }
+
+  /** A statement's lines when it is alone on them, with the comment lines right above it (not before `floor`). */
+  function lineChunk(t: string, s: Range, floor: number): Range | undefined {
+    const ls = lineStartAt(t, s.start);
+    const le = lineEndAt(t, s.end);
+    if (!/^\s*$/.test(t.slice(ls, s.start)) || !/^\s*(\/\/.*|\/\*.*\*\/\s*)?$/.test(t.slice(s.end, le)) || ls < floor) return undefined;
+    let start = ls;
+    while (start > 0) {
+      const prev = lineStartAt(t, start - 1);
+      if (prev < floor || !/^\s*(\/\/.*|\/\*.*\*\/)\s*$/.test(t.slice(prev, start - 1))) break;
+      start = prev;
+    }
+    return { start, end: le };
   }
 
   /** The range that removes statement `s` cleanly: its whole lines when it is alone on them. */
