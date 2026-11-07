@@ -200,6 +200,26 @@ for (const theme of ['light', 'dark']) {
     await axe(p, `${theme}, Files panel`);
     await p.keyboard.press('Escape');
   }
+  // A first visit (beta): the tester questions come first, can't be skipped, and lead to the recommendations.
+  {
+    const fresh = await browser.newContext({ colorScheme: theme, viewport: { width: 1280, height: 800 } });
+    await fresh.route((u) => !u.href.startsWith(BASE), (r) => r.abort());
+    const q = await fresh.newPage();
+    await q.goto(BASE);
+    await q.waitForTimeout(1200);
+    check(await q.isVisible('#test-dialog .tg-card'), `${theme}: a first visit opens the tester questions`);
+    await axe(q, `${theme}, tester questions`);
+    await q.keyboard.press('Escape');
+    await q.waitForTimeout(150);
+    check(await q.isVisible('#test-dialog') && await q.isDisabled('#tg-show'), `${theme}: the questions can't be skipped`);
+    await q.click('label.tg-card:has(input[data-q=coding][value=new])');
+    await q.click('label.tg-card:has(input[data-q=nucleus][value=new])');
+    await q.click('#tg-show');
+    await q.waitForTimeout(300);
+    check((await q.$$('#test-body .tg-list > .tg-item')).length >= 3 && await q.isVisible('#tg-change'), `${theme}: the answers show the recommendations, with Change`);
+    await axe(q, `${theme}, tester recommendations`);
+    await fresh.close();
+  }
   // Form: one line per option, more on request, fixes work, and back to Code.
   await p.goto(BASE + '#example-mistakes');
   await p.waitForTimeout(800);

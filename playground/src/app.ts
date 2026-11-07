@@ -2077,7 +2077,16 @@ async function openInPrevious() {
 }
 void hasPrevious().then((ok) => { $('#tg-compare').hidden = !ok; });
 $('#tg-compare-btn').addEventListener('click', () => void openInPrevious());
-const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')]);
+const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')], {
+  // The first answers also set up the workbench (instead of Nucli's start-up questions): "I write code" turns on
+  // Advanced mode. Both can be changed in Settings.
+  answered: (p, first) => {
+    if (!first || firstRunDone()) return;
+    setMode(p.coding === 'dev' ? 'dev' : 'simple');
+    try { localStorage.setItem('nucleus-workbench-firstrun', p.coding === 'dev' ? 'developer' : 'guided'); } catch { /* ignore */ }
+    announce(p.coding === 'dev' ? 'Advanced mode is on, since you write code. Settings changes it.' : 'Guided mode, with tips. Advanced mode is in Settings.');
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Code | Form (formview.ts): the options as a form, two-way with the code (the code stays the one source).
@@ -2749,7 +2758,10 @@ const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
   setLayout,
   done: (exp) => { if (exp) announce(exp === 'developer' ? 'Advanced mode is on.' : 'Guided: tips and plain words. Getting started is above the code.'); editor.focus(); },
 });
-if (!welcomed && !firstRunDone() && !location.hash) firstRun.open();
+// A new visitor: during the beta, the tester questions first (they also pick guided or Advanced); else Nucli's.
+if (!welcomed && !firstRunDone() && !location.hash) {
+  if (testGuide.needed()) testGuide.open(); else firstRun.open();
+}
 $('#fr-again').addEventListener('click', () => { ($('#settings-dialog') as HTMLDialogElement).close(); firstRun.open(); });
 $('#welcome-open').addEventListener('click', () => {
   if (narrow()) setView('code');

@@ -505,19 +505,35 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .CodeMirror .line-changed { background: color-mix(in srgb, var(--ok) 7%, transparent); box-shadow: inset 3px 0 0 var(--ok); transition: background-color 1s; }
 /* Help test this beta (testguide.ts). */
 #test-dialog { width: min(720px, calc(100vw - 32px)); }
-.tg-qs { display: grid; gap: 8px; padding: 10px 12px; background: var(--surface-2); border-radius: var(--r-pane); margin-bottom: 10px; }
-.tg-q { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
-.tg-ql { font-size: 13px; font-weight: 600; min-width: 13em; }
+#test-dialog { width: min(720px, 96vw); }
+.tg-ask { display: flex; gap: 14px; align-items: center; margin: 0 0 6px; }
+.tg-asking .tg-compare { display: none !important; }
+.tg-hello { margin: 0; font-size: 15px; line-height: 1.45; }
+.tg-q { border: 0; padding: 0; margin: 14px 0 0; }
+.tg-q legend { font-weight: 650; font-size: 15px; padding: 0; margin-bottom: 8px; }
+.tg-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.tg-card { position: relative; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; transition: border-color .12s, background-color .12s; }
+.tg-card input { position: absolute; opacity: 0; pointer-events: none; }
+.tg-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.tg-card:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.tg-card:has(input:checked)::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font: 700 12px/20px var(--font-body); text-align: center; }
+.tg-card:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tg-ic { font-size: 22px; line-height: 1; margin-top: 1px; }
+.tg-cl { display: flex; flex-direction: column; gap: 2px; padding-right: 18px; }
+.tg-cl small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.tg-go { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.tg-go .btn.primary:disabled { opacity: .5; cursor: not-allowed; }
+.tg-you { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 12px; margin: 0 0 12px; border-radius: var(--r-ctl); background: var(--surface-2); font-size: 13.5px; }
 .tg-h { font-size: 14px; margin: 4px 0 8px; } .tg-h .muted { font-weight: 400; font-size: 12.5px; }
+.tg-h:focus { outline: none; }
 .tg-more { margin-top: 10px; } .tg-more > summary { cursor: pointer; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
-.tg-pick { margin: 4px 0 8px; }
 .tg-area { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; cursor: help; color: var(--fg); }
 .tg-area.a-api { background: color-mix(in srgb, #a855f7 22%, transparent); }
 .tg-area.a-devx { background: color-mix(in srgb, #22c55e 22%, transparent); }
 .tg-area.a-uiux { background: color-mix(in srgb, #f59e0b 25%, transparent); }
-.tg-who { display: flex; flex-wrap: wrap; gap: 6px; }
-.tg-who button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
-.tg-who button[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
+.tg-time { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--surface-2); color: var(--fg); cursor: help; }
+.tg-need { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--fg); cursor: help; }
+@media (max-width: 520px) { .tg-ask .masc { display: none; } .tg-cards { grid-template-columns: 1fr; } }
 .tg-count { margin: 0 0 8px; }
 .tg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow: auto; }
 .tg-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
@@ -1908,7 +1924,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 <dialog id="firstrun-dialog"></dialog>
 <dialog id="test-dialog" aria-labelledby="test-h">
   <h2 id="test-h">🧪 Help test this beta</h2>
-  <p class="muted" style="margin:0 0 10px">Thanks for testing! Pick what fits you: each item says what to try, what kind of testing it is, and what to look for. Your ticks stay in this browser.</p>
+  <p class="muted" id="test-intro" style="margin:0 0 10px">Each item says what to try, how long it takes and what to look for. Tick what you've tried (kept in this browser), and report anything you find.</p>
   <p class="tg-compare" id="tg-compare" hidden><span>⇄ This is a big update.</span> <button class="link" type="button" id="tg-compare-btn">Open this handler in the previous version</button> <span class="muted">to compare: what got better, what got worse, what you miss.</span></p>
   <div id="test-body"></div>
   <div class="actions"><button class="btn primary" type="button" id="test-close">Done</button></div>

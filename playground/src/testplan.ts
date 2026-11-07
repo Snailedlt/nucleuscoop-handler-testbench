@@ -36,6 +36,24 @@ export const KINDS: Record<Kind, { label: string; how: string }> = {
 };
 
 
+/** How long an item takes (shown as a chip). */
+export const EFFORT: Record<1 | 2 | 3, { label: string; how: string }> = {
+  1: { label: '~5 min', how: 'Quick: a few minutes in the workbench.' },
+  2: { label: '~15 min', how: 'A bit longer, or needs a handler of your own.' },
+  3: { label: '30 min+', how: 'Takes a while, usually with Nucleus Co-op and a game.' },
+};
+/** How much we need each item tested (3: most) and how long it takes (EFFORT). Recommended items are sorted by
+ *  both: much needed and quick first. Unlisted items count as need 2, effort 2. */
+const PRIORITY: Record<string, { need: 1 | 2 | 3; effort: 1 | 2 | 3 }> = {
+  'first-handler': { need: 3, effort: 3 }, messages: { need: 3, effort: 1 }, phone: { need: 2, effort: 1 }, tips: { need: 1, effort: 1 },
+  'own-handlers': { need: 3, effort: 2 }, 'claude-docs': { need: 3, effort: 1 }, 'window-messages': { need: 2, effort: 2 },
+  keyboard: { need: 1, effort: 1 }, 'try-it': { need: 3, effort: 3 }, vscode: { need: 2, effort: 2 }, autocomplete: { need: 2, effort: 2 },
+  reference: { need: 2, effort: 1 }, lines: { need: 1, effort: 1 }, tabs: { need: 2, effort: 1 }, layout: { need: 1, effort: 1 },
+  'game-folder': { need: 2, effort: 2 }, form: { need: 3, effort: 1 }, packages: { need: 3, effort: 3 }, a11y: { need: 1, effort: 1 },
+  compare: { need: 3, effort: 1 }, 'save-copy': { need: 3, effort: 2 }, 'hover-check': { need: 2, effort: 1 }, reader: { need: 1, effort: 2 },
+};
+export const priority = (t: { id: string }) => PRIORITY[t.id] ?? { need: 2 as const, effort: 2 as const };
+
 export interface TestItem { id: string; areas: Area[]; kinds: Kind[]; title: string; steps: string; look: string }
 
 export const TEST_PLAN: TestItem[] = [
@@ -58,7 +76,7 @@ export const TEST_PLAN: TestItem[] = [
   { id: 'lines', areas: ['uiux', 'devx'], kinds: ['explore'], title: 'Find a setting in Lines', steps: 'Open Lines (Ctrl+B), find an option you need without knowing its name, and insert it.', look: 'Could you find it? Was the grouping and the wording clear?' },
 
   { id: 'tabs', areas: ['uiux', 'devx'], kinds: ['explore'], title: 'Several handlers in tabs', steps: 'Edit a handler, then open an example (Ctrl+K): it opens in a new tab. Switch, undo in each, close one and undo, reload the page.', look: 'Lost work, the wrong tab after a reload, a wrong state dot, or undo mixing tabs.' },
-  { id: 'layout', areas: ['uiux'], kinds: ['explore'], title: 'Slim bar or side rail', steps: 'Use the workbench a while with each: Settings › General › Layout.', look: 'Which you prefer and why; anything hard to find in either.' },
+  { id: 'layout', areas: ['uiux'], kinds: ['explore'], title: 'Slim bar or side rail', steps: 'Use the workbench a while with each: Settings › Layout.', look: 'Which you prefer and why; anything hard to find in either.' },
   { id: 'game-folder', areas: ['api'], kinds: ['verify', 'nucleus'], title: 'Check against your game folder', steps: 'Open a handler for a game you have installed, open Files and press Link the game’s folder (Your game on this PC). Read what it finds, and try the + on a symlink or exclusion list.', look: 'False alarms on a handler that works, missed real problems, wrong path forms for Nucleus, and whether the engine notes are right.' },
   { id: 'form', areas: ['uiux'], kinds: ['task'], title: 'Make a handler with the form', steps: 'New handler, then switch to Form and set it up there: change switches, pick values, add options, apply the fixes it shows.', look: 'Anything you could not do in the form, confusing labels, or a change that broke the code.' },
   { id: 'packages', areas: ['api', 'uiux'], kinds: ['task', 'nucleus'], title: 'A whole package', steps: 'Open your own .nc or .zip (or the Fallout example), open Files, edit an ini, add a file, save the package and install it in Nucleus.', look: 'Files missing after saving, what Try it says Nucleus installs against what it really installs, and checks that are wrong.' },
@@ -66,6 +84,6 @@ export const TEST_PLAN: TestItem[] = [
   { id: 'compare', areas: ['uiux', 'devx'], kinds: ['task'], title: 'Compare with the previous version', steps: 'Open a handler you know, then Open this handler in the previous version (top of this guide). Do the same task in both.', look: 'What got better, what got worse or harder to find, and anything from before that you miss.' },
   // --- Everyone
   { id: 'save-copy', areas: ['uiux'], kinds: ['task', 'nucleus'], title: 'Save or copy', steps: 'Save for Nucleus (or ⤓ next to the code): save the .zip, follow the steps shown, and also try Copy a link.', look: 'Did the install steps match what Nucleus showed? Did the link open the same handler?' },
-  { id: 'hover-check', areas: ['devx', 'uiux'], kinds: ['explore'], title: 'Squiggles, hover and Check', steps: 'Hover underlined code and names, open and close problems in Check, try Settings › General › Check (Compact, Comfortable, Detailed).', look: 'Too much or too little information, boxes in the way, hard-to-read colours in your theme.' },
+  { id: 'hover-check', areas: ['devx', 'uiux'], kinds: ['explore'], title: 'Squiggles, hover and Check', steps: 'Hover underlined code and names, open and close problems in Check, try Settings › Check (Compact, Comfortable, Detailed).', look: 'Too much or too little information, boxes in the way, hard-to-read colours in your theme.' },
   { id: 'reader', areas: ['uiux'], kinds: ['reader'], title: 'With a screen reader', steps: 'Open an example, go through Check, fix one problem, and open Settings.', look: 'Anything not announced, announced twice, or in a confusing order.' },
 ];
