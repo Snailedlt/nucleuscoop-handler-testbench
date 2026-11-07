@@ -51,7 +51,7 @@ jobs:
         run: node build.mjs --core ../core --hub-data .hubdata --assets .assets
         env:
           GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
-          FEEDBACK_GOATCOUNTER: ${{ vars.FEEDBACK_GOATCOUNTER }} # anonymous votes (src/feedback.ts); empty: nothing is sent
+          FEEDBACK_GOATCOUNTER: ${{ vars.FEEDBACK_GOATCOUNTER || secrets.FEEDBACK_GOATCOUNTER }} # anonymous votes (src/feedback.ts), a variable or a secret; empty: nothing is sent
         working-directory: playground
       - name: The previous release at /previous/, for testers to compare (playground/previous.json; none, none built)
         run: |
