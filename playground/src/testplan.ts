@@ -50,7 +50,7 @@ const PRIORITY: Record<string, { need: 1 | 2 | 3; effort: 1 | 2 | 3 }> = {
   keyboard: { need: 1, effort: 1 }, 'try-it': { need: 3, effort: 3 }, vscode: { need: 2, effort: 2 }, autocomplete: { need: 2, effort: 2 },
   reference: { need: 2, effort: 1 }, lines: { need: 1, effort: 1 }, tabs: { need: 2, effort: 1 }, layout: { need: 1, effort: 1 },
   'game-folder': { need: 2, effort: 2 }, form: { need: 3, effort: 1 }, packages: { need: 3, effort: 3 }, a11y: { need: 1, effort: 1 },
-  compare: { need: 3, effort: 1 }, 'save-copy': { need: 3, effort: 2 }, 'hover-check': { need: 2, effort: 1 }, reader: { need: 1, effort: 2 },
+  compare: { need: 3, effort: 1 }, debugger: { need: 3, effort: 1 }, 'save-copy': { need: 3, effort: 2 }, 'hover-check': { need: 2, effort: 1 }, reader: { need: 1, effort: 2 },
 };
 export const priority = (t: { id: string }) => PRIORITY[t.id] ?? { need: 2 as const, effort: 2 as const };
 
@@ -82,6 +82,7 @@ export const TEST_PLAN: TestItem[] = [
   { id: 'packages', areas: ['api', 'uiux'], kinds: ['task', 'nucleus'], title: 'A whole package', steps: 'Open your own .nc or .zip (or the Fallout example), open Files, edit an ini, add a file, save the package and install it in Nucleus.', look: 'Files missing after saving, what Try it says Nucleus installs against what it really installs, and checks that are wrong.' },
   { id: 'a11y', areas: ['uiux'], kinds: ['task'], title: 'Accessibility settings', steps: 'Open Settings › Accessibility and try each switch, with a screen reader or only the keyboard if you use one.', look: 'Anything that is hard to see, hard to reach with the keyboard, or read out wrongly; and anything missing that you need.' },
   { id: 'compare', areas: ['uiux', 'devx'], kinds: ['task'], title: 'Compare with the previous version', steps: 'Open a handler you know, then Open this handler in the previous version (top of this guide). Do the same task in both.', look: 'What got better, what got worse or harder to find, and anything from before that you miss.' },
+  { id: 'debugger', areas: ['devx', 'uiux'], kinds: ['task', 'keyboard'], title: 'Step through a handler', steps: 'Open "Handler with common mistakes", Fix all, click beside the Context.StartArguments line for a breakpoint, then Try it › Step through. Step, go Back, drag the timeline, open Variables and Done so far. In Advanced mode: a watch, Step into/out, and a condition (right-click the breakpoint).', look: 'Wording that didn\'t tell you where you are, values you expected but couldn\'t find, keys that clash with your browser (F5, F10, F11).' },
   // --- Everyone
   { id: 'save-copy', areas: ['uiux'], kinds: ['task', 'nucleus'], title: 'Save or copy', steps: 'Save for Nucleus (or ⤓ next to the code): save the .zip, follow the steps shown, and also try Copy a link.', look: 'Did the install steps match what Nucleus showed? Did the link open the same handler?' },
   { id: 'hover-check', areas: ['devx', 'uiux'], kinds: ['explore'], title: 'Squiggles, hover and Check', steps: 'Hover underlined code and names, open and close problems in Check, try Settings › Check (Compact, Comfortable, Detailed).', look: 'Too much or too little information, boxes in the way, hard-to-read colours in your theme.' },

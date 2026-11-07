@@ -227,6 +227,105 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #sim-matrix .mx-fails { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; }
 #sim-matrix .mx-fails li { margin: 2px 0; }
 
+/* Debugger (debugui.ts): breakpoints in the gutter, the current line, the panel in Try it */
+.CodeMirror-gutter.nc-bp { width: 16px; }
+#editor .CodeMirror-gutter-wrapper::before { content: ""; position: absolute; left: 3px; top: .38em; width: 10px; height: 10px; border-radius: 50%; cursor: pointer; }
+#editor .CodeMirror-gutter-wrapper:hover::before { background: color-mix(in srgb, var(--err) 35%, transparent); }
+.dbg-gm { position: relative; width: 16px; height: 1.55em; cursor: pointer; }
+.dbg-gm.bp::before { content: ""; position: absolute; left: 3px; top: .38em; width: 10px; height: 10px; border-radius: 50%; background: var(--err); }
+.dbg-gm.cond::before { box-shadow: inset 0 0 0 2px var(--err), inset 0 0 0 4px var(--code-bg, var(--surface)); }
+.dbg-gm.here::after { content: ""; position: absolute; left: 4px; top: .3em; border: 6px solid transparent; border-left: 9px solid var(--accent); border-right: 0; filter: drop-shadow(0 0 1px var(--code-bg, var(--surface))); }
+.CodeMirror .dbg-line { background: color-mix(in srgb, var(--warn) 7%, transparent); box-shadow: inset 3px 0 0 var(--accent), inset 0 1px 0 color-mix(in srgb, var(--warn) 45%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--warn) 45%, transparent); }
+.CodeMirror .dbg-line-err { background: color-mix(in srgb, var(--err) 8%, transparent); box-shadow: inset 3px 0 0 var(--err); }
+.dbg { margin: 0 0 14px; }
+.dbg[hidden], #dbg-body[hidden], #dbg-pop[hidden] { display: none; }
+#panel-simulate.debugging > #sim-out, #panel-simulate.debugging > #sim-matrix, #panel-simulate.debugging > p.muted { display: none; }
+.dbg-bar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0; background: var(--surface); }
+.dbg-bar .dbg-sp { flex: 1; }
+.dbg-b { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 13px; }
+.dbg-b:disabled { opacity: .5; cursor: default; }
+.dbg-i { font-size: 12px; line-height: 1; }
+.dbg-banner { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r-pane); padding: 8px 12px; margin: 6px 0 8px; background: var(--surface-2); font-size: 13.5px; }
+.dbg-banner:empty { display: none; }
+.dbg-banner p { margin: 0; }
+.dbg-banner p + p { margin-top: 4px; }
+.dbg-banner.bp { border-left-color: var(--err); }
+.dbg-banner.error { border-color: var(--err); background: var(--err-bg); }
+.dbg-banner.done { border-left-color: var(--ok); background: var(--ok-bg); }
+.dbg-banner.stale { border-left-color: var(--warn); background: var(--warn-bg); }
+.dbg-reason { font-weight: 600; color: var(--muted); }
+.dbg-banner.error .dbg-reason, .dbg-cond-err { color: var(--err); }
+.dbg-chip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.dbg-chip::before, .dbg-ph::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: var(--pc, var(--muted)); vertical-align: 0; }
+.dbg-chip.p1, .dbg-ph.p1, .dbg-seg.p1 { --pc: var(--p1); } .dbg-chip.p2, .dbg-ph.p2, .dbg-seg.p2 { --pc: var(--p2); } .dbg-chip.p3, .dbg-ph.p3, .dbg-seg.p3 { --pc: var(--p3); } .dbg-chip.p4, .dbg-ph.p4, .dbg-seg.p4 { --pc: var(--p4); }
+.dbg-chip.p5, .dbg-ph.p5, .dbg-seg.p5 { --pc: var(--p5); } .dbg-chip.p6, .dbg-ph.p6, .dbg-seg.p6 { --pc: var(--p6); } .dbg-chip.p7, .dbg-ph.p7, .dbg-seg.p7 { --pc: var(--p7); } .dbg-chip.p8, .dbg-ph.p8, .dbg-seg.p8 { --pc: var(--p8); }
+.dbg-chip.ph-cb, .dbg-ph.ph-cb, .dbg-seg.ph-cb { --pc: var(--info); }
+.dbg-peek { margin: 0 0 8px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--code-bg); color: var(--code-fg, var(--fg)); font: 12.5px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--line); }
+.dbg-peek-n { display: inline-block; min-width: 2.5em; margin-right: 8px; color: var(--code-muted, var(--muted)); text-align: right; user-select: none; }
+.dbg-scrub { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.dbg-scrub-l { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.dbg-scrub-w { position: relative; flex: 1; min-width: 0; padding-top: 7px; }
+.dbg-scrub-w input { width: 100%; margin: 0; min-height: 24px; }
+.dbg-track { position: absolute; left: 8px; right: 8px; top: 0; height: 5px; }
+.dbg-segs { display: flex; gap: 1px; height: 100%; border-radius: 3px; overflow: hidden; }
+.dbg-seg { background: var(--pc, var(--muted)); opacity: .8; min-width: 2px; }
+.dbg-seg.ph-top { --pc: var(--muted); opacity: .5; }
+.dbg-tick { position: absolute; top: -3px; width: 3px; height: 11px; margin-left: -1px; border-radius: 1px; background: var(--err); }
+.dbg-pos { font: 12px var(--font-mono); white-space: nowrap; min-width: 6ch; text-align: right; }
+.dbg-errs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12.5px; margin: 0 0 8px; }
+.dbg-errs:empty { display: none; }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.dbg-err-b { border-color: var(--err); }
+.dbg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; align-items: start; }
+.dbg-sec { border: 1px solid var(--line); border-radius: var(--r-pane); padding: 8px 10px; min-width: 0; }
+.dbg-sec h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.dbg-vars { grid-row: span 2; }
+.dbg-help { margin: 0 0 6px; font-size: 12px; }
+.dbg-empty { margin: 2px 0; font-size: 12.5px; }
+.dbg-list { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.dbg-calls { max-height: 240px; overflow: auto; }
+.dbg-calls li { padding: 3px 0; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; }
+.dbg-calls li.dbg-ph { border-top: 0; padding-top: 6px; font-weight: 600; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+.dbg-calls code { font: 11.5px var(--font-mono); overflow-wrap: anywhere; }
+.dbg-calls li.now { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.dv-group { margin: 0 0 4px; }
+.dv-group > summary { cursor: pointer; font-weight: 600; font-size: 12.5px; padding: 2px 0; }
+.dv-tree, .dv-kids { list-style: none; margin: 0; padding: 0 0 0 10px; font: 12px/1.5 var(--font-mono); }
+.dv-kids { border-left: 1px solid var(--line); margin-left: 4px; }
+.dv-row { overflow-wrap: anywhere; }
+.dv-row > details > summary { cursor: pointer; }
+.dv-n { color: var(--muted); }
+.dv-n::after { content: ": "; }
+.dv-v.t-string { color: color-mix(in srgb, var(--ok) 70%, var(--fg)); }
+.dv-v.t-number, .dv-v.t-boolean { color: color-mix(in srgb, var(--info) 75%, var(--fg)); }
+.dv-v.t-undefined, .dv-v.t-null, .dv-v.t-default, .dv-v.t-getter { color: var(--muted); font-style: italic; }
+.dv-ch { margin-left: 6px; font: 600 10.5px var(--font-body); color: color-mix(in srgb, var(--accent) 60%, var(--fg)); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 999px; padding: 0 6px; }
+.dv-row.is-ch > .dv-v, .dv-row.is-ch > details > summary > .dv-v { font-weight: 700; }
+.dbg-watch-form { display: flex; gap: 6px; margin: 0 0 6px; }
+.dbg-watch-form input { flex: 1; min-width: 0; font: 12.5px var(--font-mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); }
+.dbg-w, .dbg-bp { display: flex; gap: 8px; align-items: center; padding: 2px 0; }
+.dbg-w-e { font: 12px var(--font-mono); }
+.dbg-w-v { flex: 1; min-width: 0; font: 12px var(--font-mono); overflow-wrap: anywhere; }
+.dbg-w-v.err { color: var(--err); font-family: var(--font-body); }
+.dbg-w .btn.icon, .dbg-bp .btn.icon { width: 26px; padding: 2px 0; }
+.dbg-bp .muted { flex: 1; min-width: 0; }
+.dbg-stack li { padding: 2px 0; }
+.dbg-stack [aria-current] { font-weight: 700; }
+.dbg-stack-ph { font-size: 12px; }
+.dbg-check { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 12.5px; }
+#dbg-pop { position: fixed; z-index: 60; width: min(340px, calc(100vw - 16px)); box-sizing: border-box; padding: 10px 12px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: var(--sh-2); font-size: 13px; }
+#dbg-pop label { font-weight: 600; display: block; margin-bottom: 4px; }
+#dbg-pop input { width: 100%; box-sizing: border-box; font: 12.5px var(--font-mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); }
+#dbg-pop p { margin: 6px 0; font-size: 12px; }
+.dbg-pop-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 600px) {
+  .dbg-bar { gap: 4px; }
+  .dbg-b { padding: 7px 9px; }
+  .dbg-bar .dbg-sp { display: none; }
+  .dbg-grid { grid-template-columns: 1fr; }
+  .dbg-vars { grid-row: auto; }
+}
+
 /* Update note and What's new */
 #updated { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--info); background: var(--info-bg); color: var(--fg); border-radius: var(--r-pane); font-size: 13px; }
 #updated[hidden] { display: none; }
@@ -1897,7 +1996,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
           <button class="btn" id="sim-all" type="button" title="Every player count, input setup and monitor size">Test all combinations</button>
         </div>
+          <button class="btn" id="sim-debug" type="button" title="Debug (F5): run the handler step by step, pause on breakpoints, and see every value"><span aria-hidden="true">▶ </span>Step through</button>
         <p class="muted" style="margin:0 0 12px;max-width:65ch">Each player's window, launch arguments and file changes, as Nucleus would set them up. Simulated: nothing on your computer is touched, and the game itself still needs a test in Nucleus.<span class="dev-only"> How: the handler is loaded and <code>Game.Play</code> runs once per player in this browser, following the Jint 2.11.58 rules Nucleus uses (checked against the real engine on every probe). File, registry and process calls are recorded, not performed.</span></p>
+        <div id="dbg" class="dbg" hidden></div>
         <div id="sim-matrix" hidden></div>
         <div id="sim-out"></div>
       </div>
@@ -2147,6 +2248,12 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <tr><td><kbd>Ctrl</kbd> <kbd>.</kbd></td><td>Problems and fixes on this line</td></tr>
     <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>F</kbd></td><td>Format the code (indentation and spacing)</td></tr>
     <tr class="kh"><th colspan="2">Editing</th></tr>
+    <tr class="kh"><th colspan="2">Debugger (Try it › Step through)</th></tr>
+    <tr><td><kbd>F9</kbd></td><td>Breakpoint on this line (or click beside the line number); <kbd>Shift</kbd> <kbd>F9</kbd> a condition (Advanced mode)</td></tr>
+    <tr><td><kbd>F5</kbd></td><td>Start, or continue to the next breakpoint (in the code or Try it)</td></tr>
+    <tr><td><kbd>F10</kbd> · <kbd>F11</kbd> · <kbd>Shift</kbd> <kbd>F11</kbd></td><td>Step over · into · out</td></tr>
+    <tr><td><kbd>Alt</kbd> <kbd>F10</kbd> · <kbd>Alt</kbd> <kbd>F5</kbd></td><td>Step back · back to the previous breakpoint</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>F5</kbd> · <kbd>Shift</kbd> <kbd>F5</kbd></td><td>Restart · stop</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Suggestions (also after typing <kbd>.</kbd>)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>/</kbd></td><td>Comment or uncomment the line</td></tr>
     <tr><td><kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Move the line up / down</td></tr>

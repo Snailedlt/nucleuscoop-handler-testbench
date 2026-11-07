@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Step through a handler, and back.** Click beside a line number for a breakpoint, then Try it › Step through (F5): it pauses there for each player, says in plain words where it is, highlights the line, and shows the variables, Context, the options set so far and what Nucleus would have done up to that point. Next line (F10), Back (Alt+F10) and a timeline go through the whole run; Advanced mode adds Step into/out, watches, the call stack and conditional breakpoints.
 - **Hub handlers open with their whole package.** A Hub handler whose package ships other files (configs, scripts, DLLs) now lists them all in Files, as Nucleus installs them, and the Open list says "+ N files". Small files open as usual; big ones show their size with a Hub badge and a link to the original package, and Save tells you which ones it leaves out.
 - **Lines: a tree by default, grouped your way.** View picks Tree (open one group at a time, the default) or List (everything with headings), and Group sorts names by object, topic, type, or where they work (top level or inside Game.Play and other callbacks), in either view.
 - **Blocks is calmer, and Lines works in Form and Blocks.** Blocks shows each step on one line with its main problem and a Fix button; the arrow opens the rest, as in Form. Picking a name in Lines while Form shows adds that option; in Blocks it adds the callback, or the action as a step (in the part where you last added one, else Game.Play).

@@ -50,6 +50,7 @@ import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, u
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
+import { mountDebugger } from './debugui';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -827,7 +828,7 @@ function hideLinePop() {
   linePop.hidden = true;
   if (had) editor.focus();
 }
-editor.on('gutterClick', (_cm: any, line: number) => ((tip.hidden = true), showLineProblems(line)));
+editor.on('gutterClick', (_cm: any, line: number, gutter: string) => gutter !== 'nc-bp' && ((tip.hidden = true), showLineProblems(line)));
 linePop.addEventListener('keydown', (e: KeyboardEvent) => e.key === 'Escape' && (e.preventDefault(), hideLinePop()));
 editor.on('keydown', (_cm: any, e: KeyboardEvent) => e.key === 'Escape' && !linePop.hidden && hideLinePop());
 
@@ -954,13 +955,19 @@ function syncPlayerChoices() {
   sel.replaceChildren(...Array.from({ length: max }, (_, i) => new Option(String(i + 1), String(i + 1))));
   sel.value = Number(v) <= max ? v : String(max);
 }
-function runSim() {
+/** Try it's choices: players, monitor, keyboard (shared with the debugger). */
+function simOptions() {
   syncPlayerChoices();
-  if (!$('#panel-simulate').hidden) use('try-it');
   const players = Number(($('#sim-players') as HTMLSelectElement).value);
   const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
-  const kb = Number(($('#sim-kb') as HTMLSelectElement).value);
-  const r = simulate(editor.getValue(), { players, width, height, keyboardPlayer: kb, plugins: simPlugins() });
+  const keyboardPlayer = Number(($('#sim-kb') as HTMLSelectElement).value);
+  return { players, width, height, keyboardPlayer, plugins: simPlugins() };
+}
+function runSim() {
+  if (!$('#panel-simulate').hidden) use('try-it');
+  const o = simOptions();
+  const kb = o.keyboardPlayer;
+  const r = simulate(editor.getValue(), o);
   const out: string[] = [];
   const simple = mode === 'simple';
   // Test all needs a handler that loads: until then the banner below says what to fix.
@@ -1012,6 +1019,21 @@ function runSim() {
   });
 }
 $('#sim-run').addEventListener('click', runSim);
+
+// Debug: step through the run (debugui.ts), in Try it.
+const debug = mountDebugger({
+  editor,
+  root: $('#dbg'),
+  panel: $('#panel-simulate'),
+  options: simOptions,
+  showTryIt: () => selectTab('simulate'),
+  showCode: () => {
+    if (viewMode !== 'code') setViewMode('code');
+  },
+  rerun: runSim,
+  used: () => use('debugger'),
+});
+$('#sim-debug').addEventListener('click', () => debug.start());
 
 // ---------------------------------------------------------------------------
 // Test all combinations: every player count (up to Game.MaxPlayers, at most 8), input setup and
@@ -1609,6 +1631,8 @@ function commandList(): OpenEntry[] {
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
     c('Try it: simulate the handler', 'Ctrl+Enter', 'run play simulate try', () => selectTab('simulate')),
     c('Test all combinations', '', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
+    c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
+    c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
     c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
     c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),

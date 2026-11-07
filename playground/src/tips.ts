@@ -169,6 +169,7 @@ const FEATURES_ = T('Feature', [
   { id: 'f-lines', text: 'Lines lists every name a handler can use, as a tree. Names already in the handler show their value; click one to insert it.', action: { label: 'Show Lines', run: 'lines' } },
   { id: 'f-hover', text: 'Hover any name in the code for its docs. In Lines, the (i) next to a name also says how many Hub handlers use it.' },
   { id: 'f-tryit', text: 'Try it shows what each player gets: window, launch arguments and every file change, without Nucleus or the game.', action: { label: 'Try it', run: 'tryit' } },
+  { id: 'f-debug', text: 'Step through your handler: click beside a line number for a breakpoint, then Try it › Step through (F5). Next line (F10), Back to undo a step, and drag the timeline through every player’s Game.Play.', action: { label: 'Try it', run: 'tryit' } },
   { id: 'f-testall', text: 'Test all combinations runs every player count, input setup and monitor size, and lists what fails and why.', action: { label: 'Try it', run: 'tryit' } },
   { id: 'f-share', text: 'Copy link shares the handler as a link. Select some lines first to share only those.', action: { label: 'Copy link', run: 'share' } },
   { id: 'f-package', text: 'Open a .zip or .nc, or a Hub handler marked "+ N files" in the Open list, and its other files come along: "+ N files" shows each one, where Nucleus installs it and what’s inside, and saving puts them back. Big Hub files show a Hub badge: get those from the original package.' },

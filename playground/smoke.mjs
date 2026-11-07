@@ -263,6 +263,48 @@ for (const theme of ['light', 'dark']) {
   check(fvAfter < fvBefore, `${theme}: a fix in Form fixes it (${fvBefore} -> ${fvAfter} options with problems)`);
   await p.click('[data-view-mode=code]');
   await p.waitForTimeout(200);
+  // The debugger: a breakpoint, Step through, step, step back, the banner and the current line.
+  await p.goto(BASE + '#example-mistakes');
+  await p.waitForTimeout(1200);
+  await p.click('#fix-all');
+  await p.waitForTimeout(500);
+  if (await p.$('#ai-accept')) await p.click('#ai-accept');
+  await p.waitForTimeout(800);
+  const bpLine = await p.evaluate(() => {
+    const cm = document.querySelector('.CodeMirror').CodeMirror;
+    for (let i = 0; i < cm.lineCount(); i++) if (cm.getLine(i).includes('Context.StartArguments')) return i;
+    return -1;
+  });
+  const gutterAt = await p.evaluate((l) => {
+    const cm = document.querySelector('.CodeMirror').CodeMirror;
+    const g = document.querySelector('.CodeMirror-gutter.nc-bp').getBoundingClientRect();
+    const r = cm.charCoords({ line: l, ch: 0 }, 'window');
+    return { x: g.left + g.width / 2, y: (r.top + r.bottom) / 2 };
+  }, bpLine);
+  await p.mouse.click(gutterAt.x, gutterAt.y);
+  await p.waitForTimeout(150);
+  check(bpLine >= 0 && (await p.$$('.dbg-gm.bp')).length === 1, `${theme}: a click beside a line number sets a breakpoint`);
+  await p.click('[role=tab][data-tab=simulate]');
+  await p.waitForTimeout(300);
+  await p.click('#sim-debug');
+  await p.waitForSelector('#dbg-body:not([hidden])', { timeout: 10000 }).catch(() => {});
+  const atBp = await p.innerText('#dbg-banner');
+  check(atBp.includes(`Breakpoint. Paused before line ${bpLine + 1} for player 1 of`) && atBp.includes('about to set Context.StartArguments'), `${theme}: Step through stops at the breakpoint and says where in plain words (${atBp.trim().slice(0, 90)})`);
+  check(await p.evaluate((l) => !!document.querySelector('.CodeMirror').CodeMirror.lineInfo(l).bgClass?.includes('dbg-line'), bpLine), `${theme}: the current line is highlighted in the code`);
+  await p.click('#dbg-over');
+  await p.waitForTimeout(150);
+  check((await p.innerText('#dbg-banner')).includes(`line ${bpLine + 2}`) && /Context/.test(await p.innerText('#dbg-vars')), `${theme}: Step over moves to the next line and shows the variables`);
+  await p.click('#dbg-back');
+  await p.waitForTimeout(150);
+  check((await p.innerText('#dbg-banner')).includes(`line ${bpLine + 1}`), `${theme}: Step back goes back a step`);
+  check(Number(await p.inputValue('#dbg-range')) > 0 && (await p.$$('#dbg-done li')).length > 0, `${theme}: the timeline and Done so far follow the run`);
+  await axe(p, `${theme}, debugger`);
+  await cmType(p, 'Game.MaxPlayers', ' ');
+  await p.waitForTimeout(150);
+  check(/Code changed/.test(await p.innerText('#dbg-banner')), `${theme}: editing the code ends the debug session`);
+  await p.click('#dbg-stop');
+  await p.waitForTimeout(200);
+  check((await p.isHidden('#dbg')) && (await p.innerText('#sim-out')).length > 50, `${theme}: Stop closes the debugger and shows Try it's results`);
   check(!errors.length, `${theme}: no page errors${errors.length ? `: ${errors.join('; ')}` : ''}`);
   await ctx.close();
 
