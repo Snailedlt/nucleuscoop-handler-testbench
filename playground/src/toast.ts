@@ -5,6 +5,7 @@
 // The kind (info, success, warning, error) is guessed from the wording when it isn't given, so
 // every existing toast("…") call gets the right look.
 
+import { noteDuration } from './a11y';
 import { mascot, mascotsOn, type MascotId } from './mascots';
 
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
@@ -160,14 +161,14 @@ export function toast(text: string, opts: ToastOptions = {}): void {
   box.appendChild(el);
 
   // Closes by itself after a while; the clock stops while the stack is fanned out.
-  const ms = opts.duration ?? (kind === 'error' ? 8000 : opts.action ? 7000 : Math.min(8000, 3500 + text.length * 25));
+  const ms = noteDuration(opts.duration ?? (kind === 'error' ? 8000 : opts.action ? 7000 : Math.min(8000, 3500 + text.length * 25)));
   let left = ms;
   let started = Date.now();
   let timer = 0;
   const start = () => {
     started = Date.now();
     clearTimeout(timer);
-    timer = window.setTimeout(() => remove(entry), Math.max(1200, left));
+    if (Number.isFinite(left)) timer = window.setTimeout(() => remove(entry), Math.max(1200, left));
   };
   entry = {
     el,

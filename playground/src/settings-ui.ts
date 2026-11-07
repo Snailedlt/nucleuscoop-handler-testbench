@@ -228,7 +228,7 @@ export function initSettings(d: Deps) {
   });
   $('#set-devbar').addEventListener('change', () => d.devBar.toggle());
   $('#settings-close').addEventListener('click', () => dlg.close());
-  // Tabs: General, Editor, Lines, Help, Advanced. The last one used opens next time.
+  // A vertical list of sections, in groups. The last one used opens next time.
   const TAB_KEY = 'nucleus-workbench-settings-tab';
   const tabs = [...dlg.querySelectorAll<HTMLButtonElement>('[role=tab]')];
   const selectTab = (id: string, focus = false) => {
@@ -246,7 +246,7 @@ export function initSettings(d: Deps) {
   tabs.forEach((t, i) => {
     t.addEventListener('click', () => selectTab(t.dataset.st!));
     t.addEventListener('keydown', (e) => {
-      const k = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      const k = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
       if (e.key === 'Home' || e.key === 'End') {
         e.preventDefault();
         selectTab(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.st!, true);
@@ -256,9 +256,36 @@ export function initSettings(d: Deps) {
       }
     });
   });
+  // Search: shows every section's matching settings at once, with the section names above them.
+  const q = $('#set-q') as HTMLInputElement;
+  const none = $('#set-none');
+  const filter = () => {
+    const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    dlg.classList.toggle('searching', words.length > 0);
+    let any = false;
+    for (const panel of dlg.querySelectorAll<HTMLElement>('.set-panel')) {
+      let hit = false;
+      const label = (panel.dataset.label ?? '').toLowerCase();
+      for (const s of panel.querySelectorAll<HTMLElement>('.set-sec')) {
+        const text = label + ' ' + (s.textContent ?? '').toLowerCase();
+        const ok = words.every((w) => text.includes(w));
+        s.classList.toggle('no-match', !ok);
+        hit ||= ok;
+      }
+      panel.classList.toggle('no-match', !hit);
+      any ||= hit;
+    }
+    none.hidden = !words.length || any;
+  };
+  q.addEventListener('input', filter);
+  q.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && q.value) { e.preventDefault(); e.stopPropagation(); q.value = ''; filter(); }
+  });
+  for (const t of tabs) t.addEventListener('click', () => { if (q.value) { q.value = ''; filter(); } });
   const open = (tab?: string) => {
     sync();
-    selectTab(tab ?? get(TAB_KEY) ?? 'general');
+    const want = tab ?? get(TAB_KEY) ?? 'theme';
+    selectTab(tabs.some((x) => x.dataset.st === want) ? want : 'theme');
     if (!dlg.open) dlg.showModal();
   };
   $('#settings-open').addEventListener('click', () => open());

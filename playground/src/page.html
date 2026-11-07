@@ -262,13 +262,44 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 /* Settings dialog, More menu, symbol keys */
 .phone-only { display: none !important; }
 #settings-open { display: inline-flex; align-items: center; justify-content: center; }
-#settings-dialog { width: min(520px, 94vw); }
-#settings-dialog[open] { display: flex; flex-direction: column; height: min(600px, 86vh); }
-.set-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 0 -2px 4px; overflow-x: auto; scrollbar-width: none; flex: none; }
-.set-tabs [role=tab] { font: 600 13.5px var(--font-body); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px; cursor: pointer; white-space: nowrap; }
-.set-tabs [role=tab][aria-selected=true] { color: var(--fg); border-bottom-color: var(--accent); }
-.set-tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
-.set-panels { flex: 1; min-height: 0; overflow: auto; }
+#settings-dialog { width: min(820px, 96vw); }
+#settings-dialog[open] { display: flex; flex-direction: column; height: min(640px, 88vh); }
+.set-layout-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 0 18px; }
+.set-nav { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: auto; border-right: 1px solid var(--line); padding: 3px 12px 3px 3px; }
+.set-search input { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); }
+.set-tabs { display: flex; flex-direction: column; gap: 1px; }
+.set-g { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 10px 8px 3px; }
+.set-tabs [role=tab] { font: 500 13.5px var(--font-body); color: var(--fg); background: none; border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer; text-align: left; }
+.set-tabs [role=tab]:hover { background: var(--surface-2); }
+.set-tabs [role=tab][aria-selected=true] { background: color-mix(in srgb, var(--accent) 16%, transparent); font-weight: 650; }
+.set-tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.set-panels { min-height: 0; overflow: auto; padding-right: 4px; }
+.set-intro { margin: 0 0 6px; }
+#settings-dialog.searching .set-panel { display: block !important; }
+#settings-dialog.searching .set-panel::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 2px; }
+#settings-dialog.searching .set-panel.no-match, #settings-dialog.searching .set-sec.no-match, #settings-dialog.searching .set-intro { display: none !important; }
+#settings-dialog.searching .set-tabs [role=tab] { opacity: .6; }
+@media (max-width: 700px) {
+  .set-layout-wrap { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .set-nav { border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 8px; max-height: 38vh; }
+  .set-tabs { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .set-g { display: none; }
+  .set-tabs [role=tab] { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; }
+}
+/* Accessibility settings (a11y.ts) */
+:root[data-a11y-focus] :focus { outline: 3px solid var(--accent) !important; outline-offset: 2px !important; }
+:root[data-a11y-targets] :is(.btn, .htab, .rail-btn, .fix, .fs-tab, .tab, [role=tab], .link, .loc, .filter) { min-height: 34px; }
+:root[data-a11y-targets] .btn, :root[data-a11y-targets] .fix { padding-inline: 12px; }
+:root[data-a11y-font] { --font-body: "Atkinson Hyperlegible", system-ui, sans-serif; --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace; }
+:root[data-a11y-font] body, :root[data-a11y-font] .CodeMirror { font-family: var(--font-body); }
+:root[data-a11y-font] .CodeMirror, :root[data-a11y-font] code, :root[data-a11y-font] kbd { font-family: var(--font-mono); }
+:root[data-a11y-cb] { --err: #0068a8; --warn: #a65d00; }
+@media (prefers-color-scheme: dark) { :root[data-a11y-cb]:not([data-theme="light"]) { --err: #6cc0f0; --warn: #f0a830; } }
+:root[data-a11y-cb][data-theme="dark"] { --err: #6cc0f0; --warn: #f0a830; }
+:root[data-a11y-underline="straight"] .CodeMirror-lint-mark::after { --sq-mask: linear-gradient(#000, #000); height: 2px; }
+:root[data-a11y-underline="dotted"] .CodeMirror-lint-mark::after { --sq-mask: radial-gradient(circle, #000 0.9px, transparent 1.2px); -webkit-mask-size: 4px 3px; mask-size: 4px 3px; }
+:root[data-a11y-underline="thick"] .CodeMirror-lint-mark::after { height: 4px; -webkit-mask-size: 8px 4px; mask-size: 8px 4px; bottom: -2px; }
+
 .set-panel > .set-sec:first-child { border-top: 0; }
 .set-fields { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 2px 0 4px 26px; box-sizing: border-box; }
 .set-fields[hidden] { display: none; }
@@ -1144,7 +1175,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   /* Settings: the theme as one segmented control, bigger rows, Done always in reach */
   #settings-dialog { padding-bottom: 0; }
   #settings-dialog[open] { height: min(78dvh, 640px); }
-  .set-tabs [role=tab] { padding: 10px 12px; font-size: 15px; }
   #settings-dialog h2 { margin-bottom: 8px; }
   .set-radios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
   .set-radios label { justify-content: center; padding: 10px 4px; font-size: 14px; text-align: center; }
@@ -1603,34 +1633,31 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <dialog id="settings-dialog" aria-label="Settings">
   <h2>Settings</h2>
-  <div class="set-tabs" role="tablist" aria-label="Settings sections">
-    <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general" aria-selected="true">General</button>
-    <button type="button" role="tab" id="st-theme" data-st="theme" aria-controls="sp-theme" aria-selected="false" tabindex="-1">Theme</button>
-    <button type="button" role="tab" id="st-editor" data-st="editor" aria-controls="sp-editor" aria-selected="false" tabindex="-1">Editor</button>
-    <button type="button" role="tab" id="st-lines" data-st="lines" aria-controls="sp-lines" aria-selected="false" tabindex="-1">Lines</button>
-    <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help" aria-selected="false" tabindex="-1">Help</button>
-    <button type="button" role="tab" id="st-advanced" data-st="advanced" aria-controls="sp-advanced" aria-selected="false" tabindex="-1">Advanced</button>
-  </div>
+  <div class="set-layout-wrap">
+  <nav class="set-nav" aria-label="Settings sections">
+    <label class="set-search"><span class="sr-only">Search settings</span><input type="search" id="set-q" placeholder="Search settings" autocomplete="off"></label>
+    <div role="tablist" aria-orientation="vertical" aria-label="Settings sections" class="set-tabs">
+      <span class="set-g" role="presentation">Look and feel</span>
+      <button type="button" role="tab" id="st-theme" data-st="theme" aria-controls="sp-theme">Theme and colours</button>
+      <button type="button" role="tab" id="st-motion" data-st="motion" aria-controls="sp-motion">Motion</button>
+      <button type="button" role="tab" id="st-layout" data-st="layout" aria-controls="sp-layout">Layout</button>
+      <span class="set-g" role="presentation">Working</span>
+      <button type="button" role="tab" id="st-editor" data-st="editor" aria-controls="sp-editor">Editor</button>
+      <button type="button" role="tab" id="st-check" data-st="check" aria-controls="sp-check">Check</button>
+      <button type="button" role="tab" id="st-lines" data-st="lines" aria-controls="sp-lines">Lines</button>
+      <span class="set-g" role="presentation">You</span>
+      <button type="button" role="tab" id="st-a11y" data-st="a11y" aria-controls="sp-a11y">Accessibility</button>
+      <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help">Tips and help</button>
+      <button type="button" role="tab" id="st-feedback" data-st="feedback" aria-controls="sp-feedback">Feedback and privacy</button>
+      <span class="set-g" role="presentation">More</span>
+      <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general">Updates</button>
+      <button type="button" role="tab" id="st-advanced" data-st="advanced" aria-controls="sp-advanced">Advanced</button>
+    </div>
+  </nav>
   <div class="set-panels">
-  <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general">
-    <div class="set-sec"><h3>Updates</h3>
-      <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
-      <button class="link" type="button" id="set-news-open">What's new</button></div>
-    <div class="set-sec"><h3>Layout</h3>
-      <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
-      <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
-    <div class="set-sec"><h3>Layout</h3>
-      <div class="set-layouts" role="radiogroup" aria-label="Layout">
-        <label class="set-layout"><input type="radio" name="set-layout" value="bar"><span><strong>Slim bar</strong><small>Open handlers, Save and the menu in one row above the code</small></span></label>
-        <label class="set-layout"><input type="radio" name="set-layout" value="rail"><span><strong>Side rail</strong><small>Tools in a strip on the left, like VS Code; more room for code</small></span></label>
-      </div></div>
-    <div class="set-sec"><h3>Check</h3>
-      <label class="set-row">How much each problem shows <select id="set-density"><option value="compact">Compact: one line, open for more</option><option value="comfortable">Comfortable: what and why</option><option value="detailed">Detailed: everything open</option></select></label></div>
-    <div class="set-sec"><h3>Feedback</h3>
-      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Send anonymous votes and usage counts<small>Your 👍/👎 on tips and docs, and which features get used (once per visit), so we see what helps. Only counts: no code, no names, no cookies, nothing that identifies you.</small></span></label>
-      <p class="muted small" id="set-feedback-note" hidden></p></div>
-  </div>
-  <div class="set-panel" role="tabpanel" id="sp-theme" aria-labelledby="st-theme" hidden>
+    <p class="set-none muted" id="set-none" hidden>No setting matches.</p>
+  <div class="set-panel" role="tabpanel" id="sp-theme" aria-labelledby="st-theme" data-label="Theme and colours" hidden>
+
     <div class="set-sec"><h3>Light or dark</h3>
       <div class="set-radios" role="radiogroup" aria-label="Light or dark">
         <label><input type="radio" name="set-theme" value="auto"> <span class="wide-only">Match my device</span><span class="phone-only">Auto</span></label>
@@ -1649,6 +1676,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <div class="set-sec ct"><h3 id="code-h">Code colours</h3>
       <p class="muted small" style="margin:0">The editor's colours, with any look.</p>
       <div class="code-themes" id="set-code" role="radiogroup" aria-labelledby="code-h"></div></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-motion" aria-labelledby="st-motion" data-label="Motion" hidden>
     <div class="set-sec motion-sec"><h3>Motion</h3>
       <label class="set-line">How much moves <select id="set-motion"><option value="all">All</option><option value="default">Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option><option value="custom" disabled>Custom</option></select></label>
       <label class="set-check"><input type="checkbox" id="set-motion-ui"> <span>Moving interface<small>Dialogs, tabs and notes slide and spring into place</small></span></label>
@@ -1657,23 +1686,69 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <label class="set-check"><input type="checkbox" id="set-motion-news"> <span>What's new plays animations by itself<small>Otherwise they wait for Play</small></span></label>
       <p class="muted small" id="set-motion-note" style="margin:0"></p></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-editor" aria-labelledby="st-editor" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-layout" aria-labelledby="st-layout" data-label="Layout" hidden>
+    <div class="set-sec"><h3>Layout</h3>
+      <div class="set-layouts" role="radiogroup" aria-label="Layout">
+        <label class="set-layout"><input type="radio" name="set-layout" value="bar"><span><strong>Slim bar</strong><small>Open handlers, Save and the menu in one row above the code</small></span></label>
+        <label class="set-layout"><input type="radio" name="set-layout" value="rail"><span><strong>Side rail</strong><small>Tools in a strip on the left, like VS Code; more room for code</small></span></label>
+      </div></div>
+    <div class="set-sec"><h3>Layout</h3>
+      <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
+      <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-editor" aria-labelledby="st-editor" data-label="Editor" hidden>
+
     <div class="set-sec">
       <label class="set-line">Text size <select id="set-size"><option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option></select></label>
       <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>Instead of scrolling sideways. On by default on phones.</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-keybar"> <span>Symbol keys on touch screens<small>A row with ; = " ( ) { } [ ], Suggest and Undo above the on-screen keyboard</small></span></label></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-lines" aria-labelledby="st-lines" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-check" aria-labelledby="st-check" data-label="Check" hidden>
+    <div class="set-sec"><h3>Check</h3>
+      <label class="set-row">How much each problem shows <select id="set-density"><option value="compact">Compact: one line, open for more</option><option value="comfortable">Comfortable: what and why</option><option value="detailed">Detailed: everything open</option></select></label></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-lines" aria-labelledby="st-lines" data-label="Lines" hidden>
+
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-lines"> <span>Show the Lines list<small>Every name a handler can use, click to insert<span class="wide-only"> (Ctrl+Shift+L)</span></small></span></label></div>
     <div class="set-sec" id="lines-settings" aria-label="List settings"></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-help" aria-labelledby="st-help" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-a11y" aria-labelledby="st-a11y" data-label="Accessibility" hidden>
+
+    <p class="muted small set-intro">Built in everywhere: keyboard access, contrast that meets WCAG 2.1 AA in every look, screen-reader labels, and less motion when your device asks for it (Motion has more). These go further.</p>
+    <div class="set-sec"><h3>Problems, not by colour alone</h3>
+      <label class="set-line">Underline under problems <select id="a11y-underline"><option value="wavy">Wavy (default)</option><option value="straight">Straight</option><option value="dotted">Dotted</option><option value="thick">Thick and wavy</option></select></label>
+      <label class="set-check"><input type="checkbox" id="a11y-cb"> <span>Colour-blind-friendly colours<small>Errors in blue, warnings in orange, instead of red and yellow. The icons (✖ and !) stay.</small></span></label></div>
+    <div class="set-sec"><h3>Seeing where you are</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-focus"> <span>A strong focus ring<small>A thicker outline on whatever has focus, also after a click (not only with the keyboard)</small></span></label>
+      <label class="set-check"><input type="checkbox" id="a11y-targets"> <span>Larger buttons and tabs<small>Easier to hit with a mouse, a touchpad or a finger</small></span></label></div>
+    <div class="set-sec"><h3>Reading</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-font"> <span>An easier-to-read font<small>Atkinson Hyperlegible, made to tell similar letters apart (for the code too). Loaded from Google Fonts when you turn it on.</small></span></label>
+      <p class="muted small" style="margin:0">Text size: Editor › Text size for the code, and your browser's zoom (Ctrl and +) for everything.</p></div>
+    <div class="set-sec"><h3>Timing</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-notes"> <span>Notes stay until I close them<small>Instead of fading after a few seconds</small></span></label>
+      <label class="set-check"><input type="checkbox" id="a11y-slowhover"> <span>Slower hover cards<small>They wait a moment longer before opening, so they don't pop up while you move the pointer</small></span></label></div>
+    <div class="set-sec"><h3>Screen readers</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-announce"> <span>Say the problems on the line I move to<small>When the cursor moves to a line with a problem, its title is read out</small></span></label></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-help" aria-labelledby="st-help" data-label="Tips and help" hidden>
+
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-tips"> <span>Tips under the code<small>General tips, and a heads-up when the code makes one relevant</small></span></label>
       <button class="link" type="button" id="set-heads">Show heads-ups again</button></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-advanced" aria-labelledby="st-advanced" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-feedback" aria-labelledby="st-feedback" data-label="Feedback and privacy" hidden>
+    <div class="set-sec"><h3>Feedback</h3>
+      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Send anonymous votes and usage counts<small>Your 👍/👎 on tips and docs, and which features get used (once per visit), so we see what helps. Only counts: no code, no names, no cookies, nothing that identifies you.</small></span></label>
+      <p class="muted small" id="set-feedback-note" hidden></p></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general" data-label="Updates" hidden>
+    <div class="set-sec"><h3>Updates</h3>
+      <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
+      <button class="link" type="button" id="set-news-open">What's new</button></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-advanced" aria-labelledby="st-advanced" data-label="Advanced" hidden>
+
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-advanced"> <span>Advanced mode<small>Rule ids, filters, suggestions, recorded calls and engine probes</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-devbar"> <span>Developer bar<small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
@@ -1688,11 +1763,12 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       </div></div>
   </div>
   </div>
+  </div>
   <div class="actions"><span class="muted" id="set-build" style="margin-right:auto;font-size:12px"></span><button class="btn primary" type="button" id="settings-close" autofocus>Done</button></div>
 </dialog>
 
-<dialog id="code-dialog" aria-labelledby="code-h">
-  <h2 id="code-h">Save or copy</h2>
+<dialog id="code-dialog" aria-labelledby="save-h">
+  <h2 id="save-h">Save or copy</h2>
   <div id="code-main">
     <button class="code-hero dl" type="button" data-code="zip"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Save for Nucleus Co-op</b><small id="code-zip-sub">A .zip you drag onto Extract handler</small></span><span class="code-badge">Recommended</span></button>
     <div class="code-grid">

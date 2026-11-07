@@ -25,6 +25,7 @@ import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFi
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
+import { announceLine, hoverDelay, initA11y } from './a11y';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
@@ -412,6 +413,17 @@ editor.on('inputRead', (cm: any, change: any) => {
   if (change.text[0] === '(' || change.text[0] === ',') showSignature();
 });
 editor.on('cursorActivity', () => showSignature());
+// Settings › Accessibility: read out the problems on the line the cursor moves to (once per line).
+let spokenLine = -1;
+editor.on('cursorActivity', () => {
+  if (!announceLine()) return;
+  const line = editor.getCursor().line;
+  if (line === spokenLine) return;
+  spokenLine = line;
+  const from = editor.indexFromPos({ line, ch: 0 }), to = editor.indexFromPos({ line, ch: editor.getLine(line).length });
+  const here = current.filter((d) => d.start <= to && d.end >= from);
+  if (here.length) announce(`Line ${line + 1}: ${here.map((d) => `${d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'note'}, ${d.message.split('\n')[0]}`).join('; ')}`);
+});
 
 initMessageHints(editor);
 const folderPickers = initFolderPickers(editor, () => gameFolder, () => void pickFolder());
@@ -523,7 +535,7 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
     const doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
     const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : at;
     showHoverCard(text, at, list, doc, from);
-  }, 280);
+  }, hoverDelay(280));
 });
 const hideTipSoon = () => { clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
 editor.getWrapperElement().addEventListener('mouseleave', (e: MouseEvent) => {
@@ -1966,6 +1978,7 @@ const tips = initTips({
 });
 $('#tips-reset').addEventListener('click', () => tips.reset());
 
+initA11y();
 const settings = initSettings({
   editor,
   hint: () => editor.showHint({ hint: hinter, completeSingle: false }),
