@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Your game on this PC, in Files.** The Game folder button is now a section of the Files panel (Link the game's folder), next to the package it's about; the Files button shows + game when one is linked.
 - **Feedback that fills itself in.** Send feedback (menu and Ctrl+Shift+P), Report what you found and Tell us what's wrong now fill in the build, browser, screen, your settings and which handler is open (by name and link, never your code). A bot keeps that block as the issue's first comment, which only maintainers can change, and flags it if it was edited.
 - **Nucli says hi.** On your first visit, Nucli asks two things: how much help you want (Guide me, or I write code for Advanced mode) and where the tools go (a slim bar on top, or a rail on the side, shown as you pick). Settings › Tips and help asks again.
 - **Settings, reorganised, with search and Accessibility.** Sections in a sidebar (Look and feel, Working, You, More) and a search box that finds a setting wherever it is. The new Accessibility section: colour-blind-friendly error and warning colours, a straight, dotted or thicker underline under problems, a strong focus ring, larger buttons, an easier-to-read font (Atkinson Hyperlegible), notes that stay until you close them, slower hover cards, and problems read out when you move to their line.

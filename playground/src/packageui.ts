@@ -24,6 +24,9 @@ export interface PkgHost {
   showMain(): void;
   /** Called when the package's problems may have changed. */
   changed(): void;
+  /** Optional: HTML for a section under the package (the game on this PC), and its clicks ([data-gf]). */
+  extraSection?(): string;
+  onExtra?(act: string): void;
 }
 
 export function initPackageUI(host: PkgHost) {
@@ -180,7 +183,7 @@ export function initPackageUI(host: PkgHost) {
     }
     panel.innerHTML = `<div class="fp-head">Package</div><p class="fp-where">Installs to <code>handlers\\${esc(game)}\\</code></p><ul class="fp-list">${rows.join('')}</ul>
       <div class="fp-actions"><button class="btn" type="button" data-fp-add>Add files…</button></div>
-      <div class="fp-drop">Drop files here to add them to the package${fs.length ? '' : ', next to handler.js'}.</div>`;
+      <div class="fp-drop">Drop files here to add them to the package${fs.length ? '' : ', next to handler.js'}.</div>${host.extraSection?.() ?? ''}`;
   }
 
   // Events
@@ -207,6 +210,8 @@ export function initPackageUI(host: PkgHost) {
     const del = t.closest<HTMLElement>('[data-fp-del]');
     if (del) return removeFile(del.dataset.fpDel!);
     if (t.closest('[data-fp-add]')) return picker.click();
+    const gf = t.closest<HTMLElement>('[data-gf]');
+    if (gf) return host.onExtra?.(gf.dataset.gf!);
     const o = t.closest<HTMLElement>('[data-fp]');
     if (o) o.dataset.fp ? openFile(o.dataset.fp) : showHandler();
   });

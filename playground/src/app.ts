@@ -439,14 +439,23 @@ async function pickFolder() {
 }
 function afterFolderChange() {
   folderPickers.refresh();
-  const b = $('#gf-open');
-  b.classList.toggle('on', !!gameFolder);
-  b.querySelector('span')!.textContent = gameFolder ? gameFolder.name : 'Game folder';
-  b.setAttribute('aria-label', gameFolder ? `Game folder: ${gameFolder.name}` : 'Pick the game folder');
+  $('#files-game').hidden = !gameFolder;
+  pkgUI?.render();
   (editor as any).performLint();
 }
-$('#gf-open').addEventListener('click', async () => {
-  if (!gameFolder) return void (await pickFolder());
+// "Your game on this PC" (the game's install folder, read on this device only): a section of the Files panel, since
+// it is about files too: which ones the handler's paths point at, and file pickers for the symlink options.
+function gameSection(): string {
+  return `<section class="fp-game" aria-label="Your game on this PC"><div class="fp-head">Your game on this PC</div>${gameFolder
+    ? `<div class="fp-gname"><span class="fi-badge fi-dir" aria-hidden="true">▸</span>${esc(gameFolder.name)}</div><p>Check compares the handler's paths and file names with this folder, and the symlink options get a file picker. Nothing is uploaded.</p><div class="fp-gacts"><button class="btn" type="button" data-gf="show">What's in it</button><button class="btn" type="button" data-gf="pick">Pick another</button><button class="btn" type="button" data-gf="forget">Unlink</button></div>`
+    : `<p>Link the folder your game is installed in, and Check tells you when <code>ExecutableName</code>, <code>BinariesFolder</code> or a symlink option names a file that isn't there. Only names and sizes are read, on this device.</p><div class="fp-gacts"><button class="btn" type="button" data-gf="pick">Link the game's folder…</button></div>`}</section>`;
+}
+async function onGameAction(act: string) {
+  if (act === 'pick') return void (await pickFolder());
+  if (act === 'forget') { gameFolder = null; if (tabsReady) activeT().folder = null; afterFolderChange(); announce('Unlinked the game folder.'); return; }
+  if (act === 'show' && gameFolder) showGameFolder();
+}
+function showGameFolder() {
   const dlg = $('#gf-dialog') as HTMLDialogElement;
   const draw = () => { $('#gf-body').innerHTML = gameFolder ? folderSummaryHtml(gameFolder, editor.getValue()) : '<p>No folder picked.</p>'; };
   draw();
@@ -456,7 +465,7 @@ $('#gf-open').addEventListener('click', async () => {
     if (act === 'forget') { gameFolder = null; if (tabsReady) activeT().folder = null; afterFolderChange(); dlg.close(); }
     else if (act === 'pick') { dlg.close(); await pickFolder(); }
   };
-});
+}
 $('#gf-close').addEventListener('click', () => ($('#gf-dialog') as HTMLDialogElement).close());
 
 // Hover docs
@@ -628,7 +637,7 @@ function renderExtraProblems(text: string) {
     const where = f.file ? `<button class="loc" type="button" data-xopen="${esc(f.file)}"${f.line ? ` data-xline="${f.line}"` : ''}>${fileIcon(f.file)}${esc(f.file.split('/').pop()!)}${f.line ? `:${f.line}` : ''}</button>` : f.start !== undefined ? `<button class="loc" type="button" data-xjump="${f.start}">Line ${lineOf(text, f.start) + 1}</button>` : '';
     return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b">${where} <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-pfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
   }).join('') : '';
-  box.innerHTML = pkHtml + (!list.length ? '' : `<li class="xp-h" role="presentation">Against the game folder <span class="muted">· ${esc(gameFolder?.name ?? '')}</span></li>` + list.map((f, i) => {
+  box.innerHTML = pkHtml + (!list.length ? '' : `<li class="xp-h" role="presentation">Against your game <span class="muted">· ${esc(gameFolder?.name ?? '')}</span></li>` + list.map((f, i) => {
     const line = lineOf(text, f.start) + 1;
     return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b"><button class="loc" type="button" data-xjump="${f.start}">Line ${line}</button> <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-xfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
   }).join(''));
@@ -1597,6 +1606,7 @@ function commandList(): OpenEntry[] {
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
     c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
     c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
+    c("Link your game's folder (check paths against it)", '', 'game folder install directory exe path link pick', () => void pickFolder()),
     c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => window.open(feedbackUrl(), '_blank', 'noopener')),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
@@ -2086,6 +2096,8 @@ pkgUI = initPackageUI({
   setFiles: (files) => { packageFiles = files; storeFiles(files); renderDocHead(); if (tabsReady) saveTabs(); },
   showMain: () => setViewMode(viewMode),
   changed: () => { pkgProblems = pkgUI!.problems(); (editor as any).performLint(); },
+  extraSection: gameSection,
+  onExtra: (act) => void onGameAction(act),
 });
 
 // ---------------------------------------------------------------------------

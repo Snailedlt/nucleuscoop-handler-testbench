@@ -480,7 +480,7 @@ export function checkAgainstFolder(handlerText: string, folder: GameFolder): Fol
   // Engine facts: on Game.GameName, else on line 1.
   const gn = scalar(s, 'GameName');
   const anchor = gn ? inner(gn) : { start: 0, end: Math.max(1, handlerText.indexOf('\n') < 0 ? handlerText.length : handlerText.indexOf('\n')) };
-  for (const f of engineFacts(folder)) out.push({ ...anchor, severity: 'info', title: `Game folder: ${f.title}`, why: f.text });
+  for (const f of engineFacts(folder)) out.push({ ...anchor, severity: 'info', title: `Your game: ${f.title}`, why: f.text });
 
   return out;
 }
