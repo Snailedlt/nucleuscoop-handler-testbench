@@ -207,7 +207,11 @@ for (const theme of ['light', 'dark']) {
       const h = hs.find((x) => x.id === 'xjBSwFNj3ndRntsZh' && x.files) ?? hs.find((x) => x.files);
       return h ? { id: h.id, title: h.title, files: h.files } : null;
     });
-    check(!!pick, `${theme}: a Hub handler in this build has package files`);
+    // Built from the data branch (Pages): package files appear only once the daily Hub sync has mirrored them
+    // (tools/hub-mirror.mjs, a few days after it first runs), so none yet is fine there. The snapshot build has them.
+    const fromMirror = await p.evaluate(() => !!HUB_EXAMPLES.all);
+    if (!pick && fromMirror) console.log(`skip ${theme}: no Hub package files mirrored yet (the daily Hub sync adds them)`);
+    else check(!!pick, `${theme}: a Hub handler in this build has package files`);
     if (pick) {
       await p.goto(BASE + '#hub-' + pick.id);
       await p.waitForTimeout(1500);
