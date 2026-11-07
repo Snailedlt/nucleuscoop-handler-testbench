@@ -641,7 +641,7 @@ export function folderSummaryHtml(folder: GameFolder, handlerText: string): stri
     ? `<code>${esc(loc.exe)}</code>`
     : exeName ? `<span class="gf-bad">${esc(exeName)} not found</span>` : '<span class="muted">Game.ExecutableName not set</span>';
   const rootRow = loc.root === undefined ? '<span class="muted">unknown (the exe is missing, or the root is above this folder)</span>' : `<code>${esc(loc.root ? `${folder.name}/${loc.root}` : folder.name)}</code>`;
-  return `<section class="gf-summary" aria-label="Game folder">
+  return `<section class="gf-summary" aria-label="Your game on this PC">
 <div class="gf-head"><span class="gf-ico" aria-hidden="true">📁</span><b class="gf-name">${esc(folder.name)}</b><span class="muted">${folder.files.length.toLocaleString('en')} files, ${folder.dirs.length.toLocaleString('en')} folders, ${gb}</span></div>
 ${folder.truncated ? '<p class="gf-note">Very large or deep folder: only part of it was listed, so some checks are skipped.</p>' : ''}
 <dl class="gf-dl"><dt>Executable</dt><dd>${exeRow}</dd><dt>Game root</dt><dd>${rootRow}</dd></dl>

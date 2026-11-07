@@ -117,6 +117,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **Share… on the phone keyboard row.** The key above the phone keyboard opened Save, which now saves straight away; it's Share… now, so a link to the selected lines is still one tap away.
 - **Settings no longer empties the results.** Switching tabs in Settings left Check blank until you picked a tab again.
 - **Keyboard users can leave the editor.** Tab still indents; Esc then Tab moves on to the rest of the page. Esc also closes a line's problem list, and Ctrl+. puts you on its Fix button.
 - **Smaller fixes.** New handler starts empty (with examples as hints) instead of filled with Deep Rock Galactic; Try it offers up to your handler's `Game.MaxPlayers` players; Test all waits until the handler loads; the AI review's Accept and Reject sit above the changes; the shortcuts list opens at the top; no Fix button when there's nothing to fix; problem texts line up; on phones Lines no longer pops up the keyboard and the ⋯ menu skips keyboard shortcuts.

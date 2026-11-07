@@ -322,9 +322,9 @@ export function initSettings(d: Deps) {
   const extra: [string, string, () => void][] = [
     ['Suggest', 'Suggest names', () => d.hint()],
     ['Lines', 'Show the list of names', () => d.lines.show()],
-    // The header (with the copy/download button) steps aside while typing: reach it from here, with
-    // the selection kept, so a link to the selected lines is one tap away.
-    ['Copy…', 'Copy or download the handler, or a link to the selected lines', () => ($('#code-menu-open') as HTMLButtonElement).click()],
+    // The header steps aside while typing: Share from here keeps the selection, so a link to the selected lines
+    // is one tap away.
+    ['Share…', 'Share: a link (to the selected lines, if any), the code, or a Discord post', () => ($('#share-open') as HTMLButtonElement).click()],
     ['↶', 'Undo', () => d.editor.undo()],
     ['↷', 'Redo', () => d.editor.redo()],
   ];
