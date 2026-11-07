@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duo and Nucli UI kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!--
+  A showcase, not a dependency. Every component on this page is plain HTML, CSS and JavaScript, and its "View code"
+  panel shows exactly what runs here. Use it as it is, or rebuild it in any UI library: the parts that matter are the
+  tokens (colours, corners, durations, easings) and the timing notes on each component.
+-->
+<style>
+/* ---------- The page around the kit (not part of the kit) ---------- */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--k-bg); color: var(--k-fg); font: 15px/1.55 var(--k-font); }
+.page { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+.page h1, .page h2 { font-family: Fredoka, var(--k-font); font-weight: 600; line-height: 1.15; margin: 0; }
+.page h1 { font-size: clamp(28px, 6vw, 42px); }
+.page h2 { font-size: 24px; margin: 0 0 4px; }
+.lead { color: var(--k-muted); max-width: 74ch; }
+.bar-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--k-bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--k-line); }
+.bar-top .in { max-width: 1180px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: center; }
+.bar-top label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.bar-top b { font-family: Fredoka, var(--k-font); font-weight: 600; margin-right: auto; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 8px; padding: 0; list-style: none; }
+.toc a { display: inline-block; font-size: 13.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--k-line); color: var(--k-fg); text-decoration: none; }
+.toc a:hover { border-color: var(--k-accent); }
+.toc a:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.comp { background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); padding: 16px; margin-top: 16px; scroll-margin-top: 64px; }
+.comp > p { color: var(--k-muted); margin: 2px 0 10px; max-width: 80ch; }
+.comp .timing { font-size: 13.5px; color: var(--k-muted); border-left: 3px solid var(--k-accent); padding: 2px 0 2px 10px; margin: 10px 0 0; }
+.demo { background: var(--k-surface-2); border-radius: calc(var(--k-r-pane) - 4px); padding: 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; min-height: 90px; }
+.code { margin-top: 10px; }
+.code summary { cursor: pointer; font-weight: 600; color: var(--k-accent); width: max-content; }
+.code summary:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.code .tabs { display: flex; gap: 4px; margin: 8px 0 0; flex-wrap: wrap; }
+.code .tabs button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; }
+.code .tabs button[aria-selected="true"] { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.code .tabs button:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.code .tabs .copy { margin-left: auto; }
+.code pre { margin: 8px 0 0; max-height: 420px; overflow: auto; background: var(--k-code-bg); color: var(--k-code-fg); border-radius: 8px; padding: 12px; font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; tab-size: 2; }
+.code pre:focus-visible { outline: 2px solid var(--k-accent); }
+.sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; width: 100%; }
+.sw div { border: 1px solid var(--k-line); border-radius: 8px; padding: 8px; font-size: 12.5px; background: var(--k-surface); }
+.sw i { display: block; height: 28px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--k-line); }
+.sw code { font-size: 11.5px; color: var(--k-muted); }
+.motion-table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--k-surface); border-radius: 8px; }
+.motion-table th, .motion-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--k-line); }
+footer { margin-top: 40px; color: var(--k-muted); font-size: 13px; }
+</style>
+<style id="kit-css"></style>
+</head>
+<body class="kit" data-look="www" data-mode="light" data-motion="default">
+<div class="bar-top"><div class="in">
+  <b>Duo and Nucli UI kit</b>
+  <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option><option value="mac">Mac style</option><option value="alpha8">Nucleus Co-op alpha 8</option></select></label>
+  <label>Mode <select id="ctl-mode" class="k-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  <label>Motion <select id="ctl-motion" class="k-select"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label>
+</div></div>
+<main class="page">
+  <h1>Duo and Nucli UI kit</h1>
+  <p class="lead">A complete set of interface pieces that move the way the mascots do: springs that overshoot a little, a squash on impact, a hold, then a snap. It's a showcase: every piece is plain HTML, CSS and JavaScript, and "View code" shows exactly what runs on this page. Use it as it is, or rebuild it in your own UI library; keep the tokens and the timing notes.</p>
+  <p class="lead">Try the looks, light and dark, and the Motion setting at the top. With "Still", or when your device asks for less motion, nothing moves but every state still shows; with "Off" (and in the alpha 8 look) the mascots step aside for plain icons.</p>
+  <ul class="toc" id="toc"></ul>
+  <div id="kit"></div>
+  <footer>Duo is splitscreen.me's mascot, Nucli the handler tools'. Colours from the workbench's looks (playground/src/themes.json); player colours are the splitscreen.me button colours.</footer>
+</main>
+<div class="k-toasts" id="k-toasts" role="region" aria-label="Notifications"></div>
+
+<script>
+// =====================================================================================================================
+// Foundation: motion settings and the mascots. Everything below uses these.
+// =====================================================================================================================
+
+/** The Motion setting that applies to an element: the closest data-motion, capped by the device's preference.
+ *  "all" loops mascots; "default" plays them once (loaders keep going); "calm" keeps interface motion but still
+ *  mascots; "still": nothing moves; "off": no mascots, nothing moves. The alpha 8 look: nothing moves, no mascots. */
+function kitMotion(el) {
+  const m = el.closest('[data-motion]')?.dataset.motion || 'default';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (el.closest('[data-look="alpha8"]')) return 'off';
+  if (reduce) return m === 'off' ? 'off' : 'still';
+  return m;
+}
+/** Whether the interface itself may move (buttons, toasts, dialogs). */
+function kitMoves(el) { return ['all', 'default', 'calm'].includes(kitMotion(el)); }
+
+/** Starts, stops or limits the mascots' SMIL (the electrons). CSS animations follow the stylesheet's rules. */
+function kitApplyMotion(root = document) {
+  root.querySelectorAll('svg.k-mascot').forEach((svg) => {
+    const m = kitMotion(svg), busy = !!svg.closest('.k-busy');
+    clearTimeout(svg._kOnce);
+    try {
+      if (m === 'all' || (m === 'default' && busy)) svg.unpauseAnimations();
+      else if (m === 'default') { svg.unpauseAnimations(); svg._kOnce = setTimeout(() => svg.pauseAnimations(), 5000); }
+      else { svg.pauseAnimations(); svg.setCurrentTime(0); }
+    } catch { /* not in the document yet */ }
+  });
+}
+
+const KIT_PLAYERS = ['#fca53d', '#ff434d', '#3fbbd8', '#55d137'];
+const KIT_INK = '#1f2c46';
+let kitUid = 0;
+
+/** A face: eyes and mouth for a mood. Eyes sit in .k-eye groups (they blink). */
+function kitFace(mood, lx, rx, y, s, cls = '') {
+  const ink = KIT_INK, f = (v) => +v.toFixed(2);
+  const eye = (x) => {
+    if (mood === 'happy') return `<path d="M${f(x - 4.2 * s)} ${f(y + 1.2 * s)} q${f(4.2 * s)} ${f(-6 * s)} ${f(8.4 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.6 * s)}" stroke-linecap="round"/>`;
+    if (mood === 'sleep') return `<path d="M${f(x - 4.2 * s)} ${f(y - .6 * s)} q${f(4.2 * s)} ${f(4.4 * s)} ${f(8.4 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`;
+    const r = (mood === 'wow' ? 4.8 : 4.2) * s;
+    return `<g class="k-eye"><circle cx="${x}" cy="${y}" r="${f(r)}" fill="${ink}"/><circle cx="${f(x + 1.5 * s)}" cy="${f(y - 1.6 * s)}" r="${f(1.4 * s)}" fill="#fff"/></g>`;
+  };
+  const brows = mood === 'worried' ? `<path d="M${f(lx - 4 * s)} ${f(y - 8 * s)} l${f(7 * s)} ${f(-2.6 * s)} M${f(rx + 4 * s)} ${f(y - 8 * s)} l${f(-7 * s)} ${f(-2.6 * s)}" stroke="${ink}" stroke-width="${f(2 * s)}" stroke-linecap="round"/>`
+    : mood === 'focus' ? `<path d="M${f(lx - 4 * s)} ${f(y - 8.6 * s)} l${f(7 * s)} ${f(1.6 * s)} M${f(rx + 4 * s)} ${f(y - 8.6 * s)} l${f(-7 * s)} ${f(1.6 * s)}" stroke="${ink}" stroke-width="${f(2 * s)}" stroke-linecap="round"/>` : '';
+  const cx = (lx + rx) / 2, my = y + 9.5 * s;
+  const mouth = {
+    happy: `<path d="M${f(cx - 6 * s)} ${f(my - 1 * s)} q${f(6 * s)} ${f(8 * s)} ${f(12 * s)} 0 z" fill="${ink}"/>`,
+    wow: `<ellipse cx="${cx}" cy="${f(my + 1.5 * s)}" rx="${f(2.8 * s)}" ry="${f(3.4 * s)}" fill="${ink}"/>`,
+    worried: `<path d="M${f(cx - 5.5 * s)} ${f(my + 2 * s)} q${f(2.75 * s)} ${f(-3 * s)} ${f(5.5 * s)} 0 q${f(2.75 * s)} ${f(3 * s)} ${f(5.5 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.2 * s)}" stroke-linecap="round"/>`,
+    sleep: `<ellipse cx="${cx}" cy="${f(my + 1 * s)}" rx="${f(2 * s)}" ry="${f(1.7 * s)}" fill="${ink}"/>`,
+    focus: `<path d="M${f(cx - 4 * s)} ${f(my + 1 * s)} q${f(4 * s)} ${f(2 * s)} ${f(8 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.2 * s)}" stroke-linecap="round"/>`,
+  }[mood] || `<path d="M${f(cx - 5 * s)} ${f(my)} q${f(5 * s)} ${f(4.6 * s)} ${f(10 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`;
+  return `<g class="k-face ${cls}">${brows}${eye(lx)}${eye(rx)}${mouth}</g>`;
+}
+/** Two moods: the first shows, the second when an ancestor has .k-alt (a reaction, "done"). */
+const kitFaces = (moods, ...a) => kitFace(moods[0], ...a, 'k-fa') + (moods[1] ? kitFace(moods[1], ...a, 'k-fb') : '');
+
+/** Nucli, simple build: a flat nucleus, one shadow shape, three orbits, an electron per player (SMIL). */
+function kitNucli({ moods = ['smile'], electrons = 4, orbits = true, label = '', small = false, attrs = '' } = {}) {
+  const id = 'kn' + (++kitUid), ORB = 'M112 60 A52 15.5 0 1 1 8 60 A52 15.5 0 1 1 112 60', w = small ? 3.4 : 1.8;
+  const half = (back) => `<path d="${back ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="#7f88ee" stroke-width="${w}" opacity="${back ? .35 : .75}" stroke-linecap="round"/>`;
+  const els = [[0, 0, 0], [1, .34, 1], [2, .67, 2], [0, .5, 3]].slice(0, electrons);
+  const dot = ([k, ph, ci]) => { const d = +(4.6 * (1 + k * .18)).toFixed(2); return `<g><animateMotion dur="${d}s" begin="-${(ph * d).toFixed(2)}s" repeatCount="indefinite" path="${ORB}"/><circle r="${small ? 7.4 : 5.6}" fill="${KIT_PLAYERS[ci]}" stroke="#fff" stroke-width="1.6"/></g>`; };
+  const orbit = (k, front) => `<g transform="rotate(${k * 60} 60 60)">${half(!front)}<g${front ? ` clip-path="url(#${id})"` : ''}>${els.filter((e) => e[0] === k).map(dot).join('')}</g></g>`;
+  const ring = (front) => orbits ? [0, 1, 2].map((k) => orbit(k, front)).join('') : '';
+  const core = `<circle cx="60" cy="60" r="22" fill="#858ef0" stroke="#3c3fa8" stroke-width="${small ? 2.8 : 2}"/>${small ? '' : '<path d="M80.5 52 A22 22 0 0 1 52 80.5 A25 25 0 0 0 80.5 52 Z" fill="#5c62d6" opacity=".55"/>'}`;
+  const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
+  return `<svg class="k-mascot k-nucli" viewBox="0 0 120 120" ${a11y} ${attrs}><defs><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath></defs><g class="k-float">${ring(false)}<g class="k-body">${core}${kitFaces(moods, 53, 67, 57, small ? 1.25 : .82)}</g>${ring(true)}</g></svg>`;
+}
+
+/** Duo, simple build: two blue halves with the white stripe between them, dot eyes, arms, feet. */
+function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, attrs = '' } = {}) {
+  const id = 'kd' + (++kitUid), B = '#2b8bff', A = '#1f6fe6';
+  const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], hold: ['', 'rotate(-50 90 66)'] }[arms] || ['', ''];
+  const arm = (l) => small ? '' : `<g class="k-arm-${l ? 'l' : 'r'}"><g transform="${pose[l ? 0 : 1]}"><ellipse cx="${l ? 27 : 93}" cy="76" rx="5.8" ry="10.5" transform="rotate(${l ? 18 : -18} ${l ? 27 : 93} 76)" fill="${A}"/></g></g>`;
+  const half = (l) => `<path d="${l ? 'M60 28 A34 34 0 0 0 60 96 Z' : 'M60 28 A34 34 0 0 1 60 96 Z'}" fill="#fff"/><path d="${l ? 'M58.5 28.03 A34 34 0 0 0 58.5 95.97 Z' : 'M61.5 28.03 A34 34 0 0 1 61.5 95.97 Z'}" fill="${B}"/>`;
+  const feet = small ? '' : `<ellipse class="k-foot-l" cx="48" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/><ellipse class="k-foot-r" cx="72" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/>`;
+  const shine = small ? '' : '<ellipse cx="44" cy="40" rx="8" ry="4" fill="#fff" opacity=".35" transform="rotate(-38 44 40)"/>';
+  const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
+  const body = `${arm(true)}${arm(false)}${half(true)}${half(false)}${shine}${kitFaces(moods, 47, 73, 58, small ? 1.4 : 1.15)}`;
+  return `<svg class="k-mascot k-duo" viewBox="0 0 120 120" ${a11y} ${attrs}><g class="k-jump">${feet}<g class="k-body">${small ? `<g transform="translate(60 62) scale(1.4) translate(-60 -62)">${body}</g>` : body}</g></g></svg>`;
+}
+</script>
+
+<script>
+// =====================================================================================================================
+// The kit: tokens, then one entry per component. Each has its HTML, CSS and setup function; the page runs exactly
+// these, and "View code" shows them.
+// =====================================================================================================================
+const KIT = [];
+
+KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours per look and mode (from the workbench), the player colours, corners, and the motion tokens every component uses. Durations come from how long each moment is on screen.',
+  timing: 'Tap feedback 120 ms. Small state changes 200 ms. Icons in buttons 340 ms. Things that enter 260 ms, leave 180 ms. A confirmation ("Copied") stays 1.6 s. Toasts 3.5 s + 25 ms a letter (errors 8 s).',
+  html: `<div class="sw" id="tok-sw"></div>`,
+  css: `/* Colours: one set per look and mode. The kit only reads --k-* tokens. */
+.kit, .kit[data-look="www"][data-mode="light"] { --k-bg: #f5f6f7; --k-surface: #ffffff; --k-surface-2: #ebedf0; --k-line: #c9cdd3; --k-fg: #1c1e21; --k-muted: #5c636c; --k-accent: #0c76a5; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #1c1e21; --k-code-fg: #e8eaed; --k-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --k-r-ctl: 8px; --k-r-pane: 12px; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
+.kit[data-look="www"][data-mode="dark"] { --k-bg: #1b1b1d; --k-surface: #242526; --k-surface-2: #2e3033; --k-line: #555b63; --k-fg: #e3e3e3; --k-muted: #b0b4ba; --k-accent: #30bbf8; --k-accent-fg: #06131c; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #111214; --k-code-fg: #e3e3e3; --k-shadow: 0 6px 24px rgba(0, 0, 0, .5); color-scheme: dark; }
+.kit[data-look="v3"] { --k-font: "Archivo", system-ui, sans-serif; --k-r-ctl: 8px; --k-r-pane: 14px; }
+.kit[data-look="v3"][data-mode="light"] { --k-bg: #eceef2; --k-surface: #ffffff; --k-surface-2: #f3f4f7; --k-line: #ccd1da; --k-fg: #0b0d12; --k-muted: #4f5767; --k-accent: #0b0d12; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #0b0d12; --k-code-fg: #f3f4f6; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
+.kit[data-look="v3"][data-mode="dark"] { --k-bg: #000000; --k-surface: #14171e; --k-surface-2: #1b1f28; --k-line: #3a4254; --k-fg: #f3f4f6; --k-muted: #a3abba; --k-accent: #f3f4f6; --k-accent-fg: #07080a; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #07080a; --k-code-fg: #f3f4f6; --k-shadow: 0 6px 24px rgba(0, 0, 0, .6); color-scheme: dark; }
+.kit[data-look="mac"] { --k-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; --k-r-ctl: 6px; --k-r-pane: 12px; }
+.kit[data-look="mac"][data-mode="light"] { --k-bg: #d9dce6; --k-surface: #ffffff; --k-surface-2: #f5f5f7; --k-line: #c4c4c9; --k-fg: #1d1d1f; --k-muted: #6e6e73; --k-accent: #0a66d8; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #1d1d1f; --k-code-fg: #f5f5f7; --k-shadow: 0 0 0 .5px rgba(0, 0, 0, .12), 0 8px 28px rgba(0, 0, 0, .18); color-scheme: light; }
+.kit[data-look="mac"][data-mode="dark"] { --k-bg: #15161c; --k-surface: #1f1f21; --k-surface-2: #2c2c2e; --k-line: #4a4a4e; --k-fg: #f5f5f7; --k-muted: #a1a1a6; --k-accent: #0a84ff; --k-accent-fg: #ffffff; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #111113; --k-code-fg: #f5f5f7; --k-shadow: 0 8px 28px rgba(0, 0, 0, .6); color-scheme: dark; }
+.kit[data-look="alpha8"] { --k-font: "Segoe UI", Tahoma, Verdana, sans-serif; --k-r-ctl: 0px; --k-r-pane: 0px; }
+.kit[data-look="alpha8"][data-mode="light"] { --k-bg: #e1e1e1; --k-surface: #f5f5f5; --k-surface-2: #dcdcdc; --k-line: #8c8c8c; --k-fg: #000000; --k-muted: #454545; --k-accent: #323232; --k-accent-fg: #ffffff; --k-ok: #1a6b2f; --k-err: #b00020; --k-warn: #7a5200; --k-code-bg: #000000; --k-code-fg: #f5f5f5; --k-shadow: 0 0 0 1px #000; color-scheme: light; }
+.kit[data-look="alpha8"][data-mode="dark"] { --k-bg: #323232; --k-surface: #282828; --k-surface-2: #3c3c3c; --k-line: #6e6e6e; --k-fg: #ffffff; --k-muted: #c8c8c8; --k-accent: #ffffff; --k-accent-fg: #1e1e1e; --k-ok: #6fd38a; --k-err: #ff8a80; --k-warn: #ffd166; --k-code-bg: #1e1e1e; --k-code-fg: #ffffff; --k-shadow: 0 0 0 1px #000; color-scheme: dark; }
+
+/* Players (the electrons) and motion. */
+.kit {
+  --k-p1: #fca53d; --k-p2: #ff434d; --k-p3: #3fbbd8; --k-p4: #55d137;
+  --k-tap: 120ms; --k-quick: 200ms; --k-icon: 340ms; --k-enter: 260ms; --k-exit: 180ms; --k-confirm: 1600ms;
+  --k-spring: cubic-bezier(.34, 1.56, .64, 1); /* overshoots a little, then settles: Duo's bounce */
+  --k-soft: cubic-bezier(.45, 0, .55, 1);      /* breathing, floating */
+  --k-out: cubic-bezier(.2, .7, .3, 1);        /* quick start, gentle stop */
+  --k-in: cubic-bezier(.5, 0, .75, 0);         /* leaving */
+}
+
+/* Motion settings. "still" and "off": nothing moves (every state still shows). The device's preference wins. */
+.kit[data-motion="still"] *, .kit[data-motion="off"] *, .kit[data-look="alpha8"] * { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .kit *, .kit *::before, .kit *::after { animation: none !important; transition: none !important; } }
+.kit[data-motion="calm"] .k-mascot * { animation: none !important; }
+.kit[data-motion="default"] .k-mascot:not(.k-busy *):not(.k-busy) * { animation-iteration-count: 1 !important; }
+/* "off" and alpha 8: the mascots step aside; a .k-plain fallback takes their place. */
+.k-plain { display: none; }
+.kit:is([data-motion="off"], [data-look="alpha8"]) .k-mascot { display: none !important; }
+.kit:is([data-motion="off"], [data-look="alpha8"]) .k-plain { display: inline-flex; }`,
+  js: function setupTokens(root) {
+    const names = ['bg', 'surface', 'surface-2', 'line', 'fg', 'muted', 'accent', 'ok', 'err', 'warn', 'p1', 'p2', 'p3', 'p4'];
+    const draw = () => { const cs = getComputedStyle(document.body); root.querySelector('#tok-sw').innerHTML = names.map((n) => `<div><i style="background:var(--k-${n})"></i>--k-${n}<br><code>${cs.getPropertyValue('--k-' + n).trim()}</code></div>`).join(''); };
+    draw(); document.addEventListener('kit-look', draw);
+  } });
+
+KIT.push({ id: 'mascots', name: 'Mascots', about: 'Nucli and Duo as simple drawings (flat fills, one shadow, dot eyes), built in code. Moods: smile, happy, focus, worried, wow, sleep. A small build for 24 px and under. They float and blink; the electrons orbit.',
+  timing: 'Idle loops are slow (3.4 s float, a blink every 4.6 s). In "Default" they play for 5 s, then hold; loaders keep going.',
+  html: `<span class="k-m" style="width:96px;height:96px" data-nucli></span>
+<span class="k-m" style="width:96px;height:96px" data-duo></span>
+<span class="k-m" style="width:24px;height:24px" data-nucli-small></span>
+<span class="k-m" style="width:24px;height:24px" data-duo-small></span>
+<span class="k-m" style="width:16px;height:16px" data-nucli-small></span>
+<span class="k-m" style="width:16px;height:16px" data-duo-small></span>`,
+  css: `.k-m { display: inline-block; line-height: 0; flex: none; }
+.k-mascot { width: 100%; height: 100%; overflow: visible; display: block; }
+/* Only the parts that animate get an origin: the drawings' own transform attributes must keep theirs. */
+.k-mascot .k-eye { transform-box: fill-box; transform-origin: center; }
+.k-mascot :is(.k-float, .k-body, .k-jump) { transform-box: view-box; transform-origin: 60px 100px; }
+.k-mascot .k-float { animation: k-float 3.4s var(--k-soft) infinite; }
+.k-mascot .k-eye { animation: k-blink 4.6s infinite; }
+.k-mascot .k-fb, .k-alt .k-mascot .k-fa { opacity: 0; }
+.k-alt .k-mascot .k-fb { opacity: 1; }
+@keyframes k-float { 50% { transform: translateY(-3px); } }
+@keyframes k-blink { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.1); } }`,
+  js: function setupMascots(root) {
+    root.querySelectorAll('[data-nucli]').forEach((e) => (e.innerHTML = kitNucli({ label: 'Nucli' })));
+    root.querySelectorAll('[data-duo]').forEach((e) => (e.innerHTML = kitDuo({ label: 'Duo' })));
+    root.querySelectorAll('[data-nucli-small]').forEach((e) => (e.innerHTML = kitNucli({ small: true, label: 'Nucli, small' })));
+    root.querySelectorAll('[data-duo-small]').forEach((e) => (e.innerHTML = kitDuo({ small: true, label: 'Duo, small' })));
+  } });
+
+KIT.push({ id: 'buttons', name: 'Buttons', about: 'Primary, secondary, quiet and danger, in two sizes. They squash a little under your finger and spring back. Each icon has its own short animation inside the button; copy, save and share confirm in the label. A busy button shows a tiny Nucli.',
+  timing: 'Press 120 ms down, spring back 260 ms. Icons 0.34 to 0.6 s, restarted by the next click (undo comes in bursts). The confirmation stays 1.6 s, as the workbench does.',
+  html: `<button class="k-btn k-primary" data-icon="run">Try it</button>
+<button class="k-btn" data-icon="copy" data-done="Copied">Copy</button>
+<button class="k-btn" data-icon="save" data-done="Saved">Save</button>
+<button class="k-btn" data-icon="undo">Undo</button>
+<button class="k-btn" data-icon="redo">Redo</button>
+<button class="k-btn" data-icon="format">Format</button>
+<button class="k-btn" data-icon="fix">Fix all</button>
+<button class="k-btn" data-icon="share" data-done="Link copied">Share</button>
+<button class="k-btn k-quiet">Cancel</button>
+<button class="k-btn k-danger">Delete</button>
+<button class="k-btn k-sm" data-icon="copy" data-done="Copied">Small</button>
+<button class="k-btn" disabled>Disabled</button>
+<button class="k-btn k-primary" data-busy-demo>Test all</button>`,
+  css: `.k-btn { font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 14px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; transition: transform var(--k-enter) var(--k-spring), border-color var(--k-quick), background var(--k-quick); }
+.k-btn:hover:not(:disabled) { border-color: var(--k-accent); }
+.k-btn:active:not(:disabled) { transform: scale(.95, .92); transition-duration: var(--k-tap); transition-timing-function: var(--k-out); }
+.k-btn:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-btn:disabled { opacity: .5; cursor: not-allowed; }
+.k-btn.k-primary { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.k-btn.k-quiet { background: transparent; border-color: transparent; }
+.k-btn.k-quiet:hover { background: var(--k-surface-2); }
+.k-btn.k-danger { color: var(--k-err); }
+.k-btn.k-sm { min-height: 28px; padding: 3px 10px; font-size: 13px; }
+.k-btn.k-done { border-color: var(--k-ok); color: var(--k-ok); }
+.k-btn.k-primary.k-done { background: var(--k-ok); color: #fff; }
+.k-btn[aria-busy="true"] { cursor: progress; }
+.k-ico { width: 18px; height: 18px; flex: none; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.k-ico * { transform-box: fill-box; transform-origin: center; }
+.k-ico .t { transform-origin: 50% 100%; }
+.k-ico :is(.u, .w) { transform-box: view-box; }
+.k-ico .u { transform-origin: 12px 12px; } .k-ico .w { transform-origin: 4px 20px; }
+.k-ico .o { offset-path: path('M12 2 a10 10 0 1 1 0 20 a10 10 0 1 1 0 -20'); offset-rotate: 0deg; }
+.k-spin { width: 18px; height: 18px; flex: none; }`,
+  js: function setupButtons(root) {
+    const P = ['var(--k-p1)', 'var(--k-p2)', 'var(--k-p3)', 'var(--k-p4)'];
+    // Icons: 24 × 24, currentColor, with named parts for their animation.
+    const ICONS = {
+      copy: `<rect x="9" y="9" width="11" height="11" rx="2"/><rect class="f" x="4" y="4" width="11" height="11" rx="2" style="fill:var(--k-btn-bg, var(--k-surface))"/><path class="k" d="M11.6 14.6 l2 2 l4 -4.3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>`,
+      save: `<path class="t" d="M4 15 v4 h16 v-4"/><g class="a"><path d="M12 3 v11"/><path d="M7.5 9.5 L12 14 L16.5 9.5"/></g>`,
+      undo: `<g class="u"><path d="M9 14 L4 9 L9 4"/><path d="M4 9 h10 a6 6 0 0 1 0 12 h-3"/><circle class="e" cx="4" cy="9" r="2" style="fill:${P[0]}" stroke="none" opacity="0"/></g>`,
+      redo: `<g class="u"><path d="M15 14 L20 9 L15 4"/><path d="M20 9 h-10 a6 6 0 0 0 0 12 h3"/><circle class="e" cx="20" cy="9" r="2" style="fill:${P[2]}" stroke="none" opacity="0"/></g>`,
+      format: `<path class="l1" d="M4 6 h13"/><path class="l2" d="M8 12 h12"/><path class="l3" d="M8 18 h8"/>`,
+      fix: `<g class="w"><path d="M4 20 L14 10"/><path d="M12.5 11.5 l2 2" stroke-width="3"/></g><path class="s" d="M17 3.5 l1 2.5 l2.5 1 l-2.5 1 l-1 2.5 l-1 -2.5 l-2.5 -1 l2.5 -1 z" fill="currentColor" stroke-width="1"/>${[1, 2, 3].map((i) => `<circle class="d d${i}" cx="17" cy="7" r="1.3" style="fill:${P[i]}" stroke="none" opacity="0"/>`).join('')}`,
+      share: `<circle class="r" cx="12" cy="12" r="5" stroke-width="1.4" opacity="0"/><path class="h1" d="M10 14 a4 4 0 0 1 0 -5.6 l2 -2 a4 4 0 0 1 5.6 5.6 l-1 1"/><path class="h2" d="M14 10 a4 4 0 0 1 0 5.6 l-2 2 a4 4 0 0 1 -5.6 -5.6 l1 -1"/>`,
+      run: `<path class="p" d="M8.5 5.5 v13 l10 -6.5 z" fill="currentColor"/><circle class="o" r="2" style="fill:${P[3]}" stroke="none" opacity="0"/>`,
+    };
+    const S = 'cubic-bezier(.34, 1.56, .64, 1)';
+    const swing = (deg) => (q) => { q('.u').animate([{ transform: 'none' }, { transform: `rotate(${deg}deg)`, offset: .4 }, { transform: `rotate(${-deg / 5}deg)`, offset: .72 }, { transform: 'none' }], { duration: 340, easing: 'ease-out' }); q('.e').animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1.3)', offset: .4 }, { opacity: 0, transform: 'scale(0)' }], { duration: 340 }); };
+    const PLAY = {
+      copy: (q) => { q('.f').animate([{ transform: 'none' }, { transform: 'translate(5px, 5px)', offset: .4 }, { transform: 'translate(-1.5px, -1.5px)', offset: .75 }, { transform: 'none' }], { duration: 380, easing: 'ease-in-out' }); },
+      save: (q) => { q('.a').animate([{ transform: 'none' }, { transform: 'translateY(4.5px)', offset: .35 }, { transform: 'translateY(-1.5px)', offset: .65 }, { transform: 'none' }], { duration: 380, easing: 'ease-in' }); q('.t').animate([{ transform: 'none' }, { transform: 'none', offset: .3 }, { transform: 'scale(1.14, .7)', offset: .42 }, { transform: 'scale(.96, 1.08)', offset: .65 }, { transform: 'none' }], { duration: 420 }); },
+      undo: swing(-38), redo: swing(38),
+      format: (q) => ['.l1', '.l2', '.l3'].forEach((s, i) => q(s).animate([{ transform: `translateX(${[4, -5, 3][i]}px)`, opacity: .5 }, { transform: 'none', opacity: 1 }], { duration: 360, delay: i * 55, easing: S, fill: 'backwards' })),
+      fix: (q) => { q('.w').animate([{ transform: 'none' }, { transform: 'rotate(-20deg)', offset: .35 }, { transform: 'rotate(4deg)', offset: .7 }, { transform: 'none' }], { duration: 360, easing: 'ease-out' }); q('.s').animate([{ transform: 'none' }, { transform: 'scale(.4)', offset: .3 }, { transform: 'scale(1.4) rotate(90deg)', offset: .6 }, { transform: 'rotate(90deg)' }], { duration: 420, easing: 'ease-out' }); [[-6, -2], [5, -5], [4, 5]].forEach(([x, y], i) => q('.d' + (i + 1)).animate([{ opacity: 0 }, { opacity: 1, transform: 'none', offset: .45 }, { opacity: 0, transform: `translate(${x}px, ${y}px) scale(.4)` }], { duration: 520, easing: 'ease-out' })); },
+      share: (q) => { q('.h1').animate([{ transform: 'translate(-3px, 3px)' }, { transform: 'translate(.7px, -.7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' }); q('.h2').animate([{ transform: 'translate(3px, -3px)' }, { transform: 'translate(-.7px, .7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' }); q('.r').animate([{ opacity: .9, transform: 'scale(.6)' }, { opacity: 0, transform: 'scale(1.8)' }], { duration: 380, delay: 190, easing: 'ease-out', fill: 'backwards' }); },
+      run: (q) => { q('.p').animate([{ transform: 'none' }, { transform: 'scale(.8)', offset: .25 }, { transform: 'scale(1.12)', offset: .55 }, { transform: 'none' }], { duration: 380, easing: 'ease-out' }); q('.o').animate([{ offsetDistance: '0%', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .85 }, { offsetDistance: '100%', opacity: 0 }], { duration: 620, delay: 120, easing: 'cubic-bezier(.4, 0, .3, 1)' }); },
+    };
+    root.querySelectorAll('[data-icon]').forEach((b) => {
+      const k = b.dataset.icon, label = b.textContent;
+      b.innerHTML = `<svg class="k-ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg><span>${label}</span>`;
+      b.addEventListener('click', () => {
+        const svg = b.querySelector('svg'), q = (s) => svg.querySelector(s);
+        svg.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+        if (kitMoves(b)) PLAY[k](q);
+        if (k === 'copy') q('.k').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0, offset: .1 }, { strokeDashoffset: 0, offset: .9 }, { strokeDashoffset: 0, opacity: 0 }], { duration: kitMoves(b) ? 1900 : 1600, delay: kitMoves(b) ? 260 : 0 });
+        if (b.dataset.done) {
+          const span = b.querySelector('span');
+          clearTimeout(b._t); span.textContent = b.dataset.done; b.classList.add('k-done');
+          b._t = setTimeout(() => { span.textContent = label; b.classList.remove('k-done'); }, 1600);
+        }
+      });
+    });
+    // A busy button: a tiny Nucli replaces the icon while it works (only after 0.4 s, so quick work doesn't flash).
+    root.querySelectorAll('[data-busy-demo]').forEach((b) => b.addEventListener('click', () => {
+      if (b.getAttribute('aria-busy') === 'true') return;
+      b.setAttribute('aria-busy', 'true');
+      const label = b.textContent;
+      const show = setTimeout(() => { b.innerHTML = `<span class="k-spin k-busy">${kitNucli({ small: true, electrons: 3 })}</span><span class="k-plain">…</span><span>Testing</span>`; kitApplyMotion(b); }, 400);
+      setTimeout(() => { clearTimeout(show); b.textContent = label; b.removeAttribute('aria-busy'); b.classList.add('k-done'); b.textContent = 'All passed'; setTimeout(() => { b.classList.remove('k-done'); b.textContent = label; }, 1600); }, 2600);
+    }));
+  } });
+
+KIT.push({ id: 'toggles', name: 'Switch, checkbox, radio', about: 'The switch\'s knob is an electron: it stretches as it travels and squashes when it lands. The check draws itself with a little pop; the radio\'s dot pops in like an electron joining.',
+  timing: 'Switch 260 ms with a stretch in the middle. Check 200 ms. Radio 260 ms, springy.',
+  html: `<button class="k-switch" role="switch" aria-checked="false" aria-label="Electrons in the look's colours"><i></i></button>
+<label class="k-check"><input type="checkbox" checked><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg>Lint as I type</label>
+<label class="k-check"><input type="checkbox"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg>Show hints</label>
+<fieldset class="k-radios"><legend>Players</legend>
+  <label class="k-radio"><input type="radio" name="kp" checked>2</label>
+  <label class="k-radio"><input type="radio" name="kp">3</label>
+  <label class="k-radio"><input type="radio" name="kp">4</label>
+</fieldset>`,
+  css: `.k-switch { position: relative; width: 44px; height: 26px; flex: none; border-radius: 13px; border: 1px solid var(--k-line); background: var(--k-surface-2); cursor: pointer; padding: 0; transition: background var(--k-quick), border-color var(--k-quick); }
+.k-switch i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--k-muted); box-shadow: 0 0 0 2px var(--k-surface); }
+.k-switch[aria-checked="true"] { background: var(--k-accent); border-color: var(--k-accent); }
+.k-switch[aria-checked="true"] i { transform: translateX(18px); background: var(--k-p4); }
+.k-switch:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-check, .k-radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; position: relative; }
+.k-check input, .k-radio input { appearance: none; margin: 0; width: 20px; height: 20px; border: 2px solid var(--k-muted); border-radius: calc(var(--k-r-ctl) * .6); background: var(--k-surface); cursor: pointer; transition: background var(--k-quick), border-color var(--k-quick); }
+.k-check input:checked { background: var(--k-accent); border-color: var(--k-accent); animation: k-pop var(--k-enter) var(--k-spring); }
+.k-check svg { position: absolute; left: 0; top: 50%; width: 20px; height: 20px; margin-top: -10px; pointer-events: none; fill: none; stroke: var(--k-accent-fg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.k-check svg path { stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset var(--k-quick) var(--k-out); }
+.k-check input:checked + svg path { stroke-dashoffset: 0; }
+.k-radios { display: inline-flex; gap: 12px; border: 0; padding: 0; margin: 0; align-items: center; }
+.k-radios legend { float: left; margin-right: 10px; color: var(--k-muted); }
+.k-radio input { border-radius: 50%; display: grid; place-items: center; }
+.k-radio input::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--k-accent); transform: scale(0); transition: transform var(--k-enter) var(--k-spring); }
+.k-radio input:checked { border-color: var(--k-accent); }
+.k-radio input:checked::after { transform: scale(1); }
+:is(.k-check, .k-radio) input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+@keyframes k-pop { 40% { transform: scale(.82); } 75% { transform: scale(1.1); } }`,
+  js: function setupToggles(root) {
+    root.querySelectorAll('.k-switch').forEach((s) => s.addEventListener('click', () => {
+      const on = s.getAttribute('aria-checked') !== 'true';
+      s.setAttribute('aria-checked', String(on));
+      if (!kitMoves(s)) return;
+      const [a, b] = on ? [0, 18] : [18, 0];
+      s.querySelector('i').animate([{ transform: `translateX(${a}px)` }, { transform: `translateX(${(a + b) / 2}px) scale(1.4, .78)`, offset: .45 }, { transform: `translateX(${b}px) scale(.86, 1.12)`, offset: .78 }, { transform: `translateX(${b}px)` }], { duration: 260, easing: 'ease-out' });
+    }));
+  } });
+
+KIT.push({ id: 'tabs', name: 'Tabs', about: 'The underline travels like a body with weight: the edge in front leads, the back one follows, so it stretches on the way and settles on arrival. Arrow keys move between tabs.',
+  timing: 'Lead edge 220 ms, trailing edge 300 ms, both springy.',
+  html: `<div class="k-tabs" role="tablist" aria-label="Panels">
+  <button role="tab" aria-selected="true" aria-controls="kt1" id="kt1t">Check</button>
+  <button role="tab" aria-selected="false" aria-controls="kt2" id="kt2t" tabindex="-1">Try it</button>
+  <button role="tab" aria-selected="false" aria-controls="kt3" id="kt3t" tabindex="-1">Players and screens</button>
+  <i class="k-tabs-bar" aria-hidden="true"></i>
+</div>
+<div class="k-tabpanel" role="tabpanel" id="kt1" aria-labelledby="kt1t">Nothing to fix.</div>
+<div class="k-tabpanel" role="tabpanel" id="kt2" aria-labelledby="kt2t" hidden>Pick players and press Try it.</div>
+<div class="k-tabpanel" role="tabpanel" id="kt3" aria-labelledby="kt3t" hidden>Two players, side by side.</div>`,
+  css: `.k-tabs { position: relative; display: flex; gap: 2px; border-bottom: 1px solid var(--k-line); width: 100%; }
+.k-tabs [role="tab"] { font: inherit; font-size: 14px; background: none; border: 0; color: var(--k-muted); padding: 8px 12px; cursor: pointer; border-radius: var(--k-r-ctl) var(--k-r-ctl) 0 0; }
+.k-tabs [role="tab"][aria-selected="true"] { color: var(--k-fg); font-weight: 600; }
+.k-tabs [role="tab"]:hover { color: var(--k-fg); }
+.k-tabs [role="tab"]:focus-visible { outline: 2px solid var(--k-accent); outline-offset: -2px; }
+.k-tabs-bar { position: absolute; bottom: -1px; left: 0; height: 3px; width: 0; border-radius: 2px; background: var(--k-accent); }
+.k-tabpanel { width: 100%; padding: 6px 2px; color: var(--k-muted); }`,
+  js: function setupTabs(root) {
+    const list = root.querySelector('.k-tabs'), tabs = [...list.querySelectorAll('[role="tab"]')], bar = list.querySelector('.k-tabs-bar');
+    const edges = (t) => [t.offsetLeft + 8, t.offsetLeft + t.offsetWidth - 8];
+    const place = (t) => { const [l, r] = edges(t); bar.style.left = l + 'px'; bar.style.width = r - l + 'px'; };
+    const select = (t) => {
+      const old = tabs.find((x) => x.getAttribute('aria-selected') === 'true');
+      tabs.forEach((x) => { const on = x === t; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; root.querySelector('#' + x.getAttribute('aria-controls')).hidden = !on; });
+      if (kitMoves(list) && old && old !== t) {
+        const [ol, or] = edges(old), [nl, nr] = edges(t), right = nl > ol;
+        // the leading edge arrives first, the trailing edge catches up: a stretch, then a settle
+        const mid = right ? [ol, nr] : [nl, or];
+        bar.animate([{ left: ol + 'px', width: or - ol + 'px' }, { left: mid[0] + 'px', width: mid[1] - mid[0] + 'px', offset: .55 }, { left: nl + 'px', width: nr - nl + 'px' }], { duration: 320, easing: 'cubic-bezier(.3, .8, .4, 1.15)' });
+      }
+      place(t);
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = tabs[(i + d + tabs.length) % tabs.length]; n.focus(); select(n); });
+    });
+    requestAnimationFrame(() => place(tabs[0]));
+    addEventListener('resize', () => place(tabs.find((x) => x.getAttribute('aria-selected') === 'true')));
+    document.addEventListener('kit-look', () => requestAnimationFrame(() => place(tabs.find((x) => x.getAttribute('aria-selected') === 'true'))));
+  } });
+
+KIT.push({ id: 'fields', name: 'Text field', about: 'A label above, a hint below. On a wrong submit the field gives one small shake (no more: it\'s your mistake, not a party) and says what\'s wrong; when it\'s right a check pops in.',
+  timing: 'Shake 280 ms, 3 px. Check 260 ms, springy. Never on every keystroke: only on submit, or when you leave the field.',
+  html: `<form class="k-form" novalidate>
+  <div class="k-field">
+    <label for="kf-exe">Game.ExecutableName</label>
+    <div class="k-input"><input id="kf-exe" placeholder="Game.exe" aria-describedby="kf-exe-hint"><svg class="k-ok-ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg></div>
+    <p class="k-hint" id="kf-exe-hint">The game's .exe file name.</p>
+  </div>
+  <button class="k-btn k-primary">Save</button>
+</form>`,
+  css: `.k-form { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.k-field { display: grid; gap: 4px; min-width: min(100%, 260px); }
+.k-field label { font-weight: 600; font-size: 14px; }
+.k-input { position: relative; }
+.k-input input { font: inherit; width: 100%; padding: 7px 34px 7px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); transition: border-color var(--k-quick), box-shadow var(--k-quick); }
+.k-input input:focus { outline: none; border-color: var(--k-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-accent) 25%, transparent); }
+.k-input input[aria-invalid="true"] { border-color: var(--k-err); }
+.k-hint { margin: 0; font-size: 13px; color: var(--k-muted); }
+.k-hint.k-err { color: var(--k-err); }
+.k-ok-ico { position: absolute; right: 8px; top: 50%; width: 20px; height: 20px; margin-top: -10px; fill: none; stroke: var(--k-ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transform: scale(0); transition: transform var(--k-enter) var(--k-spring); }
+.k-field.k-valid .k-ok-ico { transform: scale(1); }
+.k-form > .k-btn { margin-top: 26px; }`,
+  js: function setupFields(root) {
+    const form = root.querySelector('.k-form'), input = form.querySelector('input'), hint = form.querySelector('.k-hint'), field = form.querySelector('.k-field');
+    const original = hint.textContent;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ok = /\.exe$/i.test(input.value.trim());
+      input.setAttribute('aria-invalid', String(!ok));
+      field.classList.toggle('k-valid', ok);
+      hint.classList.toggle('k-err', !ok);
+      hint.textContent = ok ? original : input.value.trim() ? 'End it with .exe, like Game.exe.' : 'Type the game\'s .exe file name.';
+      if (!ok) { input.focus(); if (kitMoves(form)) input.animate([{ transform: 'none' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(-2px)' }, { transform: 'none' }], { duration: 280, easing: 'ease-out' }); }
+    });
+    input.addEventListener('input', () => field.classList.remove('k-valid'));
+  } });
+
+KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from its button with a little spring; arrow keys, Enter and Escape work. A tooltip waits 0.3 s before it shows (so passing over doesn\'t flash it) and slides 4 px into place.',
+  timing: 'Menu 200 ms in, 140 ms out. Tooltip after 300 ms, 120 ms in.',
+  html: `<div class="k-menu">
+  <button class="k-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="km1">Open ▾</button>
+  <ul class="k-menu-list" role="menu" id="km1" hidden>
+    <li role="menuitem" tabindex="-1">Examples</li>
+    <li role="menuitem" tabindex="-1">Hub handlers</li>
+    <li role="menuitem" tabindex="-1">A file from this computer</li>
+  </ul>
+</div>
+<span class="k-tip-wrap"><button class="k-btn k-quiet" aria-describedby="ktip1">Hover me</button><span class="k-tip" role="tooltip" id="ktip1">Runs the handler once per player</span></span>`,
+  css: `.k-menu { position: relative; }
+.k-menu-list { position: absolute; z-index: 5; top: calc(100% + 6px); left: 0; min-width: 220px; margin: 0; padding: 4px; list-style: none; background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); box-shadow: var(--k-shadow); transform-origin: top left; }
+.k-menu-list [role="menuitem"] { padding: 7px 10px; border-radius: calc(var(--k-r-ctl) - 2px); cursor: pointer; }
+.k-menu-list [role="menuitem"]:is(:hover, :focus) { background: var(--k-surface-2); outline: none; }
+.k-menu-list [role="menuitem"]:focus-visible { box-shadow: inset 0 0 0 2px var(--k-accent); }
+.k-tip-wrap { position: relative; display: inline-flex; }
+.k-tip { position: absolute; bottom: calc(100% + 6px); left: 50%; width: max-content; max-width: 220px; padding: 5px 9px; font-size: 13px; border-radius: 6px; background: var(--k-fg); color: var(--k-bg); opacity: 0; transform: translate(-50%, 4px); pointer-events: none; transition: opacity 120ms var(--k-out), transform 120ms var(--k-out); }
+.k-tip.k-show { opacity: 1; transform: translate(-50%, 0); }`,
+  js: function setupMenus(root) {
+    const btn = root.querySelector('[aria-haspopup="menu"]'), list = root.querySelector('.k-menu-list'), items = [...list.children];
+    const open = () => { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); items[0].focus(); if (kitMoves(btn)) list.animate([{ opacity: 0, transform: 'scale(.92, .85)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.34, 1.4, .64, 1)' }); };
+    const close = (focus = true) => { if (list.hidden) return; btn.setAttribute('aria-expanded', 'false'); const done = () => { list.hidden = true; }; if (kitMoves(btn)) list.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.96)' }], { duration: 140, easing: 'ease-in' }).finished.then(done); else done(); if (focus) btn.focus(); };
+    btn.addEventListener('click', () => (list.hidden ? open() : close()));
+    list.addEventListener('keydown', (e) => { const i = items.indexOf(document.activeElement); if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); } if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); } if (e.key === 'Escape' || e.key === 'Enter') close(); });
+    items.forEach((it) => it.addEventListener('click', () => close()));
+    document.addEventListener('click', (e) => { if (!e.target.closest('.k-menu')) close(false); });
+    root.querySelectorAll('.k-tip-wrap').forEach((w) => {
+      const tip = w.querySelector('.k-tip'); let t;
+      const show = () => { clearTimeout(t); t = setTimeout(() => tip.classList.add('k-show'), 300); };
+      const hide = () => { clearTimeout(t); tip.classList.remove('k-show'); };
+      w.addEventListener('pointerenter', show); w.addEventListener('pointerleave', hide); w.addEventListener('focusin', show); w.addEventListener('focusout', hide);
+      w.addEventListener('keydown', (e) => e.key === 'Escape' && hide());
+    });
+  } });
+
+KIT.push({ id: 'badges', name: 'Badges and counters', about: 'Status pills, and a counter that bumps when its number changes: up with a little jump, down with a small dip.',
+  timing: 'Bump 300 ms, springy.',
+  html: `<span class="k-pill k-pill-ok">Ready for Nucleus</span>
+<span class="k-pill k-pill-err">Nucleus can't use this handler yet</span>
+<span class="k-pill k-pill-warn">2 settings may not work</span>
+<span class="k-count-demo"><button class="k-btn k-sm" data-d="-1" aria-label="One problem fewer">−</button> Problems <span class="k-count" aria-live="polite">3</span> <button class="k-btn k-sm" data-d="1" aria-label="One more problem">+</button></span>`,
+  css: `.k-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid currentColor; }
+.k-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.k-pill-ok { color: var(--k-ok); } .k-pill-err { color: var(--k-err); } .k-pill-warn { color: var(--k-warn); }
+.k-count-demo { display: inline-flex; align-items: center; gap: 8px; }
+.k-count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--k-err); color: #fff; font-weight: 700; font-size: 13px; }
+.k-count.k-zero { background: var(--k-ok); }`,
+  js: function setupBadges(root) {
+    const c = root.querySelector('.k-count');
+    root.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
+      const n = Math.max(0, +c.textContent + +b.dataset.d), up = +b.dataset.d > 0;
+      c.textContent = n; c.classList.toggle('k-zero', n === 0);
+      if (kitMoves(c)) c.animate(up ? [{ transform: 'none' }, { transform: 'translateY(-4px) scale(1.25)', offset: .35 }, { transform: 'none' }] : [{ transform: 'none' }, { transform: 'translateY(2px) scale(.85)', offset: .35 }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.34, 1.56, .64, 1)' });
+    }));
+  } });
+
+KIT.push({ id: 'toasts', name: 'Toasts', about: 'They slide up with a little overshoot. The mascot reacts once in the first second (a hop for good news, a flinch for bad), then holds his face while you read. The line at the bottom is the time left; hovering or focusing it pauses. Close with the button or Escape.',
+  timing: 'In 260 ms, out 180 ms. Reaction ≤ 1 s, then a still pose. Shown 3.5 s + 25 ms a letter, errors 8 s (as the workbench).',
+  html: `<button class="k-btn" data-toast="ok">Fixed 12 problems</button>
+<button class="k-btn" data-toast="err">Try it failed</button>
+<button class="k-btn" data-toast="info">Duo: handler installed</button>`,
+  css: `.k-toasts { position: fixed; z-index: 50; right: 16px; bottom: 16px; display: grid; gap: 8px; width: min(360px, calc(100vw - 32px)); }
+.k-toast { position: relative; display: flex; gap: 10px; align-items: center; padding: 10px 12px 12px; background: var(--k-surface); color: var(--k-fg); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); box-shadow: var(--k-shadow); overflow: hidden; }
+.k-toast .k-m { width: 40px; height: 40px; }
+.k-toast p { margin: 0; flex: 1; font-size: 14px; }
+.k-toast .k-x { font: inherit; background: none; border: 0; color: var(--k-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; border-radius: 6px; }
+.k-toast .k-x:focus-visible { outline: 2px solid var(--k-accent); }
+.k-toast .k-life { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--k-accent); transform-origin: left; }
+.k-toast.k-err .k-life { background: var(--k-err); } .k-toast.k-ok .k-life { background: var(--k-ok); }
+.k-toast .k-plain { width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; font-size: 13px; }
+.k-toast.k-ok .k-plain { background: var(--k-ok); } .k-toast.k-err .k-plain { background: var(--k-err); } .k-toast.k-info .k-plain { background: var(--k-accent); color: var(--k-accent-fg); }
+.k-react-ok .k-body { animation: k-hop .7s var(--k-spring) 1; }
+.k-react-err .k-body { animation: k-flinch .5s ease-out 1; }
+@keyframes k-hop { 0% { transform: none; } 20% { transform: scale(1.12, .86); } 45% { transform: translateY(-9px) scale(.95, 1.06); } 70% { transform: scale(1.06, .94); } 100% { transform: none; } }
+@keyframes k-flinch { 0% { transform: none; } 18% { transform: translateX(-4px) rotate(-6deg); } 40% { transform: translateX(2px); } 100% { transform: none; } }`,
+  js: function setupToasts(root) {
+    const box = document.getElementById('k-toasts');
+    function toast(text, kind = 'info', who = 'nucli') {
+      const ms = kind === 'err' ? 8000 : Math.min(8000, 3500 + text.length * 25);
+      const mood = kind === 'err' ? ['worried'] : ['smile', 'happy'];
+      const m = who === 'duo' ? kitDuo({ moods: mood, arms: kind === 'ok' ? 'up' : 'down' }) : kitNucli({ moods: mood, small: true });
+      const el = document.createElement('div');
+      el.className = `k-toast k-${kind}`; el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+      el.innerHTML = `<span class="k-m k-react-${kind === 'err' ? 'err' : 'ok'}">${m}</span><span class="k-plain" aria-hidden="true">${kind === 'err' ? '!' : '✓'}</span><p>${text}</p><button class="k-x" aria-label="Close">×</button><i class="k-life"></i>`;
+      box.append(el); kitApplyMotion(el);
+      const moves = kitMoves(el);
+      if (kind !== 'err') setTimeout(() => el.classList.add('k-alt'), 250);
+      if (moves) el.animate([{ opacity: 0, transform: 'translateY(24px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      const life = el.querySelector('.k-life').animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: ms, easing: 'linear', fill: 'forwards' });
+      const close = () => { life.cancel(); if (moves) el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(24px)' }], { duration: 180, easing: 'ease-in' }).finished.then(() => el.remove()); else el.remove(); };
+      life.finished.then(close).catch(() => {});
+      el.querySelector('.k-x').addEventListener('click', close);
+      el.addEventListener('keydown', (e) => e.key === 'Escape' && close());
+      ['pointerenter', 'focusin'].forEach((t) => el.addEventListener(t, () => life.pause()));
+      ['pointerleave', 'focusout'].forEach((t) => el.addEventListener(t, () => life.play()));
+    }
+    window.kitToast = toast;
+    root.querySelectorAll('[data-toast]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.toast;
+      if (k === 'ok') toast('Fixed 12 problems. Ready for Nucleus.', 'ok');
+      else if (k === 'err') toast('Try it failed for player 2: Context.PlayerID is undefined.', 'err');
+      else toast('Borderlands 2 is installed.', 'ok', 'duo');
+    }));
+  } });
+
+KIT.push({ id: 'banners', name: 'Banners', about: 'Results that stay on the page (Try it, Test all). Nucli\'s face says it at a glance; on repeated failures he escalates once per run, never per keystroke: a flinch, then worried, then he offers help.',
+  timing: 'Reaction ≤ 0.5 s when the result changes, then a still pose: the banner can stay for minutes.',
+  html: `<div class="k-banner k-ok"><span class="k-m" data-mood="happy"></span><span class="k-plain">✓</span><div><b>All 4 players start.</b> Nucleus can use this handler.</div></div>
+<div class="k-banner k-err" id="kb-fail"><span class="k-m" data-mood="worried"></span><span class="k-plain">!</span><div><b>Run <span class="kb-n">1</span>: failed.</b> Player 2 has no Context.PlayerID. <a href="#kb-fail" class="kb-help" hidden>Explain this</a></div></div>
+<button class="k-btn" id="kb-again">Run again</button>`,
+  css: `.k-banner { display: flex; gap: 12px; align-items: center; width: 100%; padding: 10px 14px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); }
+.k-banner.k-ok { border-left: 4px solid var(--k-ok); } .k-banner.k-err { border-left: 4px solid var(--k-err); }
+.k-banner .k-m { width: 48px; height: 48px; }
+.k-banner .k-plain { width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; }
+.k-banner.k-ok .k-plain { background: var(--k-ok); } .k-banner.k-err .k-plain { background: var(--k-err); }
+.k-banner a { color: var(--k-accent); font-weight: 600; }`,
+  js: function setupBanners(root) {
+    root.querySelectorAll('.k-m[data-mood]').forEach((m) => (m.innerHTML = kitNucli({ moods: [m.dataset.mood] })));
+    const fail = root.querySelector('#kb-fail'), n = fail.querySelector('.kb-n'), help = fail.querySelector('.kb-help');
+    root.querySelector('#kb-again').addEventListener('click', () => {
+      const runs = +n.textContent + 1; n.textContent = runs;
+      if (runs >= 3) { help.hidden = false; fail.querySelector('.k-m').innerHTML = kitNucli({ moods: ['sleep'] }); }
+      if (kitMoves(fail)) fail.querySelector('.k-m svg').animate([{ transform: 'none' }, { transform: `translateX(-${runs >= 3 ? 2 : 4}px) rotate(-${runs >= 3 ? 10 : 6}deg)`, offset: .25 }, { transform: 'none' }], { duration: 420, easing: 'ease-out' });
+      kitApplyMotion(fail);
+    });
+  } });
+
+KIT.push({ id: 'dialog', name: 'Dialog', about: 'Grows from the middle with a little spring over a fading backdrop; closes quicker than it opens. Native &lt;dialog&gt;: focus moves in and comes back, Escape closes. Here Duo holds up his "?" sign: the third failed launch.',
+  timing: 'Open 260 ms, springy; close 180 ms. The sign pops 0.4 s after it opens, once.',
+  html: `<button class="k-btn" id="kd-open">Launch the game</button>
+<dialog class="k-dialog" aria-labelledby="kd-title">
+  <div class="k-dialog-head"><span class="k-m k-sign"></span><span class="k-plain">?</span><h3 id="kd-title">The game didn't start, three times in a row</h3></div>
+  <p>Nucleus started the instances, but the game closed itself. That usually means a missing file next to the game.</p>
+  <div class="k-dialog-foot"><button class="k-btn k-quiet" value="close">Close</button><button class="k-btn k-primary" value="help">Show me what to check</button></div>
+</dialog>`,
+  css: `.k-dialog { border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); color: var(--k-fg); padding: 18px; width: min(460px, calc(100vw - 32px)); box-shadow: var(--k-shadow); }
+.k-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.k-dialog h3 { margin: 0; font-size: 18px; }
+.k-dialog-head { display: flex; gap: 12px; align-items: center; }
+.k-dialog .k-m { width: 64px; height: 64px; }
+.k-dialog .k-plain { width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 50%; background: var(--k-err); color: #fff; font-weight: 700; }
+.k-dialog-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.k-sign .k-signboard { transform-box: view-box; transform-origin: 97px 52px; }`,
+  js: function setupDialog(root) {
+    const dlg = root.querySelector('.k-dialog'), m = dlg.querySelector('.k-m');
+    m.innerHTML = kitDuo({ moods: ['worried'], label: 'Duo holds up a question mark' }).replace('</svg>', `<g class="k-signboard"><rect x="84" y="14" width="26" height="24" rx="5" fill="#fff" stroke="${KIT_INK}" stroke-width="2"/><text x="97" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#c42b2b" font-family="system-ui, sans-serif">?</text><path d="M97 38 V52" stroke="${KIT_INK}" stroke-width="2.4" stroke-linecap="round"/></g></svg>`);
+    root.querySelector('#kd-open').addEventListener('click', () => {
+      dlg.showModal(); kitApplyMotion(dlg);
+      if (!kitMoves(dlg)) return;
+      dlg.animate([{ opacity: 0, transform: 'scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      m.querySelector('.k-signboard').animate([{ opacity: 0, transform: 'scale(.3) rotate(-20deg)' }, { opacity: 1, transform: 'scale(1.1)', offset: .6 }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 400, easing: 'ease-out', fill: 'backwards' });
+    });
+    dlg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      if (!kitMoves(dlg)) return dlg.close();
+      dlg.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.96)' }], { duration: 180, easing: 'ease-in' }).finished.then(() => dlg.close());
+    }));
+  } });
+
+KIT.push({ id: 'progress-ring', name: 'Progress ring (Nucli)', about: 'For known progress (Test all). Set the value from your code; the four electrons ride just behind the tip of the arc on springs. When the value jumps, the first one bumps into the tip and the others crash into each other and rebound. At 100 % they have gone a full circle and Nucli is pleased. Without motion it simply shows the value.',
+  timing: 'The arc eases to a new value in ~0.2 s; the electrons settle in ~0.5 s. Nothing loops: it only moves when the value changes.',
+  html: `<div class="k-ring" role="progressbar" aria-label="Test all" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <svg viewBox="0 0 120 120" aria-hidden="true">
+    <circle cx="60" cy="60" r="44" class="k-ring-track"/>
+    <circle cx="60" cy="60" r="44" class="k-ring-arc" transform="rotate(-90 60 60)"/>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="6" fill="var(--k-p1)"/></g></g>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="5.6" fill="var(--k-p2)"/></g></g>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="5.2" fill="var(--k-p3)"/></g></g>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="4.8" fill="var(--k-p4)"/></g></g>
+    <svg class="k-ring-face" x="28" y="28" width="64" height="64" viewBox="0 0 120 120"></svg>
+  </svg>
+  <span class="k-ring-pct">0 %</span>
+</div>
+<div><button class="k-btn" id="kr-run">Run Test all</button> <button class="k-btn k-quiet" id="kr-step">+10 %</button></div>`,
+  css: `.k-ring { position: relative; width: 132px; height: 132px; flex: none; }
+.k-ring > svg { width: 100%; height: 100%; overflow: visible; }
+.k-ring-track { fill: none; stroke: color-mix(in srgb, var(--k-fg) 14%, transparent); stroke-width: 7; }
+.k-ring-arc { fill: none; stroke: var(--k-accent); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 276.46; stroke-dashoffset: 276.46; }
+.k-ring.k-complete .k-ring-arc { stroke: var(--k-ok); transition: stroke var(--k-quick); }
+.k-ring-e { transform-box: view-box; transform-origin: 60px 60px; }
+.k-ring-e > g { transform-box: fill-box; transform-origin: center; }
+.k-ring-e circle { stroke: #fff; stroke-width: 2; }
+.kit:is([data-motion="off"], [data-look="alpha8"]) :is(.k-ring-e, .k-ring-face) { display: none; }
+.k-ring-pct { position: absolute; left: 0; right: 0; bottom: -22px; text-align: center; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }`,
+  js: function setupRing(root) {
+    function kitRing(el) {
+      const arc = el.querySelector('.k-ring-arc'), es = [...el.querySelectorAll('.k-ring-e')], pct = el.querySelector('.k-ring-pct'), face = el.querySelector('.k-ring-face');
+      const LEN = 2 * Math.PI * 44, gap = .046, cap = .034, K0 = 1400, K1 = 700, D0 = 2 * Math.sqrt(K0) * .3, D1 = 2 * Math.sqrt(K1) * .3, e = .45;
+      let target = 0, head = 0, x = [0, 1, 2, 3].map((k) => -cap - k * gap), v = [0, 0, 0, 0], sq = [0, 0, 0, 0], raf = 0, last = 0;
+      const setFace = (done) => { face.innerHTML = kitNucli({ moods: [done ? 'happy' : 'focus'], orbits: false }).replace(/^<svg[^>]*>|<\/svg>$/g, ''); };
+      setFace(false);
+      const draw = () => {
+        arc.style.strokeDashoffset = LEN * (1 - head);
+        es.forEach((g, k) => { g.style.transform = `rotate(${x[k] * 360}deg)`; g.firstElementChild.style.transform = `scale(${1 - sq[k]}, ${1 + sq[k] * .7})`; });
+      };
+      draw();
+      const physics = (dt) => {
+        const prev = head; head += (target - head) * (1 - Math.exp(-dt / .07)); const vh = (head - prev) / dt;
+        v[0] += (K0 * (head - cap - x[0]) - D0 * v[0]) * dt;
+        for (let k = 1; k < 4; k++) v[k] += (K1 * (x[k - 1] - gap - x[k]) - D1 * v[k]) * dt;
+        for (let k = 0; k < 4; k++) x[k] += v[k] * dt;
+        if (x[0] > head - cap) { x[0] = head - cap; if (v[0] > vh) { sq[0] = Math.max(sq[0], Math.min(.34, (v[0] - vh) * .22)); v[0] = vh - e * (v[0] - vh); } }
+        for (let k = 1; k < 4; k++) {
+          const lim = x[k - 1] - gap * .92;
+          if (x[k] > lim) { x[k] = lim; const rel = v[k] - v[k - 1]; if (rel > 0) { const m = (v[k] + v[k - 1]) / 2; v[k] = m - e * rel / 2; v[k - 1] = m + e * rel / 2; const s = Math.min(.34, rel * .25); sq[k] = Math.max(sq[k], s); sq[k - 1] = Math.max(sq[k - 1], s * .8); } }
+        }
+        for (let k = 0; k < 4; k++) sq[k] *= Math.exp(-dt / .07);
+      };
+      const frame = (t) => {
+        const dt = Math.min(.05, (t - last) / 1000) || .016; last = t;
+        for (let i = 0; i < 10; i++) physics(dt / 10);
+        draw();
+        const still = Math.abs(target - head) < 1e-4 && v.every((s) => Math.abs(s) < 1e-3) && sq.every((s) => s < .01);
+        raf = still ? 0 : requestAnimationFrame(frame);
+      };
+      return {
+        set(p) {
+          p = Math.min(1, Math.max(0, p));
+          if (p < head - .5) { x = x.map((a) => a - 1); head -= 1; } // a new run: the electrons are already at the top
+          target = p;
+          el.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+          pct.textContent = Math.round(p * 100) + ' %';
+          el.classList.toggle('k-complete', p >= 1); setFace(p >= 1);
+          if (!kitMoves(el)) { cancelAnimationFrame(raf); raf = 0; head = p; x = x.map((_, k) => p - cap - k * gap); sq = [0, 0, 0, 0]; v = [0, 0, 0, 0]; draw(); return; }
+          if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+        },
+      };
+    }
+    const ring = kitRing(root.querySelector('.k-ring'));
+    let value = 0, timer;
+    root.querySelector('#kr-step').addEventListener('click', () => { value = value >= 1 ? 0 : Math.min(1, value + .1); ring.set(value); });
+    root.querySelector('#kr-run').addEventListener('click', () => {
+      clearTimeout(timer); value = 0; ring.set(0);
+      // uneven, like real runs: some combinations take longer
+      const steps = [.1, .26, .31, .5, .57, .72, .86, 1], waits = [350, 450, 400, 500, 450, 400, 550, 450];
+      let i = 0; const next = () => { if (i >= steps.length) return; value = steps[i]; ring.set(value); timer = setTimeout(next, waits[i++]); }; timer = setTimeout(next, 300);
+    });
+    window.kitRingDemo = ring;
+  } });
+
+KIT.push({ id: 'progress-bar', name: 'Progress bar (Duo)', about: 'For downloads and installs. Set the value; Duo pushes the end of the bar, leaning in when it moves fast. If the value hasn\'t changed for 0.7 s he strains (a sweat drop, his feet scramble); at 100 % the bar turns green, a check pops and he hops. Without a size it runs as indeterminate: he pushes on the spot while the stripes go by.',
+  timing: 'Follows the value with a spring (~0.3 s). Strain after 0.7 s without progress. Done: check 260 ms, hop 400 ms, once.',
+  html: `<div class="k-pbar" role="progressbar" aria-label="Getting Borderlands 2" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="--p:0">
+  <div class="k-pbar-track"><div class="k-pbar-fill"></div></div>
+  <span class="k-pbar-duo"><span class="k-pbar-lean"></span><i class="k-pbar-sweat"></i></span>
+  <span class="k-pbar-check" aria-hidden="true">✓</span>
+</div>
+<div><button class="k-btn" id="kp-run">Download</button> <button class="k-btn k-quiet" id="kp-indet">Unknown size</button></div>`,
+  css: `.k-pbar { position: relative; flex: 1 1 280px; max-width: 420px; height: 64px; }
+.k-pbar-track { position: absolute; left: 0; right: 14px; bottom: 4px; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--k-fg) 12%, transparent); overflow: hidden; }
+.k-pbar-fill { height: 100%; width: calc(var(--p) * 100%); border-radius: 5px; background: var(--k-accent); }
+.k-pbar.k-indet .k-pbar-fill { width: 100%; background: repeating-linear-gradient(-45deg, var(--k-accent) 0 10px, color-mix(in srgb, var(--k-accent) 60%, var(--k-surface)) 10px 20px); background-size: 28px 100%; animation: k-stripes .8s linear infinite; }
+.k-pbar.k-complete .k-pbar-fill { background: var(--k-ok); transition: background var(--k-quick); }
+.k-pbar-duo { position: absolute; bottom: 8px; left: clamp(0px, calc(var(--p) * (100% - 14px) - 36px), calc(100% - 72px)); width: 44px; height: 44px; }
+.k-pbar.k-indet .k-pbar-duo { left: calc(50% - 22px); }
+.k-pbar-lean { display: block; width: 100%; height: 100%; transform-origin: 50% 100%; transform: rotate(var(--lean, 0deg)); }
+.k-pbar.k-moving .k-pbar-lean .k-body, .k-pbar.k-indet .k-pbar-lean .k-body { animation: k-waddle .36s ease-in-out infinite alternate; }
+.k-pbar.k-strain .k-pbar-lean { transform: rotate(13deg); }
+.k-pbar.k-strain .k-pbar-lean .k-body { animation: k-strain .12s linear infinite alternate; }
+.k-pbar-sweat { position: absolute; left: 2px; top: 2px; width: 6px; height: 8px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #7cc8ff; opacity: 0; }
+.k-pbar.k-strain .k-pbar-sweat { opacity: 1; animation: k-drip .7s ease-in infinite; }
+.k-pbar-check { position: absolute; right: 0; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--k-ok); color: #fff; font-size: 13px; font-weight: 700; transform: scale(0); }
+.k-pbar.k-complete .k-pbar-check { transform: scale(1); animation: k-pop var(--k-enter) var(--k-spring); }
+.k-pbar.k-complete .k-pbar-duo .k-jump { animation: k-hop .5s var(--k-spring) .15s 1 backwards; }
+@keyframes k-waddle { from { transform: rotate(-5deg); } to { transform: rotate(5deg) translateY(-2px); } }
+@keyframes k-strain { from { transform: translateX(-.6px); } to { transform: translateX(.6px) scale(1.02, .97); } }
+@keyframes k-drip { from { transform: translateY(0); opacity: 1; } to { transform: translateY(8px); opacity: 0; } }
+@keyframes k-stripes { to { background-position: 28px 0; } }`,
+  js: function setupBar(root) {
+    function kitProgressBar(el) {
+      const lean = el.querySelector('.k-pbar-lean'), duo = el.querySelector('.k-pbar-lean');
+      duo.innerHTML = kitDuo({ moods: ['focus', 'happy'], arms: 'hold' });
+      let target = 0, pos = 0, vel = 0, raf = 0, last = 0, strain;
+      const frame = (t) => {
+        const dt = Math.min(.05, (t - last) / 1000) || .016; last = t;
+        const k = 120, d = 2 * Math.sqrt(k) * .9; // a firm, nearly critical spring: he never pushes backwards
+        vel += (k * (target - pos) - d * vel) * dt; pos += vel * dt;
+        el.style.setProperty('--p', pos.toFixed(4));
+        lean.style.setProperty('--lean', Math.min(12, Math.max(0, vel * 30)).toFixed(1) + 'deg');
+        el.classList.toggle('k-moving', Math.abs(vel) > .01);
+        if (Math.abs(target - pos) < 1e-4 && Math.abs(vel) < 1e-4) { pos = target; el.style.setProperty('--p', pos); el.classList.remove('k-moving'); lean.style.setProperty('--lean', '0deg'); raf = 0; }
+        else raf = requestAnimationFrame(frame);
+      };
+      return {
+        set(p) {
+          p = Math.min(1, Math.max(0, p)); el.classList.remove('k-indet', 'k-strain');
+          if (p < target) { pos = p; vel = 0; } target = p;
+          el.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+          el.classList.toggle('k-complete', p >= 1); el.classList.toggle('k-alt', p >= 1);
+          clearTimeout(strain); if (p > 0 && p < 1) strain = setTimeout(() => el.classList.add('k-strain'), 700);
+          if (!kitMoves(el)) { cancelAnimationFrame(raf); raf = 0; pos = p; el.style.setProperty('--p', p); return; }
+          if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+        },
+        indeterminate() { clearTimeout(strain); el.classList.remove('k-complete', 'k-alt', 'k-strain'); el.classList.add('k-indet'); el.removeAttribute('aria-valuenow'); },
+      };
+    }
+    const bar = kitProgressBar(root.querySelector('.k-pbar'));
+    let timers = [];
+    root.querySelector('#kp-run').addEventListener('click', () => {
+      timers.forEach(clearTimeout); timers = []; bar.set(0);
+      // a real download: quick, a stall, steady, a short stall, the end
+      [[200, .08], [500, .22], [800, .38], [2200, .44], [2600, .58], [3000, .72], [3300, .8], [4400, .9], [4800, 1]].forEach(([t, p]) => timers.push(setTimeout(() => bar.set(p), t)));
+    });
+    root.querySelector('#kp-indet').addEventListener('click', () => { timers.forEach(clearTimeout); bar.indeterminate(); });
+  } });
+
+KIT.push({ id: 'wait', name: 'Waiting, by how long', about: 'One helper for every wait: nothing under 0.4 s (it would only flash), then a small spinner, and past 2 s the progress if you have it; past 10 s it also says how long it has been. Wrap any promise.',
+  timing: '0.4 s before anything shows; 2 s before the full loader; 10 s before the time so far.',
+  html: `<div class="k-wait" aria-live="polite"><span class="k-wait-m"></span><span class="k-wait-t">Press a wait.</span></div>
+<div class="k-wait-btns"><button class="k-btn k-sm" data-ms="200">0.2 s</button><button class="k-btn k-sm" data-ms="1200">1.2 s</button><button class="k-btn k-sm" data-ms="5000">5 s</button><button class="k-btn k-sm" data-ms="14000">14 s</button></div>`,
+  css: `.k-wait { display: flex; gap: 10px; align-items: center; min-height: 48px; min-width: 260px; }
+.k-wait-m { width: 40px; height: 40px; flex: none; }
+.k-wait-btns { display: flex; gap: 6px; flex-wrap: wrap; }`,
+  js: function setupWait(root) {
+    /** Shows what a wait deserves, by how long it takes. `onProgress` gives a setter for 0..1 when you have one. */
+    async function kitWait(el, work, { what = 'Working', onProgress } = {}) {
+      const m = el.querySelector('.k-wait-m'), t = el.querySelector('.k-wait-t'), t0 = performance.now();
+      let tick;
+      const timers = [
+        setTimeout(() => { m.innerHTML = `<span class="k-m k-busy" style="width:40px;height:40px">${kitNucli({ small: true, electrons: 3 })}</span><span class="k-plain">…</span>`; kitApplyMotion(m); t.textContent = what + '…'; }, 400),
+        setTimeout(() => { tick = setInterval(() => { const s = (performance.now() - t0) / 1000; if (s > 10) t.textContent = `${what}… ${Math.floor(s)} s so far`; }, 1000); }, 2000),
+      ];
+      onProgress?.((p) => { if (performance.now() - t0 > 2000) t.textContent = `${what}: ${Math.round(p * 100)} %`; });
+      try { return await work; } finally {
+        timers.forEach(clearTimeout); clearInterval(tick);
+        const s = (performance.now() - t0) / 1000;
+        m.innerHTML = s < .4 ? '' : `<span class="k-m k-alt" style="width:40px;height:40px">${kitNucli({ moods: ['happy'], small: true })}</span><span class="k-plain">✓</span>`; kitApplyMotion(m);
+        t.textContent = `Done in ${s < 1 ? Math.round(s * 1000) + ' ms' : s.toFixed(1) + ' s'}.`;
+      }
+    }
+    const el = root.querySelector('.k-wait');
+    root.querySelectorAll('[data-ms]').forEach((b) => b.addEventListener('click', () => {
+      const ms = +b.dataset.ms;
+      let set; const work = new Promise((r) => setTimeout(r, ms));
+      const iv = setInterval(() => set?.(Math.min(1, (performance.now() - start) / ms)), 250), start = performance.now();
+      kitWait(el, work, { what: ms > 10000 ? 'AI fix' : ms > 2000 ? 'Test all' : 'Getting the handler', onProgress: (s) => (set = s) }).then(() => clearInterval(iv));
+    }));
+  } });
+
+KIT.push({ id: 'empty', name: 'Empty state', about: 'When there is nothing to show, Nucli dozes (a still pose). The moment you start, he wakes: a little start, eyes open, and he looks at what you\'re doing. The wake-up is the part people see, so that is what is animated.',
+  timing: 'Wake-up 0.6 s, once, on the first key or click. Asleep is a still pose: nothing loops while nobody watches.',
+  html: `<div class="k-empty"><span class="k-m"></span><span class="k-plain">…</span><div><b>Waiting for code.</b><br><span>Type or paste a handler.</span></div></div>
+<textarea class="k-empty-input" rows="2" aria-label="Type here to wake Nucli" placeholder="Type here…"></textarea>`,
+  css: `.k-empty { display: flex; gap: 12px; align-items: center; }
+.k-empty .k-m { width: 72px; height: 72px; }
+.k-empty span { color: var(--k-muted); }
+.k-empty-input { font: 13px ui-monospace, Consolas, monospace; padding: 8px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); min-width: min(100%, 260px); }
+.k-empty-input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 1px; }
+.k-empty .k-asleep .k-float { animation: none; transform: translateY(3px) rotate(-5deg); }
+.k-empty .k-asleep g[transform^="rotate"] { opacity: .35; }`,
+  js: function setupEmpty(root) {
+    const m = root.querySelector('.k-empty .k-m'), input = root.querySelector('.k-empty-input'), text = root.querySelector('.k-empty b');
+    const sleep = () => { m.innerHTML = kitNucli({ moods: ['sleep'], label: 'Nucli, dozing' }); m.querySelector('svg').classList.add('k-asleep'); kitApplyMotion(m); text.textContent = 'Waiting for code.'; };
+    sleep();
+    let awake = false;
+    input.addEventListener('input', () => {
+      if (!input.value) { awake = false; return sleep(); }
+      if (awake) return; awake = true;
+      m.innerHTML = kitNucli({ moods: ['wow', 'smile'], label: 'Nucli, awake' }); kitApplyMotion(m); text.textContent = 'Checking as you type.';
+      const svg = m.querySelector('svg');
+      if (kitMoves(m)) svg.animate([{ transform: 'translateY(3px) rotate(-5deg)' }, { transform: 'translateY(-6px) scale(1.04)', offset: .3 }, { transform: 'rotate(4deg)' }], { duration: 600, easing: 'cubic-bezier(.34, 1.4, .64, 1)', fill: 'forwards' });
+      setTimeout(() => svg.closest('.k-m').classList.add('k-alt'), kitMoves(m) ? 350 : 0);
+    });
+  } });
+
+KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lift a little when you point at them and press down when you click: the same squash as the buttons, smaller.',
+  timing: 'Lift 200 ms; press 120 ms.',
+  html: `<ul class="k-cards">
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p1)"></span><b>Borderlands 2</b><span>Talos91 · 4 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p3)"></span><b>Left 4 Dead 2</b><span>Talos91 · 4 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p4)"></span><b>Terraria</b><span>Talos91 · 8 players</span></a></li>
+</ul>`,
+  css: `.k-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; list-style: none; margin: 0; padding: 0; width: 100%; }
+.k-card { display: grid; gap: 2px; padding: 10px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); text-decoration: none; transition: transform var(--k-quick) var(--k-out), box-shadow var(--k-quick), border-color var(--k-quick); }
+.k-card:hover { transform: translateY(-2px); box-shadow: var(--k-shadow); border-color: var(--k-accent); }
+.k-card:active { transform: scale(.98); transition-duration: var(--k-tap); }
+.k-card:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-card span { color: var(--k-muted); font-size: 13px; }
+.k-card .k-card-art { display: block; aspect-ratio: 16 / 9; border-radius: calc(var(--k-r-pane) - 4px); background: linear-gradient(135deg, var(--a), color-mix(in srgb, var(--a) 40%, var(--k-surface-2))); margin-bottom: 6px; }`,
+  js: function setupCards() {} });
+
+// =====================================================================================================================
+// The showcase: renders each entry, its code, and the settings bar.
+// =====================================================================================================================
+(() => {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
+    + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitFaces = ${kitFaces.toString()};`;
+  // Empty mascot slots in the HTML (.k-m, data-mood) are filled by each component's setup.
+  const fill = (html) => html;
+  document.getElementById('kit-css').textContent = KIT.map((c) => `/* ${c.name} */\n${c.css}`).join('\n\n');
+  document.getElementById('toc').innerHTML = KIT.map((c) => `<li><a href="#${c.id}">${c.name}</a></li>`).join('') + '<li><a href="#foundation">Foundation</a></li>';
+  const box = document.getElementById('kit');
+  const codeBlock = (id, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => `<pre tabindex="0" aria-label="${n} of ${id}"${i ? ' hidden' : ''}><code>${esc(src)}</code></pre>`).join('')}</details>`;
+  box.innerHTML = KIT.map((c) => `<section class="comp" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name}</h2><p>${c.about}</p><div class="demo">${fill(c.html)}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, [['HTML', fill(c.html)], ['CSS', c.css], ['JavaScript', c.js.toString()]])}</section>`).join('')
+    + `<section class="comp" id="foundation" aria-labelledby="foundation-h"><h2 id="foundation-h">Foundation</h2><p>The motion settings and the two mascots, which every component above uses. The Motion setting: "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface's motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device's "reduce motion" wins.</p><table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off, alpha 8</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>${codeBlock('Foundation', [['JavaScript', FOUNDATION]])}</section>`;
+  KIT.forEach((c) => c.js(document.getElementById(c.id)));
+  box.addEventListener('click', async (e) => {
+    const tab = e.target.closest('.code .tabs [role="tab"]'), copy = e.target.closest('.code .copy');
+    if (tab) { const d = tab.closest('details'); d.querySelectorAll('[role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t === tab))); d.querySelectorAll('pre').forEach((p, i) => (p.hidden = i !== +tab.dataset.i)); }
+    if (copy) {
+      const pre = [...copy.closest('details').querySelectorAll('pre')].find((p) => !p.hidden);
+      try { await navigator.clipboard.writeText(pre.textContent); copy.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNodeContents(pre); getSelection().removeAllRanges(); getSelection().addRange(r); copy.textContent = 'Selected: press Ctrl+C'; }
+      setTimeout(() => (copy.textContent = 'Copy'), 1600);
+    }
+  });
+  // Settings bar
+  const b = document.body, store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+  [['ctl-look', 'look'], ['ctl-mode', 'mode'], ['ctl-motion', 'motion']].forEach(([id, key]) => {
+    const sel = document.getElementById(id), saved = store.get('kit-' + key);
+    if (key === 'mode' && !saved && matchMedia('(prefers-color-scheme: dark)').matches) sel.value = 'dark';
+    if (saved) sel.value = saved;
+    b.dataset[key] = sel.value;
+    sel.addEventListener('change', () => { b.dataset[key] = sel.value; store.set('kit-' + key, sel.value); kitApplyMotion(); document.dispatchEvent(new Event('kit-look')); });
+  });
+  kitApplyMotion();
+  document.dispatchEvent(new Event('kit-look'));
+})();
+</script>
+</body>
+</html>
