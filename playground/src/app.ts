@@ -41,6 +41,7 @@ import { installMap, type PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
+import { BETA } from './testplan';
 import { feedbackUrl, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
@@ -1606,6 +1607,7 @@ function commandList(): OpenEntry[] {
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
     c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
     c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
+    c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
     c("Link your game's folder (check paths against it)", '', 'game folder install directory exe path link pick', () => void pickFolder()),
     c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => window.open(feedbackUrl(), '_blank', 'noopener')),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
@@ -2058,6 +2060,20 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 });
 
 // Help test this beta (testplan.ts: BETA). Gone at the full release.
+// The previous release at previous/ (beta only; the Pages build adds it from previous.json), to compare: the same
+// code opens there through a share link. Its storage is separate, so nothing here is touched.
+let previousOk: Promise<boolean> | null = null;
+const hasPrevious = () => (previousOk ??= (window as any).claude || !BETA || location.protocol === 'file:'
+  ? Promise.resolve(false)
+  : fetch('previous/', { method: 'HEAD' }).then((r) => r.ok, () => false));
+async function openInPrevious() {
+  let id = '';
+  try { id = await encodeShare(editor.getValue()); } catch { /* old browser: open it empty */ }
+  window.open(`previous/${id ? '#' + id : ''}`, '_blank', 'noopener');
+  use('compare-previous');
+}
+void hasPrevious().then((ok) => { $('#tg-compare').hidden = !ok; });
+$('#tg-compare-btn').addEventListener('click', () => void openInPrevious());
 const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')]);
 
 // ---------------------------------------------------------------------------

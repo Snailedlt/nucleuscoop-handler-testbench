@@ -53,6 +53,19 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
           FEEDBACK_GOATCOUNTER: ${{ vars.FEEDBACK_GOATCOUNTER }} # anonymous votes (src/feedback.ts); empty: nothing is sent
         working-directory: playground
+      - name: The previous release at /previous/, for testers to compare (playground/previous.json; none, none built)
+        run: |
+          [ -f playground/previous.json ] || { echo "No previous.json: not building a previous version."; exit 0; }
+          bench=$(node -p "require('./playground/previous.json').bench")
+          core=$(node -p "require('./playground/previous.json').core")
+          label=$(node -p "require('./playground/previous.json').label")
+          git fetch -q --depth 1 origin "$bench"
+          git worktree add -q --detach "$RUNNER_TEMP/prev" "$bench"
+          git clone -q --filter=blob:none https://github.com/Snailedlt/splitscreenme-vscode.git "$RUNNER_TEMP/prev-core"
+          git -C "$RUNNER_TEMP/prev-core" -c advice.detachedHead=false checkout -q "$core"
+          (cd "$RUNNER_TEMP/prev-core" && npm ci --silent)
+          (cd "$RUNNER_TEMP/prev/playground" && npm ci --silent && node build.mjs --core "$RUNNER_TEMP/prev-core")
+          node tools/previous-wrap.mjs "$RUNNER_TEMP/prev/playground/dist/pages/index.html" playground/dist/pages/previous/index.html "$label"
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground

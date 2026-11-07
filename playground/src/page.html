@@ -1526,6 +1526,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .fp-item:hover .fp-del, .fp-del:focus-visible { opacity: 1; } .fp-del:hover { background: var(--surface-2); color: var(--err); }
 .fp-dir { padding: 4px 6px; color: var(--muted); font-size: 12.5px; display: flex; align-items: center; }
 .fp-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 4px 0; }
+.tg-compare { margin: 0 0 12px; padding: 8px 12px; border-radius: var(--r-ctl); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); font-size: 13.5px; }
 .fp-game { margin: 16px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
 .fp-game p { margin: 0 4px 8px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
 .fp-game .fp-gname { display: flex; align-items: center; gap: 6px; margin: 0 4px 8px; font: 600 13px var(--font-body); color: var(--fg); overflow-wrap: anywhere; }
@@ -1883,6 +1884,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 <dialog id="test-dialog" aria-labelledby="test-h">
   <h2 id="test-h">🧪 Help test this beta</h2>
   <p class="muted" style="margin:0 0 10px">Thanks for testing! Pick what fits you: each item says what to try, what kind of testing it is, and what to look for. Your ticks stay in this browser.</p>
+  <p class="tg-compare" id="tg-compare" hidden><span>⇄ This is a big update.</span> <button class="link" type="button" id="tg-compare-btn">Open this handler in the previous version</button> <span class="muted">to compare: what got better, what got worse, what you miss.</span></p>
   <div id="test-body"></div>
   <div class="actions"><button class="btn primary" type="button" id="test-close">Done</button></div>
 </dialog>
