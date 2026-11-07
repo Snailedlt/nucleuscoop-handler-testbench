@@ -99,6 +99,27 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
   .brand { order: -1; width: 100%; margin: 0 0 2px; } .ctl-open { margin-left: auto; }
   .scrim { position: fixed; inset: 0; z-index: 34; background: rgba(0, 0, 0, .4); }
 }
+
+/* Verdicts */
+.v-b { display: inline-block; vertical-align: middle; font: 700 11.5px/1 var(--k-font); padding: 4px 8px; border-radius: 999px; white-space: nowrap; letter-spacing: .01em; }
+.v-best { background: var(--k-accent); color: var(--k-accent-fg); }
+.v-good { border: 1px solid var(--k-line); color: var(--k-fg); background: var(--k-surface); }
+.v-maybe { border: 1px dashed var(--k-muted); color: var(--k-muted); }
+.glance-card.v-best-card { border-color: var(--k-accent); box-shadow: inset 0 0 0 1px var(--k-accent); }
+.glance-card.v-maybe-card { opacity: .8; }
+.glance-card b .v-b { margin-left: 4px; font-size: 10.5px; padding: 3px 6px; }
+.picks { padding: 14px; border-radius: var(--k-r-pane); background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface)); border: 1px solid color-mix(in srgb, var(--k-accent) 30%, var(--k-line)); }
+.picks .glance-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.picks-lead { margin: 0 0 10px; color: var(--k-muted); font-size: 14px; }
+.all-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 22px 0 0; }
+.all-h h3 { font: 700 13px/1 var(--k-font); letter-spacing: .06em; text-transform: uppercase; margin: 0; }
+.all-h label { font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.only-picks .glance-group:not(.picks) .glance-card:not([data-v="best"]) { display: none; }
+.only-picks .glance-group:not(.picks):not(:has(.glance-card[data-v="best"])) { display: none; }
+.comp .take { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: var(--k-surface-2); color: var(--k-fg); max-width: 80ch; font-size: 14px; }
+.comp.v-best-sec { border-color: var(--k-accent); box-shadow: inset 4px 0 0 var(--k-accent); }
+.side .star { color: var(--k-accent); font-size: 13px; }
+.side .mb { color: var(--k-muted); font-size: 11.5px; font-style: italic; }
 </style>
 <style id="kit-css"></style>
 </head>
@@ -130,7 +151,7 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
     <ul class="howto">
       <li><b>Find:</b> the list at the side (<b>Contents</b> on a phone; <kbd>/</kbd> to search), or the overview below.</li>
       <li><b>Try:</b> every demo works. Switch the look, light or dark, and Motion at the top.</li>
-      <li><b>Take:</b> open <b>View code</b> under a demo; <b>Copy</b> takes the tab you're on.</li>
+      <li><b>Take:</b> open <b>View code</b> under a demo; <b>Copy</b> takes the tab you're on. <a href="#install">Install</a> previews a future one-line install.</li>
     </ul>
     <h2 class="glance-h">At a glance</h2>
     <div id="glance"></div>
@@ -178,55 +199,121 @@ function kitShade(hex, f) { const n = parseInt(hex.slice(1), 16), c = [n >> 16, 
 const KIT_INK = '#1f2c46';
 let kitUid = 0;
 
-/** A face: eyes and mouth for a mood. Eyes sit in .k-eye groups (they blink). */
-function kitFace(mood, lx, rx, y, s, cls = '') {
-  const ink = KIT_INK, f = (v) => +v.toFixed(2);
-  const eye = (x) => {
-    if (mood === 'happy') return `<path d="M${f(x - 4.2 * s)} ${f(y + 1.2 * s)} q${f(4.2 * s)} ${f(-6 * s)} ${f(8.4 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.6 * s)}" stroke-linecap="round"/>`;
-    if (mood === 'sleep') return `<path d="M${f(x - 4.2 * s)} ${f(y - .6 * s)} q${f(4.2 * s)} ${f(4.4 * s)} ${f(8.4 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`;
-    const r = (mood === 'wow' ? 4.8 : 4.2) * s;
-    return `<g class="k-eye"><circle cx="${x}" cy="${y}" r="${f(r)}" fill="${ink}"/><circle cx="${f(x + 1.5 * s)}" cy="${f(y - 1.6 * s)}" r="${f(1.4 * s)}" fill="#fff"/></g>`;
-  };
-  const brows = mood === 'worried' ? `<path d="M${f(lx - 4 * s)} ${f(y - 8 * s)} l${f(7 * s)} ${f(-2.6 * s)} M${f(rx + 4 * s)} ${f(y - 8 * s)} l${f(-7 * s)} ${f(-2.6 * s)}" stroke="${ink}" stroke-width="${f(2 * s)}" stroke-linecap="round"/>`
-    : mood === 'focus' ? `<path d="M${f(lx - 4 * s)} ${f(y - 8.6 * s)} l${f(7 * s)} ${f(1.6 * s)} M${f(rx + 4 * s)} ${f(y - 8.6 * s)} l${f(-7 * s)} ${f(1.6 * s)}" stroke="${ink}" stroke-width="${f(2 * s)}" stroke-linecap="round"/>` : '';
-  const cx = (lx + rx) / 2, my = y + 9.5 * s;
-  const mouth = {
-    happy: `<path d="M${f(cx - 6 * s)} ${f(my - 1 * s)} q${f(6 * s)} ${f(8 * s)} ${f(12 * s)} 0 z" fill="${ink}"/>`,
-    wow: `<ellipse cx="${cx}" cy="${f(my + 1.5 * s)}" rx="${f(2.8 * s)}" ry="${f(3.4 * s)}" fill="${ink}"/>`,
-    worried: `<path d="M${f(cx - 5.5 * s)} ${f(my + 2 * s)} q${f(2.75 * s)} ${f(-3 * s)} ${f(5.5 * s)} 0 q${f(2.75 * s)} ${f(3 * s)} ${f(5.5 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.2 * s)}" stroke-linecap="round"/>`,
-    sleep: `<ellipse cx="${cx}" cy="${f(my + 1 * s)}" rx="${f(2 * s)}" ry="${f(1.7 * s)}" fill="${ink}"/>`,
-    focus: `<path d="M${f(cx - 4 * s)} ${f(my + 1 * s)} q${f(4 * s)} ${f(2 * s)} ${f(8 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.2 * s)}" stroke-linecap="round"/>`,
-  }[mood] || `<path d="M${f(cx - 5 * s)} ${f(my)} q${f(5 * s)} ${f(4.6 * s)} ${f(10 * s)} 0" fill="none" stroke="${ink}" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`;
-  return `<g class="k-face ${cls}">${brows}${eye(lx)}${eye(rx)}${mouth}</g>`;
+// ---- The detailed drawings (from the concept sheet, design/mascots): faces, eyes, mouths, shading ----
+const kitN1 = (v) => +v.toFixed(2);
+function kitEye(x, y, s, expr, ink, hl, side) {
+  let e;
+  const arc = (dy, flip) => `<path d="M${kitN1(x - 5 * s)} ${kitN1(y + dy * s)} q${kitN1(5 * s)} ${kitN1((flip ? 5 : -7) * s)} ${kitN1(10 * s)} 0" fill="none" stroke="${ink}" stroke-width="${kitN1(3 * s)}" stroke-linecap="round"/>`;
+  if (expr === 'happy' || (expr === 'wink' && side === 'l')) e = arc(1.5);
+  else if (expr === 'dizzy') { const r1 = 4.6 * s, r2 = 2.9 * s, r3 = 1.3 * s; e = `<path class="spiral" d="M${kitN1(x)} ${kitN1(y)} m${kitN1(-r1)} 0 a${kitN1(r1)} ${kitN1(r1)} 0 1 1 ${kitN1(r1)} ${kitN1(r1)} a${kitN1(r2)} ${kitN1(r2)} 0 1 1 ${kitN1(-r2)} ${kitN1(-r2)} a${kitN1(r3)} ${kitN1(r3)} 0 1 1 ${kitN1(r3)} ${kitN1(r3)}" fill="none" stroke="${ink}" stroke-width="${kitN1(1.9 * s)}" stroke-linecap="round"/>`; }
+  else if (expr === 'sleep') e = arc(-1, true);
+  else {
+    const r = (expr === 'wow' ? 6.3 : expr === 'worried' || expr === 'focus' ? 4.9 : 5.5) * s;
+    e = `<g class="k-eye"><circle cx="${x}" cy="${y}" r="${kitN1(r)}" fill="${ink}"/>${hl ? `<rect x="${kitN1(x + .4 * s)}" y="${kitN1(y - 3.6 * s)}" width="${kitN1(2.8 * s)}" height="${kitN1(2.8 * s)}" fill="${hl}"/><rect x="${kitN1(x - 2.6 * s)}" y="${kitN1(y + 1.2 * s)}" width="${kitN1(1.3 * s)}" height="${kitN1(1.3 * s)}" fill="${hl}" opacity=".8"/>` : ''}</g>`;
+  }
+  let brow = '';
+  const k = side === 'l' ? 1 : -1;
+  if (expr === 'worried') brow = `<path d="M${kitN1(x - 5 * s * k)} ${kitN1(y - 8.5 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(y - 11.5 * s)}" stroke="${ink}" stroke-width="${kitN1(2.4 * s)}" stroke-linecap="round"/>`;
+  if (expr === 'focus') brow = `<path d="M${kitN1(x - 5 * s * k)} ${kitN1(y - 10.5 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(y - 9.3 * s)}" stroke="${ink}" stroke-width="${kitN1(2.4 * s)}" stroke-linecap="round"/>`;
+  return `<g class="track"><g class="look look-${side}">${e}</g></g>${brow}`;
 }
+
+function kitMouth(cx, y, s, expr, ink) {
+  const S = (v) => kitN1(v * s);
+  switch (expr) {
+    case 'happy': return `<path d="M${kitN1(cx - 8 * s)} ${kitN1(y - 1 * s)} q${S(8)} ${S(12)} ${S(16)} 0 z" fill="${ink}" stroke="${ink}" stroke-width="${S(1.4)}" stroke-linejoin="round"/><ellipse cx="${cx}" cy="${kitN1(y + 4.6 * s)}" rx="${S(3.6)}" ry="${S(1.8)}" fill="#ff8fb1"/>`;
+    case 'wow': return `<ellipse cx="${cx}" cy="${kitN1(y + 2 * s)}" rx="${S(3.6)}" ry="${S(4.4)}" fill="${ink}"/>`;
+    case 'worried': return `<path d="M${kitN1(cx - 7 * s)} ${kitN1(y + 2 * s)} q${S(3.5)} ${S(-3.5)} ${S(7)} 0 q${S(3.5)} ${S(3.5)} ${S(7)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.6)}" stroke-linecap="round"/>`;
+    case 'sleep': return `<ellipse cx="${cx}" cy="${kitN1(y + 1.5 * s)}" rx="${S(2.6)}" ry="${S(2.2)}" fill="${ink}"/>`;
+    case 'focus': return `<path d="M${kitN1(cx - 5 * s)} ${kitN1(y + 1 * s)} q${S(5)} ${S(2.4)} ${S(10)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.6)}" stroke-linecap="round"/>`;
+    default: return `<path d="M${kitN1(cx - 6.5 * s)} ${y} q${S(6.5)} ${S(6)} ${S(13)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.9)}" stroke-linecap="round"/>`;
+  }
+}
+
+const kitBlush = (x, y, s, col = '#ff8fb1') => `<ellipse cx="${x}" cy="${y}" rx="${kitN1(5.6 * s)}" ry="${kitN1(3.2 * s)}" fill="${col}" opacity=".62"/>`;
+
+const KIT_LID = '#8b70fa';
+
+function kitNEye(x, y, s, expr, side, ink) {
+  const S = (v) => kitN1(v * s);
+  if (expr === 'happy' || expr === 'sleep' || expr === 'dizzy' || (expr === 'wink' && side === 'l')) return kitEye(x, y, s * 1.05, expr === 'wink' ? 'happy' : expr, ink, '#fff', side);
+  const cid = 'ne' + (++kitUid);
+  const rx = (expr === 'wow' ? 7.3 : expr === 'excited' ? 7 : 6.4) * s, ry = rx * 1.08;
+  const pr = (expr === 'wow' ? 2.3 : expr === 'excited' ? 3.6 : 3.1) * s;
+  const k = side === 'l' ? 1 : -1;
+  let lid = '', brow;
+  const squint = expr === 'focus' || (expr === 'inspect' && side === 'l');
+  if (squint) { const h = ry * (expr === 'inspect' ? .9 : .6); lid = `<rect x="${kitN1(x - rx - 1)}" y="${kitN1(y - ry - 1)}" width="${kitN1(rx * 2 + 2)}" height="${kitN1(h + 1)}" fill="${KIT_LID}"/><path d="M${kitN1(x - rx)} ${kitN1(y - ry + h)} H${kitN1(x + rx)}" stroke="${ink}" stroke-width="${S(1.6)}" stroke-linecap="round"/>`; }
+  const by = y - ry - 2.4 * s, sw = S(1.7);
+  if (expr === 'worried') brow = `M${kitN1(x - 5 * s * k)} ${kitN1(by + 1 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(by - 2.2 * s)}`;
+  else if (squint) brow = `M${kitN1(x - 5 * s * k)} ${kitN1(by - .6 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(by + 1.6 * s)}`;
+  else if (expr === 'wow' || expr === 'excited' || (expr === 'inspect' && side === 'r')) brow = `M${kitN1(x - 4.6 * s)} ${kitN1(by - 1.6 * s)} q${S(4.6)} ${S(-3.6)} ${S(9.2)} 0`;
+  else brow = `M${kitN1(x - 4.4 * s)} ${kitN1(by)} q${S(4.4)} ${S(-2.4)} ${S(8.8)} 0`;
+  return `<defs><clipPath id="${cid}"><ellipse cx="${x}" cy="${y}" rx="${kitN1(rx)}" ry="${kitN1(ry)}"/></clipPath></defs><g class="k-eye">
+    <ellipse cx="${x}" cy="${y}" rx="${kitN1(rx)}" ry="${kitN1(ry)}" fill="#fff"/>
+    <g clip-path="url(#${cid})"><g class="track"><g class="look look-${side}"><circle cx="${x}" cy="${kitN1(y + .3 * s)}" r="${kitN1(pr)}" fill="${ink}"/><circle cx="${kitN1(x + pr * .45)}" cy="${kitN1(y - pr * .4)}" r="${kitN1(pr * .38)}" fill="#fff"/>${expr === 'excited' ? `<circle cx="${kitN1(x - pr * .42)}" cy="${kitN1(y + pr * .45)}" r="${kitN1(pr * .22)}" fill="#fff"/>` : ''}</g></g>${lid}</g>
+    <ellipse cx="${x}" cy="${y}" rx="${kitN1(rx)}" ry="${kitN1(ry)}" fill="none" stroke="${ink}" stroke-width="${S(1.4)}"/></g><path d="${brow}" fill="none" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round"/>`;
+}
+
+const KIT_NMOUTH = { smile: 'focus', inspect: 'focus', excited: 'happy', dizzy: 'worried', attentive: 'smile', shy: 'smile' };
+
+function kitNFace(ex, ink = KIT_INK) {
+  const sp = ex === 'excited' ? `<path d="${'M40 46 l1.2 3 l3 1.2 l-3 1.2 l-1.2 3 l-1.2 -3 l-3 -1.2 l3 -1.2 z'}" fill="#ffd84a"/><path d="M82 46 l1.2 3 l3 1.2 l-3 1.2 l-1.2 3 l-1.2 -3 l-3 -1.2 l3 -1.2 z" fill="#ffd84a"/>` : '';
+  const bl = `<g opacity="${ex === 'excited' || ex === 'shy' ? 1 : .4}">${kitBlush(47, 65.5, .5, '#ffb3d9')}${kitBlush(73, 65.5, .5, '#ffb3d9')}</g>`;
+  return `${bl}${kitNEye(53, 57, .7, ex === 'shy' ? 'smile' : ex, 'l', ink)}${kitNEye(67, 57, .7, ex === 'shy' ? 'smile' : ex, 'r', ink)}${kitMouth(60, 66.5, .58, KIT_NMOUTH[ex] || ex, ink)}${sp}`;
+}
+
+/** The nucleus: a gradient ball, a shadow crescent, a rim light, a glint, a status light. */
+const kitNucCore = (g) => '<circle cx="60" cy="60" r="22" fill="url(#' + g + ')" stroke="#3c3fa8" stroke-width="2"/><path d="M78 49 A22 22 0 0 1 47 78 A26 26 0 0 0 78 49 Z" fill="#26288a" opacity=".26"/><path d="M38.6 63.5 Q60 71 81.4 63.5" fill="none" stroke="#3c3fa8" stroke-width="1.1" opacity=".4"/><path d="M42 50.5 A20 20 0 0 0 44 70" fill="none" stroke="#eef0ff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/><ellipse cx="51" cy="46" rx="6" ry="3.4" fill="#fff" opacity=".7" transform="rotate(-32 51 46)"/><circle class="led" cx="74.5" cy="44.5" r="2.3" fill="#55d137" stroke="#2c2f8a" stroke-width="1"/><circle cx="74" cy="44" r=".7" fill="#fff" opacity=".8"/>';
+
+/** Duo's drawn shading: a darker crescent, a rim light, glints (colours follow a player's tint). */
+const kitDuoShade = (sh = '#0b4fc2', rim = '#bfeaff') => '<path d="M88 46 A34 34 0 0 1 42 93 A38 38 0 0 0 88 46 Z" fill="' + sh + '" opacity=".26"/><path d="M34 44 A34 34 0 0 0 36 80" fill="none" stroke="' + rim + '" stroke-width="2.4" stroke-linecap="round" opacity=".75"/><circle cx="53" cy="33" r="1.7" fill="#fff" opacity=".8"/><circle cx="58.5" cy="31.6" r="1" fill="#fff" opacity=".7"/>';
+
 /** Two moods: the first shows, the second when an ancestor has .k-alt (a reaction, "done"). */
-const kitFaces = (moods, ...a) => kitFace(moods[0], ...a, 'k-fa') + (moods[1] ? kitFace(moods[1], ...a, 'k-fb') : '');
+const kitFaces = (moods, face) => face(moods[0], 'k-fa') + (moods[1] ? face(moods[1], 'k-fb') : '');
 
-/** Nucli, simple build: a flat nucleus, one shadow shape, three orbits, an electron per player (SMIL). */
+/** Nucli, the detailed drawing: a violet nucleus with shading and a status light, white eyes with pupils, three
+ *  faint orbits, an electron per player with a comet trail (SMIL). small: for 24 px and under (thicker orbits,
+ *  bigger eyes and electrons, no trails). crop: the face only, for knobs and pills. */
 function kitNucli({ moods = ['smile'], electrons = 4, orbits = true, label = '', small = false, attrs = '', crop = false } = {}) {
-  const id = 'kn' + (++kitUid), ORB = 'M112 60 A52 15.5 0 1 1 8 60 A52 15.5 0 1 1 112 60', w = small ? 3.4 : 1.8;
-  const half = (back) => `<path d="${back ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="#7f88ee" stroke-width="${w}" opacity="${back ? .35 : .75}" stroke-linecap="round"/>`;
+  const id = 'kn' + (++kitUid), g = id + 'g', ORB = 'M112 60 A52 15.5 0 1 1 8 60 A52 15.5 0 1 1 112 60';
+  const w = small ? 3.2 : 1.3, trails = !small && !crop;
+  const half = (back) => `<path d="${back ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="#7f88ee" stroke-width="${w}" opacity="${back ? (small ? .45 : .28) : (small ? .8 : .5)}" stroke-linecap="round"/>`;
   const els = [[0, 0, 0], [1, .34, 1], [2, .67, 2], [0, .5, 3]].slice(0, electrons);
-  const dot = ([k, ph, ci]) => { const d = +(4.6 * (1 + k * .18)).toFixed(2); return `<g><animateMotion dur="${d}s" begin="-${(ph * d).toFixed(2)}s" repeatCount="indefinite" path="${ORB}"/><circle r="${small ? 7.4 : 5.6}" fill="${KIT_PLAYERS[ci]}" stroke="#fff" stroke-width="1.6"/></g>`; };
-  const orbit = (k, front) => `<g transform="rotate(${k * 60} 60 60)">${half(!front)}<g${front ? ` clip-path="url(#${id})"` : ''}>${els.filter((e) => e[0] === k).map(dot).join('')}</g></g>`;
-  const ring = (front) => orbits ? [0, 1, 2].map((k) => orbit(k, front)).join('') : '';
-  const core = `<circle cx="60" cy="60" r="22" fill="#858ef0" stroke="#3c3fa8" stroke-width="${small ? 2.8 : 2}"/>${small ? '' : '<path d="M80.5 52 A22 22 0 0 1 52 80.5 A25 25 0 0 0 80.5 52 Z" fill="#5c62d6" opacity=".55"/>'}`;
+  const dot = (col) => small ? `<circle r="7.4" fill="${col}" stroke="#fff" stroke-width="1.6"/>` : `<circle r="5.2" fill="${col}" stroke="#fff" stroke-width="1.7"/><path d="M0 -3.2 V3.2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>`;
+  const one = ([k, ph, ci]) => {
+    const d = +(4.6 * (1 + k * .18)).toFixed(2), col = KIT_PLAYERS[ci];
+    const tr = trails ? [1, 2, 3].map((q) => `<circle r="${3.6 - q * .7}" fill="${col}" opacity="${.34 - q * .08}"><animateMotion dur="${d}s" begin="${(q * .07 - ph * d - d).toFixed(2)}s" repeatCount="indefinite" path="${ORB}"/></circle>`).join('') : '';
+    return `${tr}<g><animateMotion dur="${d}s" begin="-${(ph * d).toFixed(2)}s" repeatCount="indefinite" path="${ORB}"/>${dot(col)}</g>`;
+  };
+  const orbit = (k, front) => `<g transform="rotate(${k * 60} 60 60)">${half(!front)}<g${front ? ` clip-path="url(#${id})"` : ''}>${els.filter((e) => e[0] === k).map(one).join('')}</g></g>`;
+  const ring = (front) => orbits && !crop ? [0, 1, 2].map((k) => orbit(k, front)).join('') : '';
+  const core = small ? `<circle cx="60" cy="60" r="22" fill="url(#${g})" stroke="#3c3fa8" stroke-width="2.8"/><ellipse cx="51" cy="46" rx="6" ry="3.4" fill="#fff" opacity=".5" transform="rotate(-32 51 46)"/>` : kitNucCore(g);
+  const face = (m, cls) => `<g class="k-face ${cls}">${small ? `<g transform="translate(60 61) scale(1.3) translate(-60 -61)">${kitNFace(m)}</g>` : kitNFace(m)}</g>`;
   const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
-  return `<svg class="k-mascot k-nucli" viewBox="${crop ? '36 36 48 48' : '0 0 120 120'}" ${a11y} ${attrs}><defs><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath></defs><g class="k-float">${ring(false)}<g class="k-body">${core}${kitFaces(moods, 53, 67, 57, small ? 1.25 : .82)}</g>${ring(true)}</g></svg>`;
+  return `<svg class="k-mascot k-nucli" viewBox="${crop ? '36 36 48 48' : '0 0 120 120'}" ${a11y} ${attrs}><defs><radialGradient id="${g}" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#c9ceff"/><stop offset=".45" stop-color="#7f88ee"/><stop offset="1" stop-color="#4f55c8"/></radialGradient><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath></defs><g class="k-float">${ring(false)}<g class="k-body">${core}${kitFaces(moods, face)}</g>${ring(true)}</g></svg>`;
 }
 
-/** Duo, simple build: two blue halves with the white stripe between them, dot eyes, arms, feet. */
+/** Duo, the detailed drawing: a blue ball split by a white stripe, with drawn shading, a shine, arms and feet.
+ *  tint: a player's colour instead of splitscreen.me blue (one Duo per player). small: for 24 px and under (no arms
+ *  or feet, the ball 40 % bigger, bigger eyes). */
 function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, attrs = '', tint = '' } = {}) {
-  // tint: a player's colour instead of splitscreen.me blue (one Duo per player)
-  const id = 'kd' + (++kitUid), B = tint || '#2b8bff', A = tint ? kitShade(tint, -.16) : '#1f6fe6', F = tint ? kitShade(tint, -.32) : '#1858c4';
+  const id = 'kd' + (++kitUid), g = id + 'g';
+  const B1 = tint ? kitShade(tint, .3) : '#4ec1fc', B2 = tint || '#1c7bff', A1 = tint ? kitShade(tint, -.04) : '#43b5fb', A2 = tint ? kitShade(tint, -.14) : '#2483ff';
+  const F = tint ? kitShade(tint, -.32) : '#1858c4', SH = tint ? kitShade(tint, -.5) : '#0b4fc2', RIM = tint ? kitShade(tint, .65) : '#bfeaff';
   const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], hold: ['', 'rotate(-50 90 66)'] }[arms] || ['', ''];
-  const arm = (l) => small ? '' : `<g class="k-arm-${l ? 'l' : 'r'}"><g transform="${pose[l ? 0 : 1]}"><ellipse cx="${l ? 27 : 93}" cy="76" rx="5.8" ry="10.5" transform="rotate(${l ? 18 : -18} ${l ? 27 : 93} 76)" fill="${A}"/></g></g>`;
-  const half = (l) => `<path d="${l ? 'M60 28 A34 34 0 0 0 60 96 Z' : 'M60 28 A34 34 0 0 1 60 96 Z'}" fill="#fff"/><path d="${l ? 'M58.5 28.03 A34 34 0 0 0 58.5 95.97 Z' : 'M61.5 28.03 A34 34 0 0 1 61.5 95.97 Z'}" fill="${B}"/>`;
+  const armL = small ? '' : `<g class="k-arm-l"><g transform="${pose[0]}"><ellipse cx="27" cy="76" rx="5.8" ry="10.5" transform="rotate(18 27 76)" fill="${A1}"/></g></g>`;
+  const armR = small ? '' : `<g class="k-arm-r"><g transform="${pose[1]}"><ellipse cx="93" cy="76" rx="5.8" ry="10.5" transform="rotate(-18 93 76)" fill="${A2}"/></g></g>`;
+  // The white is the stripe: each half is white underneath and its blue stops 1.5 short of the cut.
+  const clip = (k, x, w) => `<clipPath id="${id}${k}"><rect x="${x}" y="0" width="${w}" height="120"/></clipPath>`;
+  const piece = (k, top = '') => `<circle cx="60" cy="62" r="34" fill="#fff" clip-path="url(#${id}w${k})"/><g clip-path="url(#${id}c${k})"><circle cx="60" cy="62" r="34" fill="url(#${g})"/>${small ? '' : kitDuoShade(SH, RIM)}${top}</g>`;
+  const shine = '<ellipse cx="44" cy="40" rx="9" ry="4.6" fill="#fff" opacity=".42" transform="rotate(-38 44 40)"/>';
+  const s = small ? 1.3 : 1;
+  const face = (m, cls) => `<g class="k-face ${cls}">${small ? '' : kitBlush(39, 70, 1) + kitBlush(81, 70, 1)}${kitEye(small ? 45 : 47, 58, s, m, KIT_INK, '#fff', 'l')}${kitEye(small ? 75 : 73, 58, s, m, KIT_INK, '#fff', 'r')}${kitMouth(60, small ? 71 : 69, s, m, KIT_INK)}</g>`;
+  const body = `<g class="k-half-l">${armL}${piece('l', shine)}</g><g class="k-half-r">${armR}${piece('r')}</g>${kitFaces(moods, face)}`;
   const feet = small ? '' : `<ellipse class="k-foot-l" cx="48" cy="99" rx="8.6" ry="4.6" fill="${F}"/><ellipse class="k-foot-r" cx="72" cy="99" rx="8.6" ry="4.6" fill="${F}"/>`;
-  const shine = small ? '' : '<ellipse cx="44" cy="40" rx="8" ry="4" fill="#fff" opacity=".35" transform="rotate(-38 44 40)"/>';
   const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
-  const body = `${arm(true)}${arm(false)}${half(true)}${half(false)}${shine}${kitFaces(moods, 47, 73, 58, small ? 1.4 : 1.15)}`;
-  return `<svg class="k-mascot k-duo" viewBox="0 0 120 120" ${a11y} ${attrs}><g class="k-jump">${feet}<g class="k-body">${small ? `<g transform="translate(60 62) scale(1.4) translate(-60 -62)">${body}</g>` : body}</g></g></svg>`;
+  return `<svg class="k-mascot k-duo" viewBox="0 0 120 120" ${a11y} ${attrs}><defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="30" y1="28" x2="92" y2="96"><stop offset="0" stop-color="${B1}"/><stop offset="1" stop-color="${B2}"/></linearGradient>${clip('wl', 0, 60.8)}${clip('cl', 0, 58.5)}${clip('wr', 60, 60)}${clip('cr', 61.5, 58.5)}</defs><g class="k-jump">${feet}<g class="k-body">${small ? `<g transform="translate(60 62) scale(1.4) translate(-60 -62)">${body}</g>` : body}</g></g></svg>`;
 }
 </script>
 
@@ -272,7 +359,7 @@ KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours for the two splitscreen
     draw(); document.addEventListener('kit-look', draw);
   } });
 
-KIT.push({ id: 'mascots', name: 'Mascots', about: 'Nucli and Duo as simple drawings (flat fills, one shadow, dot eyes), built in code. Moods: smile, happy, focus, worried, wow, sleep. A small build for 24 px and under. They float and blink; the electrons orbit.',
+KIT.push({ id: 'mascots', name: 'Mascots', about: 'Nucli and Duo, the detailed drawings from the concept sheet, built in code: gradients, drawn shading, white eyes with pupils, Nucli\'s comet-trail electrons. Moods: smile, happy, focus, worried, wow, sleep. A small build for 24 px and under (thicker orbits, bigger eyes, no trails), and a face-only crop for knobs and pills. They float and blink; the electrons orbit.',
   timing: 'Idle loops are slow (3.4 s float, a blink every 4.6 s). In "Default" they play for 5 s, then hold; loaders keep going.',
   html: `<span class="k-m" style="width:96px;height:96px" data-nucli></span>
 <span class="k-m" style="width:96px;height:96px" data-duo></span>
@@ -1161,17 +1248,79 @@ KIT.push({ id: 'skeleton', name: 'Skeleton', about: 'Before a list arrives, grey
 @media (prefers-reduced-motion: reduce) { .k-skel i::after { display: none; } }`,
   js: function setupSkeleton() {} });
 
+KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing could look like if this becomes a real library, in the style of shadcn/ui: a small command line copies a component\'s source into your project, where it\'s yours to change. <b>Nothing here exists yet</b>: "duo-nucli" is a placeholder name and the commands don\'t run. Until then, every section\'s <b>View code</b> is the way to take a piece.',
+  timing: 'Not a component: how adding one would work. Each section\'s View code has an Install tab with its own command.',
+  html: `<div class="k-install">
+  <div class="k-pm" role="tablist" aria-label="Package manager"><button role="tab" aria-selected="true" data-pm="npx">npm</button><button role="tab" aria-selected="false" data-pm="pnpm dlx">pnpm</button><button role="tab" aria-selected="false" data-pm="yarn dlx">yarn</button><button role="tab" aria-selected="false" data-pm="bunx">bun</button></div>
+  <ol class="k-install-steps">
+    <li><b>Set up once.</b> Adds the tokens (colours, corners, motion), the Motion setting and the two mascots.
+      <div class="k-cmd"><code data-cmd="duo-nucli@latest init"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
+    <li><b>Add what you need.</b> One or more components; the files they depend on come along.
+      <div class="k-cmd"><code data-cmd="duo-nucli@latest add progress-ring messages players"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
+    <li><b>Or the picks.</b> The seven components I'd build first.
+      <div class="k-cmd"><code data-cmd="duo-nucli@latest add --picks"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
+  </ol>
+  <div class="k-install-cols">
+    <figure><figcaption>What you get</figcaption><pre class="k-tree">src/ui/duo-nucli/
+├─ tokens.css         colours, corners, motion
+├─ motion.js          the Motion setting
+├─ mascots/
+│  ├─ nucli.js
+│  └─ duo.js
+├─ progress-ring/
+│  ├─ progress-ring.js
+│  └─ progress-ring.css
+├─ messages/          the bubble, and the toast fallback
+└─ players/</pre></figure>
+    <figure><figcaption>duo-nucli.json, written by init</figcaption><pre class="k-tree">{
+  "dir": "src/ui/duo-nucli",
+  "framework": "none",     // or "react", "svelte", "vue"
+  "look": "www",           // or "v3"
+  "motion": "default",
+  "mascots": "detailed"
+}</pre></figure>
+  </div>
+  <p class="k-install-note">Also planned: a CDN build for a page without a build step, <code>&lt;script src="…/duo-nucli.js"&gt;</code>, and the mascots alone as SVG and Lottie files.</p>
+</div>`,
+  css: `.k-install { width: 100%; min-width: 0; display: grid; gap: 12px; }
+.k-install > *, .k-install-steps li, .k-install-cols figure { min-width: 0; }
+.k-pm { display: flex; flex-wrap: wrap; gap: 4px; }
+.k-pm button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; }
+.k-pm button[aria-selected="true"] { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.k-pm button:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-install-steps { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+.k-cmd { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 6px 6px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); }
+.k-cmd code { flex: 1; min-width: 0; font: 13px ui-monospace, Consolas, monospace; overflow-x: auto; white-space: nowrap; }
+.k-cmd code::before { content: "$ "; opacity: .55; }
+.k-cmd .k-btn { flex: none; }
+.k-install-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.k-install-cols figure { margin: 0; }
+.k-install-cols figcaption { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.k-tree { margin: 0; padding: 10px 12px; border-radius: var(--k-r-ctl); background: var(--k-surface); border: 1px solid var(--k-line); font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
+.k-install-note { margin: 0; color: var(--k-muted); font-size: 14px; }`,
+  js: function setupInstall(root) {
+    const set = (pm) => { document.querySelectorAll('[data-cmd]').forEach((c) => (c.textContent = `${pm} ${c.dataset.cmd}`)); document.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.pm === pm))); };
+    root.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.addEventListener('click', () => set(b.dataset.pm)));
+    set('npx');
+    document.addEventListener('click', async (e) => {
+      const b = e.target.closest('.k-copy-cmd'); if (!b) return;
+      const code = b.parentElement.querySelector('code');
+      try { await navigator.clipboard.writeText(code.textContent); b.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNodeContents(code); getSelection().removeAllRanges(); getSelection().addRange(r); b.textContent = 'Selected'; }
+      setTimeout(() => (b.textContent = 'Copy'), 1600);
+    });
+  } });
+
 // The showcase: groups, an overview, navigation with the current section marked, each entry and its code.
 (() => {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitShade, kitFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
-    + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_PLAYERS8 = ${JSON.stringify(KIT_PLAYERS8)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitFaces = ${kitFaces.toString()};`;
+  const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitShade, kitEye, kitMouth, kitNEye, kitNFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
+    + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_PLAYERS8 = ${JSON.stringify(KIT_PLAYERS8)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitN1 = ${kitN1.toString()};\nconst kitBlush = ${kitBlush.toString()};\nconst KIT_LID = '${KIT_LID}';\nconst KIT_NMOUTH = ${JSON.stringify(KIT_NMOUTH)};\nconst kitNucCore = ${kitNucCore.toString()};\nconst kitDuoShade = ${kitDuoShade.toString()};\nconst kitFaces = ${kitFaces.toString()};`;
   KIT.push({ id: 'motion', name: 'Motion settings', about: 'The motion settings and the two mascots\' code, which every component uses. "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface\'s motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device\'s "reduce motion" always wins.',
     timing: 'Default for new users: "Default". Nothing that slows people down or covers content.',
     html: `<table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>`,
     css: '/* The rules for the Motion settings are in Tokens, at the end. */', js: function setupMotion() {}, code: [['JavaScript', FOUNDATION]] });
   const GROUPS = [
-    ['foundations', 'Foundations', 'Colours, motion and the two mascots everything is built on.', ['tokens', 'motion', 'mascots']],
+    ['foundations', 'Foundations', 'How you\'d install it, and the colours, motion and two mascots everything is built on.', ['install', 'tokens', 'motion', 'mascots']],
     ['brand', 'Brand', 'Where the mascots are the interface: headers, players, the moments people remember.', ['appbar', 'players', 'notfound']],
     ['actions', 'Actions', 'Things you press.', ['buttons']],
     ['inputs', 'Inputs', 'Things you set, type and choose.', ['toggles', 'slider', 'fields', 'menus']],
@@ -1181,7 +1330,7 @@ KIT.push({ id: 'skeleton', name: 'Skeleton', about: 'Before a list arrives, grey
     ['content', 'Content', 'Lists of things to open.', ['cards']],
   ];
   const SUM = {
-    tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
+    install: 'Preview: one command adds a component\'s source to your project.', tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
     buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'A Nucli knob, an electron check, Duos per player.', slider: '1 to 8 players: a Duo-ball handle, a Duo each.', fields: 'Nucli helps: concentrates, beams, worries.', tabs: 'An underline with weight; an electron rides it.', menus: 'Springs from its button; Nucli says the tooltip.', appbar: 'The mascot is the logo and the status light.', players: 'One Duo per player: they drop in and leave.', notfound: 'Duo looks around, Nucli checks the links.', stepper: 'Duo hops from step to step.', skeleton: 'Grey lines; an electron is the shimmer.',
     badges: 'Pills with Nucli\'s face; a counter that turns into him at zero.', toasts: 'The mascot says it next to what you clicked.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes and wakes; Duo waits for a game.',
     'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Player counts as Duos; they hop on hover.',
@@ -1189,6 +1338,7 @@ KIT.push({ id: 'skeleton', name: 'Skeleton', about: 'Before a list arrives, grey
   const mini = (svg) => `<span class="t-m">${svg}</span>`;
   const THUMB = {
     tokens: ['--k-accent', '--k-ok', '--k-err', '--k-p1', '--k-p2', '--k-p3', '--k-p4'].map((v) => `<i class="t-sw" style="background:var(${v})"></i>`).join(''),
+    install: '<span class="k-cmd" style="font-size:11px;padding:6px 10px"><code>npx duo-nucli add ring</code></span>',
     motion: ['All', 'Default', 'Calm', 'Still', 'Off'].map((v, i) => `<span class="t-btn${i === 1 ? ' p' : ''}">${v}</span>`).join(''),
     mascots: mini(kitNucli({ small: true })) + mini(kitDuo({ small: true })),
     buttons: '<span class="t-btn p">▶ Try it</span><span class="t-btn">Copy</span><span class="t-btn">↶ Undo</span>',
@@ -1212,19 +1362,53 @@ KIT.push({ id: 'skeleton', name: 'Skeleton', about: 'Before a list arrives, grey
     wait: '<span style="font-size:11.5px;display:grid;grid-template-columns:auto auto;gap:2px 8px;color:var(--k-muted)"><b>0.4 s</b><span>spinner</span><b>2 s</b><span>progress</span><b>10 s</b><span>time so far</span></span>',
     cards: ['--k-p1', '--k-p3'].map((v) => `<span class="t-box" style="width:64px;padding:4px"><i style="display:block;height:22px;border-radius:4px;background:var(${v})"></i><span style="display:flex">${[0, 1, 2].map((i) => `<span class="t-m" style="width:12px;height:12px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i] })}</span>`).join('')}</span></span>`).join(''),
   };
+  // My verdict on each idea: 'best' (my picks), 'good', 'maybe' (optional, or I'd leave it out).
+  const PICK = {
+    'progress-ring': ['best', 'The signature piece: the electrons are the progress, and it only moves when something happens.'],
+    'progress-bar': ['best', 'Duo pushing tells you more than a bar: you see a stall before you wonder about it.'],
+    toasts: ['best', 'The message where you acted, said by the mascot: on-brand and easier to notice than a corner toast.'],
+    players: ['best', 'One Duo per player is the brand\'s own idea: splitscreen means players. Reuse it everywhere players appear.'],
+    buttons: ['best', 'Small, everyday, and always exactly where you look. Cheap to build, felt on every click.'],
+    empty: ['best', 'Empty screens are where the mascots have room and time; the wake-up is the moment people remember.'],
+    wait: ['best', 'Not a look but a rule: no flashing loaders, and long waits say how long. Worth it everywhere.'],
+    appbar: ['good', 'The mascot as the status light is useful at a glance. Keep the hover hello small.'],
+    notfound: ['good', 'A good brand moment, and rare enough not to wear thin.'],
+    dialog: ['good', 'Duo\'s sign fits serious moments without making light of them.'],
+    banners: ['good', 'Escalating per run is the right rule; the faces carry the result.'],
+    stepper: ['good', 'Nice for a first setup; skip it where people go through steps often.'],
+    cards: ['good', 'Player counts as Duos read faster than the number. The hop on hover is optional.'],
+    skeleton: ['good', 'Subtle enough to stay on all the time.'],
+    slider: ['good', 'A natural home for the player Duos; the Duo-ball handle is a nice touch.'],
+    tabs: ['good', 'The electron is quiet branding that costs nothing.'],
+    toggles: ['good', 'The players picker is a pick. The Nucli knob and the check\'s electron are nice-to-haves.'],
+    badges: ['good', 'Nucli taking the counter\'s place at zero is a pick. Faces on the pills are optional: the colour and text already say it.'],
+    fields: ['maybe', 'The helper competes with the error message for attention. I\'d keep the shake and the message, and leave Nucli out.'],
+    menus: ['maybe', 'Tooltips should stay plain and fast; the menu\'s spring is enough.'],
+  };
+  const BADGE = { best: '★ My pick', good: 'Good', maybe: 'Maybe' };
+  const badge = (id) => PICK[id] ? `<span class="v-b v-${PICK[id][0]}">${BADGE[PICK[id][0]]}</span>` : '';
   const byId = Object.fromEntries(KIT.map((c) => [c.id, c]));
+  // The Install tab: what a future one-line install would be (a preview; nothing to install yet).
+  const installText = (id) => ['tokens', 'motion', 'mascots'].includes(id)
+    ? `# Preview only: no package exists yet ("duo-nucli" is a placeholder).\nnpx duo-nucli@latest init\n\n# Adds src/ui/duo-nucli/: tokens.css, motion.js, mascots/nucli.js, mascots/duo.js`
+    : `# Preview only: no package exists yet ("duo-nucli" is a placeholder).\nnpx duo-nucli@latest add ${id}\n\n# Adds src/ui/duo-nucli/${id}/ (${id}.js, ${id}.css)\n# Needs the foundations from "npx duo-nucli@latest init" (tokens, motion, mascots).\n# Until then: the HTML, CSS and JavaScript tabs are the whole component.`;
   document.getElementById('kit-css').textContent = KIT.map((c) => `/* ${c.name} */\n${c.css}`).join('\n\n');
   const codeBlock = (name, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code for ${name}">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => `<pre tabindex="0" aria-label="${n} of ${name}"${i ? ' hidden' : ''}><code>${esc(src)}</code></pre>`).join('')}</details>`;
   // Overview
-  document.getElementById('glance').innerHTML = GROUPS.map(([gid, gname, , ids]) => `<div class="glance-group"><h3>${gname}</h3><div class="glance-grid">${ids.map((id) => `<a class="glance-card" href="#${id}"><span class="thumb" aria-hidden="true">${THUMB[id]}</span><span class="txt"><b>${byId[id].name}</b><span class="sum">${SUM[id]}</span></span></a>`).join('')}</div></div>`).join('');
+  const card = (id, why) => `<a class="glance-card${PICK[id] ? ' v-' + PICK[id][0] + '-card' : ''}" href="#${id}" data-v="${PICK[id]?.[0] || 'base'}"><span class="thumb" aria-hidden="true">${THUMB[id]}</span><span class="txt"><b>${byId[id].name} ${badge(id)}</b><span class="sum">${why ? PICK[id][1] : SUM[id]}</span></span></a>`;
+  const picks = Object.keys(PICK).filter((id) => PICK[id][0] === 'best');
+  document.getElementById('glance').innerHTML = `<div class="glance-group picks"><h3>★ My picks</h3><p class="picks-lead">If you build only some of this, build these. Everything else is marked <span class="v-b v-good">Good</span> (worth having) or <span class="v-b v-maybe">Maybe</span> (optional, or I'd leave it out).</p><div class="glance-grid">${picks.map((id) => card(id, true)).join('')}</div></div>
+    <div class="all-h"><h3>Everything</h3><label class="auto"><input type="checkbox" id="only-picks"> Only my picks</label></div>`
+    + GROUPS.map(([gid, gname, , ids]) => `<div class="glance-group" data-g="${gid}"><h3>${gname}</h3><div class="glance-grid">${ids.map((id) => card(id)).join('')}</div></div>`).join('');
+  document.getElementById('only-picks').addEventListener('change', (e) => document.body.classList.toggle('only-picks', e.target.checked));
   // Sections, grouped
   document.getElementById('kit').innerHTML = GROUPS.map(([gid, gname, gabout, ids]) => `<h2 class="group-h" id="g-${gid}">${gname}</h2><p>${gabout}</p>` + ids.map((id) => {
     const c = byId[id];
-    return `<section class="comp" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name}<a class="up" href="#top">Back to overview ↑</a></h2><p>${c.about}</p><div class="demo">${c.html}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, c.code || [['HTML', c.html], ['CSS', c.css], ['JavaScript', c.js.toString()]])}</section>`;
+    return `<section class="comp${PICK[id] ? ' v-' + PICK[id][0] + '-sec' : ''}" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name} ${badge(id)}<a class="up" href="#top">Back to overview ↑</a></h2><p>${c.about}</p>${PICK[id] ? `<p class="take"><b>My take:</b> ${PICK[id][1]}</p>` : ''}<div class="demo">${c.html}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, [...(c.id === 'install' ? [] : [['Install', installText(c.id)]]), ...(c.code || [['HTML', c.html], ['CSS', c.css], ['JavaScript', c.js.toString()]])])}</section>`;
   }).join('')).join('');
   // Navigation
   const nav = document.getElementById('nav-groups');
-  nav.innerHTML = GROUPS.map(([gid, gname, , ids]) => `<h2 id="n-${gid}">${gname}</h2><ul aria-labelledby="n-${gid}">${ids.map((id) => `<li data-name="${byId[id].name.toLowerCase()}" data-words="${SUM[id].toLowerCase()}"><a href="#${id}">${byId[id].name}</a></li>`).join('')}</ul>`).join('');
+  nav.innerHTML = GROUPS.map(([gid, gname, , ids]) => `<h2 id="n-${gid}">${gname}</h2><ul aria-labelledby="n-${gid}">${ids.map((id) => `<li data-name="${byId[id].name.toLowerCase()}" data-words="${SUM[id].toLowerCase()}" data-v="${PICK[id]?.[0] || 'base'}"><a href="#${id}">${byId[id].name}${PICK[id]?.[0] === 'best' ? '<span class="star" aria-label="my pick">★</span>' : PICK[id]?.[0] === 'maybe' ? '<span class="mb">maybe</span>' : ''}</a></li>`).join('')}</ul>`).join('');
   const links = [...nav.querySelectorAll('a')];
   const filter = document.getElementById('nav-filter'), none = document.getElementById('nav-none');
   filter.addEventListener('input', () => {
