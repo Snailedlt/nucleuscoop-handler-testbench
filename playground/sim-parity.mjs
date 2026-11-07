@@ -50,7 +50,7 @@ const expected = fs.readFileSync(path.join(probesDir, 'expected.txt'), 'utf8').t
 let bad = 0;
 for (const e of expected) {
   const file = path.join(probesDir, e.name);
-  const r = simulate(fs.readFileSync(file, 'utf8'), opts, file);
+  const r = simulate(fs.readFileSync(file, "utf8"), opts);
   const p = r.players[0];
   const status = !r.loaded ? 'LOAD-FAIL' : !r.hasPlay ? 'LOADED' : r.players.some((x) => x.error) ? 'PLAY-FAIL' : 'OK';
   const value = status === 'OK' ? p.startArguments.trim() : null;
