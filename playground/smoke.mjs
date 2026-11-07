@@ -172,8 +172,8 @@ for (const theme of ['light', 'dark']) {
   if (chip) {
     await chip.click();
     await p.waitForTimeout(300);
-    check((await p.$$('#files-body details')).length > 0, `${theme}: the files dialog lists them`);
-    await axe(p, `${theme}, Files dialog`);
+    check((await p.$$('#files-panel .fp-open')).length > 1, `${theme}: the Files panel lists them`);
+    await axe(p, `${theme}, Files panel`);
     await p.keyboard.press('Escape');
   }
   check(!errors.length, `${theme}: no page errors${errors.length ? `: ${errors.join('; ')}` : ''}`);

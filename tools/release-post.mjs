@@ -1,8 +1,9 @@
 // The Discord post for a workbench update, from CHANGELOG.md (the newest dated section, or the one
 // named): a heading, up to three highlights (the bold summaries), the link and the thanks. The same
 // shape as the extension's (splitscreenme-vscode scripts/release-notes.mjs --discord).
-//   node tools/release-post.mjs [<section id, e.g. "2026-11-05 23:00">] [--json]
-// --json prints the webhook payload (a rich embed) instead of the text.
+//   node tools/release-post.mjs [<section id, e.g. "2026-11-05 23:00">] [--json | --notes | --tag]
+// --json prints the webhook payload (a rich embed) instead of the text; --notes the whole section as GitHub
+// release notes (images as absolute links); --tag the release tag (workbench-2026-11-05, workbench-2026-11-05-2300).
 // pages.yml runs it after a deploy whose newest section the live site didn't have yet.
 import fs from 'node:fs';
 
@@ -28,6 +29,18 @@ const thanks = thanksPart
   .split('\n')
   .map((l) => l.match(/^- \*\*(.+?)\*\*/)?.[1]?.replace(/^\[([^\]]+)\]\([^)]+\)$/, '$1'))
   .filter(Boolean);
+const id = part.split('\n')[0].trim();
+if (process.argv.includes('--tag')) {
+  console.log(`workbench-${id.replace(/[ :]/g, (c) => (c === ' ' ? '-' : ''))}`);
+  process.exit(0);
+}
+if (process.argv.includes('--notes')) {
+  // The section as it is in CHANGELOG.md, with its images pointing at the repository, and links to try it.
+  const RAW = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/main/';
+  const notes = body.trim().replace(/\]\((docs\/[^)\s]+)\)/g, (_, path) => `](${RAW}${path})`);
+  console.log(`${notes}\n\n---\n\n**Try it:** [open the workbench](${SITE}) · [What's new](${SITE}#whats-new) · [what it is](${SITE}start/)`);
+  process.exit(0);
+}
 if (process.argv.includes('--json')) {
   // A rich embed, so the workbench's posts look different from the extension's
   // (splitscreenme-vscode scripts/release-notes.mjs --discord --json): its own name, icon, colour.

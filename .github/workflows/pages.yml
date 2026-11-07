@@ -85,6 +85,10 @@ jobs:
     needs: build
     if: needs.build.outputs.deploy == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # the GitHub release with the update's notes
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -105,3 +109,17 @@ jobs:
           node tools/release-post.mjs "$RELEASE" --json > post.json
           node tools/announce.mjs post.json
           { echo "### 💬 Workbench update ($RELEASE)"; echo; echo '```text'; cat post.txt; echo '```'; echo; if [ -n "${{ secrets.DISCORD_WEBHOOKS != '' && 'yes' || '' }}" ]; then echo "Posted to Discord automatically (DISCORD_WEBHOOKS)."; else echo "Not posted: add a DISCORD_WEBHOOKS secret (one webhook URL per line) to post it automatically."; fi; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish the update as a GitHub release (the same notes as What's new)
+        if: needs.build.outputs.release != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ needs.build.outputs.release }}
+        run: |
+          tag=$(node tools/release-post.mjs "$RELEASE" --tag)
+          node tools/release-post.mjs "$RELEASE" --notes > notes.md
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists."
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --title "Workbench update · $RELEASE" --notes-file notes.md --latest
+            echo "Published the GitHub release $tag." >> "$GITHUB_STEP_SUMMARY"
+          fi

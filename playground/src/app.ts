@@ -35,6 +35,8 @@ import { initMessageHints } from './wmhints';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
 import { mountFormView, type FormView } from './formview';
+import { initPackageUI, fileIcon } from './packageui';
+import { installMap, type PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
@@ -185,6 +187,9 @@ let currentText = '';
 // The game's folder, if the author picked one for this tab (gamefolder.ts): only names and sizes, kept in this page.
 let gameFolder: GameFolder | null = null;
 let folderProblems: FolderProblem[] = [];
+// The package's own problems (pkgcheck.ts) and its UI (packageui.ts).
+let pkgProblems: PkgProblem[] = [];
+let pkgUI: ReturnType<typeof initPackageUI> | null = null;
 // Problems-panel state; declared before the editor because it lints as soon as it is created.
 let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
 let problemIndex = -1;
@@ -274,6 +279,7 @@ const editor = CodeMirror($('#editor'), {
         current = r.diagnostics;
         currentText = text;
         folderProblems = gameFolder ? checkAgainstFolder(text, gameFolder) : [];
+        pkgProblems = pkgUI ? pkgUI.problems() : [];
         setFixCount(r.fixable);
         renderProblems(text);
         if (formView && viewMode === 'form') formView.refresh();
@@ -287,6 +293,7 @@ const editor = CodeMirror($('#editor'), {
               severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
             })),
           ...folderProblems.map((f) => ({ from: posAt(text, f.start), to: posAt(text, Math.max(f.end, f.start + 1)), message: `${f.title}. ${f.why}`, severity: f.severity })),
+          ...pkgProblems.filter((f) => f.start !== undefined).map((f) => ({ from: posAt(text, f.start!), to: posAt(text, Math.max(f.end!, f.start! + 1)), message: `${f.title}. ${f.why}`, severity: f.severity })),
         ];
       }),
     delay: 250,
@@ -599,14 +606,24 @@ function showSignature() {
 // Problems that aren't the linter's: the code against the picked game folder (and the package's files).
 function renderExtraProblems(text: string) {
   const box = $('#extra-problems');
-  const list = folderProblems.filter((f) => mode === 'dev' || f.severity !== 'info' || true);
-  box.hidden = !list.length;
-  if (!list.length) return void (box.innerHTML = '');
-  box.innerHTML = `<li class="xp-h" role="presentation">Against the game folder <span class="muted">· ${esc(gameFolder?.name ?? '')}</span></li>` + list.map((f, i) => {
+  const list = folderProblems;
+  const pk = pkgProblems;
+  box.hidden = !list.length && !pk.length;
+  if (!list.length && !pk.length) return void (box.innerHTML = '');
+  const pkHtml = pk.length ? `<li class="xp-h" role="presentation">In the package <span class="muted">· ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'} besides handler.js</span></li>` + pk.map((f, i) => {
+    const where = f.file ? `<button class="loc" type="button" data-xopen="${esc(f.file)}"${f.line ? ` data-xline="${f.line}"` : ''}>${fileIcon(f.file)}${esc(f.file.split('/').pop()!)}${f.line ? `:${f.line}` : ''}</button>` : f.start !== undefined ? `<button class="loc" type="button" data-xjump="${f.start}">Line ${lineOf(text, f.start) + 1}</button>` : '';
+    return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b">${where} <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-pfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
+  }).join('') : '';
+  box.innerHTML = pkHtml + (!list.length ? '' : `<li class="xp-h" role="presentation">Against the game folder <span class="muted">· ${esc(gameFolder?.name ?? '')}</span></li>` + list.map((f, i) => {
     const line = lineOf(text, f.start) + 1;
     return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b"><button class="loc" type="button" data-xjump="${f.start}">Line ${line}</button> <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-xfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
-  }).join('');
+  }).join(''));
   box.querySelectorAll<HTMLButtonElement>('[data-xjump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.xjump))));
+  box.querySelectorAll<HTMLButtonElement>('[data-xopen]').forEach((b) => b.addEventListener('click', () => pkgUI?.openFile(b.dataset.xopen!, b.dataset.xline ? Number(b.dataset.xline) : undefined)));
+  box.querySelectorAll<HTMLButtonElement>('[data-pfix]').forEach((b) => b.addEventListener('click', () => {
+    const fx = pk[Number(b.dataset.pfix)].fix!;
+    if (fx.kind === 'move') pkgUI?.moveFile(fx.from, fx.to);
+  }));
   box.querySelectorAll<HTMLButtonElement>('[data-xfix]').forEach((b) => b.addEventListener('click', () => {
     const fx = list[Number(b.dataset.xfix)].fix!;
     editor.replaceRange(fx.text, editor.posFromIndex(fx.start), editor.posFromIndex(fx.end));
@@ -860,6 +877,7 @@ $('#ps-text').addEventListener('click', () => stripStep(0));
 
 function jumpTo(offset: number) {
   if (narrow()) setView('code');
+  if (pkgUI?.active()) pkgUI.showHandler();
   const p = editor.posFromIndex(offset);
   editor.setCursor(p);
   editor.scrollIntoView(p, 80);
@@ -934,6 +952,11 @@ function runSim() {
   if (r.ignored.length) {
     const uniq = groupIgnored(r.ignored);
     out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
+  }
+  // A package: what a Hub install puts where (pkgcheck.ts installMap).
+  if (packageFiles.length) {
+    const map = installMap(editor.getValue(), packageFiles);
+    out.push(`<details class="install"${simple ? '' : ' open'}><summary>What Nucleus installs <span class="count">${map.length}</span></summary><div class="install-map">${map.map((m) => `<span>${fileIcon(m.name)}${esc(m.name)}</span><span aria-hidden="true">${m.to ? '→' : '✕'}</span><span class="im-to${m.to ? '' : ' im-drop'}">${m.to ? esc(m.to) : 'dropped (top level)'}</span>`).join('')}</div></details>`);
   }
   for (const p of r.players) {
     const ownKb = p.index === kb || kb === -2; // -2: each player their own keyboard and mouse
@@ -1247,6 +1270,7 @@ function loadSource(src: string, meta: DocMeta) {
   document.documentElement.classList.remove('busy'); // a Test all of the last handler no longer runs
   packageFiles = [];
   storeFiles([]);
+  pkgUI?.reset();
   editor.setValue(src);
   editor.clearHistory();
   loadedText = src;
@@ -1311,6 +1335,7 @@ function switchTab(id: string) {
   x.cm = editor.getDoc();
   gameFolder = x.folder ?? null;
   afterFolderChange();
+  pkgUI?.reset();
   if (doc.hash) history.replaceState(null, '', '#' + doc.hash);
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   clearNotice();
@@ -1360,7 +1385,7 @@ function renderTabs() {
   const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
   $('#htabs').innerHTML = tabs.map((x) => {
     const on = x.id === activeTab, c = on ? live : x.counts, name = on ? doc.name : x.meta.name, files = on ? packageFiles.length : x.files.length;
-    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}</span></button>${tabs.length > 1 ? `<button type="button" class="ht-x" data-close="${x.id}" tabindex="-1" aria-label="Close ${esc(name)}">×</button>` : ''}</span>`;
+    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}${tabs.length > 1 ? '. Delete closes it' : ''}</span>${tabs.length > 1 ? `<span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span>` : ''}</button></span>`;
   }).join('');
 }
 function initTabs() {
@@ -1445,7 +1470,7 @@ function openFilesDialog() {
   filesDialog.showModal();
 }
 document.addEventListener('click', (e) => {
-  if ((e.target as HTMLElement).closest?.('#files-open')) openFilesDialog();
+  if ((e.target as HTMLElement).closest?.('#files-open')) { if ($('#files-panel').hidden) ($('#files-toggle') as HTMLButtonElement).click(); }
 });
 $('#files-close').addEventListener('click', () => filesDialog.close());
 
@@ -2014,6 +2039,7 @@ let viewMode: 'code' | 'form' = (() => { try { return localStorage.getItem(VIEW_
 let formView: FormView | null = null;
 function setViewMode(m: 'code' | 'form') {
   viewMode = m;
+  pkgUI?.deselect();
   try { localStorage.setItem(VIEW_KEY, m); } catch { /* ignore */ }
   document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.viewMode === m)));
   $('#editor').hidden = m === 'form';
@@ -2035,6 +2061,13 @@ function setViewMode(m: 'code' | 'form') {
 document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.addEventListener('click', () => setViewMode(b.dataset.viewMode as 'code' | 'form')));
 editor.on('swapDoc', () => formView?.refresh());
 setViewMode(viewMode);
+pkgUI = initPackageUI({
+  editor,
+  getFiles: () => packageFiles,
+  setFiles: (files) => { packageFiles = files; storeFiles(files); renderDocHead(); if (tabsReady) saveTabs(); },
+  showMain: () => setViewMode(viewMode),
+  changed: () => { pkgProblems = pkgUI!.problems(); (editor as any).performLint(); },
+});
 
 // ---------------------------------------------------------------------------
 // Header menus, the side rail and the layout (Settings › General › Layout)

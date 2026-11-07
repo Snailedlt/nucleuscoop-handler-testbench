@@ -183,6 +183,7 @@ const FEATURES_ = T('Feature', [
   { id: 'f-rail', text: 'Want more room for code? Settings › General › Layout › Side rail puts the tools in a strip on the left.' },
   { id: 'f-gamefolder', text: 'Pick the game folder (above the code) and the workbench checks the executable and file lists against the real files. Only names are read, in your browser.' },
   { id: 'f-form', text: 'Prefer switches over code? Form, above the code, shows the options as a form; every change edits the code.' },
+  { id: 'f-files', text: 'A handler with extra files (ini, dlls…)? Files, above the code, shows the package as Nucleus installs it; open its text files in tabs, and drop files on it to add them.' },
   { id: 'f-swipe', text: 'Done with a note at the bottom right? Swipe it away to the right, or hover the stack to read them all.' },
   { id: 'f-gutter', text: 'Click a marker next to a line number for that line’s problems and fixes.' },
   { id: 'f-hub', text: 'The examples include the most-downloaded verified Hub handlers. Check and Try it work on them, so you can see how others solved a problem.', action: { label: 'Examples', run: 'examples' } },
