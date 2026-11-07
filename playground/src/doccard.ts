@@ -1,7 +1,7 @@
 // The docs of an API member as a card: a coloured signature (owner dim, name bold, parameters and types in their own
 // colours), the description, small facts (default, read-only, required, category), an example, and, for docs Claude
 // wrote, a footer saying so and what they're based on. Used by the hover card and the Reference tab.
-import { withContext } from './report';
+import { appNote, withContext } from './report';
 import { claudeNote, docReviewUrl, ownerLabel, type Member } from '@core/api';
 import { voteButtons } from './feedback';
 import { hlHtml } from './codehl';
@@ -30,6 +30,6 @@ export function memberCard(owner: string, name: string, m: Member, opts: { head?
     + (m.example ? `<pre class="doc-code">${esc(m.example)}</pre>` : '')
     + (facts.length ? `<div class="dc-facts">${facts.join('')}</div>` : '')
     + (note ? `<div class="dc-ai" title="${esc(note)}"><span class="ai-spark" aria-hidden="true"></span><span>${m.docCheckedBy ? `AI-written, checked by ${esc(m.docCheckedBy)}${m.docCheckedOn ? ` on ${esc(m.docCheckedOn)}` : ''}.` : 'AI-written, not from the official docs.'} Based on ${esc(m.docBasis ?? '')}.</span></div>`
-      + `<div class="dc-check"><span>Is this right?</span>${voteButtons('doc', `${label}.${name}`, { up: 'Correct', down: 'Wrong or unclear' })}<a href="${esc(withContext(docReviewUrl(`${label}.${name}`), { Doc: `${label}.${name}` }))}" target="_blank" rel="noopener">Tell us what's wrong</a></div>` : '')
+      + `<div class="dc-check"><span>Is this right?</span>${voteButtons('doc', `${label}.${name}`, { up: 'Correct', down: 'Wrong or unclear' })}<a href="${esc(withContext(docReviewUrl(`${label}.${name}`), { Doc: `${label}.${name}` }))}" target="_blank" rel="noopener">Tell us what's wrong</a>${appNote()}</div>` : '')
     + `</div>`);
 }

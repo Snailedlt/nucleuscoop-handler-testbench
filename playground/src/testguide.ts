@@ -6,7 +6,7 @@
 // Each item has what to try, what to look for, a "Tried it" tick kept in this browser, and a Report link that opens
 // the tester feedback form filled in (report.ts).
 import { mascot } from './mascots';
-import { feedbackUrl } from './report';
+import { appNote, feedbackUrl } from './report';
 import { totalsUrl } from './feedback';
 import { AREAS, BETA, EFFORT, fit, KINDS, priority, TEST_PLAN, type Coding, type NucleusKnow, type Profile, type TestItem } from './testplan';
 
@@ -87,7 +87,7 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
     const rest = TEST_PLAN.filter((t) => score(t, p) < 3).sort((a, z) => score(z, p) - score(a, p) || rank(z) - rank(a));
     const tried = mine.filter((t) => done.has(t.id)).length;
     const c = CODING.find((o) => o.v === p.coding)!, n = NUCLEUS.find((o) => o.v === p.nucleus)!;
-    body.innerHTML = `<div class="tg-you"><span>You: <b>${c.icon} ${esc(c.label)}</b> · <b>${n.icon} ${esc(n.label)}</b></span><button class="link" type="button" id="tg-change">Change</button></div>
+    body.innerHTML = `<div class="tg-you"><span>You: <b>${c.icon} ${esc(c.label)}</b> · <b>${n.icon} ${esc(n.label)}</b></span><button class="link" type="button" id="tg-change">Change</button></div>${appNote() ? `<p class="small">${appNote()}</p>` : ''}
       <h3 class="tg-h" tabindex="-1">Recommended for you <span class="muted">· quickest and most needed first · ${tried} of ${mine.length} tried</span></h3>
       <ol class="tg-list">${mine.map(item).join('')}</ol>
       <details class="tg-more"><summary>Everything else (${rest.length})</summary><ol class="tg-list">${rest.map(item).join('')}</ol></details>

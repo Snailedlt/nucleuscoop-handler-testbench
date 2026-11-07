@@ -1,3 +1,4 @@
+import { toast } from './toast';
 // Feedback links (the tester feedback and doc review issue forms) filled in with what the workbench knows: the build,
 // browser, screen, settings, the open handler (by name and source, never its code), the tester profile and the test
 // item. It goes in the form's "Details from the workbench" field with a checksum. GitHub can't lock a field, so the
@@ -51,6 +52,18 @@ export function reportContext(extra: Record<string, string | undefined> = {}): s
 }
 
 const FORM = 'https://github.com/Snailedlt/splitscreenme-vscode/issues/new';
+/** Phones and tablets only: the GitHub app can catch github.com links, and it opens a blank issue: no form, no details. */
+const onPhone = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+export const GH_APP_NOTE = 'Opens GitHub. Use your browser, not the GitHub app: the app leaves out the form and its details.';
+/** The note under a report link, on phones only (empty elsewhere). */
+export function appNote(): string {
+  return onPhone() ? `<span class="gh-app-note">${GH_APP_NOTE}</span>` : '';
+}
+/** Opens a report form; on phones the note shows first, so it's there when the tester comes back. */
+export function openReport(url: string): void {
+  if (onPhone()) toast(GH_APP_NOTE, { kind: 'info' });
+  window.open(url, '_blank', 'noopener');
+}
 /** The tester feedback form, filled in. */
 export function feedbackUrl(opts: { title?: string; test?: string } = {}): string {
   const s = state();
