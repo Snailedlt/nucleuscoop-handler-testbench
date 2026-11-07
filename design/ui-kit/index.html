@@ -16,19 +16,7 @@
 /* ---------- The page around the kit (not part of the kit) ---------- */
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--k-bg); color: var(--k-fg); font: 15px/1.55 var(--k-font); }
-.page { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
-.page h1, .page h2 { font-family: Fredoka, var(--k-font); font-weight: 600; line-height: 1.15; margin: 0; }
-.page h1 { font-size: clamp(28px, 6vw, 42px); }
-.page h2 { font-size: 24px; margin: 0 0 4px; }
 .lead { color: var(--k-muted); max-width: 74ch; }
-.bar-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--k-bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--k-line); }
-.bar-top .in { max-width: 1180px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: center; }
-.bar-top label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
-.bar-top b { font-family: Fredoka, var(--k-font); font-weight: 600; margin-right: auto; }
-.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 8px; padding: 0; list-style: none; }
-.toc a { display: inline-block; font-size: 13.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--k-line); color: var(--k-fg); text-decoration: none; }
-.toc a:hover { border-color: var(--k-accent); }
-.toc a:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
 .comp { background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); padding: 16px; margin-top: 16px; scroll-margin-top: 64px; }
 .comp > p { color: var(--k-muted); margin: 2px 0 10px; max-width: 80ch; }
 .comp .timing { font-size: 13.5px; color: var(--k-muted); border-left: 3px solid var(--k-accent); padding: 2px 0 2px 10px; margin: 10px 0 0; }
@@ -50,24 +38,105 @@ body { margin: 0; background: var(--k-bg); color: var(--k-fg); font: 15px/1.55 v
 .motion-table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--k-surface); border-radius: 8px; }
 .motion-table th, .motion-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--k-line); }
 footer { margin-top: 40px; color: var(--k-muted); font-size: 13px; }
+/* ---------- Layout and navigation (the page, not the kit) ---------- */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: 8px; top: -40px; z-index: 40; padding: 6px 12px; background: var(--k-accent); color: var(--k-accent-fg); border-radius: 6px; }
+.skip:focus { top: 8px; }
+.bar-top { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--k-bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--k-line); }
+.bar-top .in { max-width: 1360px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; }
+.brand { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 17px; color: var(--k-fg); text-decoration: none; margin-right: auto; }
+.ctls { display: flex; gap: 8px 14px; flex-wrap: wrap; }
+.ctls label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.k-select { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); }
+.k-select:focus-visible, .brand:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.nav-open { display: none; font: inherit; font-size: 14px; padding: 5px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; }
+.nav-open:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.layout { max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; padding: 0 16px; }
+.side { position: sticky; top: 54px; align-self: start; height: calc(100vh - 54px); overflow: auto; padding: 16px 4px 24px 0; }
+.filter input { width: 100%; font: inherit; font-size: 14px; padding: 6px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); }
+.filter input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 1px; }
+.side-top { display: block; margin: 12px 0 4px; font-weight: 600; color: var(--k-fg); text-decoration: none; padding: 4px 8px; border-radius: 6px; }
+.side h2 { font: 700 11.5px/1 var(--k-font); letter-spacing: .06em; text-transform: uppercase; color: var(--k-muted); margin: 16px 8px 6px; }
+.side ul { list-style: none; margin: 0; padding: 0; }
+.side li a { display: flex; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; color: var(--k-fg); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+.side :is(li a, .side-top):hover { background: var(--k-surface-2); }
+.side :is(li a, .side-top):focus-visible { outline: 2px solid var(--k-accent); outline-offset: -2px; }
+.side li a[aria-current="true"] { border-left-color: var(--k-accent); background: var(--k-surface-2); font-weight: 600; }
+.side-none { color: var(--k-muted); font-size: 14px; margin: 12px 8px; }
+.page { min-width: 0; padding: 22px 0 64px; }
+.page h1 { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: clamp(28px, 6vw, 40px); margin: 0; }
+.howto { color: var(--k-muted); padding-left: 18px; margin: 6px 0 0; }
+.howto b { color: var(--k-fg); }
+kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1px solid var(--k-line); border-bottom-width: 2px; border-radius: 4px; background: var(--k-surface); color: var(--k-fg); }
+.glance-h, .group-h { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 26px; margin: 34px 0 4px; }
+.glance-group { margin-top: 14px; }
+.glance-group h3 { font: 700 12px/1 var(--k-font); letter-spacing: .06em; text-transform: uppercase; color: var(--k-muted); margin: 0 0 8px; }
+.glance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr)); gap: 10px; }
+.glance-card { display: grid; grid-template-rows: 76px auto; border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); color: var(--k-fg); text-decoration: none; overflow: hidden; transition: transform var(--k-quick) var(--k-out), border-color var(--k-quick), box-shadow var(--k-quick); }
+.glance-card:hover { transform: translateY(-2px); border-color: var(--k-accent); box-shadow: var(--k-shadow); }
+.glance-card:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.glance-card .thumb { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 8px; background: var(--k-surface-2); pointer-events: none; overflow: hidden; }
+.glance-card .txt { padding: 8px 10px 10px; }
+.glance-card b { display: block; font-size: 14.5px; }
+.glance-card span.sum { display: block; font-size: 12.5px; color: var(--k-muted); line-height: 1.4; }
+.group-h { scroll-margin-top: 64px; padding-top: 6px; border-top: 1px solid var(--k-line); margin-top: 44px; }
+.group-h + p { color: var(--k-muted); margin: 0; }
+.comp h2 { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 21px; margin: 0 0 4px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.comp h2 a.up { margin-left: auto; font: 13px var(--k-font); color: var(--k-accent); }
+/* Thumbnails: tiny static pictures of each component. */
+.t-sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--k-line); }
+.t-btn { font-size: 12px; padding: 3px 9px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); }
+.t-btn.p { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.t-line { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--k-fg) 18%, transparent); }
+.t-box { border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); background: var(--k-surface); padding: 6px 8px; display: grid; gap: 4px; }
+.t-m { width: 46px; height: 46px; display: inline-block; line-height: 0; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .nav-open { display: inline-block; }
+  .side { display: none; position: fixed; z-index: 35; inset: 0 auto 0 0; top: 0; width: min(300px, 86vw); height: 100vh; background: var(--k-surface); border-right: 1px solid var(--k-line); padding: 16px; box-shadow: var(--k-shadow); }
+  .side.open { display: block; }
+  .ctls { display: none; width: 100%; padding: 4px 0 6px; } .ctls.open { display: flex; }
+  .brand { order: -1; width: 100%; margin: 0 0 2px; } .ctl-open { margin-left: auto; }
+  .scrim { position: fixed; inset: 0; z-index: 34; background: rgba(0, 0, 0, .4); }
+}
 </style>
 <style id="kit-css"></style>
 </head>
 <body class="kit" data-look="www" data-mode="light" data-motion="default">
-<div class="bar-top"><div class="in">
-  <b>Duo and Nucli UI kit</b>
-  <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option><option value="mac">Mac style</option><option value="alpha8">Nucleus Co-op alpha 8</option></select></label>
-  <label>Mode <select id="ctl-mode" class="k-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
-  <label>Motion <select id="ctl-motion" class="k-select"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label>
-</div></div>
-<main class="page">
-  <h1>Duo and Nucli UI kit</h1>
-  <p class="lead">A complete set of interface pieces that move the way the mascots do: springs that overshoot a little, a squash on impact, a hold, then a snap. It's a showcase: every piece is plain HTML, CSS and JavaScript, and "View code" shows exactly what runs on this page. Use it as it is, or rebuild it in your own UI library; keep the tokens and the timing notes.</p>
-  <p class="lead">Try the looks, light and dark, and the Motion setting at the top. With "Still", or when your device asks for less motion, nothing moves but every state still shows; with "Off" (and in the alpha 8 look) the mascots step aside for plain icons.</p>
-  <ul class="toc" id="toc"></ul>
-  <div id="kit"></div>
-  <footer>Duo is splitscreen.me's mascot, Nucli the handler tools'. Colours from the workbench's looks (playground/src/themes.json); player colours are the splitscreen.me button colours.</footer>
-</main>
+<a class="skip" href="#content">Skip to the components</a>
+<header class="bar-top"><div class="in">
+  <button type="button" class="nav-open" id="nav-open" aria-controls="side" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="#top">Duo and Nucli UI kit</a>
+  <button type="button" class="nav-open ctl-open" id="ctl-open" aria-controls="ctls" aria-expanded="false">Look and motion</button>
+  <div class="ctls" id="ctls">
+    <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option><option value="mac">Mac style</option><option value="alpha8">Nucleus Co-op alpha 8</option></select></label>
+    <label>Mode <select id="ctl-mode" class="k-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+    <label>Motion <select id="ctl-motion" class="k-select"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label>
+  </div>
+</div></header>
+<div class="layout">
+  <nav class="side" id="side" aria-label="Components">
+    <div class="side-in">
+      <label class="filter"><span class="sr">Find a component</span><input id="nav-filter" type="search" placeholder="Find a component  ( / )" autocomplete="off"></label>
+      <a class="side-top" href="#top">At a glance</a>
+      <div id="nav-groups"></div>
+      <p class="side-none" id="nav-none" hidden>Nothing matches.</p>
+    </div>
+  </nav>
+  <main class="page" id="top">
+    <h1>Duo and Nucli UI kit</h1>
+    <p class="lead">Interface pieces that move the way the mascots do: springs that overshoot a little, a squash on impact, a hold, then a snap. A showcase: every piece is plain HTML, CSS and JavaScript, and <b>View code</b> shows exactly what runs here. Use it as it is, or rebuild it in your own UI library; keep the tokens and the timing notes.</p>
+    <ul class="howto">
+      <li><b>Find:</b> the list at the side (<b>Contents</b> on a phone; <kbd>/</kbd> to search), or the overview below.</li>
+      <li><b>Try:</b> every demo works. Switch the look, light or dark, and Motion at the top.</li>
+      <li><b>Take:</b> open <b>View code</b> under a demo; <b>Copy</b> takes the tab you're on.</li>
+    </ul>
+    <h2 class="glance-h">At a glance</h2>
+    <div id="glance"></div>
+    <div id="content" tabindex="-1"><div id="kit"></div></div>
+    <footer>Duo is splitscreen.me's mascot, Nucli the handler tools'. Colours from the workbench's looks (playground/src/themes.json); player colours are the splitscreen.me button colours.</footer>
+  </main>
+</div>
 <div class="k-toasts" id="k-toasts" role="region" aria-label="Notifications"></div>
 
 <script>
@@ -813,23 +882,88 @@ KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lif
 .k-card .k-card-art { display: block; aspect-ratio: 16 / 9; border-radius: calc(var(--k-r-pane) - 4px); background: linear-gradient(135deg, var(--a), color-mix(in srgb, var(--a) 40%, var(--k-surface-2))); margin-bottom: 6px; }`,
   js: function setupCards() {} });
 
-// =====================================================================================================================
-// The showcase: renders each entry, its code, and the settings bar.
-// =====================================================================================================================
+// The showcase: groups, an overview, navigation with the current section marked, each entry and its code.
 (() => {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
     + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitFaces = ${kitFaces.toString()};`;
-  // Empty mascot slots in the HTML (.k-m, data-mood) are filled by each component's setup.
-  const fill = (html) => html;
+  KIT.push({ id: 'motion', name: 'Motion settings', about: 'The motion settings and the two mascots\' code, which every component uses. "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface\'s motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device\'s "reduce motion" always wins.',
+    timing: 'Default for new users: "Default". Nothing that slows people down or covers content.',
+    html: `<table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off, alpha 8</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>`,
+    css: '/* The rules for the Motion settings are in Tokens, at the end. */', js: function setupMotion() {}, code: [['JavaScript', FOUNDATION]] });
+  const GROUPS = [
+    ['foundations', 'Foundations', 'Colours, motion and the mascots everything is built on.', ['tokens', 'motion', 'mascots']],
+    ['actions', 'Actions', 'Things you press.', ['buttons']],
+    ['inputs', 'Inputs', 'Things you set, type and choose.', ['toggles', 'fields', 'tabs', 'menus']],
+    ['feedback', 'Feedback', 'How the interface answers: counts, messages, results, questions, nothing yet.', ['badges', 'toasts', 'banners', 'dialog', 'empty']],
+    ['progress', 'Progress and waiting', 'Known progress, downloads, and waits of any length.', ['progress-ring', 'progress-bar', 'wait']],
+    ['content', 'Content', 'Lists of things to open.', ['cards']],
+  ];
+  const SUM = {
+    tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
+    buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'Switch with an electron knob, check, radio.', fields: 'One small shake when wrong, a check when right.', tabs: 'An underline with weight: stretch, settle.', menus: 'Springs from its button; tooltip after 0.3 s.',
+    badges: 'Status pills; a counter that bumps.', toasts: 'Slide up; the mascot reacts once, then holds.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes; wakes when you start.',
+    'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Lift on hover, press on click.',
+  };
+  const mini = (svg) => `<span class="t-m">${svg}</span>`;
+  const THUMB = {
+    tokens: ['--k-accent', '--k-ok', '--k-err', '--k-p1', '--k-p2', '--k-p3', '--k-p4'].map((v) => `<i class="t-sw" style="background:var(${v})"></i>`).join(''),
+    motion: ['All', 'Default', 'Calm', 'Still', 'Off'].map((v, i) => `<span class="t-btn${i === 1 ? ' p' : ''}">${v}</span>`).join(''),
+    mascots: mini(kitNucli({ small: true })) + mini(kitDuo({ small: true })),
+    buttons: '<span class="t-btn p">▶ Try it</span><span class="t-btn">Copy</span><span class="t-btn">↶ Undo</span>',
+    toggles: '<span class="k-switch" aria-checked="true" style="pointer-events:none"><i></i></span><span class="t-btn">✓ Lint</span>',
+    fields: '<span class="t-box" style="width:140px"><i class="t-line" style="width:60%"></i></span><span style="color:var(--k-ok);font-weight:700">✓</span>',
+    tabs: '<span class="t-box" style="grid-auto-flow:column;gap:10px;font-size:12px">Check <b style="border-bottom:3px solid var(--k-accent)">Try it</b> Players</span>',
+    menus: '<span class="t-box" style="width:120px"><i class="t-line"></i><i class="t-line" style="width:70%"></i><i class="t-line" style="width:85%"></i></span>',
+    badges: '<span class="k-pill k-pill-ok" style="font-size:11px">Ready</span><span class="k-count">3</span>',
+    toasts: `<span class="t-box" style="grid-auto-flow:column;align-items:center;gap:6px;width:150px;box-shadow:var(--k-shadow)"><span class="t-m" style="width:22px;height:22px">${kitNucli({ small: true, moods: ['happy'] })}</span><i class="t-line" style="width:90px"></i></span>`,
+    banners: '<span class="t-box" style="width:160px;border-left:4px solid var(--k-err)"><i class="t-line"></i><i class="t-line" style="width:60%"></i></span>',
+    dialog: '<span class="t-box" style="width:120px;box-shadow:var(--k-shadow)"><i class="t-line"></i><i class="t-line" style="width:70%"></i><span style="justify-self:end" class="t-btn p">OK</span></span>',
+    empty: mini(kitNucli({ moods: ['sleep'] })),
+    'progress-ring': `<svg viewBox="0 0 120 120" width="62" height="62" aria-hidden="true"><circle cx="60" cy="60" r="44" fill="none" stroke="color-mix(in srgb, var(--k-fg) 14%, transparent)" stroke-width="9"/><circle cx="60" cy="60" r="44" fill="none" stroke="var(--k-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="110" transform="rotate(-90 60 60)"/>${[0, 1, 2, 3].map((k) => `<circle cx="60" cy="16" r="7" fill="var(--k-p${k + 1})" stroke="#fff" stroke-width="2" transform="rotate(${(0.6 - .034 - k * .046) * 360} 60 60)"/>`).join('')}</svg>`,
+    'progress-bar': `<span style="position:relative;width:150px;height:44px"><i class="t-line" style="position:absolute;left:0;right:0;bottom:4px;height:8px"></i><i style="position:absolute;left:0;bottom:4px;height:8px;width:60%;border-radius:4px;background:var(--k-accent)"></i><span class="t-m" style="position:absolute;left:58px;bottom:8px;width:34px;height:34px">${kitDuo({ arms: 'hold', moods: ['focus'] })}</span></span>`,
+    wait: '<span style="font-size:11.5px;display:grid;grid-template-columns:auto auto;gap:2px 8px;color:var(--k-muted)"><b>0.4 s</b><span>spinner</span><b>2 s</b><span>progress</span><b>10 s</b><span>time so far</span></span>',
+    cards: ['--k-p1', '--k-p3', '--k-p4'].map((v) => `<span class="t-box" style="width:46px;height:52px;padding:4px"><i style="display:block;height:24px;border-radius:4px;background:var(${v})"></i></span>`).join(''),
+  };
+  const byId = Object.fromEntries(KIT.map((c) => [c.id, c]));
   document.getElementById('kit-css').textContent = KIT.map((c) => `/* ${c.name} */\n${c.css}`).join('\n\n');
-  document.getElementById('toc').innerHTML = KIT.map((c) => `<li><a href="#${c.id}">${c.name}</a></li>`).join('') + '<li><a href="#foundation">Foundation</a></li>';
-  const box = document.getElementById('kit');
-  const codeBlock = (id, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => `<pre tabindex="0" aria-label="${n} of ${id}"${i ? ' hidden' : ''}><code>${esc(src)}</code></pre>`).join('')}</details>`;
-  box.innerHTML = KIT.map((c) => `<section class="comp" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name}</h2><p>${c.about}</p><div class="demo">${fill(c.html)}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, [['HTML', fill(c.html)], ['CSS', c.css], ['JavaScript', c.js.toString()]])}</section>`).join('')
-    + `<section class="comp" id="foundation" aria-labelledby="foundation-h"><h2 id="foundation-h">Foundation</h2><p>The motion settings and the two mascots, which every component above uses. The Motion setting: "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface's motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device's "reduce motion" wins.</p><table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off, alpha 8</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>${codeBlock('Foundation', [['JavaScript', FOUNDATION]])}</section>`;
+  const codeBlock = (name, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code for ${name}">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => `<pre tabindex="0" aria-label="${n} of ${name}"${i ? ' hidden' : ''}><code>${esc(src)}</code></pre>`).join('')}</details>`;
+  // Overview
+  document.getElementById('glance').innerHTML = GROUPS.map(([gid, gname, , ids]) => `<div class="glance-group"><h3>${gname}</h3><div class="glance-grid">${ids.map((id) => `<a class="glance-card" href="#${id}"><span class="thumb" aria-hidden="true">${THUMB[id]}</span><span class="txt"><b>${byId[id].name}</b><span class="sum">${SUM[id]}</span></span></a>`).join('')}</div></div>`).join('');
+  // Sections, grouped
+  document.getElementById('kit').innerHTML = GROUPS.map(([gid, gname, gabout, ids]) => `<h2 class="group-h" id="g-${gid}">${gname}</h2><p>${gabout}</p>` + ids.map((id) => {
+    const c = byId[id];
+    return `<section class="comp" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name}<a class="up" href="#top">Back to overview ↑</a></h2><p>${c.about}</p><div class="demo">${c.html}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, c.code || [['HTML', c.html], ['CSS', c.css], ['JavaScript', c.js.toString()]])}</section>`;
+  }).join('')).join('');
+  // Navigation
+  const nav = document.getElementById('nav-groups');
+  nav.innerHTML = GROUPS.map(([gid, gname, , ids]) => `<h2 id="n-${gid}">${gname}</h2><ul aria-labelledby="n-${gid}">${ids.map((id) => `<li data-name="${byId[id].name.toLowerCase()}" data-words="${SUM[id].toLowerCase()}"><a href="#${id}">${byId[id].name}</a></li>`).join('')}</ul>`).join('');
+  const links = [...nav.querySelectorAll('a')];
+  const filter = document.getElementById('nav-filter'), none = document.getElementById('nav-none');
+  filter.addEventListener('input', () => {
+    const q = filter.value.trim().toLowerCase(); let shown = 0;
+    nav.querySelectorAll('ul').forEach((ul) => { let any = 0; ul.querySelectorAll('li').forEach((li) => { const on = !q || li.dataset.name.includes(q) || new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(li.dataset.words); li.hidden = !on; any += on; }); ul.hidden = !any; ul.previousElementSibling.hidden = !any; shown += any; });
+    none.hidden = shown > 0;
+  });
+  filter.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const q = filter.value.trim().toLowerCase(), vis = links.filter((a) => !a.closest('li').hidden); const best = vis.find((a) => a.closest('li').dataset.name.startsWith(q)) || vis.find((a) => a.closest('li').dataset.name.includes(q)) || vis[0]; best?.click(); } if (e.key === 'Escape') { filter.value = ''; filter.dispatchEvent(new Event('input')); } });
+  addEventListener('keydown', (e) => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); openNav(); filter.focus(); } });
+  // The section on screen is marked in the list.
+  const mark = (id) => links.forEach((a) => (a.getAttribute('href') === '#' + id ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+  const seen = new Map();
+  const io = new IntersectionObserver((es) => { es.forEach((e) => seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null)); const vis = [...seen].filter(([, t]) => t !== null).sort((a, b) => a[1] - b[1]); if (vis.length) mark(vis[0][0]); }, { rootMargin: '-60px 0px -55% 0px' });
+  document.querySelectorAll('.comp').forEach((s) => io.observe(s));
+  // On narrow screens the list is a drawer.
+  const side = document.getElementById('side'), openBtn = document.getElementById('nav-open'); let scrim;
+  function openNav() { if (getComputedStyle(openBtn).display === 'none') return; side.classList.add('open'); openBtn.setAttribute('aria-expanded', 'true'); scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.addEventListener('click', closeNav); document.body.append(scrim); if (kitMoves(side)) side.animate([{ transform: 'translateX(-24px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.2, .7, .3, 1)' }); filter.focus(); }
+  function closeNav() { side.classList.remove('open'); openBtn.setAttribute('aria-expanded', 'false'); scrim?.remove(); scrim = null; }
+  openBtn.addEventListener('click', () => (side.classList.contains('open') ? closeNav() : openNav()));
+  const ctlBtn = document.getElementById('ctl-open'), ctls = document.getElementById('ctls');
+  ctlBtn.addEventListener('click', () => { const on = !ctls.classList.contains('open'); ctls.classList.toggle('open', on); ctlBtn.setAttribute('aria-expanded', String(on)); });
+  side.addEventListener('click', (e) => { if (e.target.closest('a')) closeNav(); });
+  side.addEventListener('keydown', (e) => { if (e.key === 'Escape' && side.classList.contains('open')) { closeNav(); openBtn.focus(); } });
+  // Run the components, then the code tabs and copy buttons.
   KIT.forEach((c) => c.js(document.getElementById(c.id)));
-  box.addEventListener('click', async (e) => {
+  document.getElementById('kit').addEventListener('click', async (e) => {
     const tab = e.target.closest('.code .tabs [role="tab"]'), copy = e.target.closest('.code .copy');
     if (tab) { const d = tab.closest('details'); d.querySelectorAll('[role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t === tab))); d.querySelectorAll('pre').forEach((p, i) => (p.hidden = i !== +tab.dataset.i)); }
     if (copy) {
@@ -849,6 +983,7 @@ KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lif
   });
   kitApplyMotion();
   document.dispatchEvent(new Event('kit-look'));
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 })();
 </script>
 </body>
