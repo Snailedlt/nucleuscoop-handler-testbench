@@ -69,8 +69,10 @@ jobs:
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground
-      - name: Unit tests (Hub package files)
-        run: node tools/hub-files.test.mjs
+      - name: Unit tests (Hub package files; feedback links match the extension's issue forms and bot)
+        run: |
+          node tools/hub-files.test.mjs
+          node tools/report-links.test.mjs
       - name: Browser smoke test (Check, Fix all, Try it, packages, themes, keyboard, accessibility)
         run: |
           npx playwright install --with-deps chromium

@@ -1,4 +1,5 @@
 import { toast } from './toast';
+import { checksum } from './checksum';
 // Feedback links (the tester feedback and doc review issue forms) filled in with what the workbench knows: the build,
 // browser, screen, settings, the open handler (by name and source, never its code), the tester profile and the test
 // item. It goes in the form's "Details from the workbench" field with a checksum. GitHub can't lock a field, so the
@@ -14,15 +15,7 @@ let state: () => ReportState = () => ({});
 /** The app tells the reports what is open. */
 export const setReportState = (fn: () => ReportState) => (state = fn);
 
-/** FNV-1a over the block's lines, so the bot can tell an edited block. The same function is in report-details.yml. */
-export function checksum(lines: string[]): string {
-  let h = 0x811c9dc5;
-  for (const ch of lines.map((l) => l.trim()).filter(Boolean).join('\n')) {
-    h ^= ch.codePointAt(0)!;
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, '0');
-}
+export { checksum };
 
 const get = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 function browser(): string {
