@@ -2,7 +2,7 @@
 // with them (DownloadPrompt.ExtractHandler, AGENTS.md in splitscreenme-vscode): handler.js at the root is the handler,
 // every top-level folder's contents are merged into handlers/<GameName>/, other files at the root are dropped.
 // Pure functions: no DOM, so they can be tested and reused.
-import type { PackageFile } from './package';
+import { sizeOf, type PackageFile } from './package';
 
 export type FileKind = 'js' | 'ini' | 'cfg' | 'json' | 'xml' | 'txt' | 'bat' | 'toml' | 'yaml' | 'dll' | 'exe' | 'img' | 'bin';
 const EXT: Record<string, FileKind> = {
@@ -119,6 +119,7 @@ export function checkPackage(handler: string, files: PackageFile[]): PkgProblem[
       out.push({ file: f.name, severity: 'warning', title: 'Dropped when installed from the Hub', why: `${f.name} is at the package's top level. A Hub install keeps handler.js and the contents of folders there, and drops other files at the top level.`, fix: { title: `Move into ${target}/`, kind: 'move', from: f.name, to: `${target}/${f.name}` } });
     }
     if (/[<>:"|?*\\]/.test(f.name)) out.push({ file: f.name, severity: 'error', title: 'A character Windows doesn\'t allow in names', why: 'File names can\'t contain < > : " | ? * or a backslash on Windows, so this file can\'t be installed.' });
+    if (f.remote) continue; // in the Hub package, not here: nothing to check but its name
     if (f.data.length > 25 * 1024 * 1024) out.push({ file: f.name, severity: 'info', title: 'A very large file', why: `${Math.round(f.data.length / 1048576)} MB makes the package slow to download and may be too big for the Hub.` });
     const t = textOf(f.data);
     if (t && /\.(ini|cfg|conf|json)$/i.test(f.name)) out.push(...checkFileText(f.name, t.text));
@@ -147,5 +148,5 @@ export function checkPackage(handler: string, files: PackageFile[]): PkgProblem[
 /** The install map: what goes where. */
 export function installMap(handler: string, files: PackageFile[]): { name: string; to: string | null; size: number }[] {
   const game = gameFolderName(handler);
-  return [{ name: 'handler.js', to: `handlers\\${game}.js`, size: new TextEncoder().encode(handler).length }, ...files.map((f) => ({ name: f.name, to: installPath(f.name, game), size: f.data.length }))];
+  return [{ name: 'handler.js', to: `handlers\\${game}.js`, size: new TextEncoder().encode(handler).length }, ...files.map((f) => ({ name: f.name, to: installPath(f.name, game), size: sizeOf(f) }))];
 }

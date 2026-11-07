@@ -1727,7 +1727,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 #file-editor[hidden], #file-card[hidden] { display: none; }
 #file-editor .CodeMirror { height: 100%; }
 #file-card { flex: 1; min-width: 0; padding: 18px; overflow: auto; background: var(--surface); }
-#file-card h3 { margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+#file-card h2 { margin: 0 0 6px; display: flex; align-items: center; gap: 6px; font-size: 13.5px; }
 #file-card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; margin: 10px 0; } #file-card dt { color: var(--muted); } #file-card dd { margin: 0; overflow-wrap: anywhere; }
 #file-card img { max-width: 100%; max-height: 320px; border: 1px solid var(--line); border-radius: 6px; background: repeating-conic-gradient(#8882 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
 #files-panel { width: 260px; flex: none; border-left: 1px solid var(--line); background: var(--surface); font-size: 13px; position: relative; display: flex; flex-direction: column; min-height: 0; }
@@ -1743,6 +1743,8 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .fp-open .fp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fp-open .fp-size { margin-left: auto; padding-left: 8px; font-size: 11px; color: var(--muted); flex: none; }
 .fp-item.dropped .fp-name { color: var(--warn); }
+.fp-open .fp-hub { margin-left: auto; padding: 0 5px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 16px; background: var(--info-bg); color: var(--info); flex: none; }
+.fp-open .fp-hub + .fp-size { margin-left: 0; padding-left: 6px; }
 .fp-del { width: 24px; height: 24px; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; opacity: 0; flex: none; }
 .fp-item:hover .fp-del, .fp-del:focus-visible { opacity: 1; } .fp-del:hover { background: var(--surface-2); color: var(--err); }
 .fp-dir { padding: 4px 6px; color: var(--muted); font-size: 12.5px; display: flex; align-items: center; }

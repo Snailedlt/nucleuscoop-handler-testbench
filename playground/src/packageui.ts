@@ -7,7 +7,7 @@ import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/toml/toml';
 import 'codemirror/mode/yaml/yaml';
 import type { PackageFile } from './package';
-import { fileSize } from './package';
+import { fileSize, sizeOf } from './package';
 import { BADGE, bytesOf, checkFileText, checkPackage, gameFolderName, installPath, kindOf, MODE, textOf, type PkgProblem } from './pkgcheck';
 
 type CM = any;
@@ -53,7 +53,7 @@ export function initPackageUI(host: PkgHost) {
         if (!active) return;
         const d = docs.get(active);
         if (!d) return;
-        host.setFiles(files().map((f) => (f.name === active ? { name: f.name, data: bytesOf(fileEd.getValue(), d.enc) } : f)));
+        host.setFiles(files().map((f) => (f.name === active && !f.remote ? { name: f.name, data: bytesOf(fileEd.getValue(), d.enc) } : f)));
         host.changed();
       }, 350);
     });
@@ -72,6 +72,11 @@ export function initPackageUI(host: PkgHost) {
     if (!f) return showHandler();
     if (!open.includes(name)) open.push(name);
     active = name;
+    if (f.remote) {
+      renderRemoteCard(f);
+      show('card');
+      return render();
+    }
     const t = textOf(f.data);
     if (t) {
       const ed = ensureEditor();
@@ -102,7 +107,7 @@ export function initPackageUI(host: PkgHost) {
     const uses = handler().split('\n').map((l, i) => (l.toLowerCase().includes(base.toLowerCase()) ? i + 1 : 0)).filter(Boolean);
     if (blobUrl) URL.revokeObjectURL(blobUrl);
     blobUrl = k === 'img' ? URL.createObjectURL(new Blob([f.data as BlobPart])) : '';
-    $('#file-card').innerHTML = `<h3>${fileIcon(f.name)}${esc(base)}</h3>
+    $('#file-card').innerHTML = `<h2>${fileIcon(f.name)}${esc(base)}</h2>
       <dl><dt>In the package</dt><dd>${esc(f.name)}</dd><dt>Size</dt><dd>${fileSize(f.data.length)}</dd>
       <dt>Installs to</dt><dd>${to ? `<code>${esc(to)}</code>` : '<span style="color:var(--warn)">nowhere: files at the top level are dropped by a Hub install</span>'}</dd>
       <dt>Used by handler.js</dt><dd>${uses.length ? uses.slice(0, 6).map((n) => `<button class="link" type="button" data-line="${n}">line ${n}</button>`).join(', ') : '<span class="muted">not by name</span>'}</dd></dl>
@@ -123,6 +128,19 @@ export function initPackageUI(host: PkgHost) {
     $('#file-card').querySelector('[data-card=remove]')!.addEventListener('click', () => removeFile(f.name));
   }
 
+  // A file of a Hub package that's too big to bring along: what it is, and where the original is.
+  function renderRemoteCard(f: PackageFile) {
+    const to = installPath(f.name, gameFolderName(handler()));
+    const base = f.name.split('/').pop()!;
+    $('#file-card').innerHTML = `<h2>${fileIcon(f.name)}${esc(base)} <span class="chip info fp-hub">Hub</span></h2>
+      <p>In the Hub package, not downloaded here (${fileSize(f.remote!.size)}). <a href="${esc(f.remote!.url)}" target="_blank" rel="noopener">Get the original package from the Hub</a>.</p>
+      <dl><dt>In the package</dt><dd>${esc(f.name)}</dd><dt>Size</dt><dd>${fileSize(f.remote!.size)}</dd>
+      <dt>Installs to</dt><dd>${to ? `<code>${esc(to)}</code>` : '<span style="color:var(--warn)">nowhere: files at the top level are dropped by a Hub install</span>'}</dd></dl>
+      <p class="muted">Saving this package leaves it out: add your own copy (Add files…) to save it with the handler.</p>
+      <div class="fp-actions"><button class="btn" type="button" data-card="remove">Remove from the package</button></div>`;
+    $('#file-card').querySelector('[data-card=remove]')!.addEventListener('click', () => removeFile(f.name));
+  }
+
   function removeFile(name: string) {
     host.setFiles(files().filter((f) => f.name !== name));
     docs.delete(name);
@@ -132,7 +150,7 @@ export function initPackageUI(host: PkgHost) {
     host.changed();
   }
   function moveFile(from: string, to: string) {
-    host.setFiles(files().map((f) => (f.name === from ? { name: to, data: f.data } : f)));
+    host.setFiles(files().map((f) => (f.name === from ? { ...f, name: to } : f)));
     const d = docs.get(from);
     if (d) { docs.delete(from); docs.set(to, d); }
     open = open.map((n) => (n === from ? to : n));
@@ -179,7 +197,7 @@ export function initPackageUI(host: PkgHost) {
         if (!seenDirs.has(dir)) { seenDirs.add(dir); rows.push(`<li class="fp-dir" style="padding-left:${6 + (i - 1) * 14}px"><span class="fi-badge fi-dir" aria-hidden="true">▾</span>${esc(parts[i - 1])}/</li>`); }
       }
       const depth = parts.length - 1;
-      rows.push(`<li class="fp-item${depth ? '' : ' dropped'}"><button type="button" class="fp-open" data-fp="${esc(f.name)}" aria-current="${active === f.name}" style="padding-left:${6 + depth * 14}px" title="${esc(depth ? `Installs to ${installPath(f.name, game)}` : 'At the top level: a Hub install drops it')}">${fileIcon(f.name)}<span class="fp-name">${esc(parts[parts.length - 1])}</span><span class="fp-size">${fileSize(f.data.length)}</span></button><button type="button" class="fp-del" data-fp-del="${esc(f.name)}" aria-label="Remove ${esc(f.name)}">×</button></li>`);
+      rows.push(`<li class="fp-item${depth ? '' : ' dropped'}"><button type="button" class="fp-open" data-fp="${esc(f.name)}" aria-current="${active === f.name}" style="padding-left:${6 + depth * 14}px" title="${esc(depth ? `Installs to ${installPath(f.name, game)}` : 'At the top level: a Hub install drops it')}">${fileIcon(f.name)}<span class="fp-name">${esc(parts[parts.length - 1])}</span>${f.remote ? '<span class="fp-hub" title="In the Hub package, not downloaded here">Hub</span>' : ''}<span class="fp-size">${fileSize(sizeOf(f))}</span></button><button type="button" class="fp-del" data-fp-del="${esc(f.name)}" aria-label="Remove ${esc(f.name)}">×</button></li>`);
     }
     $('#files-list').innerHTML = `<div class="fp-head">Package</div><p class="fp-where">Installs to <code>handlers\\${esc(game)}\\</code></p><ul class="fp-list">${rows.join('')}</ul>
       <div class="fp-actions"><button class="btn" type="button" data-fp-add>Add files…</button></div>

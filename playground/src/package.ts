@@ -6,7 +6,11 @@ import { zipStore } from './zipstore';
 export interface PackageFile {
   name: string; // path inside the package, with /
   data: Uint8Array;
+  /** A file of a Hub package that isn't downloaded here (too big): data is empty; size and the handler's Hub page. */
+  remote?: { size: number; url: string };
 }
+/** The file's size, for a placeholder its size in the Hub package. */
+export const sizeOf = (f: PackageFile) => (f.remote ? f.remote.size : f.data.length);
 export interface Package {
   handler: string;
   handlerName: string;
@@ -82,7 +86,7 @@ export function buildPackage(handler: string, files: PackageFile[]): Uint8Array 
   return zipStore([
     { name: 'handler.js', data: new TextEncoder().encode(handler) },
     ...[...dirs].sort().map((name) => ({ name, data: new Uint8Array(0) })),
-    ...files.filter((f) => f.name.toLowerCase() !== 'handler.js'),
+    ...files.filter((f) => f.name.toLowerCase() !== 'handler.js' && !f.remote), // placeholders have no content to save
   ]);
 }
 
@@ -98,7 +102,7 @@ const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 export function storeFiles(files: PackageFile[], key = KEY): boolean {
   try {
     if (!files.length) return localStorage.removeItem(key), true;
-    localStorage.setItem(key, JSON.stringify(files.map((f) => [f.name, b64(f.data)])));
+    localStorage.setItem(key, JSON.stringify(files.map((f) => (f.remote ? [f.name, '', f.remote] : [f.name, b64(f.data)]))));
     return true;
   } catch {
     try {
@@ -109,7 +113,7 @@ export function storeFiles(files: PackageFile[], key = KEY): boolean {
 }
 export function storedFiles(key = KEY): PackageFile[] {
   try {
-    return (JSON.parse(localStorage.getItem(key) || '[]') as [string, string][]).map(([name, d]) => ({ name, data: unb64(d) }));
+    return (JSON.parse(localStorage.getItem(key) || '[]') as [string, string, PackageFile['remote']?][]).map(([name, d, remote]) => (remote ? { name, data: new Uint8Array(0), remote } : { name, data: unb64(d) }));
   } catch {
     return [];
   }

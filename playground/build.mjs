@@ -11,6 +11,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
+import { fetchPackageFiles, slimFiles } from '../tools/hub-files.mjs';
 
 const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 // A preview build (the Claude artifact, the raw.githack test address) is served somewhere else: its
@@ -73,6 +74,10 @@ if (hubData && !fs.existsSync(path.join(hubData, 'hub', 'packages.json'))) {
   console.warn(`No mirrored handlers in ${hubData} yet (tools/hub-mirror.mjs runs in the daily Hub sync): using the snapshot of the most downloaded.`);
   hubData = null;
 }
+// Our daily index (data branch), read at most once per build.
+const INDEX_URL = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json';
+let rawIndexP = null;
+const rawIndex = () => (rawIndexP ??= fetch(INDEX_URL).then((r) => { if (!r.ok) throw new Error(`${INDEX_URL}: ${r.status}`); return r.json(); }));
 function hubFromData(dir) {
   const idx = JSON.parse(fs.readFileSync(path.join(dir, 'hub-index.json'), 'utf8'));
   const pk = JSON.parse(fs.readFileSync(path.join(dir, 'hub', 'packages.json'), 'utf8'));
@@ -94,6 +99,8 @@ function hubFromData(dir) {
       url: `${HUB}/handler/${h._id}`,
       cover: h.gameCover ?? undefined,
       ...(p.verified ? {} : { unverified: true }),
+      // The package's other files (tools/hub-mirror.mjs): hub/<id>.files.json, when it has any.
+      ...(p.files > 0 && fs.existsSync(path.join(dir, 'hub', `${h._id}.files.json`)) ? { files: p.files } : {}),
       source: fs.readFileSync(file, 'utf8'),
     });
   }
@@ -121,7 +128,7 @@ async function hubExamples() {
   // The list comes from our daily index (tools/hub-sync.mjs), not the Hub; the Hub only if it's missing.
   let listing;
   try {
-    const idx = await get('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
+    const idx = await rawIndex();
     if (Date.now() - Date.parse(idx.syncedAt) > 3 * 86400_000) throw new Error('index older than 3 days');
     listing = idx.handlers;
   } catch (e) {
@@ -196,8 +203,7 @@ const hub = await hubExamples();
 // get their ids from our daily index (no Hub request).
 if (!hubData && hub.handlers.some((h) => !h.cover)) {
   try {
-    const r = await fetch('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
-    const byId = new Map((await r.json()).handlers.map((h) => [h._id, h.gameCover]));
+    const byId = new Map((await rawIndex()).handlers.map((h) => [h._id, h.gameCover]));
     for (const h of hub.handlers) h.cover ??= byId.get(h.id) ?? undefined;
   } catch {}
 }
@@ -220,6 +226,44 @@ for (const h of hubData ? [] : hub.handlers) {
 }
 const coverFile = (h) => (h.cover && fs.existsSync(path.join(coverDir, `${h.cover}.jpg`)) ? path.join(coverDir, `${h.cover}.jpg`) : null);
 const coverCount = hub.handlers.filter(coverFile).length;
+
+// The other files of each Hub handler's package (tools/hub-files.mjs: small ones with content, big ones by
+// name and size), for the Files panel. With --hub-data, hub/<id>.files.json from the mirror. The snapshot
+// downloads each package once per version (package ids from our daily index) and keeps the result in
+// .cache/hub-files/.
+const hubFiles = new Map(); // id -> { files: [...] }
+if (hubData) {
+  for (const h of hub.handlers) if (h.files) hubFiles.set(h.id, JSON.parse(fs.readFileSync(path.join(hubData, 'hub', `${h.id}.files.json`), 'utf8')));
+} else if (hub.handlers.length) {
+  const cacheDir = path.join(here, '.cache', 'hub-files');
+  fs.mkdirSync(cacheDir, { recursive: true });
+  let byId = null;
+  let downloaded = 0;
+  for (const h of hub.handlers) {
+    const file = path.join(cacheDir, `${h.id}-v${h.version}.json`);
+    if (!fs.existsSync(file)) {
+      try {
+        byId ??= new Map((await rawIndex()).handlers.map((x) => [x._id, x]));
+        const x = byId.get(h.id);
+        if (!x?.currentPackage || x.currentVersion !== h.version) continue; // the index has another version: not this one's package
+        if (downloaded) await new Promise((r) => setTimeout(r, 300)); // one at a time, gently
+        downloaded++;
+        fs.writeFileSync(file, JSON.stringify(await fetchPackageFiles(h.id, x.currentPackage, h.version)));
+      } catch (e) {
+        console.warn(`Hub files of ${h.title}: ${e.message}`);
+        continue;
+      }
+    }
+    const json = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (json.files.length) hubFiles.set(h.id, json);
+  }
+  if (downloaded) console.log(`Hub files: ${downloaded} package(s) downloaded.`);
+}
+for (const h of hub.handlers) {
+  const f = hubFiles.get(h.id);
+  if (f) h.files = f.files.length;
+  else delete h.files;
+}
 // Example packages (examples/README.md): a verified Hub handler with the other files it ships.
 const EXAMPLE_PACKAGES = [
   { id: 'nvmp', title: 'Fallout New Vegas Multiplayer, with its files', sub: 'A verified Hub handler (v21 by Talos91) whose package adds an NVMP folder with the scripts Game.Play runs.', name: 'Fallout New Vegas Multiplayer.js', hubId: 'vnPXYhWMJJ3FNuQuS' },
@@ -368,7 +412,15 @@ function pageHtml(inlineHub) {
     if (!f || (inlineHub && i >= 40)) return rest;
     return { ...rest, cover: inlineHub ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : `covers/${h.cover}.jpg` };
   };
-  const handlers = (inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
+  // The one file carries the 40 most downloaded packages' files lists too (filesData; only small text files
+  // with content, so it stays small); the others open there without their files. The site fetches
+  // hub/<id>.files.json.
+  const inlineFiles = (h, i) => {
+    if (!hubFiles.has(h.id)) return h;
+    if (i >= 40) { const { files, ...rest } = h; return rest; }
+    return { ...h, filesData: slimFiles(hubFiles.get(h.id).files) };
+  };
+  const handlers = (inlineHub ? hub.handlers.map(inlineFiles) : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
   const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/', ...(hub.all ? { all: true } : {}) })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`
     .replace(/<\/script/gi, '<\\/script')
     // A few Hub handlers carry U+FFFD (text that was already broken when uploaded): written as the
@@ -437,7 +489,10 @@ fs.writeFileSync(path.join(here, 'dist', 'pages', 'icon.png'), Buffer.from(fs.re
 if (PREVIEW) fs.rmSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), { force: true });
 else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
+fs.rmSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true, force: true }); // only this build's handlers
+fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
+for (const [id, f] of hubFiles) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${id}.files.json`), JSON.stringify(f));
 fs.rmSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true, force: true }); // only this build's covers
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true });
 for (const h of hub.handlers) if (coverFile(h)) fs.copyFileSync(coverFile(h), path.join(here, 'dist', 'pages', 'covers', `${h.cover}.jpg`));
@@ -525,4 +580,4 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
   for (const f of files.filter((f) => !f.endsWith('build.txt')).sort()) h.update(path.relative(path.join(here, 'dist', 'pages'), f) + '\0').update(fs.readFileSync(f));
   fs.writeFileSync(path.join(here, 'dist', 'pages', 'build.txt'), h.digest('hex') + '\n');
 }
-console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} Hub handlers${hub.all ? " (all, from the data branch)" : " (verified)"} (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);
+console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} Hub handlers${hub.all ? " (all, from the data branch)" : " (verified)"} (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${hubFiles.size} with package files, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

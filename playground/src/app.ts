@@ -21,7 +21,7 @@ import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
-import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFile } from './package';
+import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
@@ -57,7 +57,7 @@ applyCustomTheme();
 applyCodeTheme();
 watchPictures();
 declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null; feedback?: string | null };
-interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number } }
+interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number }; /** How many other files its package has (hub/<id>.files.json). */ files?: number; /** Those files, in the page (single-file build) or once fetched; no b64: too big to bring along. */ filesData?: { name: string; size: number; b64?: string }[] }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null; /** every handler on the Hub (our mirror), not only the most downloaded */ all?: boolean };
 declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
@@ -170,7 +170,7 @@ let packageFiles: PackageFile[] = storedFiles();
 // A package's pluginsInfo.txt (in its handler folder, Game.Folder): Nucleus adds each plugin as a
 // global. Without a package the linter can't see it, and only warns on unknown `Name.Member`.
 const pluginsText = (): string | undefined => {
-  const f = packageFiles.find((x) => /(^|\/)pluginsInfo\.txt$/i.test(x.name) && x.name.split('/').length <= 2);
+  const f = packageFiles.find((x) => /(^|\/)pluginsInfo\.txt$/i.test(x.name) && x.name.split('/').length <= 2 && !x.remote);
   return f ? new TextDecoder().decode(f.data) : undefined;
 };
 const lintPlugins = (): string[] | undefined => {
@@ -1243,7 +1243,7 @@ function renderDocHead() {
   else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
   else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
   if (packageFiles.length) {
-    const list = packageFiles.map((f) => `${f.name} (${fileSize(f.data.length)})`).join('\n');
+    const list = packageFiles.map((f) => `${f.name} (${fileSize(sizeOf(f))}${f.remote ? ', in the Hub package' : ''})`).join('\n');
     parts.push(`<button type="button" class="chip chip-btn" id="files-open" aria-haspopup="dialog" title="${esc('Saved with the handler:\n' + list)}">+ ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'}</button>`);
   }
   $('#doc-meta').innerHTML = parts.join('');
@@ -1289,6 +1289,7 @@ async function copyLink(trigger?: HTMLElement | null) {
 function setPackageFiles(files: PackageFile[]) {
   packageFiles = files;
   renderDocHead();
+  pkgUI?.render(); // the Files panel and its count, if it's open
 }
 function loadSource(src: string, meta: DocMeta) {
   // Your edits stay: opening something else while this handler has changes opens it in a new tab.
@@ -1485,9 +1486,9 @@ function openFilesDialog() {
   const dest = (name: string) => `handlers\\${folder}\\${name.split('/').slice(1).join('\\')}`;
   const rows = packageFiles
     .map((f) => {
-      const text = previewOf(f.data);
+      const text = f.remote ? null : previewOf(f.data);
       const top = f.name.includes('/');
-      return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(f.data.length)}</span></summary>
+      return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(sizeOf(f))}${f.remote ? ' · in the Hub package, not downloaded here' : ''}</span></summary>
         <p class="muted small">${top ? `Installed as <code>${esc(dest(f.name))}</code>` : "At the package's top level: the Hub install keeps only handler.js there, so this file is dropped."}</p>
         ${text !== null ? `<pre class="pkg-text">${esc(text.slice(0, 20000))}${text.length > 20000 ? '\n…' : ''}</pre>` : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
     })
@@ -1501,23 +1502,47 @@ document.addEventListener('click', (e) => {
 });
 $('#files-close').addEventListener('click', () => filesDialog.close());
 
+// A Hub handler's other package files (build.mjs, tools/hub-files.mjs): small ones with their content, big
+// ones as placeholders (name and size, and the Hub page with the original package).
+async function hubPackageFiles(h: HubExample): Promise<PackageFile[] | null> {
+  if (!h.files) return [];
+  if (!h.filesData) {
+    try {
+      const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.files.json`);
+      if (!r.ok) throw new Error(String(r.status));
+      h.filesData = (await r.json()).files;
+    } catch {
+      return null;
+    }
+  }
+  return h.filesData!.map((f) => (f.b64 !== undefined ? { name: f.name, data: Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0)) } : { name: f.name, data: new Uint8Array(0), remote: { size: f.size, url: h.url } }));
+}
 async function openHub(i: number) {
   const h = HUB_EXAMPLES.handlers[i];
-  if (h.source === undefined) {
+  let files: PackageFile[] | null = [];
+  if (h.source === undefined || (h.files && !h.filesData)) {
     // On a slow connection, Nucli spins while the handler downloads.
     const slow = setTimeout(() => notice(`Getting ${h.title}…`, { kind: 'info', mascot: 'n-spin' }), 300);
     try {
-      const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`);
-      if (!r.ok) throw new Error(String(r.status));
-      h.source = await r.text();
+      const [src, fl] = await Promise.all([
+        h.source !== undefined ? h.source : fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.text(); }),
+        hubPackageFiles(h),
+      ]);
+      h.source = src;
+      files = fl;
       clearTimeout(slow); clearNotice();
     } catch {
       clearTimeout(slow);
       notice(`Couldn't load ${h.title} from this site. Check your connection.`, { kind: 'error', action: { label: 'Try again', run: () => void openHub(i) } });
       return;
     }
-  }
-  loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}`, published: { version: h.version, guid: guidOf(h.source) } });
+  } else files = await hubPackageFiles(h);
+  loadSource(h.source!, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}`, published: { version: h.version, guid: guidOf(h.source!) } });
+  // The package's other files, in Files (as an opened .nc): the handler opens either way.
+  if (files === null) return notice(`Opened ${h.title}, but its package's other files didn't load. Open it again to retry.`, { kind: 'warning' });
+  if (!files.length) return;
+  setPackageFiles(files);
+  if (!storeFiles(files)) notice(`The ${files.length} other files of the package are too big to keep after a reload: open it from the Hub list again then.`, { kind: 'info' });
 }
 function openTemplate(id: string) {
   const t = BOT_TEMPLATES.templates.find((x) => x.id === id);
@@ -1690,7 +1715,7 @@ function entries(): OpenEntry[] {
       mono: h.game || h.title,
       cover: h.cover,
       sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version}`,
-      meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>`,
+      meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>${h.files ? `<span class="m" title="Its package has ${h.files} other file${h.files === 1 ? '' : 's'}: they open in Files">+ ${h.files} file${h.files === 1 ? '' : 's'}</span>` : ''}`,
       keywords: `${h.game} ${h.owner} hub${h.unverified ? ' unverified' : ''}`,
       badges: h.unverified ? '<span class="chip warning" title="The Hub hasn\'t verified this version yet">not verified</span>' : undefined,
       lint: () => hubLintBadges(i),
@@ -2872,6 +2897,12 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = $('#co
     try { seen = Number(localStorage.getItem(STEPS_KEY) || 0); localStorage.setItem(STEPS_KEY, String(seen + 1)); } catch { /* ignore */ }
     if (kind === 'zip' && seen < 2) showInstallSteps(filename);
     else confirmOn(trigger, 'Saved ✓', `Saved ${filename}.`);
+    // Files of a Hub package that weren't downloaded here can't go in it: say so, with the original.
+    const remote = kind === 'js' ? [] : packageFiles.filter((f) => f.remote);
+    if (remote.length) {
+      const url = remote[0].remote!.url;
+      notice(`Saved without ${remote.length} big file${remote.length === 1 ? '' : 's'} from the Hub package (${fileSize(remote.reduce((n, f) => n + f.remote!.size, 0))}: ${remote.slice(0, 3).map((f) => f.name.split('/').pop()).join(', ')}${remote.length > 3 ? ', …' : ''}), which aren't downloaded here. Get them from the original package on the Hub.`, { kind: 'warning', action: { label: 'Open the Hub page', run: () => window.open(url, '_blank', 'noopener') } });
+    }
   } catch (e: any) {
     if (e?.code === 'declined') return;
     notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });

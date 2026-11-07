@@ -21,6 +21,7 @@ The Pages build uses splitscreenme-vscode's `main`: merge that first when the wo
 - `keyboard.ts`: on-screen keyboard height for every text field (`html.kb-up`, `--kb`, `--vvh`).
 - `toast.ts`: the toast stack (swipe to dismiss) and the code-pane notice.
 - Hub list: `build.mjs --hub-data <dir>` reads the data branch's mirror (`hub/<id>.js`, `hub/packages.json`, `covers/`), which `tools/hub-mirror.mjs` keeps (scheduled in `hub-sync.yml`, only new versions, one request at a time). Without it the build uses the 40-handler snapshot. The single-file build inlines only the top 40 covers.
+- Hub package files: `tools/hub-files.mjs` (test: `node tools/hub-files.test.mjs`) turns a .nc into `{ files: [{ name, size, b64? }] }`, everything but the root handler.js; content for files up to 256 KB, 1 MB per handler, the rest name and size only. The mirror downloads each package once per version (`HUB_MIRROR_PKG_MAX`, default 60 a run, spreads the backfill over days) into `hub/<id>.files.json` and `files: <count>` in `packages.json`; the snapshot build caches them in `playground/.cache/hub-files/`. The site fetches `hub/<id>.files.json` when a handler opens; the single file inlines them for the top 40 (`filesData`, small text files only). In the workbench a file without content is a placeholder (`PackageFile.remote`: size and the Hub page): listed with a Hub badge, left out of Save (which says so), not checked by pkgcheck.
 
 ## Releasing
 

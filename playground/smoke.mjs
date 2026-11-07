@@ -200,6 +200,30 @@ for (const theme of ['light', 'dark']) {
     await axe(p, `${theme}, Files panel`);
     await p.keyboard.press('Escape');
   }
+  // A Hub handler whose package has other files: they open in Files, big ones as placeholders (Hub badge, a card).
+  {
+    const pick = await p.evaluate(() => {
+      const hs = HUB_EXAMPLES.handlers;
+      const h = hs.find((x) => x.id === 'xjBSwFNj3ndRntsZh' && x.files) ?? hs.find((x) => x.files);
+      return h ? { id: h.id, title: h.title, files: h.files } : null;
+    });
+    check(!!pick, `${theme}: a Hub handler in this build has package files`);
+    if (pick) {
+      await p.goto(BASE + '#hub-' + pick.id);
+      await p.waitForTimeout(1500);
+      if (await p.$eval('#files-panel', (e) => e.hidden)) await p.click('#files-toggle');
+      await p.waitForTimeout(300);
+      const rows = (await p.$$('#files-panel .fp-open')).length;
+      check(rows === pick.files + 1, `${theme}: ${pick.title} opens with its ${pick.files} package file(s) in Files (${rows - 1} listed)`);
+      const hubRow = await p.$('#files-panel .fp-open:has(.fp-hub)');
+      if (hubRow) {
+        await hubRow.click();
+        await p.waitForTimeout(300);
+        check(/not downloaded here/.test(await p.$eval('#file-card', (e) => e.textContent)), `${theme}: a big file of the Hub package shows where to get it`);
+      }
+      await axe(p, `${theme}, Files panel with a Hub package`);
+    }
+  }
   // A first visit (beta): the tester questions come first, can't be skipped, and lead to the recommendations.
   {
     const fresh = await browser.newContext({ colorScheme: theme, viewport: { width: 1280, height: 800 } });

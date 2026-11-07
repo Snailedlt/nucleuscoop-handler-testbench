@@ -171,7 +171,7 @@ const FEATURES_ = T('Feature', [
   { id: 'f-tryit', text: 'Try it shows what each player gets: window, launch arguments and every file change, without Nucleus or the game.', action: { label: 'Try it', run: 'tryit' } },
   { id: 'f-testall', text: 'Test all combinations runs every player count, input setup and monitor size, and lists what fails and why.', action: { label: 'Try it', run: 'tryit' } },
   { id: 'f-share', text: 'Copy link shares the handler as a link. Select some lines first to share only those.', action: { label: 'Copy link', run: 'share' } },
-  { id: 'f-package', text: 'Open a .zip or .nc and its other files are kept: "+ N files" shows each one, where Nucleus installs it and what’s inside, and saving puts them back.' },
+  { id: 'f-package', text: 'Open a .zip or .nc, or a Hub handler marked "+ N files" in the Open list, and its other files come along: "+ N files" shows each one, where Nucleus installs it and what’s inside, and saving puts them back. Big Hub files show a Hub badge: get those from the original package.' },
   { id: 'f-reference', text: 'The Reference tab searches every option, Context member and Nucleus enum with its docs: try "window title" or "mutex".' },
   { id: 'f-mascots', text: 'Meet Nucli, the quiet atom who checks your handler: he dozes until there\'s code, cheers when there\'s nothing to fix and runs Test all. Duo, splitscreen.me\'s split-screen ball, turns up when something won\'t load.' },
   { id: 'f-mascot-modes', text: 'Want Duo and Nucli livelier, or nothing moving at all? Settings → Theme → Motion has presets and a switch for each kind of motion, including Nucli editing the code during fixes.' },
