@@ -29,7 +29,7 @@ body { margin: 0; background: var(--k-bg); color: var(--k-fg); font: 15px/1.55 v
 .code .tabs button[aria-selected="true"] { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
 .code .tabs button:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
 .code .tabs .copy { margin-left: auto; }
-.code pre { margin: 8px 0 0; max-height: 420px; overflow: auto; background: var(--k-code-bg); color: var(--k-code-fg); border-radius: 8px; padding: 12px; font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; tab-size: 2; }
+.code pre { margin: 8px 0 0; max-height: 420px; overflow: auto; background: var(--k-code-bg); color: var(--k-code-fg); border: 1px solid var(--k-line); border-radius: 8px; padding: 12px; font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; tab-size: 2; }
 .code pre:focus-visible { outline: 2px solid var(--k-accent); }
 .sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; width: 100%; }
 .sw div { border: 1px solid var(--k-line); border-radius: 8px; padding: 8px; font-size: 12.5px; background: var(--k-surface); }
@@ -452,11 +452,11 @@ KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours for the two splitscreen
   timing: 'Tap feedback 120 ms. Small state changes 200 ms. Icons in buttons 340 ms. Things that enter 260 ms, leave 180 ms. A confirmation ("Copied") stays 1.6 s. Toasts 3.5 s + 25 ms a letter (errors 8 s).',
   html: `<div class="sw" id="tok-sw"></div>`,
   css: `/* Colours: one set per look and mode. The kit only reads --k-* tokens. */
-.kit, .kit[data-look="www"][data-mode="light"] { --k-bg: #f5f6f7; --k-surface: #ffffff; --k-surface-2: #ebedf0; --k-line: #c9cdd3; --k-fg: #1c1e21; --k-muted: #5c636c; --k-accent: #0c76a5; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #1c1e21; --k-code-fg: #e8eaed; --k-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --k-r-ctl: 8px; --k-r-pane: 12px; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
-.kit[data-look="www"][data-mode="dark"] { --k-bg: #1b1b1d; --k-surface: #242526; --k-surface-2: #2e3033; --k-line: #555b63; --k-fg: #e3e3e3; --k-muted: #b0b4ba; --k-accent: #30bbf8; --k-accent-fg: #06131c; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #111214; --k-code-fg: #e3e3e3; --k-shadow: 0 6px 24px rgba(0, 0, 0, .5); color-scheme: dark; }
+.kit, .kit[data-look="www"][data-mode="light"] { --k-bg: #f5f6f7; --k-surface: #ffffff; --k-surface-2: #ebedf0; --k-line: #c9cdd3; --k-fg: #1c1e21; --k-muted: #5c636c; --k-accent: #0c76a5; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #f6f8fa; --k-code-fg: #1c1e21; --k-code-kw: #6f2db8; --k-code-str: #b0175a; --k-code-num: #0f6f6d; --k-code-cmt: #6a737d; --k-code-prop: #0b5c8a; --k-code-muted: #5c636c; --k-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --k-r-ctl: 8px; --k-r-pane: 12px; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
+.kit[data-look="www"][data-mode="dark"] { --k-bg: #1b1b1d; --k-surface: #242526; --k-surface-2: #2e3033; --k-line: #555b63; --k-fg: #e3e3e3; --k-muted: #b0b4ba; --k-accent: #30bbf8; --k-accent-fg: #06131c; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #282a36; --k-code-fg: #f8f8f2; --k-code-kw: #ff79c6; --k-code-str: #f1fa8c; --k-code-num: #bd93f9; --k-code-cmt: #8b96c4; --k-code-prop: #8be9fd; --k-code-muted: #b0b4ba; --k-shadow: 0 6px 24px rgba(0, 0, 0, .5); color-scheme: dark; }
 .kit[data-look="v3"] { --k-font: "Archivo", system-ui, sans-serif; --k-r-ctl: 8px; --k-r-pane: 14px; }
-.kit[data-look="v3"][data-mode="light"] { --k-bg: #eceef2; --k-surface: #ffffff; --k-surface-2: #f3f4f7; --k-line: #ccd1da; --k-fg: #0b0d12; --k-muted: #4f5767; --k-accent: #0b0d12; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #0b0d12; --k-code-fg: #f3f4f6; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
-.kit[data-look="v3"][data-mode="dark"] { --k-bg: #000000; --k-surface: #14171e; --k-surface-2: #1b1f28; --k-line: #3a4254; --k-fg: #f3f4f6; --k-muted: #a3abba; --k-accent: #f3f4f6; --k-accent-fg: #07080a; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #07080a; --k-code-fg: #f3f4f6; --k-shadow: 0 6px 24px rgba(0, 0, 0, .6); color-scheme: dark; }
+.kit[data-look="v3"][data-mode="light"] { --k-bg: #eceef2; --k-surface: #ffffff; --k-surface-2: #f3f4f7; --k-line: #ccd1da; --k-fg: #0b0d12; --k-muted: #4f5767; --k-accent: #0b0d12; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #fafbfc; --k-code-fg: #0b0d12; --k-code-kw: #6d28d9; --k-code-str: #0f6b3f; --k-code-num: #9a5200; --k-code-cmt: #626b7b; --k-code-prop: #1d5fd1; --k-code-muted: #4f5767; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
+.kit[data-look="v3"][data-mode="dark"] { --k-bg: #000000; --k-surface: #14171e; --k-surface-2: #1b1f28; --k-line: #3a4254; --k-fg: #f3f4f6; --k-muted: #a3abba; --k-accent: #f3f4f6; --k-accent-fg: #07080a; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #0e1015; --k-code-fg: #f3f4f6; --k-code-kw: #c4b5fd; --k-code-str: #8fe3b8; --k-code-num: #f5b971; --k-code-cmt: #8b93a3; --k-code-prop: #93c5fd; --k-code-muted: #a3abba; --k-shadow: 0 6px 24px rgba(0, 0, 0, .6); color-scheme: dark; }
 
 /* Players (the electrons) and motion. */
 .kit {
@@ -1414,14 +1414,14 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
 .k-pm button[aria-selected="true"] { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
 .k-pm button:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
 .k-install-steps { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
-.k-cmd { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 6px 6px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); }
+.k-cmd { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 6px 6px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); border: 1px solid var(--k-line); }
 .k-cmd code { flex: 1; min-width: 0; font: 13px ui-monospace, Consolas, monospace; overflow-x: auto; white-space: nowrap; }
 .k-cmd code::before { content: "$ "; opacity: .55; }
 .k-cmd .k-btn { flex: none; }
 .k-install-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
 .k-install-cols figure { margin: 0; }
 .k-install-cols figcaption { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.k-tree { margin: 0; padding: 10px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
+.k-tree { margin: 0; padding: 10px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); border: 1px solid var(--k-line); font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
 .k-install-note { margin: 0; color: var(--k-muted); font-size: 14px; }
 .k-install-note code { padding: 1px 6px; border-radius: 4px; background: var(--k-code-bg); color: var(--k-code-fg); font-size: 12.5px; }`,
   js: function setupInstall(root) {
@@ -1450,20 +1450,21 @@ Game.Play = function () {
 <div class="k-code-field" data-lang="js"><pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" aria-label="Handler code" rows="4">Game.Hook.ForceFocus = true;
 var players = Context.NumberOfPlayers; // 1 to 8
 </textarea></div>`,
-  css: `.k-codeblock { margin: 0; width: 100%; max-width: 520px; border-radius: var(--k-r-ctl); overflow: hidden; background: var(--k-code-bg); }
+  css: `.k-codeblock { margin: 0; width: 100%; max-width: 520px; border-radius: var(--k-r-ctl); overflow: hidden; background: var(--k-code-bg); border: 1px solid var(--k-line); }
 .k-codeblock figcaption { padding: 6px 12px; font: 12px ui-monospace, Consolas, monospace; color: color-mix(in srgb, var(--k-code-fg) 65%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--k-code-fg) 15%, transparent); }
 .k-codeblock pre { margin: 0; padding: 10px 12px; overflow: auto; color: var(--k-code-fg); font: 13px/1.5 ui-monospace, Consolas, monospace; }
-.k-code-field { position: relative; display: grid; width: 100%; max-width: 520px; border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); background: var(--k-surface); }
+.k-code-field { position: relative; display: grid; width: 100%; max-width: 520px; border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); background: var(--k-code-bg); }
 .k-code-field > * { grid-area: 1 / 1; margin: 0; padding: 8px 10px; border: 0; font: 13px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
-.k-code-field pre { pointer-events: none; color: var(--k-fg); overflow: hidden; }
-.k-code-field textarea { resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: var(--k-fg); outline: none; min-height: 3.2em; }
+.k-code-field pre { pointer-events: none; color: var(--k-code-fg); overflow: hidden; }
+.k-code-field textarea { resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: var(--k-code-fg); outline: none; min-height: 3.2em; }
 .k-code-field textarea::placeholder { color: var(--k-muted); }
 .k-code-field textarea::selection { background: color-mix(in srgb, var(--k-accent) 30%, transparent); color: transparent; }
 .k-code-field:focus-within { outline: 2px solid var(--k-accent); outline-offset: 1px; }
-/* Highlight colours: dark code backgrounds, and code fields on light pages. */
-.kit { --hl-com: #8b949e; --hl-str: #a5d6ff; --hl-re: #a5d6ff; --hl-kw: #ff7b72; --hl-num: #79c0ff; --hl-fn: #d2a8ff; --hl-prop: #7ee787; --hl-tag: #7ee787; --hl-attr: #79c0ff; --hl-sel: #ffa657; --hl-const: #ffa657; --hl-punct: #c9d1d9; --hl-var: inherit; }
-.kit[data-mode="light"] .k-code-field { --hl-com: #6e7781; --hl-str: #0a3069; --hl-re: #0a3069; --hl-kw: #cf222e; --hl-num: #0550ae; --hl-fn: #8250df; --hl-prop: #116329; --hl-tag: #116329; --hl-attr: #0550ae; --hl-sel: #953800; --hl-const: #953800; --hl-punct: #24292f; }
-.hl-com { color: var(--hl-com); font-style: italic; } .hl-str { color: var(--hl-str); } .hl-re { color: var(--hl-re); } .hl-kw { color: var(--hl-kw); } .hl-num { color: var(--hl-num); } .hl-fn { color: var(--hl-fn); } .hl-prop { color: var(--hl-prop); } .hl-tag { color: var(--hl-tag); } .hl-attr { color: var(--hl-attr); } .hl-sel { color: var(--hl-sel); } .hl-const { color: var(--hl-const); } .hl-punct { color: var(--hl-punct); } .hl-var { color: var(--hl-var); }`,
+/* Highlight colours: each look's code colours from the workbench (contrast-checked, light and dark), mapped as its
+   editor does: keywords, strings, numbers and literals, comments in italics, properties; names in the text colour,
+   punctuation muted. Tags and selectors read as keywords, functions and attributes as properties. */
+.hl-kw, .hl-tag, .hl-sel { color: var(--k-code-kw); } .hl-str, .hl-re { color: var(--k-code-str); } .hl-num, .hl-const { color: var(--k-code-num); }
+.hl-com { color: var(--k-code-cmt); font-style: italic; } .hl-prop, .hl-fn, .hl-attr { color: var(--k-code-prop); } .hl-punct { color: var(--k-code-muted); } .hl-var { color: inherit; }`,
   js: function setupCode(root) {
     root.querySelectorAll('pre[data-hl]').forEach((pre) => { const c = pre.querySelector('code') || pre; c.innerHTML = kitHighlight[pre.dataset.hl](c.textContent); });
     root.querySelectorAll('.k-code-field').forEach((f) => kitCodeField(f));
