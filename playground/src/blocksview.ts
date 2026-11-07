@@ -31,7 +31,7 @@ export interface BlocksView {
 interface Range { start: number; end: number }
 
 /** A value slot: a literal, an API property, a handler option, an enum value, or code. */
-type VKind = 'str' | 'num' | 'bool' | 'prop' | 'opt' | 'enum' | 'code';
+type VKind = 'str' | 'num' | 'bool' | 'prop' | 'opt' | 'enum' | 'var' | 'join' | 'code';
 interface Val extends Range {
   key: string;
   label: string; // what the slot is, for screen readers ("DestinationPath", "the value")
@@ -45,6 +45,7 @@ interface Val extends Range {
   optKeyRange?: Range;
   optQuote?: string;
   type?: string; // the member's or parameter's type, when known
+  parts?: Val[]; // join: the parts of `a + b + c`
 }
 
 type Op = 'eq' | 'ne' | 'gt' | 'lt' | 'ge' | 'le' | 'has' | 'nothas' | 'true' | 'false' | 'code';
@@ -101,7 +102,7 @@ interface Callback {
   fn?: Range; // the FunctionExpression, when it is one
   body?: Branch;
 }
-interface Model { callbacks: Callback[]; optionNames: string[]; error?: { message: string; pos: number } }
+interface Model { callbacks: Callback[]; optionNames: string[]; varNames: string[]; error?: { message: string; pos: number } }
 
 const CALLBACKS: { path: string; owner: string; name: string; plain: string }[] = [
   { path: 'Game.Play', owner: 'Game', name: 'Play', plain: 'For each player, before their game starts' },
@@ -143,10 +144,46 @@ const labelOf = (owner: string, name: string) => `${ownerLabel(owner)}.${name}`;
 const isNumLit = (n: any) => (n.type === 'Literal' && typeof n.value === 'number') || (n.type === 'UnaryExpression' && n.operator === '-' && n.argument.type === 'Literal' && typeof n.argument.value === 'number');
 const NUM = /^-?(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?$/i;
 
+/** Variable names declared anywhere in the handler (set while reading it). */
+let varNames = new Set<string>();
+function collectVars(program: any): Set<string> {
+  const out = new Set<string>();
+  const walk = (x: any) => {
+    if (!x || typeof x.type !== 'string') return;
+    if (x.type === 'VariableDeclarator' && x.id.type === 'Identifier') out.add(x.id.name);
+    if ((x.type === 'FunctionExpression' || x.type === 'FunctionDeclaration') && x.params) for (const p of x.params) if (p.type === 'Identifier') out.add(p.name);
+    for (const k of Object.keys(x)) {
+      const v = x[k];
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object' && typeof v.type === 'string') walk(v);
+    }
+  };
+  walk(program);
+  return out;
+}
+
+/** `a + b + c` (left to right, as written) when one of the parts is text. */
+function joinParts(n: any): any[] | undefined {
+  if (n.type !== 'BinaryExpression' || n.operator !== '+') return undefined;
+  const out: any[] = [];
+  let x = n;
+  while (x.type === 'BinaryExpression' && x.operator === '+') {
+    out.unshift(x.right);
+    x = x.left;
+  }
+  out.unshift(x);
+  return out.some((p) => p.type === 'Literal' && typeof p.value === 'string') ? out : undefined;
+}
+
 function readVal(n: any, text: string, key: string, label: string, type?: string): Val {
   const src = text.slice(n.start, n.end);
   const v: Val = { key, label, start: n.start, end: n.end, kind: 'code', src, type };
-  if (n.type === 'Literal' && typeof n.value === 'string') [v.kind, v.str, v.quote] = ['str', n.value, src[0]];
+  const parts = joinParts(n);
+  if (parts) {
+    v.kind = 'join';
+    v.parts = parts.map((p, i) => readVal(p, text, `${key}.${i}`, `${label}, part ${i + 1}`));
+  } else if (n.type === 'Identifier' && varNames.has(n.name)) v.kind = 'var';
+  else if (n.type === 'Literal' && typeof n.value === 'string') [v.kind, v.str, v.quote] = ['str', n.value, src[0]];
   else if (isNumLit(n) && NUM.test(src)) v.kind = 'num';
   else if (n.type === 'Literal' && typeof n.value === 'boolean') v.kind = 'bool';
   else if (n.type === 'MemberExpression' && n.computed && n.property.type === 'Literal' && typeof n.property.value === 'string') {
@@ -304,8 +341,9 @@ function read(text: string): Model {
   try {
     program = parseLikeJint(text, PARSE_OPTS).program;
   } catch (err: any) {
-    return { callbacks: [], optionNames: [], error: { message: String(err?.message ?? err).replace(/\s*\(\d+:\d+\)$/, ''), pos: typeof err?.pos === 'number' ? err.pos : 0 } };
+    return { callbacks: [], optionNames: [], varNames: [], error: { message: String(err?.message ?? err).replace(/\s*\(\d+:\d+\)$/, ''), pos: typeof err?.pos === 'number' ? err.pos : 0 } };
   }
+  varNames = collectVars(program);
   const callbacks: Callback[] = [];
   const optionNames: string[] = [];
   const seen = new Map<string, number>();
@@ -333,7 +371,7 @@ function read(text: string): Model {
     }
     callbacks.push(cb);
   }
-  return { callbacks, optionNames };
+  return { callbacks, optionNames, varNames: [...varNames].sort() };
 }
 
 // ---------------------------------------------------------------------------
@@ -350,7 +388,7 @@ function applyTo(text: string, edits: TextEdit[]): string {
   for (const e of [...edits].sort((a, b) => b.start - a.start)) out = out.slice(0, e.start) + e.text + out.slice(e.end);
   return out;
 }
-const strLit = (s: string, q = '"') => q + s.replace(/\\/g, '\\\\').replace(new RegExp(q, 'g'), '\\' + q).replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/ /g, '\\u2028').replace(/ /g, '\\u2029') + q;
+const strLit = (s: string, q = '"') => q + s.replace(/\\/g, '\\\\').replace(new RegExp(q, 'g'), '\\' + q).replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029') + q;
 
 /** One level of indentation, as the file uses it. */
 function indentUnit(t: string): string {
@@ -386,7 +424,6 @@ function defaultFor(type: string | undefined, name = ''): string {
   if (t.endsWith('[]') || t === 'array') return '[]';
   return '""';
 }
-const needsParens = (src: string) => !/^[\w$.]+(\([^()]*\))?$|^"[^"]*"$|^'[^']*'$|^-?\d/.test(src.trim()) && !isMemberLike(src);
 function isMemberLike(src: string): boolean {
   try {
     const n: any = acorn.parseExpressionAt(src, 0, { ecmaVersion: 'latest' });
@@ -395,7 +432,7 @@ function isMemberLike(src: string): boolean {
     return false;
   }
 }
-const wrap = (src: string) => (needsParens(src) ? `(${src})` : src);
+const wrap = (src: string) => (isMemberLike(src) ? src : `(${src})`);
 
 // ---------------------------------------------------------------------------
 // Diagnostics after the view's own edits (as in formview.ts)
@@ -452,7 +489,7 @@ const OP_LABEL: [Op, string][] = [
   ['has', 'contains'], ['nothas', 'does not contain'], ['true', 'is true'], ['false', 'is not true'],
 ];
 const OP_TEXT: Partial<Record<Op, string>> = { eq: '==', ne: '!=', gt: '>', lt: '<', ge: '>=', le: '<=' };
-const KIND_LABEL: [VKind, string][] = [['str', 'Text'], ['num', 'Number'], ['bool', 'Yes/No'], ['prop', 'Property'], ['opt', 'Option'], ['enum', 'Choice'], ['code', 'Code']];
+const KIND_LABEL: [VKind, string][] = [['str', 'Text'], ['num', 'Number'], ['bool', 'Yes/No'], ['prop', 'Property'], ['opt', 'Option'], ['var', 'Variable'], ['join', 'Joined'], ['enum', 'Choice'], ['code', 'Code']];
 
 /** Properties a value can read: Context, Player, ProtoInput.Values, most used first. */
 let propGroups: { label: string; items: { path: string; m: Member }[] }[] | undefined;
@@ -527,17 +564,18 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
   banner.hidden = true;
   const sectionsEl = h('div', 'bv-sections');
   const elsewhere = h('div', 'bv-elsewhere');
-  const palette = h('div', 'bv-palette', { id: idOf('palette'), role: 'dialog', 'aria-label': 'Add a step' });
+  const palette = h('div', 'bv-palette', { id: idOf('palette'), role: 'group', 'aria-label': 'Add a step' });
   palette.hidden = true;
   root.append(bar, banner, sectionsEl, elsewhere);
   container.append(root);
 
-  let model: Model = { callbacks: [], optionNames: [] };
+  let model: Model = { callbacks: [], optionNames: [], varNames: [] };
   let text = '';
   let diagBase = '';
   let diags: Diagnostic[] = [];
   let log: Logged[] = [];
   let focusWant: string | undefined;
+  const codeEditing = new Set<string>(); // code rows being typed in: they stay code rows until left
   const forcedCode = new Set<string>(); // slots shown as code although they read as something else
   const vals = new Map<string, Val>();
   const conds = new Map<string, Cond>();
@@ -606,10 +644,10 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
 
   // --- value slots ---------------------------------------------------------------
 
-  const valSig = (v: Val) => `${v.kind}${v.kind === 'prop' || v.kind === 'enum' ? v.path : ''}${v.kind === 'enum' ? v.enumName : ''}`;
+  const valSig = (v: Val): string => forcedCode.has(v.key) ? 'C' : `${v.kind}${v.kind === 'prop' || v.kind === 'enum' ? v.path : ''}${v.kind === 'enum' ? v.enumName : ''}${v.parts ? `(${v.parts.map(valSig).join(',')})` : ''}`;
   const shownKind = (v: Val): VKind => (forcedCode.has(v.key) ? 'code' : v.kind);
 
-  function valueEditor(v0: Val, allowKinds = true): HTMLElement {
+  function valueEditor(v0: Val, allowKinds = true, inPart = false): HTMLElement {
     const k = v0.key;
     const kind = shownKind(v0);
     const wrapEl = h('span', `bv-val bv-v-${kind}`);
@@ -618,6 +656,8 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       sel.id = idOf(`${k}:kind`);
       for (const [vk, lab] of KIND_LABEL) {
         if (vk === 'enum' && kind !== 'enum') continue;
+        if (vk === 'var' && kind !== 'var' && !model.varNames.length) continue;
+        if (vk === 'join' && inPart) continue;
         sel.append(h('option', '', { value: vk }, lab));
       }
       sel.value = kind;
@@ -703,6 +743,33 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
         wrapEl.append(h('span', 'bv-word', {}, 'the player’s choice for'), inp, dl);
         break;
       }
+      case 'var': {
+        const sel = h('select', 'bv-select', common);
+        const names = model.varNames.includes(v0.src) ? model.varNames : [v0.src, ...model.varNames];
+        for (const n of names) sel.append(h('option', '', { value: n }, n));
+        sel.value = v0.src;
+        sel.addEventListener('change', () => {
+          const v = vals.get(k);
+          if (v?.kind === 'var' && sel.value !== v.src) edit([{ start: v.start, end: v.end, text: sel.value }], fid);
+        });
+        wrapEl.append(sel);
+        break;
+      }
+      case 'join': {
+        const box = h('span', 'bv-join', { role: 'group', 'aria-label': `${v0.label}: text joined from ${v0.parts!.length} parts` });
+        v0.parts!.forEach((pv, i) => {
+          if (i) box.append(h('span', 'bv-plus', { 'aria-hidden': 'true' }, '+'));
+          box.append(valueEditor(pv, true, true));
+        });
+        const more = h('button', 'bv-icon bv-more', { type: 'button', 'data-bv': `${k}:more`, id: idOf(`${k}:more`), 'aria-label': `Add a part to ${v0.label}`, title: 'Add a part' }, '+');
+        more.addEventListener('click', () => {
+          const v = vals.get(k);
+          if (v?.kind === 'join') edit([{ start: v.end, end: v.end, text: ' + ""' }], `${k}.${v.parts!.length}:v`);
+        });
+        box.append(more);
+        wrapEl.append(box);
+        break;
+      }
       case 'code': {
         const inp = h('input', 'bv-input bv-code', { ...common, type: 'text', spellcheck: 'false', autocomplete: 'off' });
         inp.addEventListener('input', () => {
@@ -710,7 +777,11 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
           if (!v) return;
           const ok = isExpression(inp.value);
           inp.setAttribute('aria-invalid', String(!ok));
+          forcedCode.add(k); // stays code while typed in, even when it reads as something else
           if (ok && inp.value !== v.src) edit([{ start: v.start, end: v.end, text: inp.value }], undefined, true);
+        });
+        if (!allowKinds) inp.addEventListener('blur', () => {
+          if (forcedCode.delete(k)) setTimeout(update);
         });
         wrapEl.append(inp);
         break;
@@ -719,9 +790,13 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     return wrapEl;
   }
 
-  function fillValue(v: Val) {
+  function fillValue(scope: HTMLElement, v: Val) {
     vals.set(v.key, v);
-    const el = root.querySelector<HTMLInputElement & HTMLSelectElement>(`[data-bv="${CSS.escape(`${v.key}:v`)}"]`);
+    if (shownKind(v) === 'join') {
+      for (const p of v.parts!) fillValue(scope, p);
+      return;
+    }
+    const el = scope.querySelector<HTMLInputElement & HTMLSelectElement>(`[data-bv="${CSS.escape(`${v.key}:v`)}"]`);
     if (!el || el === document.activeElement) return;
     const kind = shownKind(v);
     const want = kind === 'str' ? v.str! : kind === 'opt' ? v.optKey! : kind === 'prop' || kind === 'enum' ? v.path! : v.src;
@@ -754,6 +829,8 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       case 'bool': t = 'true'; break;
       case 'prop': t = v.type === 'boolean' ? 'Context.IsKeyboardPlayer' : v.type === 'number' ? 'Context.PlayerID' : first; break;
       case 'opt': t = `Context.Options[${strLit(model.optionNames[0] ?? '')}]`; break;
+      case 'var': t = model.varNames[0] ?? ''; break;
+      case 'join': t = `${v.kind === 'code' && !isMemberLike(v.src) ? `(${v.src})` : v.src} + ""`; break;
       default: return;
     }
     edit([{ start: v.start, end: v.end, text: t }], `${k}:v`);
@@ -762,7 +839,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
   // --- rows -------------------------------------------------------------------------
 
   function stmtSig(s: Stmt): string {
-    const vs = (v?: Val) => (v ? `${forcedCode.has(v.key) ? 'C' : valSig(v)}` : '-');
+    const vs = (v?: Val) => (v ? valSig(v) : '-');
     switch (s.kind) {
       case 'call': return `call|${s.path ?? s.calleeText}|${(s.args ?? []).map(vs).join(',')}|${s.argNames?.join(',')}`;
       case 'set': return `set|${s.path ?? s.calleeText}|${s.op}|${vs(s.value)}`;
@@ -771,7 +848,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       default: return s.kind;
     }
   }
-  const condSig = (c: Cond, k: string) => `${c.op}|${c.written ?? ''}|${c.left ? (forcedCode.has(c.left.key) ? 'C' : valSig(c.left)) : '-'}|${c.right ? (forcedCode.has(c.right.key) ? 'C' : valSig(c.right)) : '-'}|${k}`;
+  const condSig = (c: Cond, k: string) => `${c.op}|${c.written ?? ''}|${c.left ? valSig(c.left) : '-'}|${c.right ? valSig(c.right) : '-'}|${k}|${model.varNames.join()}|${model.optionNames.join()}`;
 
   /** The tools at the end of a row: docs, move, edit in code, remove. */
   function rowTools(s: Stmt, siblings: number, index: number, member?: { owner: string; name: string; m: Member }, card?: HTMLElement): HTMLElement {
@@ -823,8 +900,9 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
 
   /** One row of a branch: an action, a condition (with its branches) or code. */
   function renderStmt(s: Stmt, siblings: number, index: number, depth: number): HTMLElement {
+    if (codeEditing.has(s.key) && s.kind !== 'code') s = { key: s.key, start: s.start, end: s.end, kind: 'code', src: text.slice(s.start, s.end) };
     stmts.set(s.key, s);
-    const sig = `${stmtSig(s)}|${siblings}|${index}`;
+    const sig = `${stmtSig(s)}|${siblings}|${index}|${model.varNames.join()}|${model.optionNames.join()}`;
     const el = part(`row:${s.key}`, sig, () => {
       const li = h('li', `bv-row bv-k-${s.kind === 'if' ? 'if' : s.kind === 'code' ? 'code' : 'action'}`, { 'data-key': s.key });
       if (s.kind === 'if') {
@@ -855,9 +933,13 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
         if (s.value) sentence.append(h('span', 'bv-word', {}, '='), valueEditor(s.value));
       } else {
         const ta = h('textarea', 'bv-input bv-code bv-codeblock', { 'data-bv': `${s.key}:src`, id: idOf(`${s.key}:src`), 'aria-label': 'Code of this step', spellcheck: 'false', rows: String(Math.min(12, (s.src ?? '').split('\n').length)) });
+        ta.addEventListener('blur', () => {
+          if (codeEditing.delete(s.key)) setTimeout(update);
+        });
         ta.addEventListener('input', () => {
           const cur = stmts.get(s.key);
           if (!cur) return;
+          codeEditing.add(s.key);
           const ok = edit([{ start: cur.start, end: cur.end, text: ta.value }], undefined, true);
           ta.setAttribute('aria-invalid', String(!ok && ta.value !== cur.src));
           hint.hidden = ok || ta.value === cur.src;
@@ -877,7 +959,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     el.style.setProperty('--depth', String(depth));
     if (s.kind === 'if') renderIf(el, s, siblings, index, depth);
     else {
-      for (const v of [...(s.args ?? []), ...(s.value ? [s.value] : [])]) fillValue(v);
+      for (const v of [...(s.args ?? []), ...(s.value ? [s.value] : [])]) fillValue(el, v);
       if (s.kind === 'code') {
         const ta = el.querySelector<HTMLTextAreaElement>('textarea')!;
         if (ta !== document.activeElement && ta.value !== s.src) {
@@ -904,10 +986,14 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     const kids: HTMLElement[] = [];
     s.clauses!.forEach((c, ci) => {
       const ck = ci ? `${s.key}~${ci}` : s.key;
+      if (forcedCode.has(`${ck}:code`) && c.test.op !== 'code') {
+        const t = c.test;
+        c.test = { start: t.start, end: t.end, op: 'code', code: { key: `${ck}:code`, label: 'the condition', start: t.start, end: t.end, kind: 'code', src: text.slice(t.start, t.end) } };
+      }
       conds.set(ck, c.test);
       const head = part(`if:${ck}`, `${condSig(c.test, ck)}|${ci}|${siblings}|${index}|${s.clauses!.length}`, () => buildCond(s, ci, ck, siblings, index));
       kids.push(head);
-      for (const v of [c.test.left, c.test.right, c.test.code]) if (v) fillValue(v);
+      for (const v of [c.test.left, c.test.right, c.test.code]) if (v) fillValue(head, v);
       fillProbs(head.querySelector('.bv-probs')!, [c.testParen], ck);
       kids.push(renderBranch(c.body, depth + 1, ci ? 'Then (otherwise if)' : 'Then'));
     });
@@ -930,11 +1016,8 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
       return d;
     });
     kids.push(elseHead);
-    if (s.otherwise) kids.push(renderBranch(s.otherwise, depth + 1, 'Otherwise'));
-    else {
-      // Still offer "+ Otherwise if" next to the else.
-    }
     if (s.otherwise) {
+      kids.push(renderBranch(s.otherwise, depth + 1, 'Otherwise'));
       const more = part(`elif:${s.key}`, 'x', () => {
         const d = h('div', 'bv-clause bv-endif');
         const b2 = h('button', 'bv-link', { type: 'button', 'data-bv': `${s.key}:addelif`, id: idOf(`${s.key}:addelif`) }, '+ Otherwise if');
@@ -1401,13 +1484,31 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     if ((addCbs as any)._sig !== sig) {
       (addCbs as any)._sig = sig;
       const hadFocus = addCbs.contains(document.activeElement);
+      const wasOpen = !!addCbs.querySelector('details')?.open;
       addCbs.textContent = '';
-      for (const d of missing) {
-        const b = h('button', 'btn bv-add-cb', { type: 'button', 'data-bv': `addcb:${d.path}`, id: idOf(`addcb:${d.path}`), title: d.plain }, `+ ${d.path}`);
+      const button = (d: (typeof CALLBACKS)[number], cls: string) => {
+        const b = h('button', cls, { type: 'button', 'data-bv': `addcb:${d.path}`, id: idOf(`addcb:${d.path}`) });
+        b.innerHTML = `<span class="bv-add-cb-path">+ ${esc(d.path)}</span><span class="bv-add-cb-plain">${esc(d.plain)}</span>`;
         b.addEventListener('click', () => addCallback(d.path));
-        addCbs.append(b);
+        return b;
+      };
+      const play = missing.find((d) => d.path === 'Game.Play');
+      if (play) addCbs.append(button(play, 'btn bv-add-cb bv-add-play'));
+      const others = missing.filter((d) => d !== play);
+      if (others.length) {
+        const det = h('details', 'bv-more-cbs');
+        det.open = wasOpen;
+        det.append(h('summary', 'btn', {}, play ? 'Other callbacks' : '+ Add a callback'));
+        const ul = h('ul', 'bv-cb-menu');
+        for (const d of others) {
+          const li = h('li');
+          li.append(button(d, 'bv-pick bv-add-cb'));
+          ul.append(li);
+        }
+        det.append(ul);
+        addCbs.append(det);
       }
-      if (hadFocus && !focusWant && !focusTarget) (addCbs.firstElementChild as HTMLElement | null)?.focus();
+      if (hadFocus && !focusWant && !focusTarget) addCbs.querySelector<HTMLElement>('button, summary')?.focus();
     }
 
     // Problems outside the callbacks.

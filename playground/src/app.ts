@@ -41,6 +41,7 @@ import { installMap, type PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
+import { firstRunDone, initFirstRun } from './firstrun';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
@@ -1593,6 +1594,7 @@ function commandList(): OpenEntry[] {
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
+    c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
     c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
@@ -2647,6 +2649,16 @@ function showWelcome() {
   editor.refresh();
 }
 if (!welcomed) showWelcome();
+// The very first visit (not someone who has used the workbench before): Nucli's two questions.
+const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
+  mode: () => mode,
+  setMode,
+  layout,
+  setLayout,
+  done: (exp) => { if (exp) announce(exp === 'developer' ? 'Advanced mode is on.' : 'Guided: tips and plain words. Getting started is above the code.'); editor.focus(); },
+});
+if (!welcomed && !firstRunDone() && !location.hash) firstRun.open();
+$('#fr-again').addEventListener('click', () => { ($('#settings-dialog') as HTMLDialogElement).close(); firstRun.open(); });
 $('#welcome-open').addEventListener('click', () => {
   if (narrow()) setView('code');
   showWelcome();

@@ -112,6 +112,20 @@ for (const theme of ['light', 'dark']) {
   check(acc === (theme === 'dark' ? '#ffb4a8' : '#7a1f2b') && /Left out: light\.bg/.test(await p.innerText('#ct-msg')) && (await p.isVisible('body')), `${theme}: a custom theme file applies, and unsafe values are left out`);
   check((await p.$$('#set-looks .look-card .lc-remove')).length === 1 && (await p.$$('#set-looks .look-card:not(.look-add)')).length >= 5 && !!(await p.$('#set-looks .look-card.on .lc-remove')), `${theme}: the loaded theme is listed with the built-in looks, and is on`);
   await p.click('#set-looks .look-card.on .lc-remove', { force: true });
+  await p.keyboard.press('Escape');
+  // The first-visit questions (Nucli): picking Developer turns Advanced mode on; then back.
+  await p.evaluate(() => document.dispatchEvent(new CustomEvent('open-firstrun')));
+  await p.waitForTimeout(200);
+  await axe(p, `${theme}, first-visit questions`);
+  await p.click('label.fr-opt:has(input[value=developer])');
+  await p.click('#firstrun-dialog button[type=submit]');
+  await p.waitForTimeout(200);
+  check(await p.evaluate(() => document.documentElement.dataset.mode === 'dev'), `${theme}: the first-visit choice "I write code" turns on Advanced mode`);
+  await p.evaluate(() => document.dispatchEvent(new CustomEvent('open-firstrun')));
+  await p.click('label.fr-opt:has(input[value=guided])');
+  await p.click('#firstrun-dialog button[type=submit]');
+  await p.$eval('#settings-open', (b) => b.click());
+  await p.waitForTimeout(200);
   // Settings: search shows matches from every section; Accessibility switches apply to the page.
   await p.fill('#set-q', 'colour-blind');
   await p.waitForTimeout(100);
