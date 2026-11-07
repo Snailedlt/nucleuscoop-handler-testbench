@@ -2,6 +2,7 @@
 // API), then what to try, best fit first: API & docs for those who know Nucleus well, developer experience for
 // developers, look & ease of use for those new to either. Each item has the kind of testing it needs, a "Tried it"
 // tick kept in this browser, and a Report link that opens the tester feedback form filled in.
+import { feedbackUrl } from './report';
 import { AREAS, BETA, fit, KINDS, TEST_PLAN, type Coding, type NucleusKnow, type Profile, type TestItem } from './testplan';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -9,7 +10,8 @@ const DONE_KEY = 'nucleus-workbench-tested';
 const PROFILE_KEY = 'nucleus-workbench-tester-profile';
 const get = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const set = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
-const report = (title: string) => `https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml&title=${encodeURIComponent(`Beta test: ${title}`)}&version=workbench`;
+// Filled in when clicked, so the details are current (report.ts).
+const report = (t: TestItem) => feedbackUrl({ title: `Beta test: ${t.title}`, test: t.id });
 
 const CODING: [Coding, string][] = [['new', 'New to coding'], ['dev', 'Developer']];
 const NUCLEUS: [NucleusKnow, string][] = [['new', 'New to it'], ['some', 'Made a few handlers'], ['expert', 'Know the API well']];
@@ -20,13 +22,18 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[]) {
   let profile: Profile | null = null;
   try { profile = JSON.parse(get(PROFILE_KEY) || 'null'); } catch { /* ignore */ }
   const body = dlg.querySelector<HTMLElement>('#test-body')!;
+  body.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.tg-report');
+    const t = a && TEST_PLAN.find((x) => x.id === a.dataset.id);
+    if (a && t) a.href = report(t);
+  });
   const score = (t: TestItem, p: Profile) => Math.max(...t.areas.map((a) => fit(a, p)));
 
   const item = (t: TestItem) => `<li class="tg-item${done.has(t.id) ? ' done' : ''}">
     <label class="tg-done"><input type="checkbox" data-id="${t.id}"${done.has(t.id) ? ' checked' : ''}><span class="sr-only">Tried: ${esc(t.title)}</span></label>
     <div><div class="tg-title"><strong>${esc(t.title)}</strong>${t.areas.map((a) => `<span class="tg-area a-${a}" title="${esc(AREAS[a].who)}">${esc(AREAS[a].label)}</span>`).join('')}${t.kinds.map((k) => `<span class="tg-kind" title="${esc(KINDS[k].how)}">${esc(KINDS[k].label)}</span>`).join('')}</div>
     <p><span class="muted">Try:</span> ${esc(t.steps)}</p><p><span class="muted">Look for:</span> ${esc(t.look)}</p>
-    <a class="small" href="${report(t.title)}" target="_blank" rel="noopener">Report what you found</a></div></li>`;
+    <a class="small tg-report" data-id="${t.id}" href="${esc(report(t))}" target="_blank" rel="noopener">Report what you found</a></div></li>`;
 
   const seg = (name: string, label: string, opts: [string, string][], value: string | undefined) =>
     `<div class="tg-q"><span class="tg-ql" id="tgq-${name}">${label}</span><div class="tg-who" role="radiogroup" aria-labelledby="tgq-${name}">${opts.map(([v, l]) => `<button type="button" role="radio" aria-checked="${v === value}" data-q="${name}" data-v="${v}">${esc(l)}</button>`).join('')}</div></div>`;

@@ -41,6 +41,7 @@ import { installMap, type PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
+import { feedbackUrl, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
@@ -1596,6 +1597,7 @@ function commandList(): OpenEntry[] {
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
     c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
     c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
+    c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => window.open(feedbackUrl(), '_blank', 'noopener')),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
@@ -2115,6 +2117,7 @@ const appItems = (): MenuItem[] => [
   { label: 'Keyboard shortcuts', hint: '?', run: () => helpDialog.showModal() },
   { label: "What's new", run: () => ($('#news-open-2') as HTMLButtonElement).click() },
   { label: 'Getting started', run: () => ($('#welcome-open') as HTMLButtonElement).click() },
+  { label: 'Send feedback…', run: () => window.open(feedbackUrl(), '_blank', 'noopener') },
   { kind: 'separator', label: '' },
   { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
   ...(document.getElementById('test-open') ? [{ label: '🧪 Help test the beta', run: () => testGuide.open() }] : []),
@@ -2652,6 +2655,12 @@ function showWelcome() {
   editor.refresh();
 }
 if (!welcomed) showWelcome();
+// What feedback forms say about the open handler: its name and where it came from, a link only to an unedited example
+// or Hub handler, never the code itself.
+setReportState(() => ({
+  handler: { name: doc.name, kind: doc.kind === 'draft' || doc.kind === 'new' ? 'own code, not included' : doc.kind, link: doc.hash && editor.getValue() === loadedText ? `${location.origin}${location.pathname}#${doc.hash}` : undefined },
+  view: viewMode,
+}));
 // The very first visit (not someone who has used the workbench before): Nucli's two questions.
 const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
   mode: () => mode,
