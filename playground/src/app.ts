@@ -2281,7 +2281,6 @@ initKeyHints([
   { el: document.getElementById('lines-toggle'), what: 'Show or hide Lines', keys: 'Ctrl B' },
   { el: document.getElementById('code-menu-open'), what: 'Save', keys: 'Ctrl S' },
   { el: document.getElementById('save-more'), what: 'Save as…', keys: 'Ctrl Shift S' },
-  { el: document.getElementById('share-open'), what: 'Share' },
   { el: document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'), what: 'Try it', keys: 'Ctrl Enter' },
 ]);
 
