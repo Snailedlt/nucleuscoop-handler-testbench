@@ -1887,7 +1887,7 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 async function copyCode() {
   try {
     await navigator.clipboard.writeText(editor.getValue());
-    confirmOn($('#code-menu-open'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
+    confirmOn($('#share-open').offsetParent ? $('#share-open') : $('#code-menu-phone'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
     editor.focus();
@@ -1987,7 +1987,7 @@ const tips = initTips({
     new: () => $('#tab-add'),
     examples: () => $('#tab-add'),
     tryit: () => document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'),
-    share: () => $('#code-menu-open'),
+    share: () => $('#share-open'),
   },
 });
 $('#tips-reset').addEventListener('click', () => tips.reset());
@@ -2033,8 +2033,9 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   } else if (mod && e.key.toLowerCase() === 's') {
     e.preventDefault(); // instead of the browser saving the page
     const save = $('#save') as HTMLButtonElement;
-    if (save.hidden) ($('#code-menu-open') as HTMLButtonElement).click();
-    else save.click();
+    void save;
+    if (e.shiftKey) openMenu($('#save-more').offsetParent ? $('#save-more') : $('#code-menu-phone'), 'Save as', saveItems());
+    else void saveAs();
   } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
     e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
     lines.toggle();
@@ -2136,7 +2137,7 @@ const appItems = (): MenuItem[] => [
 ];
 $('#tab-add').addEventListener('click', () => openMenu($('#tab-add'), 'New or open', addItems()));
 $('#app-menu-open').addEventListener('click', () => openMenu($('#app-menu-open'), 'Menu', appItems()));
-$('#code-menu-phone').addEventListener('click', () => openCodeDialog());
+$('#code-menu-phone').addEventListener('click', () => openMenu($('#code-menu-phone'), 'Save or share', [...saveItems(), { label: '', kind: 'separator' }, { label: 'Share…', run: openCodeDialog }]));
 $('#doc-switch').addEventListener('click', () => openMenu($('#doc-switch'), 'Open handlers', [
   { kind: 'heading', label: 'Open handlers' },
   ...tabs.map((x) => ({ label: x.id === activeTab ? doc.name : x.meta.name, checked: x.id === activeTab, run: () => switchTab(x.id) })),
@@ -2149,7 +2150,8 @@ document.querySelectorAll<HTMLElement>('.rail [data-rail]').forEach((b) => b.add
   if (act === 'add') openMenu(b, 'New or open', addItems(), 'right');
   else if (act === 'menu') openMenu(b, 'Menu', appItems(), 'right');
   else if (act === 'lines') lines.toggle();
-  else if (act === 'save') openCodeDialog();
+  else if (act === 'save') void saveAs(undefined, b);
+  else if (act === 'share') openCodeDialog();
   else if (act === 'test') testGuide.open();
   else return; // Home is a link
   e.preventDefault();
@@ -2172,7 +2174,9 @@ initKeyHints([
   { el: document.getElementById('app-menu-open'), what: 'Settings, Advanced mode and help', keys: 'Ctrl ,' },
   ...[...document.querySelectorAll<HTMLElement>('.rail [data-rail]')].map((b) => ({ el: b, what: b.getAttribute('aria-label') ?? '', keys: ({ lines: 'Ctrl B', save: 'Ctrl S', add: 'Ctrl K', menu: 'Ctrl ,' } as Record<string, string>)[b.dataset.rail!] ?? '' })),
   { el: document.getElementById('lines-toggle'), what: 'Show or hide Lines', keys: 'Ctrl B' },
-  { el: document.getElementById('code-menu-open'), what: 'Save or copy', keys: 'Ctrl S' },
+  { el: document.getElementById('code-menu-open'), what: 'Save', keys: 'Ctrl S' },
+  { el: document.getElementById('save-more'), what: 'Save as…', keys: 'Ctrl Shift S' },
+  { el: document.getElementById('share-open'), what: 'Share' },
   { el: document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'), what: 'Try it', keys: 'Ctrl Enter' },
 ]);
 
@@ -2196,7 +2200,7 @@ wireVotes((kind, _id, v, el) => {
     box.checked = feedbackOn();
     box.disabled = !feedbackAvailable() || feedbackBlockedByBrowser();
     note.hidden = !box.disabled;
-    note.textContent = !feedbackAvailable() ? 'Not set up in this copy of the workbench: nothing is sent. Your votes are kept in this browser only.' : 'Off: your browser asks sites not to track you (Do Not Track or Global Privacy Control).';
+    note.textContent = !feedbackAvailable() ? 'Sending isn\'t switched on in this copy of the workbench yet, so nothing is sent, whatever this is set to. Your votes are kept in this browser.' : 'Off, because your browser asks sites not to track you (Do Not Track or Global Privacy Control): nothing is sent.';
   };
   box.addEventListener('change', () => (setFeedback(box.checked), sync()));
   sync();
@@ -2561,7 +2565,7 @@ const handlerFileName = () => {
   return name;
 };
 // "Save for Nucleus" in the header opens the same Save or copy dialog as the button next to the code.
-$('#save').addEventListener('click', () => openCodeDialog());
+$('#save').addEventListener('click', () => void saveAs());
 
 // ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
@@ -2731,50 +2735,88 @@ document.querySelectorAll('dialog').forEach((dl) =>
   }),
 );
 
-// Copy or download, next to the code: copy, a link, and the handler as .zip (with the install
-// steps), .js or .nc.
+// Save and Share are separate: Save writes a file in the last format used (.zip for Nucleus by default; ▾ picks
+// another), Share copies a link, the code, or a Discord post. The dialog shows Share, or the install steps after
+// the first saves of a .zip.
 const codeDialog = $('#code-dialog') as HTMLDialogElement;
+type SaveKind = 'zip' | 'js' | 'nc';
+const SAVE_KEY = 'nucleus-workbench-save-format';
+const STEPS_KEY = 'nucleus-workbench-install-steps-seen';
+const saveKind = (): SaveKind => { try { const v = localStorage.getItem(SAVE_KEY); return v === 'js' || v === 'nc' ? v : 'zip'; } catch { return 'zip'; } };
+const SAVE_LABEL: Record<SaveKind, string> = { zip: 'For Nucleus Co-op (.zip)', js: 'The code only (.js)', nc: 'Package for VS Code (.nc)' };
+function syncSaveButton() {
+  const k = saveKind();
+  $('#code-menu-open').setAttribute('aria-label', `Save the handler: ${SAVE_LABEL[k]}`);
+  $('#code-menu-open').title = `Save: ${SAVE_LABEL[k]} · Ctrl+S`;
+}
+syncSaveButton();
 function openCodeDialog() {
-  const name = handlerFileName();
+  $('#save-h').textContent = 'Share';
   $('#code-main').hidden = false;
   $('#code-done').hidden = true;
-  codeDialog.querySelectorAll<HTMLButtonElement>('.dl').forEach((b) => (b.hidden = !downloads));
-  (codeDialog.querySelector('[data-code=link]') as HTMLButtonElement).hidden = !(doc.hash || canShare());
-  const withFiles = packageFiles.length ? `, with ${packageFiles.length} other file${packageFiles.length === 1 ? '' : 's'}` : '';
-  $('#code-zip-sub').textContent = `${name}.zip${withFiles}: drag it onto Extract handler`;
-  $('#code-js-sub').textContent = packageFiles.length ? 'The code only, without the other files' : 'For the handlers folder or your editor';
+  const len = editor.getValue().length + 10;
+  $('#code-discord-sub').textContent = len > DISCORD_LIMIT ? `Too long for one message (${len.toLocaleString()} of ${DISCORD_LIMIT.toLocaleString()} characters): select the lines that matter first` : 'The code in a code block, ready to paste';
   codeDialog.showModal();
 }
-$('#code-menu-open').addEventListener('click', openCodeDialog);
+function showInstallSteps(filename: string) {
+  const errorsLeft = current.filter((d) => d.severity === 'error').length;
+  $('#save-h').textContent = 'Saved';
+  $('#code-saved').textContent = `Saved ${filename}`;
+  $('#code-warn').hidden = !errorsLeft;
+  $('#code-warn').textContent = errorsLeft ? `It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it. Check lists them.` : '';
+  $('#code-js-name').textContent = `${handlerFileName()}.js`;
+  $('#code-main').hidden = true;
+  $('#code-done').hidden = false;
+  if (!codeDialog.open) codeDialog.showModal();
+  $('#code-close').focus();
+}
+async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = $('#code-menu-open')) {
+  try { localStorage.setItem(SAVE_KEY, kind); } catch { /* not kept */ }
+  syncSaveButton();
+  if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
+  const filename = `${handlerFileName()}.${kind}`;
+  try {
+    const data = kind === 'js' ? new TextEncoder().encode(editor.getValue()) : buildPackage(editor.getValue(), packageFiles);
+    await downloads.save({ filename, data });
+    waka.saved();
+    use(`save-${kind}`);
+    // The install steps after the first two .zip saves; after that, they're under ▾.
+    let seen = 0;
+    try { seen = Number(localStorage.getItem(STEPS_KEY) || 0); localStorage.setItem(STEPS_KEY, String(seen + 1)); } catch { /* ignore */ }
+    if (kind === 'zip' && seen < 2) showInstallSteps(filename);
+    else confirmOn(trigger, 'Saved ✓', `Saved ${filename}.`);
+  } catch (e: any) {
+    if (e?.code === 'declined') return;
+    notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
+  }
+}
+const saveItems = (): MenuItem[] => [
+  { label: 'Save as', kind: 'heading' },
+  ...(['zip', 'js', 'nc'] as SaveKind[]).map((k) => ({ label: SAVE_LABEL[k], checked: saveKind() === k, run: () => void saveAs(k) })),
+  { label: '', kind: 'separator' as const },
+  { label: 'How to install it in Nucleus', run: () => showInstallSteps(`${handlerFileName()}.zip`) },
+];
+async function copyForDiscord(trigger: HTMLElement) {
+  const sel = editor.getSelection();
+  const text = '```js\n' + (sel || editor.getValue()).replace(/```/g, '`​``') + '\n```';
+  try {
+    await navigator.clipboard.writeText(text);
+    confirmOn(trigger, 'Copied ✓', text.length > DISCORD_LIMIT ? `Copied, but it's ${text.length.toLocaleString()} characters: Discord takes ${DISCORD_LIMIT.toLocaleString()} per message. Select fewer lines, or share a link.` : `Copied ${sel ? 'the selected lines' : 'the handler'} as a Discord code block.`);
+  } catch {
+    notice("The browser didn't let this page copy. Use Copy the code instead.", { kind: 'warning' });
+  }
+}
+$('#code-menu-open').addEventListener('click', () => void saveAs());
+$('#save-more').addEventListener('click', () => openMenu($('#save-more'), 'Save as', saveItems()));
+$('#share-open').addEventListener('click', openCodeDialog);
 $('#code-close').addEventListener('click', () => codeDialog.close());
 codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
   b.addEventListener('click', async () => {
     const kind = b.dataset.code;
-    if (kind === 'copy') return (codeDialog.close(), copyCode());
-    if (kind === 'link') return (codeDialog.close(), copyLink($('#code-menu-open')));
-    const name = handlerFileName();
-    const filename = `${name}.${kind}`;
-    try {
-      const data = kind === 'js' ? new TextEncoder().encode(editor.getValue()) : buildPackage(editor.getValue(), packageFiles);
-      await downloads.save({ filename, data });
-      waka.saved();
-      if (kind !== 'zip') return (codeDialog.close(), confirmOn($('#code-menu-open'), 'Saved ✓', `Saved ${filename}.`));
-      use(`save-${kind}`);
-      // The .zip: what to do next, in the same dialog.
-      const errorsLeft = current.filter((d) => d.severity === 'error').length;
-      $('#code-saved').textContent = `Saved ${filename}`;
-      $('#code-warn').hidden = !errorsLeft;
-      $('#code-warn').textContent = errorsLeft ? `It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it. Check lists them.` : '';
-      $('#code-js-name').textContent = `${name}.js`;
-      $('#code-main').hidden = true;
-      $('#code-done').hidden = false;
-      $('#code-close').focus();
-    } catch (e: any) {
-      codeDialog.close();
-      if (e?.code === 'declined') return;
-      if (['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) $('#save').hidden = true;
-      notice("Couldn't save the file here. Use Copy the code instead and paste it into a .js file.", { kind: 'error' });
-    }
+    codeDialog.close();
+    if (kind === 'copy') return copyCode();
+    if (kind === 'link') return copyLink($('#share-open'));
+    if (kind === 'discord') return copyForDiscord($('#share-open'));
   }),
 );
 initSheetDrag();
