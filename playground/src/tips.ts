@@ -179,6 +179,8 @@ const FEATURES_ = T('Feature', [
   { id: 'f-eq-values', text: 'Type a space after = (as in Game.SymlinkGame = ) and the editor suggests the values that option takes. For Game.Play it writes the whole function.' },
   { id: 'f-votes', text: 'Was a tip useful? The 👍 and 👎 next to it tell us, anonymously. The AI-written docs have them too.' },
   { id: 'f-density', text: 'Want more or less in Check? Settings › General › Check: Compact (one line each), Comfortable or Detailed.' },
+  { id: 'f-tabs', text: 'Open more than one handler: + next to the tabs opens a new one, and your changes stay in their own tab. Ctrl+Shift+[ and ] switch between them.' },
+  { id: 'f-rail', text: 'Want more room for code? Settings › General › Layout › Side rail puts the tools in a strip on the left.' },
   { id: 'f-swipe', text: 'Done with a note at the bottom right? Swipe it away to the right, or hover the stack to read them all.' },
   { id: 'f-gutter', text: 'Click a marker next to a line number for that line’s problems and fixes.' },
   { id: 'f-hub', text: 'The examples include the most-downloaded verified Hub handlers. Check and Try it work on them, so you can see how others solved a problem.', action: { label: 'Examples', run: 'examples' } },

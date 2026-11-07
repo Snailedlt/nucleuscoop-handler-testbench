@@ -16,17 +16,23 @@ export function initKeyHints(list: { el: HTMLElement | null; what?: string; keys
     if (!el) continue;
     const label = what ?? (el.getAttribute('title') || el.getAttribute('aria-label') || el.textContent || '').replace(/\s*\((Ctrl|⌘|F\d|\?)[^)]*\)\s*$/, '').trim();
     el.removeAttribute('title');
-    el.setAttribute('aria-keyshortcuts', keys.replace(/ /g, '+').replace('Ctrl', MAC ? 'Meta' : 'Control'));
+    if (keys) el.setAttribute('aria-keyshortcuts', keys.replace(/ /g, '+').replace('Ctrl', MAC ? 'Meta' : 'Control'));
     const open = (delay: number) => {
       clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (!el.isConnected || el.offsetParent === null) return;
-        tip.innerHTML = `<span>${label.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)}</span><span class="kh-keys">${show(keys)}</span>`;
+        tip.innerHTML = `<span>${label.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)}</span>${keys ? `<span class="kh-keys">${show(keys)}</span>` : ''}`;
         tip.hidden = false;
         const r = el.getBoundingClientRect();
         const w = tip.offsetWidth, h = tip.offsetHeight;
-        tip.style.left = `${Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8))}px`;
-        tip.style.top = `${r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - h - 6}px`;
+        // In the side rail: to the right of the button; elsewhere under it.
+        if (el.closest('.rail')) {
+          tip.style.left = `${r.right + 8}px`;
+          tip.style.top = `${r.top + r.height / 2 - h / 2}px`;
+        } else {
+          tip.style.left = `${Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8))}px`;
+          tip.style.top = `${r.bottom + 6 + h < innerHeight ? r.bottom + 6 : r.top - h - 6}px`;
+        }
       }, delay);
     };
     el.addEventListener('mouseenter', () => open(450));

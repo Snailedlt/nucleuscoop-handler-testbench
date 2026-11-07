@@ -990,6 +990,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); }
 .problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); color: #1b1f2a; } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
 #problems[data-density="compact"] { gap: 4px; }
+.set-layouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.set-layout { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); cursor: pointer; }
+.set-layout:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.set-layout span { display: flex; flex-direction: column; } .set-layout small { color: var(--muted); font-size: 12px; }
 #sp-general .set-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
 @media (max-width: 600px) { .pcard .row-fix { display: none; } .pcard.open .row-fix { display: inline; } }
 .plain-why { margin: 2px 0 0; }
@@ -1170,6 +1174,65 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .adv:has(input:checked) { color: var(--fg); }
 @media (prefers-reduced-motion: reduce) { .adv .track, .adv .track::after { transition: none; } }
 header .toolbar { order: 2; }
+/* ---- Header: one slim row (layout "bar"), or tools in a side rail (layout "rail"); open handlers as tabs ---- */
+header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
+.brand-long { font-weight: inherit; }
+@media (max-width: 1280px) { .brand-long { display: none; } }
+.htabs-wrap { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-width: 0; align-self: stretch; }
+#htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; align-self: flex-end; }
+.htab-w { display: inline-flex; align-items: center; max-width: 250px; border: 1px solid transparent; border-bottom: 0; border-radius: 9px 9px 0 0; flex: none; }
+.htab-w:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.htab-w.on { background: var(--surface); border-color: var(--line); }
+.htab { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 7px 4px 7px 12px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; border-radius: 9px 0 0 0; }
+.htab-w:hover .htab, .htab-w.on .htab { color: var(--fg); }
+.htab-w.on .htab { font-weight: 600; }
+.htab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.htab .ht-name { overflow: hidden; text-overflow: ellipsis; }
+.htab .ht-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--line); }
+.htab .ht-dot.e { background: var(--err); } .htab .ht-dot.w { background: var(--warn); } .htab .ht-dot.ok { background: var(--ok); }
+.htab .ht-pk { font: 700 10px/1 var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; flex: none; }
+.ht-x { width: 22px; height: 22px; margin-right: 5px; display: grid; place-items: center; flex: none; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 15px; line-height: 1; cursor: pointer; opacity: 0; padding: 0; }
+.htab-w:hover .ht-x, .htab-w.on .ht-x, .ht-x:focus-visible { opacity: 1; }
+.ht-x:hover { background: var(--surface-2); color: var(--fg); }
+@media (pointer: coarse) { .ht-x { opacity: 1; } }
+.htab-add { flex: none; width: 30px; height: 30px; margin-bottom: 2px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.htab-add:hover, .htab-add[aria-expanded="true"] { background: var(--surface); color: var(--fg); }
+.save-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.save-btn:hover { filter: brightness(1.08); }
+#app-menu-open { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+#app-menu-open .phone-dots { display: none; }
+.app-hidden { display: none !important; }
+.phone-name { display: none !important; }
+.rail { display: none; }
+/* Menus (menus.ts) */
+.app-menu { position: fixed; z-index: 90; min-width: 240px; max-width: min(340px, calc(100vw - 16px)); padding: 6px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 12px 32px rgba(0,0,0,.28); font-size: 13.5px; }
+.app-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: 7px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.app-menu button:hover, .app-menu button:focus-visible { background: var(--surface-2); outline: none; }
+.app-menu button[disabled] { opacity: .5; cursor: default; }
+.app-menu .am-l { flex: 1; }
+.app-menu .am-k { font: 11px var(--font-mono); color: var(--muted); }
+.app-menu .am-check { width: 14px; color: var(--accent); font-weight: 700; }
+.app-menu .am-sep { height: 1px; background: var(--line); margin: 5px 4px; }
+.app-menu .am-h { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px 2px; }
+/* Side rail */
+:root[data-layout="rail"] .rail { display: flex; flex-direction: column; align-items: center; gap: 6px; position: fixed; left: 0; top: 0; bottom: 0; width: 52px; padding: 12px 0; background: var(--surface); border-right: 1px solid var(--line); z-index: 20; }
+:root[data-layout="rail"] .app { padding-left: calc(52px + 12px); }
+:root[data-layout="rail"] header .brand, :root[data-layout="rail"] header .toolbar { display: none; }
+.rail-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 9px; background: none; color: var(--muted); cursor: pointer; font-size: 16px; text-decoration: none; }
+.rail-btn:hover, .rail-btn[aria-pressed="true"], .rail-btn[aria-expanded="true"] { background: var(--surface-2); color: var(--fg); }
+.rail-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rail-logo { color: var(--accent); }
+.rail-sp { flex: 1; }
+@media (max-width: 860px) {
+  :root[data-layout="rail"] .rail { display: none; }
+  :root[data-layout="rail"] .app { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  :root[data-layout="rail"] header .brand, :root[data-layout="rail"] header .toolbar { display: flex; }
+  .htabs-wrap { display: none; }
+  .phone-name { display: inline-flex !important; }
+  #app-menu-open svg { display: none; }
+  #app-menu-open .phone-dots { display: inline; font-size: 18px; }
+  header .home-link { display: none; }
+}
 footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -1181,32 +1244,43 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div class="brand-top"><a class="brand-link" href="./" aria-label="Nucleus Handler Workbench">
       <img class="logo logo-www" src="data:image/png;base64,/*WWW_LOGO*/" alt="" width="30" height="30">
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
-      <h1>Nucleus Handler Workbench</h1></a><a class="start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></div>
-      <div class="sub">Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
+      <h1><span class="brand-long">Nucleus Handler </span>Workbench</h1></a><a class="start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></div>
     </div>
+    <div class="htabs-wrap"><div id="htabs" role="tablist" aria-label="Open handlers"></div><button class="htab-add" id="tab-add" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="New handler, open a file, or an example">+</button></div>
     <div class="switch" role="group" aria-label="Show">
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
       <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
     </div>
-    <label class="adv" title="Show rule details, filters, engine probes and more keyboard shortcuts">
-      <input type="checkbox" id="advanced" role="switch"><span class="track" aria-hidden="true"></span>Advanced mode
-    </label>
     <div class="toolbar">
-      <button class="btn wide-only" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
-      <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
-      <button class="btn wide-only" id="new-open" type="button">New handler…</button>
-      <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install, or copy the code" aria-haspopup="dialog">Save for Nucleus…</button>
-      <button class="btn icon wide-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
-      <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: what's new, keyboard shortcuts">⋯</button>
-      <button class="btn icon gear" id="settings-open" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn save-btn wide-only" id="code-menu-open" type="button" aria-haspopup="dialog" aria-label="Save or copy the handler"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Save</span></button>
+      <button class="btn icon gear" id="app-menu-open" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu: settings, Advanced mode, help"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="phone-dots" aria-hidden="true">⋯</span></button>
+      <!-- Reached from the menus (and still by their shortcuts); kept so everything wired to them keeps working. -->
+      <div class="app-hidden" hidden>
+        <button id="file-open" type="button">Open file…</button><input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
+        <button id="new-open" type="button">New handler…</button>
+        <button id="save" type="button" hidden>Save for Nucleus…</button>
+        <button id="help-open" type="button">Keyboard shortcuts</button>
+        <button id="more-open" type="button">More</button>
+        <button id="settings-open" type="button">Settings</button>
+        <label class="adv"><input type="checkbox" id="advanced" role="switch">Advanced mode</label>
+      </div>
     </div>
+    <nav class="rail" aria-label="Tools">
+      <a class="rail-btn rail-logo start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" aria-label="Home" data-rail="Home"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <button class="rail-btn" type="button" data-rail="add" aria-label="New, open a file or an example" aria-haspopup="menu"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="rail-btn" type="button" data-rail="lines" aria-label="Lines"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="rail-btn" type="button" data-rail="save" aria-label="Save or copy"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="rail-sp"></span>
+      <button class="rail-btn" type="button" data-rail="test" aria-label="Help test the beta">🧪</button>
+      <button class="rail-btn" type="button" data-rail="menu" aria-label="Menu: settings, Advanced mode, help" aria-haspopup="menu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </nav>
   </header>
 
   <div id="updated" role="status" hidden><span id="updated-text"></span> <button class="link" type="button" id="updated-open">What's new</button><button class="btn icon" type="button" id="updated-close" aria-label="Dismiss">×</button></div>
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Save or copy the handler" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -1332,6 +1406,11 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <div class="set-sec"><h3>Layout</h3>
       <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
       <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
+    <div class="set-sec"><h3>Layout</h3>
+      <div class="set-layouts" role="radiogroup" aria-label="Layout">
+        <label class="set-layout"><input type="radio" name="set-layout" value="bar"><span><strong>Slim bar</strong><small>Open handlers, Save and the menu in one row above the code</small></span></label>
+        <label class="set-layout"><input type="radio" name="set-layout" value="rail"><span><strong>Side rail</strong><small>Tools in a strip on the left, like VS Code; more room for code</small></span></label>
+      </div></div>
     <div class="set-sec"><h3>Check</h3>
       <label class="set-row">How much each problem shows <select id="set-density"><option value="compact">Compact: one line, open for more</option><option value="comfortable">Comfortable: what and why</option><option value="detailed">Detailed: everything open</option></select></label></div>
     <div class="set-sec"><h3>Feedback</h3>

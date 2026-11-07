@@ -16,6 +16,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Several handlers at once.** Open handlers are tabs above the code, each with its own code, undo history, package files and a dot for its state (red: Nucleus can't load it, yellow: warnings, green: ready). Opening something while your handler has changes opens it in a new tab instead of replacing your work; closing one can be undone. Ctrl+Shift+[ and ] switch, Alt+W closes. On phones, the handler's name switches between them.
+- **A slimmer header, or a side rail.** One row now: the open handlers, + (new, open a file, examples), Save and a menu with Settings, Advanced mode, help and Home. Or pick Settings › General › Layout › Side rail for the tools in a strip on the left, like VS Code.
 - **Help test the beta.** 🧪 in the footer (or the ⋯ menu) asks two quick questions (how much you code, how well you know Nucleus' handler API) and puts what fits you first: API and docs for Nucleus experts, developer experience for developers, look and ease of use for newcomers. Each item has what to do, the kind of testing (a task, real Nucleus, phone, keyboard only, screen reader, checking facts) and what to look for, each with a Report link. Your ticks stay in this browser.
 - **Check the AI-written docs.** Reference › "Help check AI-written docs" lists every doc AI wrote from the Nucleus source that no person has checked yet. Confirm one with 👍, or 👎 and "Tell us what's wrong"; checked ones say who checked them.
 - **Tell us what helps.** 👍/👎 on tips, and on AI-written docs (with a link to say what's wrong). Votes are counted anonymously: no code, no names, no cookies; off in Settings › General, and off when your browser asks not to be tracked.

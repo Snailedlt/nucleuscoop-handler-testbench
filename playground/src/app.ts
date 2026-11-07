@@ -34,6 +34,7 @@ import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
+import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
@@ -634,8 +635,8 @@ function renderProblems(text: string) {
       toggle.setAttribute('aria-expanded', String(o));
       o ? openProblems.add(card.dataset.key!) : openProblems.delete(card.dataset.key!);
     };
-    toggle.addEventListener('click', () => set(body.hidden));
-    card.querySelector('.prow')!.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('button')) set(body.hidden); });
+    toggle.addEventListener('click', () => set(body.hidden === true));
+    card.querySelector('.prow')!.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('button')) set(body.hidden === true); });
   });
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1181,6 +1182,8 @@ function setPackageFiles(files: PackageFile[]) {
   renderDocHead();
 }
 function loadSource(src: string, meta: DocMeta) {
+  // Your edits stay: opening something else while this handler has changes opens it in a new tab.
+  if (tabsReady && editor.getValue().trim() && editor.getValue() !== loadedText) openTab();
   clearNotice(); // it was about the handler before
   document.documentElement.classList.remove('busy'); // a Test all of the last handler no longer runs
   packageFiles = [];
@@ -1201,8 +1204,143 @@ function loadSource(src: string, meta: DocMeta) {
   aiBox.hidden = true;
   selectTab('problems');
   editor.focus();
+  if (tabsReady) (saveTabs(), renderTabs());
 }
 editor.on('change', () => renderDocHead());
+
+// ---------------------------------------------------------------------------
+// Open handlers: tabs above the code. Each keeps its own code (and undo history), where it came from and its
+// package's other files. The open one lives in the usual draft keys; the others in their own keys.
+interface Tab { id: string; meta: DocMeta; base: string; text: string; files: PackageFile[]; cm?: any; counts?: { e: number; w: number } }
+const TABS_KEY = 'nucleus-workbench-tabs';
+const textKey = (id: string) => `${STORE_KEY}:${id}`;
+const filesKey = (id: string) => `nucleus-workbench-files:${id}`;
+let tabs: Tab[] = [];
+let activeTab = '';
+let tabsReady = false;
+let lastClosed: { tab: Tab; index: number } | null = null;
+const newTabId = () => Math.random().toString(36).slice(2, 9);
+const activeT = () => tabs.find((x) => x.id === activeTab)!;
+const countsOf = (list: Diagnostic[]) => ({ e: list.filter((d) => d.severity === 'error').length, w: list.filter((d) => d.severity === 'warning').length });
+function saveTabs() {
+  try {
+    localStorage.setItem(TABS_KEY, JSON.stringify({ active: activeTab, tabs: tabs.map((x) => ({ id: x.id, meta: x.id === activeTab ? doc : x.meta, base: x.id === activeTab ? loadedText : x.base, counts: x.counts })) }));
+  } catch { /* storage full or off: the tabs live for this visit */ }
+}
+/** Puts the open handler's state into its tab (before switching away). */
+function stashTab() {
+  const x = activeT();
+  Object.assign(x, { meta: doc, base: loadedText, text: editor.getValue(), files: packageFiles, cm: editor.getDoc(), counts: countsOf(current) });
+  try { localStorage.setItem(textKey(x.id), x.text); } catch { /* ignore */ }
+  storeFiles(x.files, filesKey(x.id));
+}
+function switchTab(id: string) {
+  if (id === activeTab || !tabs.some((x) => x.id === id)) return;
+  stashTab();
+  activeTab = id;
+  const x = activeT();
+  doc = x.meta;
+  loadedText = x.base;
+  packageFiles = x.files;
+  storeFiles(packageFiles);
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(doc));
+    localStorage.setItem(META_KEY + '-base', loadedText);
+    localStorage.setItem(STORE_KEY, x.text);
+  } catch { /* ignore */ }
+  editor.swapDoc(x.cm ?? CodeMirror.Doc(x.text, 'javascript'));
+  x.cm = editor.getDoc();
+  if (doc.hash) history.replaceState(null, '', '#' + doc.hash);
+  else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  clearNotice();
+  aiBox.hidden = true;
+  (CodeMirror as any).signal(editor, 'change', editor, { origin: '+swap', from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 }, text: [''], removed: [''] });
+  (editor as any).performLint();
+  renderDocHead();
+  saveTabs();
+  renderTabs();
+  if (!$('#panel-simulate').hidden) runSim();
+  editor.focus();
+}
+/** A new, empty tab (the caller fills it, e.g. loadSource). */
+function openTab() {
+  stashTab();
+  const x: Tab = { id: newTabId(), meta: { name: 'Untitled handler', kind: 'new' }, base: '', text: '', files: [] };
+  tabs.splice(tabs.findIndex((y) => y.id === activeTab) + 1, 0, x);
+  switchTab(x.id);
+}
+function closeTab(id: string) {
+  if (tabs.length < 2) return;
+  const i = tabs.findIndex((x) => x.id === id);
+  if (id === activeTab) {
+    stashTab();
+    switchTab(tabs[i + 1]?.id ?? tabs[i - 1].id);
+  }
+  const [gone] = tabs.splice(i, 1);
+  lastClosed = { tab: gone, index: i };
+  try { localStorage.removeItem(textKey(gone.id)); localStorage.removeItem(filesKey(gone.id)); } catch { /* ignore */ }
+  saveTabs();
+  renderTabs();
+  notice(`Closed ${gone.meta.name}.`, { kind: 'info', action: { label: 'Undo', run: reopenClosed } });
+}
+function reopenClosed() {
+  if (!lastClosed) return;
+  const { tab, index } = lastClosed;
+  lastClosed = null;
+  tabs.splice(Math.min(index, tabs.length), 0, tab);
+  try { localStorage.setItem(textKey(tab.id), tab.text); } catch { /* ignore */ }
+  storeFiles(tab.files, filesKey(tab.id));
+  switchTab(tab.id);
+  clearNotice();
+}
+function renderTabs() {
+  const live = countsOf(current);
+  const dot = (c?: { e: number; w: number }) => (!c ? '' : c.e ? ' e' : c.w ? ' w' : ' ok');
+  const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
+  $('#htabs').innerHTML = tabs.map((x) => {
+    const on = x.id === activeTab, c = on ? live : x.counts, name = on ? doc.name : x.meta.name, files = on ? packageFiles.length : x.files.length;
+    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}</span></button>${tabs.length > 1 ? `<button type="button" class="ht-x" data-close="${x.id}" tabindex="-1" aria-label="Close ${esc(name)}">×</button>` : ''}</span>`;
+  }).join('');
+}
+function initTabs() {
+  try {
+    const s = JSON.parse(localStorage.getItem(TABS_KEY) || 'null');
+    if (s?.tabs?.length) {
+      tabs = s.tabs.map((x: { id: string; meta: DocMeta; base: string; counts?: Tab['counts'] }) => ({ id: x.id, meta: x.meta, base: x.base ?? '', counts: x.counts, text: x.id === s.active ? '' : localStorage.getItem(textKey(x.id)) ?? '', files: x.id === s.active ? [] : storedFiles(filesKey(x.id)) }));
+      activeTab = tabs.some((x) => x.id === s.active) ? s.active : tabs[0].id;
+    }
+  } catch { /* ignore */ }
+  if (!tabs.length) {
+    activeTab = newTabId();
+    tabs = [{ id: activeTab, meta: doc, base: loadedText, text: '', files: [] }];
+  }
+  Object.assign(activeT(), { meta: doc, base: loadedText, files: packageFiles, cm: editor.getDoc() });
+  tabsReady = true;
+  saveTabs();
+  renderTabs();
+  const strip = $('#htabs');
+  strip.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const close = t.closest<HTMLElement>('[data-close]');
+    if (close) return closeTab(close.dataset.close!);
+    const tab = t.closest<HTMLElement>('[data-tab-id]');
+    if (tab) switchTab(tab.dataset.tabId!);
+  });
+  strip.addEventListener('auxclick', (e) => {
+    const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-tab-id]');
+    if (e.button === 1 && tab) (e.preventDefault(), closeTab(tab.dataset.tabId!));
+  });
+  strip.addEventListener('keydown', (e) => {
+    const i = tabs.findIndex((x) => x.id === activeTab);
+    const go = (j: number) => { switchTab(tabs[(j + tabs.length) % tabs.length].id); document.getElementById(`tab-${activeTab}`)?.focus(); };
+    if (e.key === 'ArrowRight') (e.preventDefault(), go(i + 1));
+    else if (e.key === 'ArrowLeft') (e.preventDefault(), go(i - 1));
+    else if (e.key === 'Delete') (e.preventDefault(), closeTab(activeTab));
+  });
+  // The dot follows Check.
+  editor.on('change', () => { clearTimeout(tabDotTimer); tabDotTimer = window.setTimeout(() => (renderTabs(), saveTabs()), 800); });
+}
+let tabDotTimer = 0;
 
 function openExamplePackage(id: string) {
   const e = EXAMPLE_PACKAGES.find((x) => x.id === id);
@@ -1734,8 +1872,8 @@ const tips = initTips({
   },
   targets: {
     lines: () => $('#lines-toggle'),
-    new: () => $('#new-open'),
-    examples: () => $('#doc-switch'),
+    new: () => $('#tab-add'),
+    examples: () => $('#tab-add'),
     tryit: () => document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'),
     share: () => $('#code-menu-open'),
   },
@@ -1808,15 +1946,79 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 // Help test this beta (testplan.ts: BETA). Gone at the full release.
 const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')]);
 
+// ---------------------------------------------------------------------------
+// Header menus, the side rail and the layout (Settings › General › Layout)
+
+const LAYOUT_KEY = 'nucleus-workbench-layout';
+type Layout = 'bar' | 'rail';
+const layout = (): Layout => { try { return localStorage.getItem(LAYOUT_KEY) === 'rail' ? 'rail' : 'bar'; } catch { return 'bar'; } };
+function setLayout(l: Layout) {
+  try { localStorage.setItem(LAYOUT_KEY, l); } catch { /* ignore */ }
+  document.documentElement.dataset.layout = l;
+  document.querySelectorAll<HTMLInputElement>('input[name="set-layout"]').forEach((r) => (r.checked = r.value === l));
+  requestAnimationFrame(() => editor.refresh());
+}
+setLayout(layout());
+document.querySelectorAll<HTMLInputElement>('input[name="set-layout"]').forEach((r) => r.addEventListener('change', () => r.checked && setLayout(r.value as Layout)));
+const homeHref = () => (document.querySelector<HTMLAnchorElement>('a.home-link')?.href ?? 'start/');
+const addItems = (): MenuItem[] => [
+  { label: 'New handler…', run: () => newDialog.showModal() },
+  { label: 'Open a file…', hint: '.js .zip .nc', run: () => fileInput.click() },
+  { label: 'Examples and Hub handlers', hint: 'Ctrl K', run: () => showOpen() },
+  ...(lastClosed ? [{ kind: 'separator' as const, label: '' }, { label: `Reopen ${lastClosed.tab.meta.name}`, run: reopenClosed }] : []),
+];
+const appItems = (): MenuItem[] => [
+  { label: 'Advanced mode', checked: mode === 'dev', run: () => ($('#advanced') as HTMLInputElement).click() },
+  { label: 'Tools in a side rail', checked: layout() === 'rail', run: () => setLayout(layout() === 'rail' ? 'bar' : 'rail') },
+  { kind: 'separator', label: '' },
+  { label: 'Settings…', hint: 'Ctrl ,', run: () => settings.open() },
+  { label: 'Keyboard shortcuts', hint: '?', run: () => helpDialog.showModal() },
+  { label: "What's new", run: () => ($('#news-open-2') as HTMLButtonElement).click() },
+  { label: 'Getting started', run: () => ($('#welcome-open') as HTMLButtonElement).click() },
+  { kind: 'separator', label: '' },
+  { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
+  ...(document.getElementById('test-open') ? [{ label: '🧪 Help test the beta', run: () => testGuide.open() }] : []),
+];
+$('#tab-add').addEventListener('click', () => openMenu($('#tab-add'), 'New or open', addItems()));
+$('#app-menu-open').addEventListener('click', () => openMenu($('#app-menu-open'), 'Menu', appItems()));
+$('#code-menu-phone').addEventListener('click', () => openCodeDialog());
+$('#doc-switch').addEventListener('click', () => openMenu($('#doc-switch'), 'Open handlers', [
+  { kind: 'heading', label: 'Open handlers' },
+  ...tabs.map((x) => ({ label: x.id === activeTab ? doc.name : x.meta.name, checked: x.id === activeTab, run: () => switchTab(x.id) })),
+  ...(tabs.length > 1 ? [{ label: `Close ${doc.name}`, run: () => closeTab(activeTab) }] : []),
+  { kind: 'separator', label: '' },
+  ...addItems(),
+]));
+document.querySelectorAll<HTMLElement>('.rail [data-rail]').forEach((b) => b.addEventListener('click', (e) => {
+  const act = b.dataset.rail;
+  if (act === 'add') openMenu(b, 'New or open', addItems(), 'right');
+  else if (act === 'menu') openMenu(b, 'Menu', appItems(), 'right');
+  else if (act === 'lines') lines.toggle();
+  else if (act === 'save') openCodeDialog();
+  else if (act === 'test') testGuide.open();
+  else return; // Home is a link
+  e.preventDefault();
+}));
+// Ctrl+Shift+[ and ] go to the previous / next open handler; Alt+W closes the open one.
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'BracketLeft' || e.code === 'BracketRight')) {
+    e.preventDefault();
+    const i = tabs.findIndex((x) => x.id === activeTab);
+    switchTab(tabs[(i + (e.code === 'BracketRight' ? 1 : -1) + tabs.length) % tabs.length].id);
+  } else if (e.altKey && !e.ctrlKey && e.code === 'KeyW' && tabs.length > 1) {
+    e.preventDefault();
+    closeTab(activeTab);
+  }
+});
+
 // The common shortcuts, on hover or keyboard focus of the buttons they belong to (both modes).
 initKeyHints([
-  { el: document.getElementById('doc-switch'), what: 'Open an example or a Hub handler', keys: 'Ctrl K' },
+  { el: document.getElementById('tab-add'), what: 'New, open a file or an example', keys: 'Ctrl K' },
+  { el: document.getElementById('app-menu-open'), what: 'Settings, Advanced mode and help', keys: 'Ctrl ,' },
+  ...[...document.querySelectorAll<HTMLElement>('.rail [data-rail]')].map((b) => ({ el: b, what: b.getAttribute('aria-label') ?? '', keys: ({ lines: 'Ctrl B', save: 'Ctrl S', add: 'Ctrl K', menu: 'Ctrl ,' } as Record<string, string>)[b.dataset.rail!] ?? '' })),
   { el: document.getElementById('lines-toggle'), what: 'Show or hide Lines', keys: 'Ctrl B' },
   { el: document.getElementById('code-menu-open'), what: 'Save or copy', keys: 'Ctrl S' },
-  { el: document.getElementById('save'), what: 'Save or copy', keys: 'Ctrl S' },
   { el: document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'), what: 'Try it', keys: 'Ctrl Enter' },
-  { el: document.getElementById('settings-open'), what: 'Settings', keys: 'Ctrl ,' },
-  { el: document.getElementById('help-open'), what: 'All keyboard shortcuts', keys: '?' },
 ]);
 
 {
@@ -2323,6 +2525,7 @@ try {
 } catch {
   /* ignore */
 }
+initTabs();
 if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');

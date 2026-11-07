@@ -95,21 +95,21 @@ const b64 = (d: Uint8Array) => {
 };
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 /** Saves the files for the current draft; false when they're too big for the browser to keep. */
-export function storeFiles(files: PackageFile[]): boolean {
+export function storeFiles(files: PackageFile[], key = KEY): boolean {
   try {
-    if (!files.length) return localStorage.removeItem(KEY), true;
-    localStorage.setItem(KEY, JSON.stringify(files.map((f) => [f.name, b64(f.data)])));
+    if (!files.length) return localStorage.removeItem(key), true;
+    localStorage.setItem(key, JSON.stringify(files.map((f) => [f.name, b64(f.data)])));
     return true;
   } catch {
     try {
-      localStorage.removeItem(KEY);
+      localStorage.removeItem(key);
     } catch {}
     return false;
   }
 }
-export function storedFiles(): PackageFile[] {
+export function storedFiles(key = KEY): PackageFile[] {
   try {
-    return (JSON.parse(localStorage.getItem(KEY) || '[]') as [string, string][]).map(([name, d]) => ({ name, data: unb64(d) }));
+    return (JSON.parse(localStorage.getItem(key) || '[]') as [string, string][]).map(([name, d]) => ({ name, data: unb64(d) }));
   } catch {
     return [];
   }

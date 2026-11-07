@@ -88,7 +88,7 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(800);
   check((await p.innerText('#panel-simulate')).length > 100, `${theme}: Try it renders`);
   // Keyboard: Tab reaches the editor, and typing goes into it.
-  await p.focus('#doc-switch');
+  await p.focus('#lines-toggle');
   let focused = false;
   for (let i = 0; i < 10 && !focused; i++) {
     await p.keyboard.press('Tab');
@@ -103,7 +103,7 @@ for (const theme of ['light', 'dark']) {
   check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Reference lists what's in it when nothing is typed`);
   await axe(p, `${theme}, Reference`);
   // A custom theme file: applied, unsafe values left out, removable.
-  await p.click('#settings-open');
+  await p.$eval('#settings-open', (b) => b.click()); // in the menu now
   await p.waitForTimeout(300);
   await p.click('#st-theme');
   await p.setInputFiles('#ct-file', { name: 't.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ name: 'T', light: { accent: '#7a1f2b', bg: 'red;}body{display:none' }, dark: { accent: '#ffb4a8' } })) });
@@ -132,7 +132,7 @@ for (const theme of ['light', 'dark']) {
   check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
   // Dialogs
   // Open: the arrow keys move through tiles, chips and rows.
-  await p.click('#doc-switch');
+  await p.keyboard.press('Control+k');
   await p.waitForTimeout(300);
   await p.focus('#open-q');
   const kinds = [];
@@ -143,15 +143,26 @@ for (const theme of ['light', 'dark']) {
   check(kinds[0].includes('chips') && kinds.some((c) => c.includes('rows')), `${theme}: ↓ moves from the Start tiles past the templates to the Hub rows`);
   await p.keyboard.press('Escape');
   await p.waitForTimeout(200);
-  for (const [open, name] of [['#doc-switch', 'Open'], ['#settings-open', 'Settings'], ['#news-open-2', "What's new"], ['#help-open', 'Keyboard shortcuts']]) {
-    await p.click(open);
+  for (const [open, name] of [['ctrl-k', 'Open'], ['#settings-open', 'Settings'], ['#news-open-2', "What's new"], ['#help-open', 'Keyboard shortcuts']]) {
+    if (open === 'ctrl-k') await p.keyboard.press('Control+k');
+    else await p.$eval(open, (b) => b.click());
     await p.waitForTimeout(400);
     await axe(p, `${theme}, ${name} dialog`);
     await p.keyboard.press('Escape');
     await p.waitForTimeout(200);
   }
+  // The header menus (+ and the gear) and the open handlers' tabs.
+  check((await p.$$('#htabs [role=tab]')).length >= 1, `${theme}: the open handlers show as tabs`);
+  for (const m of ['#tab-add', '#app-menu-open']) {
+    await p.click(m);
+    await p.waitForTimeout(200);
+    check((await p.$$('.app-menu [role^=menuitem]')).length >= 3, `${theme}: ${m} opens its menu`);
+    await axe(p, `${theme}, ${m} menu`);
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(150);
+  }
   // An example package: the handler plus its files.
-  await p.click('#doc-switch');
+  await p.keyboard.press('Control+k');
   await p.fill('#open-dialog input', 'with its files');
   await p.waitForTimeout(300);
   await p.keyboard.press('Enter');
