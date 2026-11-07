@@ -1051,10 +1051,31 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     update();
   }
 
+  // Lines (Ctrl+B) while Form shows: an option is added here (or shown, when it's already set).
+  const onPick = (e: Event) => {
+    if (container.hidden || !container.contains(root)) return;
+    const d = (e as CustomEvent<{ path: string; msg: string }>).detail;
+    e.preventDefault();
+    const have = model.entries.find((x) => x.path === d.path);
+    if (have) {
+      const r = rows.get(have.key);
+      r?.el.scrollIntoView?.({ block: 'nearest' });
+      (r?.ctl.querySelector<HTMLElement>('[data-fv]:not([disabled])') ?? r?.toggle)?.focus();
+      d.msg = `${d.path} is already set: here it is.`;
+    } else if (optionIndex().has(d.path)) {
+      addOption(d.path);
+      d.msg = `Added ${d.path}.`;
+    } else {
+      d.msg = `${d.path} isn't an option, so it isn't in Form. Use it in Blocks (as a step in Game.Play) or in Code.`;
+    }
+  };
+  document.addEventListener('lines-pick', onPick);
+
   refresh();
   return {
     refresh,
     destroy() {
+      document.removeEventListener('lines-pick', onPick);
       root.remove();
       rows.clear();
       sections.clear();

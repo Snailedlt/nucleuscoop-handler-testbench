@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Blocks is calmer, and Lines works in Form and Blocks.** Blocks shows each step on one line with its main problem and a Fix button; the arrow opens the rest, as in Form. Picking a name in Lines while Form shows adds that option; in Blocks it adds the callback, or the action as a step (in the part where you last added one, else Game.Play).
 - **Blocks: Game.Play as steps.** A third view next to Code and Form shows Game.Play and the other callbacks as plain steps ("If … then", "Set … to", "Do …") with pickers for values, conditions and calls, and + Add a step. It edits the code in place, keeps your comments, and anything it can't show as a step stays editable as code.
 - **Help test this beta, first.** New visitors start with two quick questions (how much you code, how well you know Nucleus handlers) as big, easy choices, then get what to test: the items that fit you, quickest and most needed first, each with how long it takes. Your answers also pick guided or Advanced mode; Change brings the questions back, and Everything else lists the rest.
 - **Files and Lines, left or right, any width.** Settings › Layout puts the Files panel and the Lines list on either side of the code (or the command palette: Move Files / Move Lines to the other side), and the Files panel now resizes like Lines: drag its edge, double-click to reset.

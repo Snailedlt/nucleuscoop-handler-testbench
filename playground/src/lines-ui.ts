@@ -314,6 +314,13 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
 
   // --- inserting
   function pick(l: Line, forceInsert: boolean) {
+    // In Form or Blocks the code is hidden: that view adds it (an option in Form, a step or callback in Blocks).
+    if ((document.getElementById('editor') as HTMLElement | null)?.hidden) {
+      const ev = new CustomEvent('lines-pick', { detail: { path: l.path, msg: '' }, cancelable: true });
+      document.dispatchEvent(ev);
+      flash(ev.detail.msg || `Switch to Code to insert ${l.path}.`);
+      return;
+    }
     const u = scan?.uses.get(l.path);
     if (!forceInsert && prefs.jump && u?.assigned.length) {
       // Already set: go there instead of adding a second line (the most common Hub warning).

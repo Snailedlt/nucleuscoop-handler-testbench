@@ -1450,6 +1450,8 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
   // --- the action palette -------------------------------------------------------------------
 
   let paletteFor: string | undefined;
+  /** Where a step picked in Lines goes: the branch whose "+ Add a step" was used last, else Game.Play. */
+  let lastBranch: string | undefined;
   let paletteBtn: HTMLButtonElement | undefined;
   const search = h('input', 'bv-input bv-search', { type: 'search', id: idOf('search'), placeholder: 'What should happen? e.g. copy, start arguments, if', 'aria-controls': idOf('results'), autocomplete: 'off', spellcheck: 'false' });
   const results = h('div', 'bv-results', { id: idOf('results') });
@@ -1505,6 +1507,7 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
     if (paletteFor === bkey && !palette.hidden) return closePalette(true);
     paletteBtn?.setAttribute('aria-expanded', 'false');
     paletteFor = bkey;
+    lastBranch = bkey;
     paletteBtn = btn;
     btn.after(palette);
     palette.hidden = false;
@@ -1677,9 +1680,40 @@ export function mountBlocksView(container: HTMLElement, host: BlocksHost): Block
   }
 
   refresh();
+  // Lines (Ctrl+B) while Blocks shows: a callback is added (or shown), an action becomes a step in the branch used last
+  // (else Game.Play); options belong in Form.
+  const onPick = (e: Event) => {
+    if (container.hidden || !container.contains(root)) return;
+    const d = (e as CustomEvent<{ path: string; msg: string }>).detail;
+    e.preventDefault();
+    if (CALLBACKS.some((c) => c.path === d.path)) {
+      if (model.callbacks.some((c) => c.path === d.path)) {
+        const cb = model.callbacks.find((c) => c.path === d.path)!;
+        root.querySelector(`[aria-labelledby="${CSS.escape(idOf(`${cb.key}:title`))}"]`)?.scrollIntoView?.({ block: 'start' });
+        d.msg = `${d.path} is already here.`;
+      } else {
+        addCallback(d.path);
+        d.msg = `Added ${d.path}.`;
+      }
+      return;
+    }
+    const a = actions().find((x) => x.path === d.path);
+    if (a) {
+      const play = model.callbacks.find((c) => c.path === 'Game.Play' && c.body) ?? model.callbacks.find((c) => c.body);
+      const bkey = (lastBranch && branches.has(lastBranch) ? lastBranch : undefined) ?? play?.body?.key;
+      if (!bkey) { d.msg = `Add Game.Play first (+ Add a callback), then pick ${d.path} again.`; return; }
+      addAction(bkey, a);
+      d.msg = `Added ${d.path} as a step.`;
+      return;
+    }
+    d.msg = d.path.startsWith('Game.') ? `${d.path} is an option: add it in Form or Code.` : `${d.path} isn't a step on its own: pick it as a value (Property) in a step, or use Code.`;
+  };
+  document.addEventListener('lines-pick', onPick);
+
   return {
     refresh,
     destroy() {
+      document.removeEventListener('lines-pick', onPick);
       root.remove();
       parts.clear();
     },
