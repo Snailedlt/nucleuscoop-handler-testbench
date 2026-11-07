@@ -609,6 +609,10 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .rel-intro { margin: 2px 0 10px; font-size: 14px; line-height: 1.5; }
 .rel-intro strong { font-size: 15px; }
 .tg-asking .tg-compare { display: none !important; }
+.probe-intro { max-width: 75ch; margin: 0 0 10px; }
+.probe-intro p { margin: 0 0 8px; line-height: 1.5; }
+.probe-cols { margin: 0 0 12px; }
+.probe-cols summary { cursor: pointer; font-weight: 600; font-size: 13px; }
 .tg-you .link { color: color-mix(in srgb, var(--accent) 65%, var(--fg)); }
 .tg-compare .link { color: color-mix(in srgb, var(--accent) 65%, var(--fg)); }
 .tg-hello { margin: 0; font-size: 15px; line-height: 1.45; }
@@ -1973,7 +1977,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <button role="tab" data-tab="problems" type="button">Check <span class="count" id="count-problems">0</span></button>
         <button role="tab" data-tab="simulate" type="button">Try it</button>
         <button role="tab" data-tab="api" type="button" title="Every option and function a handler can use">Reference</button>
-        <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes"></span></button>
+        <button role="tab" data-tab="probes" type="button" class="dev-only" title="Tiny handlers run in Nucleus' real JavaScript engine: the proof behind Check and Try it">Engine probes <span class="count" id="count-probes"></span></button>
       </div>
       <div role="tabpanel" id="panel-problems"><h2 class="sr-only">Check</h2>
         <div class="verdict" id="verdict">

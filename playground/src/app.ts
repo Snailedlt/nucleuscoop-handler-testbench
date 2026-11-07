@@ -1229,10 +1229,16 @@ function renderProbes() {
       <td class="center">${ok ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td>
       <td><span class="chip ${sim === 'LOAD-FAIL' || sim === 'PLAY-FAIL' ? 'error' : 'ok'}">${jintLabel[sim]}</span> ${simOk ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td></tr>`;
   });
-  $('#probes').innerHTML = `<p class="lede">Each probe isolates one engine behaviour. The <strong>Jint 2.11.58</strong> column is what happened when the testbench ran it with Nucleus' engine setup; the <strong>Linter</strong> and <strong>Try it</strong> columns are computed live in this page. The linter agrees on <strong>${agree} of ${PROBES.length}</strong> (an error exactly when Jint fails); Try it predicts the same outcome on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
+  $('#probes').innerHTML = `<div class="probe-intro">
+      <p><strong>What this is.</strong> Nucleus Co-op runs handlers with an old JavaScript engine, Jint 2.11.58. It understands less than a modern browser, and some things work differently there (<code>let</code> and <code>const</code>, arrow functions, how .NET calls like <code>Path.Combine</code> take their arguments). Each probe is a tiny handler that tests one of those things, and we ran every one in that real engine, set up the way Nucleus sets it up.</p>
+      <p><strong>Why it matters.</strong> Check and Try it are built on these results. When Check says "Nucleus can't load this", or Try it shows what a line does, a probe here is the proof. Right now Check agrees with the real engine on <strong>${agree} of ${PROBES.length}</strong> probes, and Try it on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
+      <p><strong>What you can use it for.</strong> Not sure whether Nucleus accepts some JavaScript? Find the probe for it below (or type its name in Open, Ctrl+K), open it to see the exact code, and the Jint column says what the real engine did. Missing one you need? <button class="link" type="button" id="probe-ask">Ask for a probe</button>.</p>
+    </div>
+    <details class="probe-cols"><summary>What the columns mean</summary><p class="small"><strong>Jint 2.11.58</strong>: what the real engine did (runs, loads, doesn't load, or Game.Play throws). <strong>Linter</strong>: what Check finds in it, live in this page. <strong>Agree</strong>: ✓ when Check reports an error exactly when the engine fails. <strong>Try it</strong>: what Try it predicts, with ✓ when it matches the engine.</p></details>
     <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th><th>Try it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   $('#count-probes').textContent = `${agree}/${PROBES.length}`;
   $('#count-probes').title = `Linter agrees with Jint on ${agree} of ${PROBES.length} probes; Try it on ${simAgree}`;
+  $('#probe-ask')?.addEventListener('click', () => window.open(feedbackUrl({ title: 'Probe request: ' }), '_blank', 'noopener'));
   $('#probes').querySelectorAll<HTMLButtonElement>('[data-probe]').forEach((b) =>
     b.addEventListener('click', () => openProbe(Number(b.dataset.probe))),
   );
