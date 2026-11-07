@@ -2161,6 +2161,23 @@ $('#doc-switch').addEventListener('click', () => openMenu($('#doc-switch'), 'Ope
   { kind: 'separator', label: '' },
   ...addItems(),
 ]));
+// The side rail: icons only (the default), or with labels. Remembered in this browser.
+{
+  const KEY = 'nucleus-workbench-rail-open';
+  const btn = $('#rail-toggle');
+  const set = (open: boolean, save = true) => {
+    document.documentElement.toggleAttribute('data-rail-open', open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Hide the labels in the sidebar' : 'Show labels in the sidebar');
+    btn.title = open ? 'Hide labels' : 'Show labels';
+    if (save) try { localStorage.setItem(KEY, open ? '1' : '0'); } catch { /* not kept */ }
+    requestAnimationFrame(() => editor.refresh());
+  };
+  let open = false;
+  try { open = localStorage.getItem(KEY) === '1'; } catch { /* default */ }
+  set(open, false);
+  btn.addEventListener('click', () => set(!document.documentElement.hasAttribute('data-rail-open')));
+}
 document.querySelectorAll<HTMLElement>('.rail [data-rail]').forEach((b) => b.addEventListener('click', (e) => {
   const act = b.dataset.rail;
   if (act === 'add') openMenu(b, 'New or open', addItems(), 'right');
