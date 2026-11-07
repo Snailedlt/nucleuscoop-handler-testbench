@@ -1356,6 +1356,7 @@ function commandList(): OpenEntry[] {
     c('Reset panel sizes', '', 'layout resize panels reset width', () => panels.reset()),
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
+    c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
     c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
@@ -2269,7 +2270,7 @@ try {
 } catch {
   /* ignore */
 }
-if (!welcomed) {
+function showWelcome() {
   const w = $('#welcome');
   w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
     <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span></div>`;
@@ -2279,13 +2280,22 @@ if (!welcomed) {
   w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
   w.querySelector('[data-w=close]')!.addEventListener('click', () => {
     w.hidden = true;
+    editor.refresh();
+    confirmOn($('#welcome-open'), 'Getting started ✓', 'Closed. Getting started, at the bottom, brings it back.');
     try {
       localStorage.setItem(WELCOME_KEY, '1');
     } catch {
       /* ignore */
     }
   });
+  editor.refresh();
 }
+if (!welcomed) showWelcome();
+$('#welcome-open').addEventListener('click', () => {
+  if (narrow()) setView('code');
+  showWelcome();
+  $('#welcome').querySelector<HTMLElement>('button, a')?.focus();
+});
 
 let startTab = 'problems';
 try {
