@@ -17,7 +17,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--k-bg); color: var(--k-fg); font: 15px/1.55 var(--k-font); }
 .lead { color: var(--k-muted); max-width: 74ch; }
-.comp { background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); padding: 16px; margin-top: 16px; scroll-margin-top: 64px; }
+.comp { content-visibility: auto; contain-intrinsic-size: auto 640px; background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); padding: 16px; margin-top: 16px; scroll-margin-top: 64px; }
 .comp > p { color: var(--k-muted); margin: 2px 0 10px; max-width: 80ch; }
 .comp .timing { font-size: 13.5px; color: var(--k-muted); border-left: 3px solid var(--k-accent); padding: 2px 0 2px 10px; margin: 10px 0 0; }
 .demo { background: var(--k-surface-2); border-radius: calc(var(--k-r-pane) - 4px); padding: 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; min-height: 90px; }
@@ -42,7 +42,7 @@ footer { margin-top: 40px; color: var(--k-muted); font-size: 13px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip { position: absolute; left: 8px; top: -40px; z-index: 40; padding: 6px 12px; background: var(--k-accent); color: var(--k-accent-fg); border-radius: 6px; }
 .skip:focus { top: 8px; }
-.bar-top { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--k-bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--k-line); }
+.bar-top { position: sticky; top: 0; z-index: 30; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
 .bar-top .in { max-width: 1360px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; }
 .brand { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 17px; color: var(--k-fg); text-decoration: none; margin-right: auto; }
 .ctls { display: flex; gap: 8px 14px; flex-wrap: wrap; }
@@ -75,6 +75,7 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
 .glance-card { display: grid; grid-template-rows: 76px auto; border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); color: var(--k-fg); text-decoration: none; overflow: hidden; transition: transform var(--k-quick) var(--k-out), border-color var(--k-quick), box-shadow var(--k-quick); }
 .glance-card:hover { transform: translateY(-2px); border-color: var(--k-accent); box-shadow: var(--k-shadow); }
 .glance-card:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.glance-card .thumb .k-mascot, .glance-card .thumb .k-mascot * { animation: none !important; }
 .glance-card .thumb { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 8px; background: var(--k-surface-2); pointer-events: none; overflow: hidden; }
 .glance-card .txt { padding: 8px 10px 10px; }
 .glance-card b { display: block; font-size: 14.5px; }
@@ -178,16 +179,28 @@ function kitMotion(el) {
 /** Whether the interface itself may move (buttons, toasts, dialogs). */
 function kitMoves(el) { return ['all', 'default', 'calm'].includes(kitMotion(el)); }
 
-/** Starts, stops or limits the mascots' SMIL (the electrons). CSS animations follow the stylesheet's rules. */
+/** Runs the mascots only while they're on screen, and as the Motion setting says. Offscreen mascots are paused
+ *  (CSS and SMIL), so a page full of them costs nothing; "Default" plays each one for 5 s from when you first see it.
+ *  Call it after adding mascots, and after the setting changes. */
+const kitSeen = new IntersectionObserver((es) => es.forEach((e) => { e.target._kVis = e.isIntersecting; kitSync(e.target); }), { rootMargin: '80px' });
+function kitSync(svg) {
+  const m = kitMotion(svg), busy = !!svg.closest('.k-busy'), vis = !!svg._kVis;
+  const run = vis && !svg.closest('.thumb') && (m === 'all' || (m === 'default' && (busy || !svg._kDone)));
+  svg.classList.toggle('k-paused', !run);
+  try {
+    if (run) {
+      svg.unpauseAnimations();
+      if (m === 'default' && !busy && !svg._kOnce) svg._kOnce = setTimeout(() => { svg._kDone = true; kitSync(svg); }, 5000);
+    } else {
+      svg.pauseAnimations();
+      if (m !== 'all' && m !== 'default') svg.setCurrentTime(0);
+    }
+  } catch { /* not in the document yet */ }
+}
 function kitApplyMotion(root = document) {
   root.querySelectorAll('svg.k-mascot').forEach((svg) => {
-    const m = kitMotion(svg), busy = !!svg.closest('.k-busy');
-    clearTimeout(svg._kOnce);
-    try {
-      if (m === 'all' || (m === 'default' && busy)) svg.unpauseAnimations();
-      else if (m === 'default') { svg.unpauseAnimations(); svg._kOnce = setTimeout(() => svg.pauseAnimations(), 5000); }
-      else { svg.pauseAnimations(); svg.setCurrentTime(0); }
-    } catch { /* not in the document yet */ }
+    if (!svg._kWatched) { svg._kWatched = true; kitSeen.observe(svg); }
+    kitSync(svg);
   });
 }
 
@@ -317,6 +330,117 @@ function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, a
 }
 </script>
 
+<script id="kit-hl">
+// ---- Syntax highlighting: a small lexer per language (JavaScript, HTML, CSS, shell, JSON, file trees). No library. ----
+const kitHighlight = (() => {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const tok = (cls, s) => (s ? `<span class="hl-${cls}">${esc(s)}</span>` : '');
+  const KW = new Set('const let var function return if else for while do switch case break continue new try catch finally throw typeof instanceof in of async await class extends super this void delete yield default import export from'.split(' '));
+  const LIT = new Set(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);
+  const REGEX_BEFORE = /(^|[(,=:[!&|?{};+\-*%<>~^]|\breturn|\btypeof|\bcase)\s*$/;
+
+  /** JavaScript, from position i to the end (or to an unmatched "}" when inside a template's ${…}). */
+  function js(src, i = 0, stopAtBrace = false) {
+    let out = '', depth = 0, prev = '';
+    while (i < src.length) {
+      const c = src[i], rest = src.slice(i);
+      let m;
+      if (stopAtBrace && c === '}' && depth === 0) return [out, i];
+      if ((m = /^\s+/.exec(rest))) { out += m[0]; i += m[0].length; continue; }
+      if (rest.startsWith('//')) { const e = src.indexOf('\n', i); const s = src.slice(i, e < 0 ? src.length : e); out += tok('com', s); i += s.length; continue; }
+      if (rest.startsWith('/*')) { const e = src.indexOf('*/', i + 2); const s = src.slice(i, e < 0 ? src.length : e + 2); out += tok('com', s); i += s.length; prev = ''; continue; }
+      if (c === '"' || c === "'") { let j = i + 1; while (j < src.length && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1; out += tok('str', src.slice(i, j + 1)); i = j + 1; prev = 's'; continue; }
+      if (c === '`') { const [h, j] = template(src, i); out += h; i = j; prev = 's'; continue; }
+      if (c === '/' && REGEX_BEFORE.test(prev)) {
+        let j = i + 1, cls = false;
+        while (j < src.length && src[j] !== '\n') { if (src[j] === '\\') { j += 2; continue; } if (src[j] === '[') cls = true; else if (src[j] === ']') cls = false; else if (src[j] === '/' && !cls) break; j++; }
+        if (src[j] === '/') { j++; while (/[a-z]/.test(src[j] || '')) j++; out += tok('re', src.slice(i, j)); i = j; prev = 's'; continue; }
+      }
+      if ((m = /^(?:0x[\da-f]+|\d[\d_]*\.?\d*(?:e[+-]?\d+)?|\.\d+)/i.exec(rest))) { out += tok('num', m[0]); i += m[0].length; prev = 'n'; continue; }
+      if ((m = /^[A-Za-z_$][\w$]*/.exec(rest))) {
+        const w = m[0], after = src.slice(i + w.length).match(/^\s*(\(|=>)?/)[1], dot = /\.\s*$/.test(prev);
+        out += KW.has(w) ? tok('kw', w) : LIT.has(w) ? tok('num', w) : after === '(' ? tok('fn', w) : dot ? tok('prop', w) : /^[A-Z][A-Z\d_]+$/.test(w) ? tok('const', w) : tok('var', w);
+        i += w.length; prev = KW.has(w) ? w : 'w'; continue;
+      }
+      if (c === '{') depth++;
+      if (c === '}') depth--;
+      out += tok('punct', c); i++; prev = c; continue;
+    }
+    return [out, i];
+  }
+  /** A template literal, with ${…} highlighted as JavaScript (templates inside templates included). */
+  function template(src, i) {
+    let out = '', j = i + 1, start = i;
+    while (j < src.length) {
+      if (src[j] === '\\') { j += 2; continue; }
+      if (src[j] === '`') { out += tok('str', src.slice(start, j + 1)); return [out, j + 1]; }
+      if (src[j] === '$' && src[j + 1] === '{') {
+        out += tok('str', src.slice(start, j)) + tok('punct', '${');
+        const [h, k] = js(src, j + 2, true);
+        out += h + tok('punct', '}'); j = k + 1; start = j; continue;
+      }
+      j++;
+    }
+    return [out + tok('str', src.slice(start)), src.length];
+  }
+  function html(src) {
+    let out = '', i = 0, m;
+    while (i < src.length) {
+      const rest = src.slice(i);
+      if (rest.startsWith('<!--')) { const e = src.indexOf('-->', i); const s = src.slice(i, e < 0 ? src.length : e + 3); out += tok('com', s); i += s.length; continue; }
+      if ((m = /^<\/?[A-Za-z][\w-]*/.exec(rest))) {
+        out += tok('punct', m[0][1] === '/' ? '</' : '<') + tok('tag', m[0].replace(/^<\/?/, '')); i += m[0].length;
+        while (i < src.length && src[i] !== '>') {
+          const r = src.slice(i);
+          if ((m = /^\s+/.exec(r))) { out += m[0]; i += m[0].length; continue; }
+          if ((m = /^([^\s=>/]+)(\s*=\s*)("[^"]*"|'[^']*'|[^\s>]+)?/.exec(r))) { out += tok('attr', m[1]) + (m[2] ? tok('punct', m[2]) : '') + (m[3] ? tok('str', m[3]) : ''); i += m[0].length; continue; }
+          out += tok('punct', src[i]); i++;
+        }
+        if (src[i] === '>') { out += tok('punct', '>'); i++; }
+        continue;
+      }
+      if ((m = /^&[#\w]+;/.exec(rest))) { out += tok('num', m[0]); i += m[0].length; continue; }
+      const e = src.slice(i + 1).search(/<|&[#\w]+;/); const s = e < 0 ? rest : rest.slice(0, e + 1);
+      out += esc(s); i += s.length;
+    }
+    return out;
+  }
+  function cssValue(v) {
+    return v.replace(/(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[\da-f]{3,8}\b)|(-?\d*\.?\d+(?:px|ms|s|deg|%|em|rem|vh|vw|fr)?)\b|(!important)|([\w-]+)(?=\()|(--[\w-]+)|([^\s])|(\s+)/gi, (all, com, str, hex, num, imp, fn, cvar, ch, ws) =>
+      com ? tok('com', com) : str ? tok('str', str) : hex ? tok('num', hex) : num ? tok('num', num) : imp ? tok('kw', imp) : fn ? tok('fn', fn) : cvar ? tok('const', cvar) : ch ? (/[\w-]/.test(ch) ? esc(ch) : tok('punct', ch)) : ws || '');
+  }
+  function css(src) {
+    let out = '', i = 0;
+    while (i < src.length) {
+      const rest = src.slice(i);
+      if (rest.startsWith('/*')) { const e = src.indexOf('*/', i + 2); const s = src.slice(i, e < 0 ? src.length : e + 2); out += tok('com', s); i += s.length; continue; }
+      if (/^\s/.test(rest)) { out += rest[0]; i++; continue; }
+      if (rest[0] === '{' || rest[0] === '}' || rest[0] === ';') { out += tok('punct', rest[0]); i++; continue; }
+      // A selector (or an at-rule) runs to the next "{"; a declaration to the next ";" or "}".
+      const next = rest.search(/[;{}]/), seg = next < 0 ? rest : rest.slice(0, next), isSel = rest[next] === '{';
+      if (isSel) out += seg.startsWith('@') ? seg.replace(/^(@[\w-]+)(.*)$/s, (a, at, r) => tok('kw', at) + cssValue(r)) : tok('sel', seg);
+      else { const k = seg.indexOf(':'); out += k < 0 ? cssValue(seg) : tok('prop', seg.slice(0, k)) + tok('punct', ':') + cssValue(seg.slice(k + 1)); }
+      i += seg.length || 1;
+    }
+    return out;
+  }
+  const sh = (src) => src.split('\n').map((l) => {
+    if (/^\s*#/.test(l)) return tok('com', l);
+    return l.replace(/("[^"]*"|'[^']*')|(\s--?[\w-]+)|(^\s*\$?\s*[\w.@/-]+)|([^\s"']+)|(\s+)/g, (a, str, flag, cmd, word, ws) => str ? tok('str', str) : flag ? tok('kw', flag) : cmd ? tok('fn', cmd) : word ? (/^[\w-]+@/.test(word) ? tok('tag', word) : esc(word)) : ws);
+  }).join('\n');
+  const json = (src) => src.replace(/(\/\/[^\n]*)|("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+\.?\d*)|(true|false|null)|([{}[\],:])|([^\s"]+)|(\s+)/g, (a, com, str, colon, num, lit, p, w, ws) => com ? tok('com', com) : str ? (colon ? tok('prop', str) + tok('punct', colon) : tok('str', str)) : num ? tok('num', num) : lit ? tok('num', lit) : p ? tok('punct', p) : w ? esc(w) : ws);
+  const tree = (src) => src.split('\n').map((l) => { const m = /^([│├└─\s]*)(\S+)(\s{2,}.*)?$/.exec(l); if (!m) return esc(l); return tok('punct', m[1]) + (m[2].endsWith('/') ? tok('tag', m[2]) : tok('var', m[2])) + (m[3] ? tok('com', m[3]) : ''); }).join('\n');
+  return { js: (s) => js(s)[0], html, css, sh, json, tree, esc };
+})();
+
+/** A code field: a textarea over a highlighted copy of its text. */
+function kitCodeField(el) {
+  const ta = el.querySelector('textarea'), code = el.querySelector('pre code'), lang = el.dataset.lang || 'js';
+  const draw = () => { code.innerHTML = kitHighlight[lang](ta.value) + (ta.value.endsWith('\n') || !ta.value ? ' ' : ''); };
+  ta.addEventListener('input', draw); draw();
+}
+</script>
+
 <script>
 // =====================================================================================================================
 // The kit: tokens, then one entry per component. Each has its HTML, CSS and setup function; the page runs exactly
@@ -348,7 +472,8 @@ KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours for the two splitscreen
 .kit[data-motion="still"] *, .kit[data-motion="off"] * { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .kit *, .kit *::before, .kit *::after { animation: none !important; transition: none !important; } }
 .kit[data-motion="calm"] .k-mascot * { animation: none !important; }
-.kit[data-motion="default"] .k-mascot:not(.k-busy *):not(.k-busy) * { animation-iteration-count: 1 !important; }
+/* Mascots off screen, or done playing, hold their frame (kitSync decides). */
+.k-mascot.k-paused, .k-mascot.k-paused * { animation-play-state: paused !important; }
 /* "off": the mascots step aside; a .k-plain fallback takes their place. */
 .k-plain { display: none; }
 .kit[data-motion="off"] .k-mascot { display: none !important; }
@@ -1047,18 +1172,18 @@ KIT.push({ id: 'wait', name: 'Waiting, by how long', about: 'One helper for ever
 KIT.push({ id: 'empty', name: 'Empty states', about: 'When there is nothing to show, the mascot of that product keeps you company. Nucli dozes in an empty editor and wakes the moment you start (the wake-up is the part people see). Duo waits for your first game and perks up when you point at the button that adds one.',
   timing: 'Wake-up 0.6 s, once. Asleep and waiting are still poses: nothing loops while nobody watches.',
   html: `<div class="k-empty"><span class="k-m" data-empty="nucli"></span><span class="k-plain">…</span><div><b>Waiting for code.</b><br><span>Type or paste a handler.</span></div></div>
-<textarea class="k-empty-input" rows="2" aria-label="Type here to wake Nucli" placeholder="Type here…"></textarea>
+<div class="k-code-field k-empty-input" data-lang="js"><pre aria-hidden="true"><code></code></pre><textarea rows="2" spellcheck="false" aria-label="Type here to wake Nucli" placeholder="Type here…"></textarea></div>
 <div class="k-empty k-empty-duo"><span class="k-m" data-empty="duo"></span><span class="k-plain">…</span><div><b>No games yet.</b><br><span>Add one from the Hub to get started.</span></div><button class="k-btn k-primary" data-add-game>Add a game</button></div>`,
   css: `.k-empty { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .k-empty .k-m { width: 72px; height: 72px; }
 .k-empty span { color: var(--k-muted); }
 .k-empty-duo { width: 100%; padding-top: 10px; border-top: 1px solid var(--k-line); }
-.k-empty-input { font: 13px ui-monospace, Consolas, monospace; padding: 8px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); min-width: min(100%, 260px); }
-.k-empty-input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 1px; }
+.k-empty-input { min-width: min(100%, 300px); flex: 1 1 300px; }
 .k-empty .k-asleep .k-float { animation: none; transform: translateY(3px) rotate(-5deg); }
 .k-empty .k-asleep g[transform^="rotate"] { opacity: .35; }`,
   js: function setupEmpty(root) {
-    const m = root.querySelector('[data-empty="nucli"]'), input = root.querySelector('.k-empty-input'), text = root.querySelector('.k-empty b');
+    kitCodeField(root.querySelector('.k-empty-input'));
+    const m = root.querySelector('[data-empty="nucli"]'), input = root.querySelector('.k-empty-input textarea'), text = root.querySelector('.k-empty b');
     const sleep = () => { m.innerHTML = kitNucli({ moods: ['sleep'], label: 'Nucli, dozing' }); m.querySelector('svg').classList.add('k-asleep'); kitApplyMotion(m); text.textContent = 'Waiting for code.'; m.classList.remove('k-alt'); };
     sleep();
     let awake = false;
@@ -1261,7 +1386,7 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
       <div class="k-cmd"><code data-cmd="duo-nucli@latest add --picks"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
   </ol>
   <div class="k-install-cols">
-    <figure><figcaption>What you get</figcaption><pre class="k-tree">src/ui/duo-nucli/
+    <figure><figcaption>What you get</figcaption><pre class="k-tree" data-hl="tree">src/ui/duo-nucli/
 ├─ tokens.css         colours, corners, motion
 ├─ motion.js          the Motion setting
 ├─ mascots/
@@ -1272,7 +1397,7 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
 │  └─ progress-ring.css
 ├─ messages/          the bubble, and the toast fallback
 └─ players/</pre></figure>
-    <figure><figcaption>duo-nucli.json, written by init</figcaption><pre class="k-tree">{
+    <figure><figcaption>duo-nucli.json, written by init</figcaption><pre class="k-tree" data-hl="json">{
   "dir": "src/ui/duo-nucli",
   "framework": "none",     // or "react", "svelte", "vue"
   "look": "www",           // or "v3"
@@ -1296,12 +1421,15 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
 .k-install-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
 .k-install-cols figure { margin: 0; }
 .k-install-cols figcaption { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.k-tree { margin: 0; padding: 10px 12px; border-radius: var(--k-r-ctl); background: var(--k-surface); border: 1px solid var(--k-line); font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
-.k-install-note { margin: 0; color: var(--k-muted); font-size: 14px; }`,
+.k-tree { margin: 0; padding: 10px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
+.k-install-note { margin: 0; color: var(--k-muted); font-size: 14px; }
+.k-install-note code { padding: 1px 6px; border-radius: 4px; background: var(--k-code-bg); color: var(--k-code-fg); font-size: 12.5px; }`,
   js: function setupInstall(root) {
-    const set = (pm) => { document.querySelectorAll('[data-cmd]').forEach((c) => (c.textContent = `${pm} ${c.dataset.cmd}`)); document.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.pm === pm))); };
+    const set = (pm) => { document.querySelectorAll('[data-cmd]').forEach((c) => (c.innerHTML = kitHighlight.sh(`${pm} ${c.dataset.cmd}`))); document.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.pm === pm))); };
     root.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.addEventListener('click', () => set(b.dataset.pm)));
     set('npx');
+    root.querySelectorAll('pre[data-hl]').forEach((pre) => (pre.innerHTML = kitHighlight[pre.dataset.hl](pre.textContent)));
+    root.querySelectorAll('.k-install-note code').forEach((c) => (c.innerHTML = kitHighlight.html(c.textContent)));
     document.addEventListener('click', async (e) => {
       const b = e.target.closest('.k-copy-cmd'); if (!b) return;
       const code = b.parentElement.querySelector('code');
@@ -1310,11 +1438,42 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
     });
   } });
 
+KIT.push({ id: 'code', name: 'Code blocks and fields', about: 'Code in the kit\'s colours: a block to read and copy, and a field you can type code into that highlights as you go (a textarea over a highlighted copy, so typing, selecting, undo and screen readers all work as in a plain field). JavaScript, HTML, CSS, shell, JSON and file trees, with a small built-in highlighter.',
+  timing: 'No motion. Highlighting runs on every keystroke; it takes well under a millisecond for a handler.',
+  html: `<figure class="k-codeblock"><figcaption>handler.js</figcaption><pre data-hl="js"><code>// One Nucli electron per player.
+Game.GameName = "Borderlands 2";
+Game.ExecutableName = "Borderlands2.exe";
+Game.MaxPlayers = 4;
+Game.Play = function () {
+  Context.StartArguments = " -windowed -nostartupmovies";
+};</code></pre></figure>
+<div class="k-code-field" data-lang="js"><pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" aria-label="Handler code" rows="4">Game.Hook.ForceFocus = true;
+var players = Context.NumberOfPlayers; // 1 to 8
+</textarea></div>`,
+  css: `.k-codeblock { margin: 0; width: 100%; max-width: 520px; border-radius: var(--k-r-ctl); overflow: hidden; background: var(--k-code-bg); }
+.k-codeblock figcaption { padding: 6px 12px; font: 12px ui-monospace, Consolas, monospace; color: color-mix(in srgb, var(--k-code-fg) 65%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--k-code-fg) 15%, transparent); }
+.k-codeblock pre { margin: 0; padding: 10px 12px; overflow: auto; color: var(--k-code-fg); font: 13px/1.5 ui-monospace, Consolas, monospace; }
+.k-code-field { position: relative; display: grid; width: 100%; max-width: 520px; border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); background: var(--k-surface); }
+.k-code-field > * { grid-area: 1 / 1; margin: 0; padding: 8px 10px; border: 0; font: 13px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
+.k-code-field pre { pointer-events: none; color: var(--k-fg); overflow: hidden; }
+.k-code-field textarea { resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: var(--k-fg); outline: none; min-height: 3.2em; }
+.k-code-field textarea::placeholder { color: var(--k-muted); }
+.k-code-field textarea::selection { background: color-mix(in srgb, var(--k-accent) 30%, transparent); color: transparent; }
+.k-code-field:focus-within { outline: 2px solid var(--k-accent); outline-offset: 1px; }
+/* Highlight colours: dark code backgrounds, and code fields on light pages. */
+.kit { --hl-com: #8b949e; --hl-str: #a5d6ff; --hl-re: #a5d6ff; --hl-kw: #ff7b72; --hl-num: #79c0ff; --hl-fn: #d2a8ff; --hl-prop: #7ee787; --hl-tag: #7ee787; --hl-attr: #79c0ff; --hl-sel: #ffa657; --hl-const: #ffa657; --hl-punct: #c9d1d9; --hl-var: inherit; }
+.kit[data-mode="light"] .k-code-field { --hl-com: #6e7781; --hl-str: #0a3069; --hl-re: #0a3069; --hl-kw: #cf222e; --hl-num: #0550ae; --hl-fn: #8250df; --hl-prop: #116329; --hl-tag: #116329; --hl-attr: #0550ae; --hl-sel: #953800; --hl-const: #953800; --hl-punct: #24292f; }
+.hl-com { color: var(--hl-com); font-style: italic; } .hl-str { color: var(--hl-str); } .hl-re { color: var(--hl-re); } .hl-kw { color: var(--hl-kw); } .hl-num { color: var(--hl-num); } .hl-fn { color: var(--hl-fn); } .hl-prop { color: var(--hl-prop); } .hl-tag { color: var(--hl-tag); } .hl-attr { color: var(--hl-attr); } .hl-sel { color: var(--hl-sel); } .hl-const { color: var(--hl-const); } .hl-punct { color: var(--hl-punct); } .hl-var { color: var(--hl-var); }`,
+  js: function setupCode(root) {
+    root.querySelectorAll('pre[data-hl]').forEach((pre) => { const c = pre.querySelector('code') || pre; c.innerHTML = kitHighlight[pre.dataset.hl](c.textContent); });
+    root.querySelectorAll('.k-code-field').forEach((f) => kitCodeField(f));
+  } });
+
 // The showcase: groups, an overview, navigation with the current section marked, each entry and its code.
 (() => {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const FOUNDATION = [kitMotion, kitMoves, kitApplyMotion, kitShade, kitEye, kitMouth, kitNEye, kitNFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
-    + `\n\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_PLAYERS8 = ${JSON.stringify(KIT_PLAYERS8)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitN1 = ${kitN1.toString()};\nconst kitBlush = ${kitBlush.toString()};\nconst KIT_LID = '${KIT_LID}';\nconst KIT_NMOUTH = ${JSON.stringify(KIT_NMOUTH)};\nconst kitNucCore = ${kitNucCore.toString()};\nconst kitDuoShade = ${kitDuoShade.toString()};\nconst kitFaces = ${kitFaces.toString()};`;
+  const FOUNDATION = [kitMotion, kitMoves, kitSync, kitApplyMotion, kitShade, kitEye, kitMouth, kitNEye, kitNFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
+    + `\n\nconst kitSeen = new IntersectionObserver((es) => es.forEach((e) => { e.target._kVis = e.isIntersecting; kitSync(e.target); }), { rootMargin: '80px' });\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_PLAYERS8 = ${JSON.stringify(KIT_PLAYERS8)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitN1 = ${kitN1.toString()};\nconst kitBlush = ${kitBlush.toString()};\nconst KIT_LID = '${KIT_LID}';\nconst KIT_NMOUTH = ${JSON.stringify(KIT_NMOUTH)};\nconst kitNucCore = ${kitNucCore.toString()};\nconst kitDuoShade = ${kitDuoShade.toString()};\nconst kitFaces = ${kitFaces.toString()};`;
   KIT.push({ id: 'motion', name: 'Motion settings', about: 'The motion settings and the two mascots\' code, which every component uses. "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface\'s motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device\'s "reduce motion" always wins.',
     timing: 'Default for new users: "Default". Nothing that slows people down or covers content.',
     html: `<table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>`,
@@ -1327,16 +1486,17 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
     ['navigation', 'Navigation', 'Getting around and through a setup.', ['tabs', 'stepper']],
     ['feedback', 'Feedback', 'How the interface answers, close to where you acted.', ['toasts', 'badges', 'banners', 'dialog', 'empty']],
     ['progress', 'Progress and waiting', 'Known progress, downloads, and waits of any length.', ['progress-ring', 'progress-bar', 'wait', 'skeleton']],
-    ['content', 'Content', 'Lists of things to open.', ['cards']],
+    ['content', 'Content', 'Lists of things to open, and code.', ['cards', 'code']],
   ];
   const SUM = {
     install: 'Preview: one command adds a component\'s source to your project.', tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
     buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'A Nucli knob, an electron check, Duos per player.', slider: '1 to 8 players: a Duo-ball handle, a Duo each.', fields: 'Nucli helps: concentrates, beams, worries.', tabs: 'An underline with weight; an electron rides it.', menus: 'Springs from its button; Nucli says the tooltip.', appbar: 'The mascot is the logo and the status light.', players: 'One Duo per player: they drop in and leave.', notfound: 'Duo looks around, Nucli checks the links.', stepper: 'Duo hops from step to step.', skeleton: 'Grey lines; an electron is the shimmer.',
     badges: 'Pills with Nucli\'s face; a counter that turns into him at zero.', toasts: 'The mascot says it next to what you clicked.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes and wakes; Duo waits for a game.',
-    'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Player counts as Duos; they hop on hover.',
+    'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Player counts as Duos; they hop on hover.', code: 'Highlighted code to read, copy and type.',
   };
   const mini = (svg) => `<span class="t-m">${svg}</span>`;
   const THUMB = {
+    code: `<span class="k-codeblock" style="padding:6px 10px;font:11px/1.5 ui-monospace,monospace;color:var(--k-code-fg)">${kitHighlight.js('Game.MaxPlayers = 4;\n// one per player')}</span>`,
     tokens: ['--k-accent', '--k-ok', '--k-err', '--k-p1', '--k-p2', '--k-p3', '--k-p4'].map((v) => `<i class="t-sw" style="background:var(${v})"></i>`).join(''),
     install: '<span class="k-cmd" style="font-size:11px;padding:6px 10px"><code>npx duo-nucli add ring</code></span>',
     motion: ['All', 'Default', 'Calm', 'Still', 'Off'].map((v, i) => `<span class="t-btn${i === 1 ? ' p' : ''}">${v}</span>`).join(''),
@@ -1378,6 +1538,7 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
     stepper: ['good', 'Nice for a first setup; skip it where people go through steps often.'],
     cards: ['good', 'Player counts as Duos read faster than the number. The hop on hover is optional.'],
     skeleton: ['good', 'Subtle enough to stay on all the time.'],
+    code: ['good', 'Code in the kit\'s colours; the field that highlights as you type is the useful part.'],
     slider: ['good', 'A natural home for the player Duos; the Duo-ball handle is a nice touch.'],
     tabs: ['good', 'The electron is quiet branding that costs nothing.'],
     toggles: ['good', 'The players picker is a pick. The Nucli knob and the check\'s electron are nice-to-haves.'],
@@ -1388,12 +1549,15 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
   const BADGE = { best: '★ My pick', good: 'Good', maybe: 'Maybe' };
   const badge = (id) => PICK[id] ? `<span class="v-b v-${PICK[id][0]}">${BADGE[PICK[id][0]]}</span>` : '';
   const byId = Object.fromEntries(KIT.map((c) => [c.id, c]));
+  // Code panels are built (and highlighted) the first time they're opened, so the page loads light.
+  const CODE = [];
+  const fillCode = (pre) => { if (pre.dataset.done) return; pre.dataset.done = '1'; const [n, src] = CODE[+pre.dataset.code]; pre.firstElementChild.innerHTML = kitHighlight[{ Install: 'sh', HTML: 'html', CSS: 'css', JavaScript: 'js' }[n] || 'js'](src); };
   // The Install tab: what a future one-line install would be (a preview; nothing to install yet).
   const installText = (id) => ['tokens', 'motion', 'mascots'].includes(id)
     ? `# Preview only: no package exists yet ("duo-nucli" is a placeholder).\nnpx duo-nucli@latest init\n\n# Adds src/ui/duo-nucli/: tokens.css, motion.js, mascots/nucli.js, mascots/duo.js`
     : `# Preview only: no package exists yet ("duo-nucli" is a placeholder).\nnpx duo-nucli@latest add ${id}\n\n# Adds src/ui/duo-nucli/${id}/ (${id}.js, ${id}.css)\n# Needs the foundations from "npx duo-nucli@latest init" (tokens, motion, mascots).\n# Until then: the HTML, CSS and JavaScript tabs are the whole component.`;
   document.getElementById('kit-css').textContent = KIT.map((c) => `/* ${c.name} */\n${c.css}`).join('\n\n');
-  const codeBlock = (name, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code for ${name}">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => `<pre tabindex="0" aria-label="${n} of ${name}"${i ? ' hidden' : ''}><code>${esc(src)}</code></pre>`).join('')}</details>`;
+  const codeBlock = (name, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code for ${name}">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => { CODE.push([n, src]); return `<pre tabindex="0" aria-label="${n} of ${name}" data-code="${CODE.length - 1}"${i ? ' hidden' : ''}><code></code></pre>`; }).join('')}</details>`;
   // Overview
   const card = (id, why) => `<a class="glance-card${PICK[id] ? ' v-' + PICK[id][0] + '-card' : ''}" href="#${id}" data-v="${PICK[id]?.[0] || 'base'}"><span class="thumb" aria-hidden="true">${THUMB[id]}</span><span class="txt"><b>${byId[id].name} ${badge(id)}</b><span class="sum">${why ? PICK[id][1] : SUM[id]}</span></span></a>`;
   const picks = Object.keys(PICK).filter((id) => PICK[id][0] === 'best');
@@ -1404,7 +1568,7 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
   // Sections, grouped
   document.getElementById('kit').innerHTML = GROUPS.map(([gid, gname, gabout, ids]) => `<h2 class="group-h" id="g-${gid}">${gname}</h2><p>${gabout}</p>` + ids.map((id) => {
     const c = byId[id];
-    return `<section class="comp${PICK[id] ? ' v-' + PICK[id][0] + '-sec' : ''}" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name} ${badge(id)}<a class="up" href="#top">Back to overview ↑</a></h2><p>${c.about}</p>${PICK[id] ? `<p class="take"><b>My take:</b> ${PICK[id][1]}</p>` : ''}<div class="demo">${c.html}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, [...(c.id === 'install' ? [] : [['Install', installText(c.id)]]), ...(c.code || [['HTML', c.html], ['CSS', c.css], ['JavaScript', c.js.toString()]])])}</section>`;
+    return `<section class="comp${PICK[id] ? ' v-' + PICK[id][0] + '-sec' : ''}" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name} ${badge(id)}<a class="up" href="#top">Back to overview ↑</a></h2><p>${c.about}</p>${PICK[id] ? `<p class="take"><b>My take:</b> ${PICK[id][1]}</p>` : ''}<div class="demo">${c.html}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, [...(c.id === 'install' ? [] : [['Install', installText(c.id)]]), ...(c.code || [['HTML', c.html], ['CSS', c.css], ['JavaScript', c.js.toString() + (c.id === 'code' ? '\n\n' + document.getElementById('kit-hl').textContent.trim() : '')]])])}</section>`;
   }).join('')).join('');
   // Navigation
   const nav = document.getElementById('nav-groups');
@@ -1434,6 +1598,7 @@ KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing cou
   side.addEventListener('keydown', (e) => { if (e.key === 'Escape' && side.classList.contains('open')) { closeNav(); openBtn.focus(); } });
   // Run the components, then the code tabs and copy buttons.
   KIT.forEach((c) => c.js(document.getElementById(c.id)));
+  document.getElementById('kit').addEventListener('toggle', (e) => { if (e.target.matches?.('details.code') && e.target.open) e.target.querySelectorAll('pre[data-code]').forEach(fillCode); }, true);
   document.getElementById('kit').addEventListener('click', async (e) => {
     const tab = e.target.closest('.code .tabs [role="tab"]'), copy = e.target.closest('.code .copy');
     if (tab) { const d = tab.closest('details'); d.querySelectorAll('[role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t === tab))); d.querySelectorAll('pre').forEach((p, i) => (p.hidden = i !== +tab.dataset.i)); }
