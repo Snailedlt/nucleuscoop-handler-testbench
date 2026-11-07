@@ -684,6 +684,12 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 /* Getting started: at the top of the code, where reading starts. Closed, the footer's Getting started brings it back. */
 #welcome { border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); padding: 8px 12px; font-size: 13px; }
 #welcome[hidden] { display: none; }
+/* Where a put-away thing now lives (flyTo in app.ts): a short glow on the link. */
+:root:not([data-motion-ui="off"]) #welcome.welcome-in { animation: welcome-in .35s cubic-bezier(.2, .8, .2, 1); transform-origin: top; }
+@keyframes welcome-in { from { opacity: 0; transform: scaleY(.6); } }
+.fly-ghost { position: fixed; z-index: 95; pointer-events: none; transform-origin: top left; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.moved-here { animation: moved-here 1.6s ease-out; border-radius: 4px; }
+@keyframes moved-here { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 #welcome .w-head { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
 #welcome .w-head > span { flex: 1; min-width: 0; }
 #welcome .w-head strong { color: var(--fg); }

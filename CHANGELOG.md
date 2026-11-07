@@ -63,7 +63,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
-- **Getting started where you start reading.** The "New here?" steps sit at the top of the code instead of in Check, and closing them is no longer forever: Getting started in the footer (or the command palette) brings them back.
+- **Getting started where you start reading.** The "New here?" steps sit at the top of the code instead of in Check, and closing them is no longer forever: they fly down into Getting started in the footer (or the command palette), which brings them back.
 - **Fixes go straight into the code.** Fix problems (and Fix with AI) apply right away and light up the changed lines in the editor; a one-line note has Undo, and what changed is folded under it. Only an AI fix that looks risky (new problems, a big rewrite, or you typed meanwhile) waits for you to apply it. "Apply without review" is gone.
 - **A Home button by the title.** The title is the workbench's own link now, and Home next to it goes to the home page (what the tools do, how to get them).
 - **Check fits more on screen.** Each problem is one row (its colour, line, what's wrong and the fix); click it for the why, other fixes and the technical details. Settings › General › Check switches to Comfortable or Detailed.

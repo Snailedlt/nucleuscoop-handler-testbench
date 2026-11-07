@@ -2270,6 +2270,23 @@ try {
 } catch {
   /* ignore */
 }
+// Something put away flies to where it now lives (a ghost of it shrinks into the link), and the link pulses, so you
+// see where to find it again. With motion off, only the pulse.
+function flyTo(from: HTMLElement, to: HTMLElement) {
+  const pulse = () => { to.classList.remove('moved-here'); void to.offsetWidth; to.classList.add('moved-here'); setTimeout(() => to.classList.remove('moved-here'), 1800); };
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  if (document.documentElement.dataset.motionUi === 'off' || !b.width || !a.width) return pulse();
+  const ghost = document.createElement('div');
+  ghost.className = 'fly-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  Object.assign(ghost.style, { left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px` });
+  document.body.append(ghost);
+  const anim = ghost.animate([
+    { transform: 'translate(0, 0) scale(1)', opacity: 1, borderRadius: '8px' },
+    { transform: `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(${b.width / a.width}, ${b.height / a.height})`, opacity: 0.2, borderRadius: '999px' },
+  ], { duration: 520, easing: 'cubic-bezier(.5, 0, .2, 1)' });
+  anim.onfinish = () => { ghost.remove(); pulse(); };
+}
 function showWelcome() {
   const w = $('#welcome');
   w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
@@ -2279,9 +2296,10 @@ function showWelcome() {
   w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
   w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
   w.querySelector('[data-w=close]')!.addEventListener('click', () => {
+    flyTo(w, $('#welcome-open'));
     w.hidden = true;
     editor.refresh();
-    confirmOn($('#welcome-open'), 'Getting started ✓', 'Closed. Getting started, at the bottom, brings it back.');
+    announce('Closed. Getting started, at the bottom, brings it back.');
     try {
       localStorage.setItem(WELCOME_KEY, '1');
     } catch {
@@ -2294,7 +2312,9 @@ if (!welcomed) showWelcome();
 $('#welcome-open').addEventListener('click', () => {
   if (narrow()) setView('code');
   showWelcome();
-  $('#welcome').querySelector<HTMLElement>('button, a')?.focus();
+  const w = $('#welcome');
+  w.classList.remove('welcome-in'); void w.offsetWidth; w.classList.add('welcome-in'); // unfolds where it lives
+  w.querySelector<HTMLElement>('button, a')?.focus();
 });
 
 let startTab = 'problems';
