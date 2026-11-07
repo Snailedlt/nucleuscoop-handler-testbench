@@ -1359,6 +1359,8 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 @media (max-width: 1280px) { .brand-long { display: none; } }
 .htabs-wrap { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-width: 0; align-self: stretch; }
 #htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; align-self: flex-end; }
+.htab-all[hidden] { display: none; }
+.htab-all { font-size: 12px; }
 .htab-w { display: inline-flex; align-items: center; max-width: 250px; border: 1px solid transparent; border-bottom: 0; border-radius: 9px 9px 0 0; flex: none; }
 .htab-w:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .htab-w.on { background: var(--surface); border-color: var(--line); }
@@ -1408,6 +1410,8 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .rail-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .rail-logo { color: var(--accent); }
 .rail-sp { flex: 1; }
+.rail-btn { position: relative; }
+.rail-btn.confirmed::after { content: "✓"; position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ok); color: #fff; font: 700 10px/14px var(--font-body); text-align: center; }
 .rail-label { display: none; }
 :root[data-layout="rail"][data-rail-open] .rail { width: 196px; box-sizing: border-box; align-items: stretch; padding: 12px 8px; }
 :root[data-layout="rail"][data-rail-open] .app { padding-left: calc(196px + 12px); }
@@ -1538,6 +1542,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .fv-fixes { display: flex; gap: 6px; flex-wrap: wrap; }
 .fv-fix { font-size: 12.5px; padding: 3px 10px; }
 .fv-fix code { font-size: 11.5px; }
+.fv .btn code, #blocksview .btn code { color: inherit; background: none; padding: 0; }
 .fv-elsewhere { margin: 0 0 12px; }
 .fv-elsewhere[open] { display: flex; flex-direction: column; gap: 6px; }
 .fv-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 0 0 14px; border: 1px solid var(--err); border-radius: var(--r-pane); background: var(--surface); }

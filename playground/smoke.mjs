@@ -244,9 +244,37 @@ for (const theme of ['light', 'dark']) {
     await axe(q, `${theme}, tester recommendations`);
     await fresh.close();
   }
+  // One handler per tab: another handler opens a new tab; one that's already open switches to its tab.
+  await p.goto(BASE + '#example-mistakes');
+  await p.waitForTimeout(800);
+  const nTabs = async () => (await p.$$('#htabs [role=tab]')).length;
+  const tabsBefore = await nTabs();
+  const otherHub = await p.evaluate(() => window.HUB_EXAMPLES?.handlers?.[0]?.id ?? null);
+  if (otherHub) {
+    await p.evaluate((id) => { location.hash = 'hub-' + id; }, otherHub);
+    await p.waitForTimeout(1200);
+    const tabsAfter = await nTabs();
+    await p.evaluate(() => { location.hash = 'example-mistakes'; });
+    await p.waitForTimeout(600);
+    check(tabsAfter === tabsBefore + 1 && (await nTabs()) === tabsAfter && /mistakes/i.test(await p.innerText('#htabs [aria-selected=true]')), `${theme}: another handler opens a new tab, and an open one switches to its tab (${tabsBefore} -> ${tabsAfter})`);
+  }
+  // The side rail's Save: right-click offers the formats, like the arrow beside Save in the slim bar.
+  await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'rail'));
+  await p.reload();
+  await p.waitForTimeout(900);
+  await p.click('.rail [data-rail=save]', { button: 'right' });
+  await p.waitForTimeout(200);
+  check(/For Nucleus Co-op \(\.zip\)/.test(await p.innerText('body')), `${theme}: right-click on the rail's Save offers Save as`);
+  await p.keyboard.press('Escape');
+  await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'bar'));
+  await p.reload();
+  await p.waitForTimeout(800);
   // Form: one line per option, more on request, fixes work, and back to Code.
   await p.goto(BASE + '#example-mistakes');
   await p.waitForTimeout(800);
+  // Already open with changes (from the checks above): open a fresh copy.
+  const fresh = p.locator('button', { hasText: 'Open a fresh copy' });
+  if (await fresh.count()) { await fresh.first().click(); await p.waitForTimeout(800); }
   await p.click('[data-view-mode=form]');
   await p.waitForTimeout(500);
   const fvRows = await p.$$('#formview .fv-row');

@@ -1313,9 +1313,20 @@ function setPackageFiles(files: PackageFile[]) {
   renderDocHead();
   pkgUI?.render(); // the Files panel and its count, if it's open
 }
-function loadSource(src: string, meta: DocMeta) {
-  // Your edits stay: opening something else while this handler has changes opens it in a new tab.
-  if (tabsReady && editor.getValue().trim() && editor.getValue() !== loadedText) openTab();
+function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) {
+  // One handler per tab: an example, Hub handler or link that's already open switches to its tab; anything else opens
+  // in a new tab, unless this one is empty (nothing typed in a new handler).
+  if (tabsReady) {
+    const same = meta.hash && !opts.fresh ? tabs.find((x) => (x.id === activeTab ? doc.hash : x.meta.hash) === meta.hash) : undefined;
+    if (same) {
+      if (same.id !== activeTab) switchTab(same.id);
+      // Changed since it was opened: offer the original too, in its own tab.
+      if (editor.getValue() !== loadedText) notice(`${meta.name} is already open, with your changes.`, { kind: 'info', action: { label: 'Open a fresh copy', run: () => loadSource(src, meta, { fresh: true }) } });
+      else announce(`${meta.name} is already open: switched to its tab.`);
+      return;
+    }
+    if (editor.getValue().trim()) openTab();
+  }
   clearNotice(); // it was about the handler before
   document.documentElement.classList.remove('busy'); // a Test all of the last handler no longer runs
   packageFiles = [];
@@ -1431,6 +1442,9 @@ function reopenClosed() {
 }
 function renderTabs() {
   const live = countsOf(current);
+  const allBtn = document.getElementById('tab-all');
+  if (allBtn) allBtn.hidden = tabs.length < 3;
+  requestAnimationFrame(() => document.querySelector(`#tab-${activeTab}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
   const dot = (c?: { e: number; w: number }) => (!c ? '' : c.e ? ' e' : c.w ? ' w' : ' ok');
   const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
   $('#htabs').innerHTML = tabs.map((x) => {
@@ -1455,6 +1469,19 @@ function initTabs() {
   saveTabs();
   renderTabs();
   const strip = $('#htabs');
+  const all = document.createElement('button');
+  all.type = 'button';
+  all.id = 'tab-all';
+  all.className = 'htab-add htab-all';
+  all.setAttribute('aria-haspopup', 'menu');
+  all.setAttribute('aria-label', 'All open handlers');
+  all.title = 'All open handlers';
+  all.textContent = '▾';
+  $('#tab-add').before(all);
+  all.addEventListener('click', () => openMenu(all, 'Open handlers', tabs.map((x) => {
+    const on = x.id === activeTab;
+    return { label: on ? doc.name : x.meta.name, checked: on, run: () => switchTab(x.id) };
+  })));
   strip.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     const close = t.closest<HTMLElement>('[data-close]');
@@ -1943,7 +1970,7 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 async function copyCode() {
   try {
     await navigator.clipboard.writeText(editor.getValue());
-    confirmOn($('#share-open').offsetParent ? $('#share-open') : $('#code-menu-phone'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
+    confirmOn(shareButton(), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
     editor.focus();
@@ -2043,7 +2070,7 @@ const tips = initTips({
     new: () => $('#tab-add'),
     examples: () => $('#tab-add'),
     tryit: () => document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'),
-    share: () => $('#share-open'),
+    share: () => shareButton(),
   },
 });
 $('#tips-reset').addEventListener('click', () => tips.reset());
@@ -2090,7 +2117,7 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     e.preventDefault(); // instead of the browser saving the page
     const save = $('#save') as HTMLButtonElement;
     void save;
-    if (e.shiftKey) openMenu($('#save-more').offsetParent ? $('#save-more') : $('#code-menu-phone'), 'Save as', saveItems());
+    if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
     else void saveAs();
   } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
     e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
@@ -2255,12 +2282,23 @@ document.querySelectorAll<HTMLElement>('.rail [data-rail]').forEach((b) => b.add
   if (act === 'add') openMenu(b, 'New or open', addItems(), 'right');
   else if (act === 'menu') openMenu(b, 'Menu', appItems(), 'right');
   else if (act === 'lines') lines.toggle();
-  else if (act === 'save') void saveAs(undefined, b);
+  else if (act === 'save') { if ((e as MouseEvent).shiftKey) openMenu(b, 'Save as', saveItems(), 'right'); else void saveAs(undefined, b); }
   else if (act === 'share') openCodeDialog();
   else if (act === 'test') testGuide.open();
   else return; // Home is a link
   e.preventDefault();
 }));
+{
+  const rs = document.querySelector<HTMLElement>('.rail [data-rail=save]');
+  if (rs) {
+    rs.setAttribute('aria-label', 'Save the handler (Shift+click or right-click: Save as)');
+    rs.addEventListener('contextmenu', (e) => { e.preventDefault(); openMenu(rs, 'Save as', saveItems(), 'right'); });
+    let press = 0;
+    rs.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') press = window.setTimeout(() => { press = -1; openMenu(rs, 'Save as', saveItems(), 'right'); }, 550); });
+    rs.addEventListener('pointerup', () => clearTimeout(press));
+    rs.addEventListener('click', (e) => { if (press === -1) { e.stopImmediatePropagation(); e.preventDefault(); press = 0; } }, true);
+  }
+}
 // Ctrl+Shift+[ and ] go to the previous / next open handler; Alt+W closes the open one.
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'BracketLeft' || e.code === 'BracketRight')) {
@@ -2876,6 +2914,10 @@ document.querySelectorAll('dialog').forEach((dl) =>
 // another), Share copies a link, the code, or a Discord post. The dialog shows Share, or the install steps after
 // the first saves of a .zip.
 const codeDialog = $('#code-dialog') as HTMLDialogElement;
+/** The Save or Share button the person can see (slim bar, side rail or phone), so confirmations show where they look. */
+const shown = (...sel: string[]) => sel.map((s) => document.querySelector<HTMLElement>(s)).find((el) => !!el?.offsetParent) ?? null;
+const saveButton = () => shown('#code-menu-open', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#code-menu-open');
+const shareButton = () => shown('#share-open', '.rail [data-rail=share]', '#code-menu-phone') ?? $('#share-open');
 type SaveKind = 'zip' | 'js' | 'nc';
 const SAVE_KEY = 'nucleus-workbench-save-format';
 const STEPS_KEY = 'nucleus-workbench-install-steps-seen';
@@ -2907,7 +2949,7 @@ function showInstallSteps(filename: string) {
   if (!codeDialog.open) codeDialog.showModal();
   $('#code-close').focus();
 }
-async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = $('#code-menu-open')) {
+async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveButton()) {
   try { localStorage.setItem(SAVE_KEY, kind); } catch { /* not kept */ }
   syncSaveButton();
   if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
@@ -2958,8 +3000,8 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
     const kind = b.dataset.code;
     codeDialog.close();
     if (kind === 'copy') return copyCode();
-    if (kind === 'link') return copyLink($('#share-open'));
-    if (kind === 'discord') return copyForDiscord($('#share-open'));
+    if (kind === 'link') return copyLink(shareButton());
+    if (kind === 'discord') return copyForDiscord(shareButton());
   }),
 );
 initSheetDrag();

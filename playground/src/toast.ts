@@ -265,6 +265,13 @@ export function clearNotice() {
 export function confirmOn(btn: HTMLElement | null | undefined, label: string, toastText: string) {
   if (!btn || !btn.offsetParent || btn.closest('dialog:not([open])')) return toast(toastText, { kind: 'success' });
   announce(toastText);
+  // A side-rail icon has no room for text: a ✓ badge on it instead (the words are announced).
+  if (btn.classList.contains('rail-btn')) {
+    btn.classList.add('confirmed');
+    clearTimeout(Number(btn.dataset.confirmTimer));
+    btn.dataset.confirmTimer = String(window.setTimeout(() => btn.classList.remove('confirmed'), 1600));
+    return;
+  }
   const original = btn.dataset.label ?? btn.innerHTML;
   btn.dataset.label = original;
   btn.textContent = label;
