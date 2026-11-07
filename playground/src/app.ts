@@ -44,7 +44,7 @@ import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
 import { exportSettings, importSettings } from './settingsio';
 import { BETA } from './testplan';
-import { feedbackUrl, setReportState } from './report';
+import { feedbackUrl, openReport, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
@@ -1270,7 +1270,7 @@ function renderProbes() {
     <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th><th>Try it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   $('#count-probes').textContent = `${agree}/${PROBES.length}`;
   $('#count-probes').title = `Linter agrees with Jint on ${agree} of ${PROBES.length} probes; Try it on ${simAgree}`;
-  $('#probe-ask')?.addEventListener('click', () => window.open(feedbackUrl({ title: 'Probe request: ' }), '_blank', 'noopener'));
+  $('#probe-ask')?.addEventListener('click', () => openReport(feedbackUrl({ title: 'Probe request: ' })));
   $('#probes').querySelectorAll<HTMLButtonElement>('[data-probe]').forEach((b) =>
     b.addEventListener('click', () => openProbe(Number(b.dataset.probe))),
   );
@@ -1728,7 +1728,7 @@ function commandList(): OpenEntry[] {
     c('Move Lines to the other side of the code', '', 'lines list left right side move swap', () => announce(`Lines is now ${panels.flip('lines')} of the code.`)),
     c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
     c("Link your game's folder (check paths against it)", '', 'game folder install directory exe path link pick', () => void pickFolder()),
-    c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => window.open(feedbackUrl(), '_blank', 'noopener')),
+    c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => openReport(feedbackUrl())),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
@@ -2283,7 +2283,7 @@ const appItems = (): MenuItem[] => [
   { label: 'Keyboard shortcuts', hint: '?', run: () => helpDialog.showModal() },
   { label: "What's new", run: () => ($('#news-open-2') as HTMLButtonElement).click() },
   { label: 'Getting started', run: () => ($('#welcome-open') as HTMLButtonElement).click() },
-  { label: 'Send feedback…', run: () => window.open(feedbackUrl(), '_blank', 'noopener') },
+  { label: 'Send feedback…', run: () => openReport(feedbackUrl()) },
   { kind: 'separator', label: '' },
   { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
   ...(document.getElementById('test-open') ? [{ label: '🧪 Help test the beta', run: () => testGuide.open() }] : []),
