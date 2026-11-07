@@ -12,7 +12,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
-## Unreleased
+## 2026-11-07 21:41
 
 ### 🛠️ Improved
 
