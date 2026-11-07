@@ -11,7 +11,7 @@ import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
 import { vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
-import { lint, Diagnostic, RULES, lineOf, pluginGlobals } from '@core/lint';
+import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, membersOf, ownerLabel, Resolved } from '@core/api';
 import { memberContextAt, resolveAt, callContextAt, valueContextAt } from '@core/complete';
 import { search, lookup, allEntries, Entry } from '@core/lookup';
@@ -36,6 +36,7 @@ import { initMessageHints } from './wmhints';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
 import { mountFormView, type FormView } from './formview';
+import { mountBlocksView, type BlocksView } from './blocksview';
 import { initPackageUI, fileIcon } from './packageui';
 import { installMap, type PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
@@ -288,6 +289,7 @@ const editor = CodeMirror($('#editor'), {
         setFixCount(r.fixable);
         renderProblems(text);
         if (formView && viewMode === 'form') formView.refresh();
+        if (blocksView && viewMode === 'blocks') blocksView.refresh();
         return [
           ...current
             .filter((d) => d.severity !== 'hint' || (mode === 'dev' && filter === 'hint'))
@@ -2089,35 +2091,44 @@ const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#tes
 });
 
 // ---------------------------------------------------------------------------
-// Code | Form (formview.ts): the options as a form, two-way with the code (the code stays the one source).
+// Code | Form | Blocks: the options as a form (formview.ts) and the callbacks as if / do steps (blocksview.ts), both
+// two-way with the code (the code stays the one source).
+type ViewMode = 'code' | 'form' | 'blocks';
 const VIEW_KEY = 'nucleus-workbench-view';
-let viewMode: 'code' | 'form' = (() => { try { return localStorage.getItem(VIEW_KEY) === 'form' ? 'form' : 'code'; } catch { return 'code'; } })();
+let viewMode: ViewMode = (() => { try { const v = localStorage.getItem(VIEW_KEY); return v === 'form' || v === 'blocks' ? v : 'code'; } catch { return 'code'; } })();
 let formView: FormView | null = null;
-function setViewMode(m: 'code' | 'form') {
+let blocksView: BlocksView | null = null;
+const viewHost = (origin: string) => ({
+  getText: () => editor.getValue(),
+  applyEdits: (edits: TextEdit[]) => editor.operation(() => { for (const e of [...edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end), origin); }),
+  jumpTo: (offset: number) => { setViewMode('code'); const pos = editor.posFromIndex(offset); editor.setCursor(pos); editor.scrollIntoView(pos, 80); editor.focus(); },
+  diagnostics: () => current,
+  diagnosticsText: () => currentText,
+  plain: plainFor,
+  density: checkDensity,
+});
+function setViewMode(m: ViewMode) {
   viewMode = m;
   pkgUI?.deselect();
   try { localStorage.setItem(VIEW_KEY, m); } catch { /* ignore */ }
   document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.viewMode === m)));
-  $('#editor').hidden = m === 'form';
+  $('#editor').hidden = m !== 'code';
   $('#formview').hidden = m !== 'form';
+  $('#blocksview').hidden = m !== 'blocks';
   if (m === 'form') {
     use('form-view');
-    formView ??= mountFormView($('#formview'), {
-      getText: () => editor.getValue(),
-      applyEdits: (edits) => editor.operation(() => { for (const e of [...edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end), '+form'); }),
-      jumpTo: (offset) => { setViewMode('code'); const pos = editor.posFromIndex(offset); editor.setCursor(pos); editor.scrollIntoView(pos, 80); editor.focus(); },
-      diagnostics: () => current,
-      diagnosticsText: () => currentText,
-      plain: plainFor,
-      density: checkDensity,
-    });
+    formView ??= mountFormView($('#formview'), viewHost('+form'));
     formView.refresh();
+  } else if (m === 'blocks') {
+    use('blocks-view');
+    blocksView ??= mountBlocksView($('#blocksview'), viewHost('+blocks'));
+    blocksView.refresh();
   } else {
     editor.refresh();
   }
 }
-document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.addEventListener('click', () => setViewMode(b.dataset.viewMode as 'code' | 'form')));
-editor.on('swapDoc', () => formView?.refresh());
+document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.addEventListener('click', () => setViewMode(b.dataset.viewMode as ViewMode)));
+editor.on('swapDoc', () => { formView?.refresh(); blocksView?.refresh(); });
 setViewMode(viewMode);
 pkgUI = initPackageUI({
   editor,

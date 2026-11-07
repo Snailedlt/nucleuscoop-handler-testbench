@@ -508,6 +508,7 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 #test-dialog { width: min(720px, 96vw); }
 .tg-ask { display: flex; gap: 14px; align-items: center; margin: 0 0 6px; }
 .tg-asking .tg-compare { display: none !important; }
+.tg-compare .link { color: color-mix(in srgb, var(--accent) 65%, var(--fg)); }
 .tg-hello { margin: 0; font-size: 15px; line-height: 1.45; }
 .tg-q { border: 0; padding: 0; margin: 14px 0 0; }
 .tg-q legend { font-weight: 650; font-size: 15px; padding: 0; margin-bottom: 8px; }
@@ -1512,6 +1513,179 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .gf-btn .gf-n { font-size: 11px; color: var(--muted); }
 #formview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
 #formview[hidden] { display: none; }
+#blocksview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
+#blocksview[hidden] { display: none; }
+/* Calm by default: a step's move, edit and remove buttons show on hover or focus (always on touch screens). */
+@media (hover: hover) { #blocksview .bv-row:not(:hover):not(:focus-within) > .bv-line .bv-tools { opacity: 0; } #blocksview .bv-tools { transition: opacity .12s; } }
+/* Blocks view (src/blocksview.ts). Uses the page's variables only. */
+.bv { container-type: inline-size; font: 14px/1.45 var(--font-body); color: var(--fg); padding: 12px 14px 32px; overflow: auto; box-sizing: border-box; height: 100%; }
+.bv [hidden] { display: none !important; }
+.bv *, .bv *::before, .bv *::after { box-sizing: border-box; }
+.bv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bv-muted { color: var(--muted); }
+.bv code { font: 0.92em var(--font-mono); }
+.bv button, .bv select, .bv input, .bv textarea { font: inherit; color: var(--fg); }
+.bv :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Bar: add a callback, status */
+.bv-bar { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.bv-add-cbs { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.bv-add-cbs:empty { display: none; }
+.bv-add-cb { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; text-align: left; }
+.bv-add-cb-path { font: 600 13px var(--font-mono); }
+.bv-add-cb-plain { font-size: 12px; color: var(--muted); }
+.bv-add-play { border-color: var(--accent); }
+.bv-more-cbs { position: relative; }
+.bv-more-cbs > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 32px; }
+.bv-more-cbs > summary::-webkit-details-marker { display: none; }
+.bv-more-cbs > summary::after { content: ""; width: 6px; height: 6px; margin-left: 8px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); }
+.bv-more-cbs[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+.bv-cb-menu { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); display: flex; flex-direction: column; gap: 2px; min-width: min(320px, 90vw); }
+.bv-status { font-size: 12.5px; color: var(--muted); min-height: 1.2em; align-self: center; }
+
+/* A callback */
+.bv-cb { margin: 0 0 20px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); padding: 10px 12px 12px; }
+.bv-cb-head { display: flex; align-items: flex-start; gap: 8px; }
+.bv-cb-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; flex: 1 1 auto; min-width: 0; }
+.bv-cb-path { display: inline-block; font: 500 12.5px var(--font-mono); color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 0 6px; margin-left: 4px; overflow-wrap: anywhere; }
+.bv-cb > .bv-doc { margin: 2px 0 10px; }
+.bv-none { margin: 4px 0 16px; }
+
+/* Branches: a list of rows; nested ones are indented with a rail on the left */
+.bv-branch { position: relative; }
+.bv-clauses > .bv-branch { margin: 0 0 4px 14px; padding-left: 12px; border-left: 3px solid var(--line); }
+.bv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bv-branch.bv-empty > .bv-list { display: none; }
+.bv-add { margin-top: 6px; font-size: 13px; color: color-mix(in srgb, var(--accent) 78%, var(--fg)); background: transparent; border: 1px dashed var(--line); border-radius: var(--r-ctl); padding: 4px 10px; cursor: pointer; min-height: 30px; }
+.bv-add:hover, .bv-add[aria-expanded="true"] { background: var(--surface-2); border-style: solid; }
+
+/* A row: tag, sentence, tools; the docs line under it */
+.bv-row { border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); padding: 6px 8px; min-width: 0; }
+.bv-row.bv-k-if { padding: 0; border-color: transparent; background: transparent; }
+.bv-row.bv-k-code { background: var(--surface-2); }
+.bv-row.bv-has-err, .bv-clause.bv-has-err { box-shadow: inset 3px 0 0 var(--err); }
+.bv-row.bv-has-warn, .bv-clause.bv-has-warn { box-shadow: inset 3px 0 0 var(--warn); }
+.bv-line { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.bv-tag { flex: none; font: 600 10.5px/1 var(--font-body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 7px; margin-top: 5px; }
+.bv-k-action .bv-tag { color: var(--accent); border-color: currentColor; }
+.bv-tag-if { color: var(--info); border-color: currentColor; }
+.bv-sentence { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.bv-word { color: var(--muted); }
+.bv-kw { font-weight: 600; }
+.bv-target { font: 600 13.5px/1.35 var(--font-mono); overflow-wrap: anywhere; }
+.bv-owner { color: var(--muted); font-weight: 400; }
+.bv-arg { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.bv-param { font-size: 12px; color: var(--muted); }
+.bv-param::after { content: ":"; }
+.bv-doc { font-size: 12.5px; color: var(--muted); margin: 3px 0 0 0; }
+.bv-row > .bv-doc { padding-left: 2px; }
+.bv-doc .bv-ai { width: .95em; height: .95em; vertical-align: -0.12em; }
+.bv-card { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface-2); font-size: 13px; }
+.bv-hint { flex-basis: 100%; font-size: 12px; color: var(--warn); }
+
+/* Condition parts: If … then / Otherwise, if … / Otherwise */
+.bv-clause { border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); padding: 6px 8px; margin: 0 0 4px; }
+.bv-cond { border-left: 3px solid var(--info); }
+.bv-else { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-left: 3px solid var(--info); }
+.bv-else .bv-tools { margin-left: auto; }
+.bv-else:has(> .bv-link), .bv-endif { border: 0; background: transparent; padding: 0 0 0 14px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* Value slots: a kind picker and the value */
+.bv-val { display: inline-flex; align-items: flex-start; min-width: 0; max-width: 100%; flex-wrap: nowrap; }
+.bv-v-opt, .bv-v-enum { flex-wrap: wrap; align-items: center; gap: 4px; }
+.bv-kind { height: 30px; align-self: flex-start; font-size: 11.5px !important; color: var(--muted) !important; background: var(--surface-2); border: 1px solid var(--line); border-right: 0; border-radius: var(--r-ctl) 0 0 var(--r-ctl); padding: 0 2px 0 4px; min-height: 30px; cursor: pointer; max-width: 6.5em; }
+.bv-kind + .bv-input, .bv-kind + .bv-select { border-radius: 0 var(--r-ctl) var(--r-ctl) 0; }
+.bv-v-join > .bv-kind { border-right: 1px solid var(--line); border-radius: var(--r-ctl); margin-right: 4px; }
+.bv-v-opt .bv-kind + .bv-word, .bv-v-enum .bv-kind + .bv-word { margin-left: 4px; }
+.bv-input, .bv-select { font: 13px var(--font-mono) !important; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 4px 7px; min-height: 30px; min-width: 0; }
+.bv-input { width: 16em; max-width: 100%; }
+@supports (field-sizing: content) {
+  .bv-val > .bv-input { field-sizing: content; width: auto; min-width: 5em; max-width: min(36em, 100%); }
+  .bv-val > .bv-num { min-width: 4em; }
+}
+.bv-num { width: 6em; }
+.bv-v-code .bv-input { width: 20em; }
+.bv-select { max-width: 100%; cursor: pointer; }
+.bv-prop { max-width: 18em; }
+.bv-op { font-family: var(--font-body) !important; color: var(--info) !important; font-weight: 600; }
+.bv-input[aria-invalid="true"] { border-color: var(--err); }
+.bv-codeblock { display: block; width: 100%; font: 12.5px/1.45 var(--font-mono) !important; resize: vertical; white-space: pre; overflow: auto; tab-size: 4; }
+
+/* Small square buttons and links */
+.bv-tools { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-left: auto; }
+.bv-icon { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: var(--muted) !important; cursor: pointer; font-size: 15px; line-height: 1; }
+.bv-icon:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); color: var(--fg) !important; }
+.bv-icon:disabled { opacity: .35; cursor: default; }
+.bv-info { position: relative; font: italic 600 13px/1 Georgia, serif; }
+.bv-info::before { content: ""; position: absolute; width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 50%; }
+.bv-info[aria-expanded="true"] { background: var(--surface-2); border-color: var(--line); color: var(--accent) !important; }
+.bv-del:hover:not(:disabled) { color: var(--err) !important; }
+.bv-link { background: transparent; border: 0; padding: 4px 6px; color: color-mix(in srgb, var(--accent) 78%, var(--fg)) !important; cursor: pointer; font-size: 12.5px !important; text-decoration: underline; text-underline-offset: 2px; border-radius: var(--r-ctl); white-space: nowrap; min-height: 28px; }
+.bv-link:hover { background: var(--surface-2); }
+
+/* Problems */
+.bv-probs { display: flex; flex-direction: column; gap: 6px; }
+.bv-probs:not(:empty) { margin-top: 6px; }
+.bv-prob { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 6px 8px; border-radius: var(--r-ctl); background: var(--surface-2); }
+.bv-msg { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.bv-sev { flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; display: inline-grid; place-items: center; font: 700 11px/1 var(--font-body); color: var(--surface); background: var(--info); }
+.bv-sev::before { content: "i"; }
+.bv-sev-error .bv-sev { background: var(--err); }
+.bv-sev-error .bv-sev::before { content: "!"; }
+.bv-sev-warning .bv-sev { background: var(--warn); border-radius: 3px; }
+.bv-sev-warning .bv-sev::before { content: "!"; }
+.bv-sev-hint .bv-sev { background: var(--muted); }
+.bv-fix { font-size: 12.5px; padding: 3px 10px; }
+.bv-elsewhere { margin: 0 0 12px; font-size: 13px; }
+.bv-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 0 0 14px; border: 1px solid var(--err); border-radius: var(--r-pane); background: var(--surface); }
+.bv-banner > span:nth-child(2) { flex: 1 1 240px; }
+.bv-banner .bv-sev { background: var(--err); }
+.bv-banner .bv-sev::before { content: "!"; }
+
+/* The action palette (opens under the "+ Add a step" it belongs to) */
+.bv-palette { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); padding: 10px 12px; margin: 8px 0 4px; box-shadow: 0 6px 20px rgb(0 0 0 / .08); }
+.bv-pick-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.bv-pick-label { font-weight: 600; }
+.bv-search { width: 100%; font-family: var(--font-body) !important; font-size: 14px !important; }
+.bv-pick-count { font-size: 12px; margin: 6px 0; }
+.bv-results { max-height: min(420px, 60vh); overflow: auto; }
+.bv-pick-group h4 { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+.bv-pick-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bv-pick { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; width: 100%; text-align: left; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; }
+.bv-pick:hover, .bv-pick:focus-visible { background: var(--surface-2); border-color: var(--line); }
+.bv-pick-name { font: 600 13px var(--font-mono); overflow-wrap: anywhere; }
+.bv-pick-meta { font-size: 11.5px; color: var(--muted); align-self: center; }
+.bv-pick-doc { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+.bv-cb-menu .bv-add-cb { display: flex; }
+
+/* Narrow: tools under the sentence, slots take the full width */
+@container (max-width: 560px) {
+  .bv-line { flex-wrap: wrap; }
+  .bv-tag { margin-top: 0; }
+  .bv-sentence { flex-basis: 100%; order: 2; }
+  .bv-tools { margin-left: auto; }
+  .bv-arg, .bv-val { flex: 1 1 100%; }
+  .bv-val .bv-input, .bv-val .bv-select { flex: 1 1 auto; width: auto; }
+  .bv-prop { max-width: none; }
+  .bv-clauses > .bv-branch { margin-left: 4px; padding-left: 8px; }
+  .bv-pick { grid-template-columns: 1fr; }
+  .bv-pick-meta { align-self: start; }
+}
+
+/* Joined text: parts with + between them */
+.bv-join { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; max-width: 100%; padding: 2px 4px; border: 1px dashed var(--line); border-radius: var(--r-ctl); }
+.bv-plus { font: 600 13px var(--font-mono); color: var(--muted); }
+@container (max-width: 560px) { .bv-join { flex: 1 1 100%; } .bv-join .bv-val { flex: 1 1 100%; } }
+
+/* Code over several lines */
+.bv-arg:has(.bv-codeblock), .bv-val:has(> .bv-codeblock) { flex: 1 1 100%; }
+.bv-val > .bv-codeblock { flex: 1 1 auto; width: auto; min-width: 0; }
+
+/* Comments above a statement, read-only */
+.bv-note { font: italic 12.5px/1.4 var(--font-body); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 4px 2px; }
+.bv-note::before { content: "// "; font-style: normal; font-family: var(--font-mono); }
+.bv-k-if > .bv-note { margin: 0 0 4px 4px; }
+
 #extra-problems { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 #extra-problems .xp-h { font-size: 12px; font-weight: 700; color: var(--muted); margin: 8px 2px 2px; display: flex; gap: 6px; align-items: center; }
 #extra-problems .xp { display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); font-size: 13px; }
@@ -1617,7 +1791,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><span class="view-switch" role="group" aria-label="View"><button type="button" data-view-mode="code" aria-pressed="true">Code</button><button type="button" data-view-mode="form" aria-pressed="false">Form</button></span><button class="btn files-toggle" id="files-toggle" type="button" aria-pressed="false" aria-controls="files-panel"><span class="fi-badge fi-dir" aria-hidden="true">▤</span>Files<span class="files-n" id="files-n"></span><span class="files-game" id="files-game" hidden title="Your game's folder is linked">+ game</span></button><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><span class="view-switch" role="group" aria-label="View"><button type="button" data-view-mode="code" aria-pressed="true">Code</button><button type="button" data-view-mode="form" aria-pressed="false">Form</button><button type="button" data-view-mode="blocks" aria-pressed="false" title="Game.Play and the other callbacks as if / do steps">Blocks</button></span><button class="btn files-toggle" id="files-toggle" type="button" aria-pressed="false" aria-controls="files-panel"><span class="fi-badge fi-dir" aria-hidden="true">▤</span>Files<span class="files-n" id="files-n"></span><span class="files-game" id="files-game" hidden title="Your game's folder is linked">+ game</span></button><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -1628,6 +1802,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>
         <div id="editor"><div id="sig" hidden></div></div>
         <div id="formview" hidden></div>
+        <div id="blocksview" hidden></div>
         <div id="file-editor" hidden></div>
         <div id="file-card" hidden></div>
         <section id="files-panel" aria-label="Files in this package" hidden><div class="splitter" id="split-files" role="separator" aria-orientation="vertical" aria-label="Resize the Files panel (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div><div id="files-list"></div></section>
