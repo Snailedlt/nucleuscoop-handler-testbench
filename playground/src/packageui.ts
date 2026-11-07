@@ -181,7 +181,7 @@ export function initPackageUI(host: PkgHost) {
       const depth = parts.length - 1;
       rows.push(`<li class="fp-item${depth ? '' : ' dropped'}"><button type="button" class="fp-open" data-fp="${esc(f.name)}" aria-current="${active === f.name}" style="padding-left:${6 + depth * 14}px" title="${esc(depth ? `Installs to ${installPath(f.name, game)}` : 'At the top level: a Hub install drops it')}">${fileIcon(f.name)}<span class="fp-name">${esc(parts[parts.length - 1])}</span><span class="fp-size">${fileSize(f.data.length)}</span></button><button type="button" class="fp-del" data-fp-del="${esc(f.name)}" aria-label="Remove ${esc(f.name)}">×</button></li>`);
     }
-    panel.innerHTML = `<div class="fp-head">Package</div><p class="fp-where">Installs to <code>handlers\\${esc(game)}\\</code></p><ul class="fp-list">${rows.join('')}</ul>
+    $('#files-list').innerHTML = `<div class="fp-head">Package</div><p class="fp-where">Installs to <code>handlers\\${esc(game)}\\</code></p><ul class="fp-list">${rows.join('')}</ul>
       <div class="fp-actions"><button class="btn" type="button" data-fp-add>Add files…</button></div>
       <div class="fp-drop">Drop files here to add them to the package${fs.length ? '' : ', next to handler.js'}.</div>${host.extraSection?.() ?? ''}`;
   }

@@ -107,6 +107,12 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #lines[hidden] { display: none; }
 #lines { position: relative; }
 #lines.wide { width: 520px; }
+@media (min-width: 861px) {
+  :root[data-files-side="left"] #files-panel, :root[data-lines-side="left"] #lines { order: -1; border-left: 0; border-right: 1px solid var(--line); }
+  :root[data-files-side="left"][data-lines-side="left"] #files-panel { order: -2; }
+  :root[data-files-side="left"] #split-files, :root[data-lines-side="left"] #split-lines { left: auto; right: -5px; }
+}
+@media (min-width: 861px) and (max-width: 1100px) { :root[data-lines-side="left"] #lines { right: auto; left: 0; box-shadow: 6px 0 18px rgba(0, 0, 0, .25); } }
 #lines-kinds[hidden], .lines-opts[hidden], #lines-info[hidden] { display: none; }
 #lines-gear { display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
 #lines-gear[aria-expanded=true] { color: var(--accent-fg); background: var(--accent); border-color: transparent; }
@@ -1152,7 +1158,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .switch button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); }
   .switch button[aria-pressed=true] .count { background: color-mix(in srgb, var(--accent-fg) 25%, transparent); color: inherit; }
   .main, .main.sized, .main.sized:has(#lines:not([hidden])) { grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
-  #split-main, #split-lines { display: none; }
+  #split-main, #split-lines, #split-files { display: none; }
   .sheet-grip { display: block; height: 18px; flex: none; cursor: row-resize; touch-action: none; position: relative; }
   .sheet-grip::after { content: ""; position: absolute; left: 50%; top: 7px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--line); }
   #lines.custom-h { height: var(--sheet-h) !important; }
@@ -1519,7 +1525,9 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 #file-card h3 { margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
 #file-card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; margin: 10px 0; } #file-card dt { color: var(--muted); } #file-card dd { margin: 0; overflow-wrap: anywhere; }
 #file-card img { max-width: 100%; max-height: 320px; border: 1px solid var(--line); border-radius: 6px; background: repeating-conic-gradient(#8882 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
-#files-panel { width: 260px; flex: none; border-left: 1px solid var(--line); background: var(--surface); overflow: auto; padding: 8px; font-size: 13px; }
+#files-panel { width: 260px; flex: none; border-left: 1px solid var(--line); background: var(--surface); font-size: 13px; position: relative; display: flex; flex-direction: column; min-height: 0; }
+#files-list { flex: 1; min-height: 0; overflow: auto; padding: 8px; }
+#split-files { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; z-index: 5; }
 #files-panel[hidden] { display: none; }
 .fp-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 2px 4px 6px; }
 .fp-where { font-size: 12px; color: var(--muted); margin: 0 4px 8px; overflow-wrap: anywhere; }
@@ -1606,7 +1614,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div id="formview" hidden></div>
         <div id="file-editor" hidden></div>
         <div id="file-card" hidden></div>
-        <section id="files-panel" aria-label="Files in this package" hidden></section>
+        <section id="files-panel" aria-label="Files in this package" hidden><div class="splitter" id="split-files" role="separator" aria-orientation="vertical" aria-label="Resize the Files panel (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div><div id="files-list"></div></section>
         <section id="lines" aria-label="Names a handler can use" hidden>
           <div class="splitter" id="split-lines" role="separator" aria-orientation="vertical" aria-label="Resize the Lines list (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div>
           <div class="sheet-grip" id="split-sheet" role="separator" aria-orientation="horizontal" aria-label="Resize the list (double-click to reset)" title="Drag to resize · double-tap to reset" tabindex="0"></div>
@@ -1768,6 +1776,10 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <label class="set-layout"><input type="radio" name="set-layout" value="bar"><span><strong>Slim bar</strong><small>Open handlers, Save and the menu in one row above the code</small></span></label>
         <label class="set-layout"><input type="radio" name="set-layout" value="rail"><span><strong>Side rail</strong><small>Tools in a strip on the left, like VS Code; more room for code</small></span></label>
       </div></div>
+    <div class="set-sec"><h3>Files and Lines</h3>
+      <label class="set-row">Files panel <select id="set-files-side"><option value="right">Right of the code</option><option value="left">Left of the code</option></select></label>
+      <label class="set-row">Lines list <select id="set-lines-side"><option value="right">Right of the code</option><option value="left">Left of the code</option></select></label>
+      <p class="muted small" style="margin:0">On a phone both open as a sheet from the bottom.</p></div>
     <div class="set-sec"><h3>Panel sizes</h3>
       <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
       <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>

@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Files and Lines, left or right, any width.** Settings › Layout puts the Files panel and the Lines list on either side of the code (or the command palette: Move Files / Move Lines to the other side), and the Files panel now resizes like Lines: drag its edge, double-click to reset.
 - **Take your settings with you.** Settings › Updates and backup exports your settings to a file and imports them in another browser or on another computer. Your handlers, drafts and WakaTime key stay out of it.
 - **The side rail can show labels.** In the side-rail layout, the › at the bottom shows each tool's name next to its icon; ‹ hides them again (icons only is the default).
 - **Compare with the previous version.** During the beta, Help test this beta (and the command palette) opens the handler you're on in the previous release, so you can say what got better or worse. It keeps its own settings and drafts.
