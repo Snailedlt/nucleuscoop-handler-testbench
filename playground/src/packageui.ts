@@ -7,6 +7,22 @@ import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/toml/toml';
 import 'codemirror/mode/yaml/yaml';
 import 'codemirror/mode/powershell/powershell';
+import 'codemirror/mode/lua/lua';
+// Steam's KeyValues files (.vdf, .acf): "key" "value" pairs in { } blocks, // comments.
+CodeMirror.defineMode('nucleus-vdf', () => ({
+  startState: () => ({ key: true }),
+  token: (stream: any, state: any) => {
+    if (stream.sol()) state.key = true;
+    if (stream.eatSpace()) return null;
+    if (stream.match('//')) { stream.skipToEnd(); return 'comment'; }
+    if (stream.match(/^"(?:[^"\\]|\\.)*"?/)) { const k = state.key; state.key = !k; return k ? 'property' : 'string'; }
+    if (stream.match(/^[{}]/)) { state.key = true; return 'bracket'; }
+    if (stream.match(/^\[[^\]]*\]/)) return 'meta';
+    stream.next();
+    return null;
+  },
+  lineComment: '//',
+}));
 // Batch files (.bat, .cmd): rem / :: comments, :labels, %VARS% and %~dp0, "strings", @echo and the common commands.
 CodeMirror.defineMode('nucleus-batch', () => ({
   startState: () => ({}),
