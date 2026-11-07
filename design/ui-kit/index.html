@@ -44,7 +44,12 @@ footer { margin-top: 40px; color: var(--k-muted); font-size: 13px; }
 .skip:focus { top: 8px; }
 .bar-top { position: sticky; top: 0; z-index: 30; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
 .bar-top .in { max-width: 1360px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; }
-.brand { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 17px; color: var(--k-fg); text-decoration: none; margin-right: auto; }
+.brand { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 17px; color: var(--k-fg); text-decoration: none; }
+.site-nav { display: flex; gap: 2px; margin-right: auto; }
+.site-nav a { padding: 4px 10px; border-radius: 999px; color: var(--k-muted); text-decoration: none; font-size: 14px; }
+.site-nav a:hover { color: var(--k-fg); background: var(--k-surface-2); }
+.site-nav a[aria-current="page"] { color: var(--k-fg); font-weight: 600; background: var(--k-surface-2); }
+.site-nav a:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
 .ctls { display: flex; gap: 8px 14px; flex-wrap: wrap; }
 .ctls label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
 .k-select { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); }
@@ -97,7 +102,8 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
   .side { display: none; position: fixed; z-index: 35; inset: 0 auto 0 0; top: 0; width: min(300px, 86vw); height: 100vh; background: var(--k-surface); border-right: 1px solid var(--k-line); padding: 16px; box-shadow: var(--k-shadow); }
   .side.open { display: block; }
   .ctls { display: none; width: 100%; padding: 4px 0 6px; } .ctls.open { display: flex; }
-  .brand { order: -1; width: 100%; margin: 0 0 2px; } .ctl-open { margin-left: auto; }
+  .brand { display: none; } .site-nav { order: -1; margin-right: auto; } .site-nav a { padding: 4px 6px; font-size: 13px; }
+  .bar-top .in { gap: 6px 6px; padding: 8px 10px; } .nav-open { font-size: 13px; padding: 5px 8px; }
   .scrim { position: fixed; inset: 0; z-index: 34; background: rgba(0, 0, 0, .4); }
 }
 
@@ -129,7 +135,8 @@ kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1p
 <header class="bar-top"><div class="in">
   <button type="button" class="nav-open" id="nav-open" aria-controls="side" aria-expanded="false">☰ Contents</button>
   <a class="brand" href="#top">Duo and Nucli UI kit</a>
-  <button type="button" class="nav-open ctl-open" id="ctl-open" aria-controls="ctls" aria-expanded="false">Look and motion</button>
+  <nav class="site-nav" aria-label="Duo and Nucli pages"><a href="../index.html">Overview</a><a href="../mascots/index.html">Mascots</a><a href="index.html" aria-current="page">UI kit</a></nav>
+  <button type="button" class="nav-open ctl-open" id="ctl-open" aria-controls="ctls" aria-expanded="false" aria-label="Look and motion">Look</button>
   <div class="ctls" id="ctls">
     <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option></select></label>
     <label>Mode <select id="ctl-mode" class="k-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
@@ -1470,6 +1477,89 @@ var players = Context.NumberOfPlayers; // 1 to 8
     root.querySelectorAll('.k-code-field').forEach((f) => kitCodeField(f));
   } });
 
+KIT.push({ id: 'guidelines', name: 'Using the mascots', about: 'The few rules that keep Duo and Nucli recognisable, wherever they appear: in these tools, on splitscreen.me, in a fan site or a video.',
+  timing: 'One moving mascot per view at a time. Every animation ends in a still pose, and stops when the person asks for less motion.',
+  html: `<div class="k-rules">
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="who"></div><figcaption><b>Do</b> use Duo for splitscreen.me, games and players; Nucli for the handler tools and code.</figcaption></figure>
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="space"></div><figcaption><b>Do</b> give them room: clear space of a quarter of their size all round.</figcaption></figure>
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="sizes"></div><figcaption><b>Do</b> use the small build at 24 px and under, the detailed one from 32 px.</figcaption></figure>
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="tint"></div><figcaption><b>Do</b> tint Duo in a player's colour when one Duo stands for one player.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="over"></div><figcaption><b>Don't</b> put a mascot over text, code or a control.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="recolour"></div><figcaption><b>Don't</b> recolour Nucli, or Duo in anything but a player's colour.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="stretch"></div><figcaption><b>Don't</b> stretch, skew, outline or add effects.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="crowd"></div><figcaption><b>Don't</b> crowd a view: one moving mascot at a time.</figcaption></figure>
+</div>`,
+  css: `.k-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; width: 100%; }
+.k-rule { margin: 0; border-radius: var(--k-r-pane); background: var(--k-surface); border: 1px solid var(--k-line); overflow: hidden; }
+.k-rule-art { position: relative; height: 110px; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--k-surface-2); }
+.k-rule .k-m { width: 64px; height: 64px; }
+.k-rule figcaption { padding: 8px 10px 10px; font-size: 13.5px; border-top: 4px solid var(--k-ok); }
+.k-rule.k-dont figcaption { border-top-color: var(--k-err); }
+.k-rule b { color: var(--k-ok); } .k-rule.k-dont b { color: var(--k-err); }
+.k-rule.k-dont .k-rule-art::after { content: ""; position: absolute; inset: 14px; background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--k-err) calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)); opacity: .8; pointer-events: none; }
+.k-space { position: relative; padding: 14px; outline: 1.5px dashed var(--k-accent); outline-offset: -1px; border-radius: 4px; }
+.k-lines { display: grid; gap: 6px; width: 120px; }
+.k-lines i { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--k-fg) 22%, transparent); }`,
+  js: function setupGuidelines(root) {
+    const m = (svg, size = 64) => `<span class="k-m" style="width:${size}px;height:${size}px">${svg}</span>`;
+    const art = {
+      who: m(kitDuo({ label: 'Duo' })) + m(kitNucli({ label: 'Nucli' })),
+      space: `<span class="k-space">${m(kitNucli({ label: 'Nucli with clear space' }), 56)}</span>`,
+      sizes: [16, 24, 48].map((s) => m(kitNucli({ small: s <= 24, label: `Nucli at ${s} px` }), s)).join(''),
+      tint: [0, 1, 2].map((i) => m(kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'], label: `Player ${i + 1}` }), 36)).join(''),
+      over: `<span style="position:relative"><span class="k-lines"><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></span><span style="position:absolute;left:34px;top:-14px">${m(kitDuo({ label: 'Duo covering text' }), 56)}</span></span>`,
+      recolour: `<span style="filter:hue-rotate(150deg)">${m(kitNucli({ label: 'Nucli recoloured' }))}</span>${m(kitDuo({ tint: '#2e7d32', label: 'Duo in green, not a player colour' }))}`,
+      stretch: `<span style="transform:scaleX(1.5) skewX(-10deg);display:inline-block">${m(kitDuo({ label: 'Duo stretched' }), 56)}</span>`,
+      crowd: [0, 1, 2].map(() => m(kitNucli({ moods: ['happy'], label: 'Many Nuclis' }), 40)).join('') + m(kitDuo({ moods: ['happy'], label: 'And a Duo' }), 40),
+    };
+    root.querySelectorAll('[data-art]').forEach((a) => { a.innerHTML = art[a.dataset.art]; });
+    kitApplyMotion(root);
+  } });
+
+KIT.push({ id: 'voice', name: 'How they talk', about: 'When a mascot says something (a bubble, a banner, an empty state), it says what happened and what to do next, in a few plain words. The face carries the feeling, so the words don\'t have to.',
+  timing: 'Short enough to read in the time the message stays: about 3.5 s plus 25 ms a letter.',
+  html: `<table class="k-voice"><thead><tr><th scope="col">Moment</th><th scope="col">Say</th><th scope="col">Not</th></tr></thead><tbody>
+  <tr><th scope="row">Success</th><td>Fixed 12 problems. Ready for Nucleus.</td><td>Yay!!! All your bugs are gone!!!</td></tr>
+  <tr><th scope="row">Failure</th><td>Player 2 failed: Context.PlayerID is undefined.</td><td>Oops, something went wrong.</td></tr>
+  <tr><th scope="row">Long wait</th><td>Still working, 12 s so far.</td><td>Hang tight, almost there!</td></tr>
+  <tr><th scope="row">Empty</th><td>No games yet. Add one from the Hub.</td><td>It's lonely in here…</td></tr>
+  <tr><th scope="row">Third failure</th><td>The game didn't start, three times in a row. Show me what to check?</td><td>You keep breaking it.</td></tr>
+</tbody></table>
+<ul class="k-voice-rules"><li>Say what happened, then what to do.</li><li>Name the thing: the player, the file, the setting.</li><li>No blame, no jokes about failure, no exclamation marks except for real wins.</li><li>Duo and Nucli don't talk about themselves.</li></ul>`,
+  css: `.k-voice { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--k-surface); border-radius: var(--k-r-ctl); }
+.k-voice th, .k-voice td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--k-line); vertical-align: top; }
+.k-voice td:nth-child(2)::before { content: "✓ "; color: var(--k-ok); font-weight: 700; }
+.k-voice td:nth-child(3) { color: var(--k-muted); text-decoration: line-through; text-decoration-color: var(--k-err); }
+.k-voice td:nth-child(3)::before { content: "✗ "; color: var(--k-err); font-weight: 700; display: inline-block; text-decoration: none; }
+.k-voice-rules { margin: 0; padding-left: 18px; color: var(--k-muted); font-size: 14px; }`,
+  js: function setupVoice() {} });
+
+KIT.push({ id: 'assets', name: 'Mascot gallery', about: 'Every mood of both mascots, ready to take: pick a size and copy the SVG (animated: it floats and blinks, Nucli\'s electrons orbit). It works on its own, in a page, an app or a design tool.',
+  timing: 'The copied SVG animates by itself; for a still one, remove its &lt;animateMotion&gt; elements.',
+  html: `<div class="k-assets-ctl" role="group" aria-label="Size"><span>Size</span><button class="k-btn k-sm" data-size="24">24</button><button class="k-btn k-sm" data-size="48" aria-pressed="true">48</button><button class="k-btn k-sm" data-size="120">120</button></div>
+<div class="k-assets"></div>`,
+  css: `.k-assets-ctl { display: flex; gap: 6px; align-items: center; width: 100%; font-size: 14px; }
+.k-assets-ctl [aria-pressed="true"] { border-color: var(--k-accent); color: var(--k-accent); font-weight: 700; }
+.k-assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; width: 100%; }
+.k-asset { display: grid; justify-items: center; gap: 4px; padding: 10px 6px 8px; border-radius: var(--k-r-pane); background: var(--k-surface); border: 1px solid var(--k-line); font-size: 12.5px; }
+.k-asset .k-m { width: 64px; height: 64px; }
+.k-asset span { color: var(--k-muted); }`,
+  js: function setupAssets(root) {
+    const grid = root.querySelector('.k-assets'), MOODS = ['smile', 'happy', 'focus', 'worried', 'wow', 'sleep'];
+    let size = 48;
+    const svgOf = (who, mood) => (who === 'duo' ? kitDuo : kitNucli)({ moods: [mood], small: size <= 24, label: `${who === 'duo' ? 'Duo' : 'Nucli'}, ${mood}` })
+      .replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" `);
+    grid.innerHTML = ['nucli', 'duo'].flatMap((who) => MOODS.map((mood) => `<div class="k-asset"><span class="k-m">${svgOf(who, mood)}</span><b>${who === 'duo' ? 'Duo' : 'Nucli'}</b><span>${mood}</span><button class="k-btn k-sm" data-copy="${who}:${mood}">Copy SVG</button></div>`)).join('');
+    kitApplyMotion(grid);
+    grid.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-copy]'); if (!b) return;
+      const [who, mood] = b.dataset.copy.split(':');
+      try { await navigator.clipboard.writeText(svgOf(who, mood)); b.textContent = 'Copied'; } catch { b.textContent = 'Copy blocked'; }
+      setTimeout(() => (b.textContent = 'Copy SVG'), 1600);
+    });
+    root.querySelectorAll('[data-size]').forEach((b) => b.addEventListener('click', () => { size = +b.dataset.size; root.querySelectorAll('[data-size]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  } });
+
 // The showcase: groups, an overview, navigation with the current section marked, each entry and its code.
 (() => {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1481,6 +1571,7 @@ var players = Context.NumberOfPlayers; // 1 to 8
     css: '/* The rules for the Motion settings are in Tokens, at the end. */', js: function setupMotion() {}, code: [['JavaScript', FOUNDATION]] });
   const GROUPS = [
     ['foundations', 'Foundations', 'How you\'d install it, and the colours, motion and two mascots everything is built on.', ['install', 'tokens', 'motion', 'mascots']],
+    ['guide', 'Brand guide', 'How to use the mascots anywhere: the rules, how they talk, and the files to take.', ['guidelines', 'voice', 'assets']],
     ['brand', 'Brand', 'Where the mascots are the interface: headers, players, the moments people remember.', ['appbar', 'players', 'notfound']],
     ['actions', 'Actions', 'Things you press.', ['buttons']],
     ['inputs', 'Inputs', 'Things you set, type and choose.', ['toggles', 'slider', 'fields', 'menus']],
@@ -1490,6 +1581,7 @@ var players = Context.NumberOfPlayers; // 1 to 8
     ['content', 'Content', 'Lists of things to open, and code.', ['cards', 'code']],
   ];
   const SUM = {
+    guidelines: 'Who goes where, room, sizes, and what not to do.', voice: 'What the mascots say, and what they don\'t.', assets: 'Every mood of both, as SVG to copy.',
     install: 'Preview: one command adds a component\'s source to your project.', tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
     buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'A Nucli knob, an electron check, Duos per player.', slider: '1 to 8 players: a Duo-ball handle, a Duo each.', fields: 'Nucli helps: concentrates, beams, worries.', tabs: 'An underline with weight; an electron rides it.', menus: 'Springs from its button; Nucli says the tooltip.', appbar: 'The mascot is the logo and the status light.', players: 'One Duo per player: they drop in and leave.', notfound: 'Duo looks around, Nucli checks the links.', stepper: 'Duo hops from step to step.', skeleton: 'Grey lines; an electron is the shimmer.',
     badges: 'Pills with Nucli\'s face; a counter that turns into him at zero.', toasts: 'The mascot says it next to what you clicked.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes and wakes; Duo waits for a game.',
@@ -1500,6 +1592,9 @@ var players = Context.NumberOfPlayers; // 1 to 8
     code: `<span class="k-codeblock" style="padding:6px 10px;font:11px/1.5 ui-monospace,monospace;color:var(--k-code-fg)">${kitHighlight.js('Game.MaxPlayers = 4;\n// one per player')}</span>`,
     tokens: ['--k-accent', '--k-ok', '--k-err', '--k-p1', '--k-p2', '--k-p3', '--k-p4'].map((v) => `<i class="t-sw" style="background:var(${v})"></i>`).join(''),
     install: '<span class="k-cmd" style="font-size:11px;padding:6px 10px"><code>npx duo-nucli add ring</code></span>',
+    guidelines: '<span style="display:grid;grid-template-columns:auto auto;gap:4px 10px;font-size:12px;font-weight:700"><span style="color:var(--k-ok)">✓ Room</span><span style="color:var(--k-err)">✗ Over text</span><span style="color:var(--k-ok)">✓ Sizes</span><span style="color:var(--k-err)">✗ Recolour</span></span>',
+    voice: '<span style="display:grid;gap:3px;font-size:11.5px"><span>✓ Fixed 12 problems.</span><span style="color:var(--k-muted);text-decoration:line-through">Yay!!! Bugs gone!!!</span></span>',
+    assets: ['smile', 'happy', 'worried'].map((m) => `<span class="t-m" style="width:30px;height:30px">${kitNucli({ moods: [m], small: true })}</span>`).join('') + `<span class="t-m" style="width:30px;height:30px">${kitDuo({ small: true, moods: ['happy'] })}</span>`,
     motion: ['All', 'Default', 'Calm', 'Still', 'Off'].map((v, i) => `<span class="t-btn${i === 1 ? ' p' : ''}">${v}</span>`).join(''),
     mascots: mini(kitNucli({ small: true })) + mini(kitDuo({ small: true })),
     buttons: '<span class="t-btn p">▶ Try it</span><span class="t-btn">Copy</span><span class="t-btn">↶ Undo</span>',

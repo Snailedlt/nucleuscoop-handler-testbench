@@ -714,6 +714,34 @@ svg .rl { transform-origin: 0 -13px; }
 .r3-plainbar { width: 56px; height: 8px; background: var(--tile); border: 1px solid var(--line); flex: none; } .r3-plainbar i { display: block; width: 60%; height: 100%; background: var(--accent); }
 [data-motion="default"] .r3m:not(.busy) svg * { animation-iteration-count: 1 !important; }
 :is([data-motion="calm"], [data-motion="still"]) .r3m svg * { animation: none !important; }
+/* Where we are, round 4, page navigation */
+.site-nav { display: flex; gap: 2px; margin: 0 0 10px; }
+.site-nav a { padding: 4px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; border: 1px solid transparent; }
+.site-nav a:hover { color: var(--ink); border-color: var(--line); }
+.site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; background: var(--card); border-color: var(--line); }
+.site-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.where-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; margin-top: 12px; }
+.where-col { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; }
+.where-col h3 { font-size: 18px; } .where-col ul { margin: 6px 0 0; padding-left: 18px; } .where-col li { margin: 5px 0; color: var(--muted); } .where-col li b { color: var(--ink); }
+.where-col:first-child { border-color: var(--accent); }
+.r4-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; margin-top: 12px; }
+.r4-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.r4-card.r4-best { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.r4-card.r4-skip { opacity: .8; }
+.r4-art { min-height: 96px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; background: var(--tile); border-radius: 12px; padding: 10px; }
+.r4-h { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 8px; }
+.r4-h b { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 17px; }
+.r4-v { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); white-space: nowrap; }
+.r4-best .r4-v { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.r4-skip .r4-v, .r4-maybe .r4-v { border-style: dashed; color: var(--muted); }
+.r4-card p { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+.r4-tabs { display: grid; gap: 4px; }
+.r4-tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px 8px 0 0; background: var(--card); border: 1px solid var(--line); border-bottom: 0; font-size: 12.5px; }
+.r4-files { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; } .r4-files i { font: 12px ui-monospace, Consolas, monospace; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); font-style: normal; }
+.r4-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 13px; } .r4-badge span { color: var(--muted); }
+.r4-mute { font-size: 40px; filter: grayscale(1); }
+.not-chosen { display: inline-block; margin-left: 8px; vertical-align: middle; font: 700 12px/1 system-ui, sans-serif; padding: 4px 9px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); }
+.moved { display: inline-block; margin-left: 8px; vertical-align: middle; font: 700 12px/1 system-ui, sans-serif; padding: 4px 9px; border-radius: 999px; background: var(--pick-bg); color: var(--pick); text-decoration: none; }
 </style>
 <style id="gen"></style>
 </head>
@@ -731,6 +759,7 @@ svg .rl { transform-origin: 0 -13px; }
 <div class="wrap">
   <div class="top">
     <div>
+      <nav class="site-nav" aria-label="Duo and Nucli pages"><a href="../index.html">Overview</a><a href="index.html" aria-current="page">Mascots</a><a href="../ui-kit/index.html">UI kit</a></nav>
       <h1>Duo and Nucli</h1>
       <p class="lead">One mascot for <strong>splitscreen.me</strong>, one for the <strong>handler tools</strong>. Both grow out of the splitscreen.me logo: Duo is its split blue window; Nucli is a quiet, helpful atom whose electrons are the players. One colour scheme each, the same in light and dark. The motion borrows BSManager's tricks: a wind-up before every move, squash and stretch, overshoot, and a pause before the spin.</p>
     </div>
@@ -775,11 +804,38 @@ svg .rl { transform-origin: 0 -13px; }
   <p class="lead">For the workbench, the VS Code extension and the CLI.</p>
   <div class="lib" id="lib-nucli"></div>
 
+<section id="where">
+  <h2 id="where-we-are">Where we are</h2>
+  <p class="lead">What's settled, what's open, and where things live now. The newest round is first below; the <a href="../ui-kit/index.html">UI kit</a> is where the chosen ideas become components.</p>
+  <div class="where-grid">
+    <div class="where-col"><h3>Settled</h3><ul>
+      <li><b>The detailed drawings stay.</b> The simpler drawings (round 2) aren't the way; a small build is only for 24 px and under.</li>
+      <li><b>Messages appear where you acted</b>, said by the mascot; a corner toast only when that place is gone.</li>
+      <li><b>Button animations</b> (copy, save, undo, redo…) live inside their buttons.</li>
+      <li><b>Loaders follow the progress</b>: the ring's electrons ride its tip; Duo pushes the bar.</li>
+      <li><b>Only the splitscreen.me and v3 looks</b> matter; Mac and alpha 8 aren't a focus.</li>
+      <li><b>A UI kit</b> to show it all, usable outside these projects; an install like shadcn's, one day.</li>
+    </ul></div>
+    <div class="where-col"><h3>Open</h3><ul>
+      <li><b>Nucli's colour.</b> Teal and gold are out; six violets in round 2. My pick: Ultraviolet (livelier) or Indigo (calmer).</li>
+      <li><b>Which directions</b> from round 1 to keep (refined, Terminal Nucli for the CLI, one Duo per player).</li>
+      <li><b>Which animations ship first.</b> My picks are marked in the UI kit.</li>
+      <li><b>Round 4's ideas</b>, just below.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="r4sec">
+  <h2 id="round-4">Explorations, round 4: more ideas</h2>
+  <p class="lead">Ideas only. Ones that reach beyond the tools themselves: the browser tab, the Hub, Discord, videos. Each with my verdict.</p>
+  <div class="r4-grid" id="r4-ideas"></div>
+</section>
+
   <section id="r3sec" data-motion="default">
   <h2 id="round-3">Explorations, round 3: in the buttons, in every look</h2>
   <p class="lead">Ideas only, nothing here is in the product. Copy, save, undo and the rest get their animation inside their own button, where your eyes already are: 0.3 to 0.6 s, cut off by the next click, the electron colours as accents. Then everything in the workbench's four looks, light and dark, with the Motion setting.</p>
 
-  <h3 class="nx-sub">Animations in the buttons</h3>
+  <h3 class="nx-sub">Animations in the buttons <a class="moved" href="../ui-kit/index.html#buttons">Now in the UI kit</a></h3>
   <div class="r3-demo" data-motion="all" data-look="www">
     <div class="r3-tools big" id="r3-tools" role="group" aria-label="Buttons with animated icons"></div>
     <div class="ctl" style="margin-top:10px"><button type="button" id="r3-play">Play them all</button></div>
@@ -839,12 +895,12 @@ svg .rl { transform-origin: 0 -13px; }
     <div id="r2-anims" style="display:contents"></div>
   </div>
 
-  <h3 class="nx-sub">Simpler drawings, the same animations</h3>
+  <h3 class="nx-sub">Simpler drawings, the same animations <span class="not-chosen">Not chosen: the detailed drawings stay</span></h3>
   <p class="lead">Flat fills, one shadow shape, no gloss, rim light, status light or blush, and eyes as dots with one glint. Duo drops to about half his shapes; Nucli loses fewer (his electrons and orbits are most of him), but his body and face go from 35 shapes to 14. Easier to edit, lighter to run, cleaner at 16 px. The parts keep their names, so every animation in the library runs on them as it is: the detail is in the timing, not in the layers.</p>
   <div class="nx-grid" id="r2-simple"></div>
   <div class="lib" id="r2-simple-anims"></div>
 
-  <h3 class="nx-sub">Colours, round 2: violet only</h3>
+  <h3 class="nx-sub">Colours, round 2: violet only <span class="not-chosen">Open</span></h3>
   <p class="lead">Teal and gold are out. Six violets on the refined shape, each in a toast and the empty Check tab, light and dark.</p>
   <div class="nx-grid" id="r2-cols"></div>
 
@@ -2431,6 +2487,25 @@ function slimKeyframes(css) {
     return `@keyframes ${name} { ${keep.map((f) => `${f.p}% { ${f.d} }`).join(' ')} }`;
   });
 }
+// ---- Round 4: more ideas (cards with a small picture and my verdict) ----
+lazyFill('r4-ideas', () => {
+  const pic = (inner, label) => still(inner, label, 96);
+  const tab = (face, txt) => `<span class="r4-tab">${still(nucli({ still: true, noShadow: true, expr: face }), '', 16)}<span>${txt}</span></span>`;
+  const IDEAS = [
+    ['best', 'Status in the tab\'s icon', 'The page icon is a tiny Nucli: his electrons spin while Test all runs, he\'s pleased when it passes and worried when it fails. You see the result from another tab, without switching back.', `<span class="r4-tabs">${tab('focus', 'Test all · 26 / 40')}${tab('happy', 'All 4 players start')}${tab('worried', '2 problems')}</span>`],
+    ['best', 'Animations as files', 'Export every scene as Lottie, GIF and SVG from the code that draws it, so streamers, video makers, the Discord and fan sites can use the real animations, not screenshots.', '<span class="r4-files"><i>nucli-happy.json</i><i>duo-joy.gif</i><i>duo-wave.svg</i></span>'],
+    ['best', 'Illustrated errors', 'The five most common failures (the game\'s .exe not found, a wrong path, an instance that crashes, no controller, input that isn\'t split) each get a small scene and the fix, in the docs and in the tools.', pic(duo({ expr: 'worried', arms: 'hold', after: '<g transform="translate(86 74)"><rect x="-10" y="-8" width="20" height="16" rx="2" fill="#fca53d" stroke="#d27f22" stroke-width="1.6"/><text x="0" y="4" text-anchor="middle" font-size="10" font-weight="700" fill="#1f2c46">?</text></g>' }), 'Duo holding an empty box')],
+    ['good', 'Milestones', 'The first handler that passes Test all, the first Hub upload: Duo and Nucli high-five, once per person, ever. A reason to remember the moment, never a nag.', pic(duo({ expr: 'happy', arms: 'up' }), 'Duo cheering') + pic(nucli({ expr: 'excited' }), 'Nucli excited')],
+    ['good', 'Author badges', 'On the Hub, a Nucli badge next to handler authors: one electron per verified handler, up to four, then a ring. Earned, small, and it says who to thank.', `<span class="r4-badge">${still(nucli({ still: true, noShadow: true }), 'Nucli badge', 40)}<b>Talos91</b><span>4 verified</span></span>`],
+    ['good', 'Seasonal touches', 'A scarf in winter, a party hat on splitscreen.me\'s birthday. For the Discord, the site and the emoji; never in the tools.', pic(duo({ expr: 'happy', after: '<path d="M30 84 Q60 98 90 84 L90 91 Q60 105 30 91 Z" fill="#ff434d"/><path d="M76 92 l6 16 l7 -2 l-4 -15 Z" fill="#e2333d"/><path d="M38 87 l0 6 M48 90 l0 6 M58 92 l0 6 M68 91 l0 6 M78 89 l0 6" stroke="#fff" stroke-width="2" opacity=".7"/>' }), 'Duo in a scarf')],
+    ['maybe', 'A first-visit tour', 'Duo points at three things on your first visit: open a handler, Check, Try it. Skippable, and never again. Only if people get lost; good empty states may be enough.', pic(duo({ expr: 'happy', arms: 'wave' }), 'Duo waving')],
+    ['maybe', 'Sunglasses in the dark', 'Switch to dark mode and Duo puts on sunglasses, once. Fun, cheap, and maybe one joke too many.', pic(duo({ expr: 'smile', after: '<g fill="#1f2c46"><rect x="37" y="52" width="20" height="12" rx="5"/><rect x="63" y="52" width="20" height="12" rx="5"/><path d="M57 56 h6" stroke="#1f2c46" stroke-width="2.4"/></g><path d="M41 55 l6 0" stroke="#fff" stroke-width="1.6" opacity=".6"/>' }), 'Duo with sunglasses')],
+    ['skip', 'Sounds', 'Soft pops when a player joins or leaves. Most people work with sound off or music on; off by default at best.', '<span class="r4-mute" aria-hidden="true">🔇</span>'],
+  ];
+  const V = { best: '★ My pick', good: 'Good', maybe: 'Maybe', skip: 'Skip' };
+  return IDEAS.map(([v, name, txt, art]) => `<div class="r4-card r4-${v}"><div class="r4-art">${art}</div><div class="r4-h"><b>${name}</b><span class="r4-v">${V[v]}</span></div><p>${txt}</p></div>`).join('');
+});
+
 document.getElementById('gen').textContent = slimKeyframes(genCSS() + LCSS);
 window.addGenCSS = (css) => { const s = document.createElement('style'); s.textContent = slimKeyframes(css); document.head.append(s); };
 // ---- Round 3: animations in the buttons; every look, light and dark, and the Motion settings ----
