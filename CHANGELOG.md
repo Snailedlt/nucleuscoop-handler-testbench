@@ -70,6 +70,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **A calmer Form view.** Each option is one line: its name, its value, and its main problem with a Fix button. The description, every problem in full, the docs, Show in code and Remove open with the arrow. Groups fold, problems in other code fold into one line, and Only with problems hides the rest. Settings › Check › density applies here too.
 - **Getting started where you start reading.** The "New here?" steps sit at the top of the code instead of in Check, and closing them is no longer forever: they fly down into Getting started in the footer (or the command palette), which brings them back.
 - **Fixes go straight into the code.** Fix problems (and Fix with AI) apply right away and light up the changed lines in the editor; a one-line note has Undo, and what changed is folded under it. Only an AI fix that looks risky (new problems, a big rewrite, or you typed meanwhile) waits for you to apply it. "Apply without review" is gone.
 - **A Home button by the title.** The title is the workbench's own link now, and Home next to it goes to the home page (what the tools do, how to get them).

@@ -200,6 +200,25 @@ for (const theme of ['light', 'dark']) {
     await axe(p, `${theme}, Files panel`);
     await p.keyboard.press('Escape');
   }
+  // Form: one line per option, more on request, fixes work, and back to Code.
+  await p.goto(BASE + '#example-mistakes');
+  await p.waitForTimeout(800);
+  await p.click('[data-view-mode=form]');
+  await p.waitForTimeout(500);
+  const fvRows = await p.$$('#formview .fv-row');
+  const openRows = await p.$$('#formview .fv-more:not([hidden])');
+  check(fvRows.length >= 6 && openRows.length === 0, `${theme}: Form shows one line per option, details closed (${fvRows.length} rows)`);
+  await p.click('#formview .fv-row.fv-has-prob .fv-toggle');
+  await p.waitForTimeout(150);
+  check((await p.$$('#formview .fv-more:not([hidden]) .fv-acts button')).length >= 2, `${theme}: opening an option shows its docs and actions`);
+  await axe(p, `${theme}, Form`);
+  const fvBefore = await p.$$eval('#formview .fv-row.fv-has-prob', (r) => r.length);
+  await p.click('#formview .fv-row.fv-has-prob:not(.fv-open) .fv-sum .fv-fix.primary');
+  await p.waitForTimeout(800);
+  const fvAfter = await p.$$eval('#formview .fv-row.fv-has-prob', (r) => r.length);
+  check(fvAfter < fvBefore, `${theme}: a fix in Form fixes it (${fvBefore} -> ${fvAfter} options with problems)`);
+  await p.click('[data-view-mode=code]');
+  await p.waitForTimeout(200);
   check(!errors.length, `${theme}: no page errors${errors.length ? `: ${errors.join('; ')}` : ''}`);
   await ctx.close();
 

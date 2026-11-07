@@ -2067,6 +2067,8 @@ function setViewMode(m: 'code' | 'form') {
       jumpTo: (offset) => { setViewMode('code'); const pos = editor.posFromIndex(offset); editor.setCursor(pos); editor.scrollIntoView(pos, 80); editor.focus(); },
       diagnostics: () => current,
       diagnosticsText: () => currentText,
+      plain: plainFor,
+      density: checkDensity,
     });
     formView.refresh();
   } else {
@@ -2165,6 +2167,7 @@ initKeyHints([
   sel.addEventListener('change', () => {
     try { localStorage.setItem(DENSITY_KEY, sel.value); } catch { /* private mode */ }
     (editor as any).performLint();
+    formView?.refresh();
   });
 }
 // Feedback (feedback.ts): votes on tips and Claude's docs, anonymous counts. A 👎 on a doc points at the issue link.

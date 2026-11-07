@@ -9,6 +9,9 @@
 //   const form = mountFormView(el, { getText, applyEdits, jumpTo, diagnostics });
 //   form.refresh();   // after the code changed (the host debounces)
 //   form.destroy();
+//
+// Like the Check tab's cards: each option is one line (name, value, and the main problem with its fix, if any);
+// the rest (the description, every problem in full, docs, Show in code, Remove) opens on request.
 import { api, jintMemberName, type Member } from '@core/api';
 import { parseLikeJint } from '@core/jsparse';
 import type { Diagnostic, Fix, TextEdit } from '@core/lint';
@@ -28,6 +31,11 @@ export interface FormHost {
   /** Optional: the text `diagnostics()` belongs to, when the linter runs asynchronously (a worker). Without it
    *  the diagnostics are taken to match `getText()` whenever the host calls `refresh()`. */
   diagnosticsText?(): string;
+  /** Optional: a problem in plain words (a short title and why), as the Check tab shows it. */
+  plain?(d: Diagnostic): { title: string; why: string };
+  /** Optional: how much to show at first, as Settings › Check › density: compact (one line per option),
+   *  comfortable (plus a one-line description), detailed (everything open). */
+  density?(): 'compact' | 'comfortable' | 'detailed';
 }
 export interface FormView {
   refresh(): void;
@@ -263,12 +271,21 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
   const bar = h('div', 'fv-bar');
   const addBtn = h('button', 'btn fv-add', { type: 'button', 'aria-expanded': 'false', 'aria-controls': idOf('picker') }, '+ Add an option');
   const status = h('div', 'fv-status', { role: 'status', 'aria-live': 'polite' });
-  bar.append(addBtn, status);
+  const onlyBtn = h('button', 'btn fv-only', { type: 'button', 'aria-pressed': 'false' }, 'Only with problems');
+  onlyBtn.hidden = true;
+  let onlyProblems = false;
+  onlyBtn.addEventListener('click', () => {
+    onlyProblems = !onlyProblems;
+    onlyBtn.setAttribute('aria-pressed', String(onlyProblems));
+    root.classList.toggle('fv-only-probs', onlyProblems);
+    say(onlyProblems ? 'Showing only options with problems.' : 'Showing every option.');
+  });
+  bar.append(addBtn, onlyBtn, status);
   const picker = h('div', 'fv-picker', { id: idOf('picker') });
   picker.hidden = true;
   const banner = h('div', 'fv-banner', { role: 'alert' });
   banner.hidden = true;
-  const elsewhere = h('div', 'fv-elsewhere');
+  const elsewhere = h('details', 'fv-elsewhere');
   const groupsEl = h('div', 'fv-groups');
   root.append(bar, picker, banner, elsewhere, groupsEl);
   container.append(root);
@@ -280,7 +297,12 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
   let log: Logged[] = [];
   let pendingFocus: string | undefined;
   const rows = new Map<string, Row>();
-  const sections = new Map<string, { el: HTMLElement; list: HTMLElement }>();
+  const sections = new Map<string, { el: HTMLDetailsElement; list: HTMLElement; count: HTMLElement }>();
+  /** Rows opened (or, in the detailed density, closed) by the user, by key. */
+  const toggled = new Set<string>();
+  const closedGroups = new Set<string>();
+  const density = () => host.density?.() ?? 'compact';
+  root.dataset.density = density();
 
   const say = (msg: string) => {
     status.textContent = '';
@@ -330,21 +352,45 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     ctl: HTMLElement;
     probs: HTMLElement;
     doc: HTMLElement;
+    sum: HTMLElement;
+    more: HTMLElement;
+    moreCtl: HTMLElement;
+    toggle: HTMLButtonElement;
+  }
+  const isOpen = (key: string) => (density() === 'detailed') !== toggled.has(key);
+  function setOpen(row: Row, open: boolean) {
+    row.more.hidden = !open;
+    row.el.classList.toggle('fv-open', open);
+    row.toggle.setAttribute('aria-expanded', String(open));
   }
 
   const ctlSig = (e: Entry) => `${e.kind}|${e.member ? 1 : 0}|${e.elem ?? ''}|${e.items?.length ?? ''}|${e.kind === 'code' || e.kind === 'function' ? e.source : ''}`;
 
   function makeRow(e: Entry): Row {
     const el = h('div', 'fv-row', { 'data-key': e.key });
+    const line = h('div', 'fv-line');
     const head = h('div', 'fv-head');
     const labelId = idOf(`${e.key}:label`);
     const label = h('label', 'fv-label', { id: labelId, for: idOf(`${e.key}:value`) });
     label.innerHTML = `<span class="fv-owner">${esc(e.ownerLabel)}.</span><span class="fv-name">${esc(e.name)}</span>`;
     head.append(label);
-    const tools = h('span', 'fv-tools');
+    const doc = h('div', 'fv-doc', { id: idOf(`${e.key}:doc`) });
+    head.append(doc);
+    const ctl = h('div', 'fv-ctl');
+    const moreId = idOf(`${e.key}:more`);
+    const toggle = h('button', 'fv-toggle', { type: 'button', 'aria-expanded': 'false', 'aria-controls': moreId, 'aria-label': `More about ${e.path}`, title: 'More', 'data-fv': `${e.key}:more` });
+    toggle.id = idOf(`${e.key}:more-btn`);
+    line.append(head, ctl, toggle);
+    // The main problem in one line, with its fix: always shown.
+    const sum = h('div', 'fv-sum');
+    // On request: the description, every problem in full, the list editor, docs, Show in code, Remove.
+    const more = h('div', 'fv-more', { id: moreId });
+    const moreCtl = h('div', 'fv-more-ctl');
+    const probs = h('div', 'fv-probs');
+    const acts = h('div', 'fv-acts');
     let card: HTMLElement | undefined;
     if (e.member) {
-      const info = h('button', 'fv-icon fv-info', { type: 'button', 'aria-expanded': 'false', 'aria-controls': idOf(`${e.key}:card`), 'aria-label': `About ${e.path}`, title: 'Docs', 'data-fv': `${e.key}:info` }, 'i');
+      const info = h('button', 'btn fv-act fv-info', { type: 'button', 'aria-expanded': 'false', 'aria-controls': idOf(`${e.key}:card`), 'data-fv': `${e.key}:info` }, 'Docs');
       info.id = idOf(`${e.key}:info`);
       card = h('div', 'fv-card', { id: idOf(`${e.key}:card`) });
       card.hidden = true;
@@ -354,33 +400,42 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         card!.hidden = !open;
         info.setAttribute('aria-expanded', String(open));
       });
-      tools.append(info);
+      acts.append(info);
     }
     if (e.kind !== 'missing') {
-      const del = h('button', 'fv-icon fv-del', { type: 'button', 'aria-label': `Remove ${e.path} from the code`, title: 'Remove this line', 'data-fv': `${e.key}:del` }, '\u00d7');
+      const show = h('button', 'btn fv-act', { type: 'button', 'data-fv': `${e.key}:show` }, 'Show in code');
+      show.addEventListener('click', () => host.jumpTo(row.entry.stmt.start));
+      const del = h('button', 'btn fv-act fv-del', { type: 'button', 'aria-label': `Remove ${e.path} from the code`, 'data-fv': `${e.key}:del` }, 'Remove');
       del.id = idOf(`${e.key}:del`);
       del.addEventListener('click', () => removeStatement(row.entry));
-      tools.append(del);
+      acts.append(show, del);
     }
-    head.append(tools);
-    const doc = h('div', 'fv-doc', { id: idOf(`${e.key}:doc`) });
-    const ctl = h('div', 'fv-ctl');
-    const probs = h('div', 'fv-probs');
-    el.append(head, doc, ctl, probs);
-    if (card) el.append(card);
-    const row: Row = { el, entry: e, sig: '', probSig: '', ctl, probs, doc };
+    const docFull = h('p', 'fv-doc-full');
+    more.append(docFull, moreCtl, probs, acts);
+    if (card) more.append(card);
+    el.append(line, sum, more);
+    const row: Row = { el, entry: e, sig: '', probSig: '', ctl, probs, doc, sum, more, moreCtl, toggle };
+    toggle.addEventListener('click', () => {
+      const open = row.more.hidden;
+      if (open === (density() === 'detailed')) toggled.delete(row.entry.key); else toggled.add(row.entry.key);
+      setOpen(row, open);
+    });
+    setOpen(row, isOpen(e.key));
     fillDoc(row);
     return row;
   }
 
   function fillDoc(row: Row) {
     const m = row.entry.member;
+    const full = row.more.querySelector<HTMLElement>('.fv-doc-full')!;
     if (!m) {
-      row.doc.textContent = `Not an option Nucleus knows on ${row.entry.ownerLabel}.`;
+      row.doc.textContent = full.textContent = `Not an option Nucleus knows on ${row.entry.ownerLabel}.`;
       return;
     }
     const s = firstSentence(m.deprecated ? `Deprecated. ${m.deprecated}` : m.doc || '');
-    row.doc.innerHTML = (m.docBy === 'claude' ? '<span class="ai-spark fv-ai" title="AI-written docs" aria-label="AI-written docs" role="img"></span> ' : '') + inline(s);
+    row.doc.innerHTML = full.innerHTML = (m.docBy === 'claude' ? '<span class="ai-spark fv-ai" title="AI-written docs" aria-label="AI-written docs" role="img"></span> ' : '') + inline(s);
+    const dflt = m.default !== undefined && !/^new /.test(m.default) ? m.default : undefined;
+    if (dflt && row.entry.kind !== 'enum') full.append(h('span', 'fv-default', {}, ` Default: ${dflt}.`));
   }
 
   /** Builds the control for the row's current kind. */
@@ -388,7 +443,9 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     const e = row.entry;
     const c = row.ctl;
     c.textContent = '';
+    row.moreCtl.textContent = '';
     c.className = `fv-ctl fv-k-${e.kind}`;
+    row.el.dataset.kind = e.kind;
     const label = row.el.querySelector('.fv-label');
     if (e.kind === 'list') label?.removeAttribute('for');
     else label?.setAttribute('for', idOf(`${e.key}:value`));
@@ -396,6 +453,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     const describedBy = idOf(`${e.key}:doc`);
     const m = e.member;
     const dflt = m?.default !== undefined && !/^new /.test(m.default) ? m.default : undefined;
+    void dflt; // shown with the description
     switch (e.kind) {
       case 'bool': {
         const wrap = h('span', 'fv-switch');
@@ -407,7 +465,6 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         });
         wrap.append(inp, state);
         c.append(wrap);
-        if (dflt) c.append(h('span', 'fv-default', {}, `Default ${dflt}`));
         break;
       }
       case 'enum': {
@@ -434,7 +491,6 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
           if (ok && cur.kind === 'number' && v !== cur.num) edit([{ ...cur.value, text: v }]);
         });
         c.append(inp);
-        if (dflt) c.append(h('span', 'fv-default', {}, `Default ${dflt}`));
         break;
       }
       case 'string': {
@@ -485,7 +541,11 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         add.addEventListener('click', () => addItem(row));
         group.append(ol, add);
         if (!n) group.prepend(h('p', 'fv-empty', {}, 'No entries.'));
-        c.append(group);
+        // In the line: what's in it, as a button that opens the editor below.
+        const peek = h('button', 'fv-peek', { type: 'button', 'data-fv': `${e.key}:peek`, 'aria-controls': idOf(`${e.key}:more`) });
+        peek.addEventListener('click', () => { if (row.more.hidden) row.toggle.click(); row.moreCtl.querySelector<HTMLElement>('input, .fv-item-add')?.focus(); });
+        c.append(peek);
+        row.moreCtl.append(group);
         break;
       }
       case 'function':
@@ -494,10 +554,9 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         if (e.kind === 'missing') c.append(h('span', 'fv-muted', {}, 'Not set.'));
         else {
           const src = e.source ?? '';
-          const short = e.kind === 'function' ? 'Code: edit in Code view' : src.length > 160 ? src.slice(0, 157) + '\u2026' : src;
-          c.append(h(e.kind === 'function' ? 'span' : 'code', e.kind === 'function' ? 'fv-muted' : 'fv-src', {}, short));
+          if (e.kind === 'code') c.append(h('code', 'fv-src', { title: src }, src.length > 60 ? src.slice(0, 57) + '\u2026' : src));
         }
-        const b = h('button', 'btn fv-jump', { type: 'button', id: vid, 'data-fv': `${e.key}:value`, 'aria-describedby': idOf(`${e.key}:label`) }, e.kind === 'missing' ? `Add ${e.name}` : e.kind === 'function' ? 'Edit in Code view' : 'Edit in code');
+        const b = h('button', 'btn fv-jump', { type: 'button', id: vid, 'data-fv': `${e.key}:value`, 'aria-describedby': idOf(`${e.key}:label`) }, e.kind === 'missing' ? `Add ${e.name}` : e.kind === 'function' ? 'Edit code' : 'Edit');
         b.addEventListener('click', () => {
           const cur = row.entry;
           if (cur.kind === 'missing') addOption(cur.path);
@@ -513,7 +572,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
   function fillCtl(row: Row) {
     const e = row.entry;
     const active = document.activeElement;
-    const get = (fid: string) => row.ctl.querySelector<HTMLInputElement & HTMLSelectElement>(`[data-fv="${CSS.escape(fid)}"]`);
+    const get = (fid: string) => row.el.querySelector<HTMLInputElement & HTMLSelectElement>(`[data-fv="${CSS.escape(fid)}"]`);
     const set = (el: (HTMLInputElement & HTMLSelectElement) | null, v: string) => {
       if (el && el !== active && el.value !== v) el.value = v;
     };
@@ -526,8 +585,33 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     } else if (e.kind === 'enum') set(get(`${e.key}:value`), e.enumValue!);
     else if (e.kind === 'number') set(get(`${e.key}:value`), e.num!);
     else if (e.kind === 'string') set(get(`${e.key}:value`), e.str!);
-    else if (e.kind === 'list') e.items!.forEach((it, i) => set(get(`${e.key}:item:${i}`), it.value));
+    else if (e.kind === 'list') {
+      e.items!.forEach((it, i) => set(get(`${e.key}:item:${i}`), it.value));
+      const peek = get(`${e.key}:peek`);
+      if (peek) {
+        const n = e.items!.length;
+        const shown = e.items!.map((it) => it.value).join(', ');
+        peek.textContent = n ? `${n} ${n === 1 ? 'entry' : 'entries'}: ${shown.length > 48 ? shown.slice(0, 46) + '\u2026' : shown}` : 'No entries: add';
+        peek.setAttribute('aria-label', `${e.name}: ${n} ${n === 1 ? 'entry' : 'entries'}. Edit`);
+      }
+    }
   }
+
+  const plainOf = (d: Diagnostic) => host.plain?.(d) ?? { title: firstSentence(d.message.replace(/`/g, '')), why: '' };
+  function fixButton(row: Row, d: Diagnostic, di: number, f: Fix, main: boolean): HTMLButtonElement {
+    const fi = (d.fixes ?? []).indexOf(f);
+    const b = h('button', `btn fv-fix${main ? ' primary' : ''}`, { type: 'button', 'data-fv': `${row.entry.key}:fix:${di}:${fi}${main ? ':main' : ''}`, title: f.title.replace(/`/g, '') });
+    b.id = idOf(`${row.entry.key}:fix:${di}:${fi}${main ? ':main' : ''}`);
+    b.innerHTML = main && f.preferred ? 'Fix this' : inline(f.title);
+    b.addEventListener('click', () => {
+      const cur: Diagnostic | undefined = (row.probs as any)._diags?.[di];
+      const fix = cur?.fixes?.[fi];
+      if (!fix) return say('That fix is out of date; check again in a moment.');
+      if (edit(fix.edits, row.entry.key)) say(`Fixed: ${f.title.replace(/`/g, '')}`);
+    });
+    return b;
+  }
+  const ordered = (d: Diagnostic) => [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
 
   function fillProbs(row: Row, ds: Diagnostic[] | undefined) {
     const e = row.entry;
@@ -536,44 +620,39 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     const sig = mine.map((d) => `${d.severity}${d.message}${(d.fixes ?? []).map((f) => f.title).join()}`).join('\n') + (e.kind === 'function' ? 'f' : '');
     row.el.classList.toggle('fv-has-err', mine.some((d) => d.severity === 'error'));
     row.el.classList.toggle('fv-has-warn', !mine.some((d) => d.severity === 'error') && mine.some((d) => d.severity === 'warning'));
-    if (sig === row.probSig) {
-      // Same problems, maybe moved: refresh the fixes' offsets.
-      (row.probs as any)._diags = mine;
-      return;
-    }
-    row.probSig = sig;
+    row.el.classList.toggle('fv-has-prob', mine.some((d) => d.severity === 'error' || d.severity === 'warning'));
     (row.probs as any)._diags = mine;
-    const hadFocus = row.probs.contains(document.activeElement);
+    if (sig === row.probSig) return; // same problems, maybe moved: the fixes read their offsets when clicked
+    row.probSig = sig;
+    const hadFocus = row.probs.contains(document.activeElement) || row.sum.contains(document.activeElement);
     row.probs.textContent = '';
-    if (e.kind === 'function') {
-      if (mine.length) {
-        const worst = mine[0].severity;
-        const p = h('div', `fv-prob fv-sev-${worst}`);
-        p.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[worst]}: </span>${mine.length} problem${mine.length > 1 ? 's' : ''} in this code. Open it in the Code view to fix ${mine.length > 1 ? 'them' : 'it'}.</span>`;
-        row.probs.append(p);
-      }
+    row.sum.textContent = '';
+    if (!mine.length) {
+      if (hadFocus) pendingFocus = pendingFocus ?? row.entry.key;
       return;
     }
+    // The line: the worst problem in plain words, its main fix, and how many more.
+    const worst = mine[0];
+    const s = h('div', `fv-prob fv-sev-${worst.severity}`);
+    const more = mine.length > 1 ? ` <span class="fv-more-n">+${mine.length - 1} more</span>` : '';
+    if (e.kind === 'function') {
+      s.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[worst.severity]}: </span>${mine.length} problem${mine.length > 1 ? 's' : ''} in this code. Open it in the Code view to fix ${mine.length > 1 ? 'them' : 'it'}.</span>`;
+      row.sum.append(s);
+      return;
+    }
+    s.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[worst.severity]}: </span>${esc(plainOf(worst).title)}${more}</span>`;
+    const main = ordered(worst)[0];
+    if (main) s.append(fixButton(row, worst, 0, main, true));
+    row.sum.append(s);
+    // Opened: every problem in full, with all its fixes.
     mine.forEach((d, di) => {
       const p = h('div', `fv-prob fv-sev-${d.severity}`);
-      p.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[d.severity]}: </span>${inline(d.message)}</span>`;
-      const fixes = d.fixes ?? [];
-      const offer = fixes.filter((f) => f.preferred).length ? fixes.filter((f) => f.preferred) : fixes.slice(0, 2);
-      if (offer.length) {
+      const pl = plainOf(d);
+      p.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[d.severity]}: </span><strong>${esc(pl.title)}</strong>${pl.why ? ` ${esc(pl.why)}` : ''}<span class="fv-tech">${inline(d.message)}</span></span>`;
+      const fixes = ordered(d).slice(0, 4);
+      if (fixes.length) {
         const fx = h('span', 'fv-fixes');
-        offer.forEach((f) => {
-          const fi = fixes.indexOf(f);
-          const b = h('button', 'btn fv-fix', { type: 'button', 'data-fv': `${e.key}:fix:${di}:${fi}` });
-          b.id = idOf(`${e.key}:fix:${di}:${fi}`);
-          b.innerHTML = inline(f.title);
-          b.addEventListener('click', () => {
-            const cur: Diagnostic | undefined = (row.probs as any)._diags?.[di];
-            const fix = cur?.fixes?.[fi];
-            if (!fix) return say('That fix is out of date; check again in a moment.');
-            if (edit(fix.edits, row.entry.key)) say(`Fixed: ${f.title.replace(/`/g, '')}`);
-          });
-          fx.append(b);
-        });
+        fixes.forEach((f, k) => { const b = fixButton(row, d, di, f, false); if (k === 0 && f.preferred) b.classList.add('primary'); fx.append(b); });
         p.append(fx);
       }
       row.probs.append(p);
@@ -820,6 +899,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     const sel = active instanceof HTMLInputElement && activeFid ? (() => { try { return [active.selectionStart, active.selectionEnd]; } catch { return null; } })() : null;
 
     model = read(text);
+    root.dataset.density = density();
     const ds = currentDiags();
     if (model.error) {
       banner.hidden = false;
@@ -864,11 +944,16 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
     order.forEach((topic, gi) => {
       let sec = sections.get(topic);
       if (!sec) {
-        const el = h('section', 'fv-group', { 'aria-labelledby': idOf(`g:${topic}`) });
-        el.append(h('h3', 'fv-group-title', { id: idOf(`g:${topic}`) }, topic));
+        const el = h('details', 'fv-group');
+        el.open = !closedGroups.has(topic);
+        const summary = h('summary', 'fv-group-title');
+        const count = h('span', 'fv-count');
+        summary.append(h('span', '', {}, topic), count);
+        el.append(summary);
         const list = h('div', 'fv-rows');
         el.append(list);
-        sec = { el, list };
+        el.addEventListener('toggle', () => (el.open ? closedGroups.delete(topic) : closedGroups.add(topic)));
+        sec = { el, list, count };
         sections.set(topic, sec);
       }
       if (groupsEl.children[gi] !== sec.el) groupsEl.insertBefore(sec.el, groupsEl.children[gi] ?? null);
@@ -884,6 +969,7 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
           rows.set(e.key, row);
         }
         row.entry = e;
+        if (row.more.hidden === isOpen(e.key)) setOpen(row, isOpen(e.key));
         const sig = ctlSig(e);
         if (sig !== row.sig) {
           buildCtl(row);
@@ -894,6 +980,10 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
         if (sec!.list.children[ri] !== row.el) sec!.list.insertBefore(row.el, sec!.list.children[ri] ?? null);
       });
       while (sec.list.children.length > byTopic.get(topic)!.length) sec.list.lastElementChild!.remove();
+      const list = byTopic.get(topic)!;
+      const bad = list.filter((e) => rows.get(e.key)?.el.classList.contains('fv-has-prob')).length;
+      sec.count.textContent = `${list.length}${bad ? ` \u00b7 ${bad} with problems` : ''}`;
+      sec.el.classList.toggle('fv-group-ok', !bad);
     });
     for (const [k, r] of rows) if (!liveRows.has(k)) {
       r.el.remove();
@@ -909,20 +999,27 @@ export function mountFormView(container: HTMLElement, host: FormHost): FormView 
       const inRows = (d: Diagnostic) => model.entries.some((e) => d.start >= e.stmt.start && d.start < e.stmt.end);
       const rest = ds.filter((d) => !inRows(d) && d.rule !== 'missing-required' && (d.severity === 'error' || d.severity === 'warning'));
       elsewhere.hidden = !rest.length;
+      const wasOpen = elsewhere.open;
       elsewhere.textContent = '';
       if (rest.length) {
-        elsewhere.append(h('h3', 'fv-group-title', {}, 'Elsewhere in the code'));
+        const errs = rest.filter((d) => d.severity === 'error').length;
+        const sum = h('summary', `fv-else-sum fv-sev-${errs ? 'error' : 'warning'}`);
+        sum.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span>${rest.length} problem${rest.length > 1 ? 's' : ''} in code outside these options${errs ? ` (${errs} error${errs > 1 ? 's' : ''})` : ''}</span>`;
+        elsewhere.append(sum);
         for (const d of rest.slice(0, 6)) {
           const p = h('div', `fv-prob fv-sev-${d.severity}`);
-          p.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[d.severity]}: </span>${inline(d.message)}</span>`;
+          p.innerHTML = `<span class="fv-sev" aria-hidden="true"></span><span class="fv-msg"><span class="fv-sr">${SEV_LABEL[d.severity]}: </span>${esc(plainOf(d).title)}</span>`;
           const b = h('button', 'btn fv-jump', { type: 'button' }, 'Show in code');
           b.addEventListener('click', () => host.jumpTo(d.start));
           p.append(b);
           elsewhere.append(p);
         }
         if (rest.length > 6) elsewhere.append(h('p', 'fv-muted', {}, `${rest.length - 6} more in the Code view.`));
+        elsewhere.open = wasOpen;
       }
     }
+    onlyBtn.hidden = !model.entries.length || ![...rows.values()].some((r) => r.el.classList.contains('fv-has-prob'));
+    if (onlyBtn.hidden && onlyProblems) onlyBtn.click();
     if (!picker.hidden) renderPicker();
 
     // Focus: where an action asked for it, else back where it was if the refresh moved it.
