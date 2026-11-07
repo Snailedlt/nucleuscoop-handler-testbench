@@ -34,6 +34,8 @@ import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
+import { mountFormView, type FormView } from './formview';
+import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
 import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, use, wireVotes } from './feedback';
@@ -179,6 +181,10 @@ try {
 }
 
 let current: Diagnostic[] = [];
+let currentText = '';
+// The game's folder, if the author picked one for this tab (gamefolder.ts): only names and sizes, kept in this page.
+let gameFolder: GameFolder | null = null;
+let folderProblems: FolderProblem[] = [];
 // Problems-panel state; declared before the editor because it lints as soon as it is created.
 let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
 let problemIndex = -1;
@@ -266,16 +272,22 @@ const editor = CodeMirror($('#editor'), {
     getAnnotations: (text: string) =>
       analyze(text).then((r) => {
         current = r.diagnostics;
+        currentText = text;
+        folderProblems = gameFolder ? checkAgainstFolder(text, gameFolder) : [];
         setFixCount(r.fixable);
         renderProblems(text);
-        return current
-          .filter((d) => d.severity !== 'hint' || (mode === 'dev' && filter === 'hint'))
-          .map((d) => ({
-            from: posAt(text, d.start),
-            to: posAt(text, Math.max(d.end, d.start + 1)),
-            message: `${plainFor(d).title}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
-            severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
-          }));
+        if (formView && viewMode === 'form') formView.refresh();
+        return [
+          ...current
+            .filter((d) => d.severity !== 'hint' || (mode === 'dev' && filter === 'hint'))
+            .map((d) => ({
+              from: posAt(text, d.start),
+              to: posAt(text, Math.max(d.end, d.start + 1)),
+              message: `${plainFor(d).title}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
+              severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
+            })),
+          ...folderProblems.map((f) => ({ from: posAt(text, f.start), to: posAt(text, Math.max(f.end, f.start + 1)), message: `${f.title}. ${f.why}`, severity: f.severity })),
+        ];
       }),
     delay: 250,
     tooltips: false, // our own hover card (showHoverCard)
@@ -337,7 +349,7 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
   scroller.setAttribute('role', 'region');
   scroller.setAttribute('aria-label', 'Handler code');
   editor.getInputField().tabIndex = -1;
-  scroller.addEventListener('focus', (e) => {
+  scroller.addEventListener('focus', (e: FocusEvent) => {
     if (e.target === scroller) editor.focus();
   });
 }
@@ -395,6 +407,36 @@ editor.on('inputRead', (cm: any, change: any) => {
 editor.on('cursorActivity', () => showSignature());
 
 initMessageHints(editor);
+const folderPickers = initFolderPickers(editor, () => gameFolder, () => void pickFolder());
+async function pickFolder() {
+  const f = await pickGameFolder(editor.getValue());
+  if (!f) return;
+  gameFolder = f;
+  if (tabsReady) activeT().folder = f;
+  afterFolderChange();
+  use('game-folder');
+}
+function afterFolderChange() {
+  folderPickers.refresh();
+  const b = $('#gf-open');
+  b.classList.toggle('on', !!gameFolder);
+  b.querySelector('span')!.textContent = gameFolder ? gameFolder.name : 'Game folder';
+  b.setAttribute('aria-label', gameFolder ? `Game folder: ${gameFolder.name}` : 'Pick the game folder');
+  (editor as any).performLint();
+}
+$('#gf-open').addEventListener('click', async () => {
+  if (!gameFolder) return void (await pickFolder());
+  const dlg = $('#gf-dialog') as HTMLDialogElement;
+  const draw = () => { $('#gf-body').innerHTML = gameFolder ? folderSummaryHtml(gameFolder, editor.getValue()) : '<p>No folder picked.</p>'; };
+  draw();
+  dlg.showModal();
+  $('#gf-body').onclick = async (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>('[data-gf]')?.dataset.gf;
+    if (act === 'forget') { gameFolder = null; if (tabsReady) activeT().folder = null; afterFolderChange(); dlg.close(); }
+    else if (act === 'pick') { dlg.close(); await pickFolder(); }
+  };
+});
+$('#gf-close').addEventListener('click', () => ($('#gf-dialog') as HTMLDialogElement).close());
 
 // Hover docs
 const tip = $('#tip');
@@ -451,7 +493,7 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
   clearTimeout(tipTimer);
   tipTimer = window.setTimeout(() => {
     // Not over the "+" or while its menu is open: the menu says it already.
-    if ((e.target as HTMLElement).closest?.('.wm-add') || document.querySelector('.wm-menu')) { tip.hidden = true; return; }
+    if ((e.target as HTMLElement).closest?.('.wm-add, .gf-add') || document.querySelector('.wm-menu, .gf-menu')) { tip.hidden = true; return; }
     const text = editor.getValue();
     // A marker in the gutter: every problem on that line.
     const marker = (e.target as HTMLElement).closest?.('.CodeMirror-lint-marker');
@@ -554,7 +596,24 @@ function showSignature() {
 // Problems
 
 
+// Problems that aren't the linter's: the code against the picked game folder (and the package's files).
+function renderExtraProblems(text: string) {
+  const box = $('#extra-problems');
+  const list = folderProblems.filter((f) => mode === 'dev' || f.severity !== 'info' || true);
+  box.hidden = !list.length;
+  if (!list.length) return void (box.innerHTML = '');
+  box.innerHTML = `<li class="xp-h" role="presentation">Against the game folder <span class="muted">· ${esc(gameFolder?.name ?? '')}</span></li>` + list.map((f, i) => {
+    const line = lineOf(text, f.start) + 1;
+    return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b"><button class="loc" type="button" data-xjump="${f.start}">Line ${line}</button> <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-xfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
+  }).join('');
+  box.querySelectorAll<HTMLButtonElement>('[data-xjump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.xjump))));
+  box.querySelectorAll<HTMLButtonElement>('[data-xfix]').forEach((b) => b.addEventListener('click', () => {
+    const fx = list[Number(b.dataset.xfix)].fix!;
+    editor.replaceRange(fx.text, editor.posFromIndex(fx.start), editor.posFromIndex(fx.end));
+  }));
+}
 function renderProblems(text: string) {
+  renderExtraProblems(text);
   const counts = { error: 0, warning: 0, info: 0, hint: 0 } as Record<string, number>;
   for (const d of current) counts[d.severity]++;
   const simple = mode === 'simple';
@@ -1211,7 +1270,7 @@ editor.on('change', () => renderDocHead());
 // ---------------------------------------------------------------------------
 // Open handlers: tabs above the code. Each keeps its own code (and undo history), where it came from and its
 // package's other files. The open one lives in the usual draft keys; the others in their own keys.
-interface Tab { id: string; meta: DocMeta; base: string; text: string; files: PackageFile[]; cm?: any; counts?: { e: number; w: number } }
+interface Tab { id: string; meta: DocMeta; base: string; text: string; files: PackageFile[]; cm?: any; counts?: { e: number; w: number }; folder?: GameFolder | null }
 const TABS_KEY = 'nucleus-workbench-tabs';
 const textKey = (id: string) => `${STORE_KEY}:${id}`;
 const filesKey = (id: string) => `nucleus-workbench-files:${id}`;
@@ -1230,7 +1289,7 @@ function saveTabs() {
 /** Puts the open handler's state into its tab (before switching away). */
 function stashTab() {
   const x = activeT();
-  Object.assign(x, { meta: doc, base: loadedText, text: editor.getValue(), files: packageFiles, cm: editor.getDoc(), counts: countsOf(current) });
+  Object.assign(x, { meta: doc, base: loadedText, text: editor.getValue(), files: packageFiles, cm: editor.getDoc(), counts: countsOf(current), folder: gameFolder });
   try { localStorage.setItem(textKey(x.id), x.text); } catch { /* ignore */ }
   storeFiles(x.files, filesKey(x.id));
 }
@@ -1250,6 +1309,8 @@ function switchTab(id: string) {
   } catch { /* ignore */ }
   editor.swapDoc(x.cm ?? CodeMirror.Doc(x.text, 'javascript'));
   x.cm = editor.getDoc();
+  gameFolder = x.folder ?? null;
+  afterFolderChange();
   if (doc.hash) history.replaceState(null, '', '#' + doc.hash);
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   clearNotice();
@@ -1945,6 +2006,35 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 
 // Help test this beta (testplan.ts: BETA). Gone at the full release.
 const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')]);
+
+// ---------------------------------------------------------------------------
+// Code | Form (formview.ts): the options as a form, two-way with the code (the code stays the one source).
+const VIEW_KEY = 'nucleus-workbench-view';
+let viewMode: 'code' | 'form' = (() => { try { return localStorage.getItem(VIEW_KEY) === 'form' ? 'form' : 'code'; } catch { return 'code'; } })();
+let formView: FormView | null = null;
+function setViewMode(m: 'code' | 'form') {
+  viewMode = m;
+  try { localStorage.setItem(VIEW_KEY, m); } catch { /* ignore */ }
+  document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.viewMode === m)));
+  $('#editor').hidden = m === 'form';
+  $('#formview').hidden = m !== 'form';
+  if (m === 'form') {
+    use('form-view');
+    formView ??= mountFormView($('#formview'), {
+      getText: () => editor.getValue(),
+      applyEdits: (edits) => editor.operation(() => { for (const e of [...edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end), '+form'); }),
+      jumpTo: (offset) => { setViewMode('code'); const pos = editor.posFromIndex(offset); editor.setCursor(pos); editor.scrollIntoView(pos, 80); editor.focus(); },
+      diagnostics: () => current,
+      diagnosticsText: () => currentText,
+    });
+    formView.refresh();
+  } else {
+    editor.refresh();
+  }
+}
+document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.addEventListener('click', () => setViewMode(b.dataset.viewMode as 'code' | 'form')));
+editor.on('swapDoc', () => formView?.refresh());
+setViewMode(viewMode);
 
 // ---------------------------------------------------------------------------
 // Header menus, the side rail and the layout (Settings › General › Layout)

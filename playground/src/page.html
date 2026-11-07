@@ -1233,6 +1233,170 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
   #app-menu-open .phone-dots { display: inline; font-size: 18px; }
   header .home-link { display: none; }
 }
+/* ---- Form view (formview.ts) ---- */
+/* Form view (src/formview.ts). Uses the page's variables only. */
+.fv { container-type: inline-size; font: 14px/1.45 var(--font-body); color: var(--fg); padding: 12px 14px 32px; overflow: auto; box-sizing: border-box; height: 100%; }
+.fv [hidden] { display: none !important; }
+.fv *, .fv *::before, .fv *::after { box-sizing: border-box; }
+.fv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fv-muted, .fv-empty { color: var(--muted); }
+.fv-empty { margin: 0 0 6px; font-size: 13px; }
+.fv code { font: 0.92em var(--font-mono); }
+
+.fv-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.fv-status { font-size: 12.5px; color: var(--muted); min-height: 1.2em; }
+.fv button { font: inherit; color: var(--fg); }
+.fv :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Groups and rows */
+.fv-group { margin: 0 0 18px; }
+.fv-group-title { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.fv-rows { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); overflow: hidden; }
+.fv-row { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(200px, 3fr); grid-template-areas: "head ctl" "doc ctl" "probs probs" "card card"; column-gap: 16px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.fv-row:first-child { border-top: 0; }
+.fv-row.fv-has-err { box-shadow: inset 3px 0 0 var(--err); }
+.fv-row.fv-has-warn { box-shadow: inset 3px 0 0 var(--warn); }
+.fv-head { grid-area: head; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fv-label { font: 600 13.5px/1.35 var(--font-mono); overflow-wrap: anywhere; min-width: 0; }
+.fv-owner { color: var(--muted); font-weight: 400; }
+.fv-tools { display: inline-flex; gap: 2px; margin-left: auto; flex: none; }
+.fv-doc { grid-area: doc; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.fv-doc .fv-ai { width: .95em; height: .95em; vertical-align: -0.12em; }
+.fv-ctl { grid-area: ctl; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; align-self: center; }
+.fv-probs { grid-area: probs; display: flex; flex-direction: column; gap: 6px; }
+.fv-probs:not(:empty) { margin-top: 8px; }
+.fv-card { grid-area: card; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface-2); font-size: 13px; }
+
+/* Small square buttons: (i), remove, list tools */
+.fv-icon { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: var(--muted) !important; cursor: pointer; font-size: 15px; line-height: 1; }
+.fv-icon:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); color: var(--fg) !important; }
+.fv-icon:disabled { opacity: .35; cursor: default; }
+.fv-info { font: italic 600 13px/1 Georgia, serif; }
+.fv-info::before { content: ""; position: absolute; width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 50%; }
+.fv-info { position: relative; }
+.fv-info[aria-expanded="true"] { background: var(--surface-2); border-color: var(--line); color: var(--accent) !important; }
+
+/* Inputs */
+.fv-input, .fv-select { font: 13px var(--font-mono); color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 8px; min-height: 32px; min-width: 0; }
+.fv-input { flex: 1 1 200px; width: 100%; }
+.fv-num { flex: 0 1 140px; }
+.fv-select { flex: 0 1 auto; max-width: 100%; cursor: pointer; }
+.fv-input[aria-invalid="true"] { border-color: var(--err); }
+.fv-default { font-size: 12px; color: var(--muted); }
+.fv-src { font: 12.5px/1.4 var(--font-mono); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-ctl); padding: 4px 8px; overflow-wrap: anywhere; white-space: pre-wrap; flex: 1 1 200px; min-width: 0; }
+
+/* Switch: a checkbox with role=switch */
+.fv-switch { display: inline-flex; align-items: center; gap: 8px; }
+.fv-switch input { appearance: none; -webkit-appearance: none; margin: 0; width: 40px; height: 22px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); position: relative; cursor: pointer; flex: none; transition: background-color .15s; }
+.fv-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform .15s, background-color .15s; }
+.fv-switch input:checked { background: var(--accent); border-color: var(--accent); }
+.fv-switch input:checked::after { transform: translateX(18px); background: var(--surface); }
+.fv-state { font-size: 13px; min-width: 2em; }
+
+/* List editor */
+.fv-list { flex: 1 1 100%; min-width: 0; }
+.fv-items { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; counter-reset: fv-i; }
+.fv-item { display: flex; align-items: center; gap: 2px; counter-increment: fv-i; }
+.fv-item::before { content: counter(fv-i); flex: none; width: 1.6em; font: 11px var(--font-mono); color: var(--muted); text-align: right; margin-right: 4px; }
+.fv-item .fv-input { flex: 1 1 auto; }
+.fv-item-add { font-size: 13px; padding: 4px 10px; }
+
+/* Problems */
+.fv-prob { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 6px 8px; border-radius: var(--r-ctl); background: var(--surface-2); }
+.fv-msg { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+.fv-sev { flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; display: inline-grid; place-items: center; font: 700 11px/1 var(--font-body); color: var(--surface); background: var(--info); }
+.fv-sev::before { content: "i"; }
+.fv-sev-error .fv-sev { background: var(--err); }
+.fv-sev-error .fv-sev::before { content: "!"; }
+.fv-sev-warning .fv-sev { background: var(--warn); border-radius: 3px; }
+.fv-sev-warning .fv-sev::before { content: "!"; }
+.fv-sev-hint .fv-sev { background: var(--muted); }
+.fv-fixes { display: flex; gap: 6px; flex-wrap: wrap; }
+.fv-fix { font-size: 12.5px; padding: 3px 10px; }
+.fv-fix code { font-size: 11.5px; }
+.fv-elsewhere { margin: 0 0 18px; display: flex; flex-direction: column; gap: 6px; }
+.fv-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 0 0 14px; border: 1px solid var(--err); border-radius: var(--r-pane); background: var(--surface); }
+.fv-banner > span:nth-child(2) { flex: 1 1 240px; }
+.fv-banner .fv-sev { background: var(--err); }
+.fv-banner .fv-sev::before { content: "!"; }
+
+/* Option picker */
+.fv-picker { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); padding: 10px 12px; margin: 0 0 16px; }
+.fv-pick-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.fv-pick-label { font-weight: 600; }
+.fv-search { width: 100%; font-family: var(--font-body); font-size: 14px; }
+.fv-pick-count { font-size: 12px; margin: 6px 0; }
+.fv-results { max-height: min(420px, 55vh); overflow: auto; }
+.fv-pick-group h4 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; }
+.fv-pick-group ul { list-style: none; margin: 0; padding: 0; }
+.fv-pick { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; width: 100%; text-align: left; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; }
+.fv-pick:hover, .fv-pick:focus-visible { background: var(--surface-2); border-color: var(--line); }
+.fv-pick-name { font: 600 13px var(--font-mono); overflow-wrap: anywhere; }
+.fv-pick-meta { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.fv-pick-doc { grid-column: 1 / -1; font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Narrow: fields stack */
+@container (max-width: 560px) {
+  .fv-row { grid-template-columns: 1fr; grid-template-areas: "head" "doc" "ctl" "probs" "card"; }
+  .fv-ctl { margin-top: 8px; }
+  .fv-pick { grid-template-columns: 1fr; }
+  .fv-pick-meta { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .fv-switch input, .fv-switch input::after { transition: none; } }
+
+/* ---- Game folder (gamefolder.ts) ---- */
+/* The game folder (src/gamefolder.ts): the "+" in the symlink lists (the button also has .wm-add for its look), its menu, the summary */
+.CodeMirror .gf-add.gf-nofolder { color: var(--muted); }
+.gf-menu { position: fixed; z-index: 40; width: min(440px, calc(100vw - 16px)); max-height: min(60vh, 520px); display: flex; flex-direction: column; padding: 6px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane, 12px); box-shadow: var(--sh-3, 0 10px 30px rgba(0,0,0,.25)); }
+.gf-menu-h { padding: 6px 8px; font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.gf-menu-p { margin: 0 8px 8px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.gf-menu .gf-pick { margin: 0 8px 8px; align-self: flex-start; }
+.gf-q { margin: 0 4px 6px; padding: 6px 8px; min-height: 32px; border: 1px solid var(--line); border-radius: var(--r-ctl, 6px); background: var(--surface-2); color: var(--fg); font: inherit; font-size: 13.5px; }
+.gf-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gf-list { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.gf-list li[role="option"] { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: baseline; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.gf-list li[role="option"] .gf-l { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; overflow-wrap: anywhere; }
+.gf-list li[role="option"] small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.gf-list li[role="option"]:hover, .gf-list li[aria-selected="true"] { background: var(--surface-2); }
+.gf-list li[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--accent); }
+.gf-list li[aria-disabled="true"] { opacity: .55; cursor: default; }
+.gf-list .gf-tag { color: var(--muted); font-size: 12px; }
+.gf-list .gf-more { padding: 6px 8px; color: var(--muted); font-size: 12.5px; }
+.gf-menu-f { margin: 6px 8px 4px; font-size: 12px; }
+@media (pointer: coarse) { .gf-list li[role="option"] { padding: 10px 8px; } .gf-q { min-height: 40px; } }
+/* The summary (folderSummaryHtml) */
+.gf-summary { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane, 12px); background: var(--surface); color: var(--fg); font-size: 13.5px; line-height: 1.45; }
+.gf-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.gf-name { overflow-wrap: anywhere; }
+.gf-dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0; }
+.gf-dl dt { color: var(--muted); }
+.gf-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.gf-dl code, .gf-facts code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; }
+.gf-bad { color: var(--warn); font-weight: 600; }
+.gf-note { margin: 6px 0; padding: 4px 8px; border-left: 3px solid var(--warn); background: var(--surface-2); border-radius: 4px; }
+.gf-facts { margin: 6px 0; padding-left: 18px; }
+.gf-facts li { margin: 3px 0; }
+.gf-facts li::marker { color: var(--info); }
+.gf-privacy { margin: 6px 0; font-size: 12px; }
+.gf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Code | Form switch, the game folder button, and Check's extra groups (game folder, package) */
+.view-switch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
+.view-switch button { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12.5px; padding: 3px 10px; cursor: pointer; }
+.view-switch button[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); font-weight: 600; }
+.gf-btn { display: inline-flex; align-items: center; gap: 5px; }
+.gf-btn.on { border-color: var(--ok); }
+.gf-btn .gf-n { font-size: 11px; color: var(--muted); }
+#formview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
+#formview[hidden] { display: none; }
+#extra-problems { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#extra-problems .xp-h { font-size: 12px; font-weight: 700; color: var(--muted); margin: 8px 2px 2px; display: flex; gap: 6px; align-items: center; }
+#extra-problems .xp { display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); font-size: 13px; }
+#extra-problems .xp .xp-b { flex: 1; min-width: 0; }
+#extra-problems .xp .xp-why { color: var(--muted); margin: 2px 0 0; }
+#extra-problems .xp .xp-act { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+#extra-problems .xp.error .sev-ico { background: var(--err); } #extra-problems .xp.warning .sev-ico { background: var(--warn); color: #1b1f2a; } #extra-problems .xp.info .sev-ico { background: var(--info); }
+#gf-dialog { width: min(560px, calc(100vw - 32px)); }
 footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -1280,7 +1444,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><span class="view-switch" role="group" aria-label="View"><button type="button" data-view-mode="code" aria-pressed="true">Code</button><button type="button" data-view-mode="form" aria-pressed="false">Form</button></span><button class="btn gf-btn" id="gf-open" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Game folder</span></button><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -1289,6 +1453,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div class="code-row">
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>
         <div id="editor"><div id="sig" hidden></div></div>
+        <div id="formview" hidden></div>
         <section id="lines" aria-label="Names a handler can use" hidden>
           <div class="splitter" id="split-lines" role="separator" aria-orientation="vertical" aria-label="Resize the Lines list (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div>
           <div class="sheet-grip" id="split-sheet" role="separator" aria-orientation="horizontal" aria-label="Resize the list (double-click to reset)" title="Drag to resize · double-tap to reset" tabindex="0"></div>
@@ -1353,6 +1518,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <span class="muted tip-line">F8 next problem · hover code for docs · <kbd>.</kbd> or <kbd>Ctrl Space</kbd> completes</span>
         </div>
         <ul id="problems"></ul>
+        <ul id="extra-problems" aria-label="More problems: the game folder and the package" hidden></ul>
       </div>
       <div role="tabpanel" id="panel-simulate" hidden><h2 class="sr-only">Try it</h2>
         <div class="panel-tools">
@@ -1529,6 +1695,13 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <p class="muted" style="margin:0 0 10px">Thanks for testing! Pick what fits you: each item says what to try, what kind of testing it is, and what to look for. Your ticks stay in this browser.</p>
   <div id="test-body"></div>
   <div class="actions"><button class="btn primary" type="button" id="test-close">Done</button></div>
+</dialog>
+
+<dialog id="gf-dialog" aria-labelledby="gf-h">
+  <h2 id="gf-h">Game folder</h2>
+  <div id="gf-body"></div>
+  <p class="muted small">Only the names and sizes of the files are read, in this browser. Nothing is uploaded.</p>
+  <div class="actions"><button class="btn primary" type="button" id="gf-close">Done</button></div>
 </dialog>
 
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">

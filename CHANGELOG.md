@@ -16,6 +16,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Check against your game folder.** Game folder (above the code) lets you pick the game's install folder: the workbench reads only file names and sizes, in your browser, nothing is uploaded. Then it checks Game.ExecutableName and the files and folders in the symlink and copy lists against the real files (with "did you mean" fixes), notes the engine and the DLLs it finds, and the lists get a **+** to pick the game's files. Suggested by messenils.
+- **Options as a form.** Code | Form above the code: the handler's options as switches, dropdowns, fields and lists, with their docs and problems, and Add an option. Every change edits the code itself (the code stays the one true version), so you can switch back and forth. Suggested by messenils.
 - **Several handlers at once.** Open handlers are tabs above the code, each with its own code, undo history, package files and a dot for its state (red: Nucleus can't load it, yellow: warnings, green: ready). Opening something while your handler has changes opens it in a new tab instead of replacing your work; closing one can be undone. Ctrl+Shift+[ and ] switch, Alt+W closes. On phones, the handler's name switches between them.
 - **A slimmer header, or a side rail.** One row now: the open handlers, + (new, open a file, examples), Save and a menu with Settings, Advanced mode, help and Home. Or pick Settings › General › Layout › Side rail for the tools in a strip on the left, like VS Code.
 - **Help test the beta.** 🧪 in the footer (or the ⋯ menu) asks two quick questions (how much you code, how well you know Nucleus' handler API) and puts what fits you first: API and docs for Nucleus experts, developer experience for developers, look and ease of use for newcomers. Each item has what to do, the kind of testing (a task, real Nucleus, phone, keyboard only, screen reader, checking facts) and what to look for, each with a Report link. Your ticks stay in this browser.
@@ -96,7 +98,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🙏 Thanks
 
-- **messenils** for the idea of naming the window messages in `BlockedMessages`.
+- **messenils** for the idea of naming the window messages in `BlockedMessages`, picking the game folder to check paths, and a trigger-editor style way of editing handlers.
 
 ---
 
