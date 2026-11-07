@@ -1257,6 +1257,20 @@ const scene = (id, label, extra = '', vb = '0 0 120 120') => {
 const still = (inner, label, size, cls = '', vb = '0 0 120 120') => `<svg class="${cls}" viewBox="${vb}" ${size ? `width="${size}" height="${size}"` : ''} role="img" aria-label="${label}" style="overflow:visible">${inner}</svg>`;
 
 // ---- page ----
+// Performance: sections further down are built when you scroll near them (about 1200 px ahead), not at load. CSS
+// their drawings generate on the way is added when they're built. Jumping to an anchor builds everything first.
+const LAZY = [];
+function lazyFill(id, make) {
+  const el = document.getElementById(id);
+  const fill = () => {
+    if (el.dataset.filled) return;
+    el.dataset.filled = '1';
+    const before = LCSS.length, html = make();
+    if (typeof html === 'string') el.innerHTML = html;
+    if (LCSS.length > before && window.addGenCSS) addGenCSS(LCSS.slice(before));
+  };
+  LAZY.push([el, fill]);
+}
 const EXPR = [['smile', 'Smile'], ['happy', 'Happy'], ['wink', 'Wink'], ['wow', 'Wow'], ['focus', 'Focus'], ['worried', 'Worried'], ['sleep', 'Sleepy']];
 document.getElementById('meet').innerHTML = `
   <div class="hero"><div class="big">${scene('joy', 'Duo jumping for joy')}</div><div>
@@ -1310,10 +1324,10 @@ const AUDIT = [
   ['Emoji', 're', 'Nucli\'s emoji are framed closer so his face reads at 22 px.'],
 ];
 const VLABEL = { keep: 'Keep', re: 'Reworked', new: 'New', review: 'Review', drop: 'Dropped' };
-document.getElementById('audit').innerHTML = AUDIT.map(([n, v, txt]) => `<div><span class="v ${v}">${VLABEL[v]}</span><b>${n}</b>${txt ? `<br>${txt}` : ''}</div>`).join('');
+lazyFill('audit', () => AUDIT.map(([n, v, txt]) => `<div><span class="v ${v}">${VLABEL[v]}</span><b>${n}</b>${txt ? `<br>${txt}` : ''}</div>`).join(''));
 const lib = (who) => SCENES.filter((s) => s.who === who).map((s) => `<div class="scene"><div class="stage">${scene(s.id)}</div><b>${s.name}</b><span>${s.use}</span>${s.earlier ? `<details class="ev"><summary>Earlier versions (${s.earlier.length})</summary>${s.earlier.map(([n, id, txt]) => `<div class="evi"><div class="stage">${scene(id)}</div><b>${n}</b><span>${txt}</span></div>`).join('')}</details>` : ''}</div>`).join('');
-document.getElementById('lib-duo').innerHTML = lib('duo');
-document.getElementById('lib-nucli').innerHTML = lib('nucli');
+lazyFill('lib-duo', () => lib('duo'));
+lazyFill('lib-nucli', () => lib('nucli'));
 
 
 // ---- Loader experiments: little Duos ----
@@ -1854,7 +1868,7 @@ const EARLIER = {
   ballbounce: [['Ping-pong', () => LOADERS.pong(), 'One Duo rolling wall to wall; read as a ball, hid his face.']],
 };
 const earlier = (id) => EARLIER[id] ? `<details class="ev"><summary>Earlier versions (${EARLIER[id].length})</summary>${EARLIER[id].map(([n, f, txt]) => `<div class="evi"><div class="stage${id === 'wave' || id === 'hopin' || id === 'ballbounce' || id === 'walktop' || id === 'walkin' ? ' wide' : ''}">${f()}</div><b>${n}</b><span>${txt}</span></div>`).join('')}</details>` : '';
-document.getElementById('lab').innerHTML = LAB.map(([id, name, txt, yes, verdict]) => `<div class="scene"><div class="stage${id === 'wave' || id === 'hopin' || id === 'pong' || id === 'ballbounce' ? ' wide' : ''}">${id === 'wave' ? LOADERS.wave(170, 5, .8) : id === 'carousel' ? LOADERS.carousel(120) : id === 'twirl' ? LOADERS.twirl(70) : id === 'kaleido' ? LOADERS.kaleido(100) : id === 'nkaleido' ? LOADERS.nkaleido(110) : id === 'walktop' || id === 'walkin' ? LOADERS[id](240) : LOADERS[id]()}</div><b>${name}</b><span>${txt}</span><div><span class="lab-v ${yes ? 'yes' : 'no'}">${yes ? 'Picked' : 'Dropped'}</span> <span>${yes ? verdict.replace('For: ', '') : 'It reads as a ball, not as Duo.'}</span></div>${earlier(id)}</div>`).join('');
+lazyFill('lab', () => LAB.map(([id, name, txt, yes, verdict]) => `<div class="scene"><div class="stage${id === 'wave' || id === 'hopin' || id === 'pong' || id === 'ballbounce' ? ' wide' : ''}">${id === 'wave' ? LOADERS.wave(170, 5, .8) : id === 'carousel' ? LOADERS.carousel(120) : id === 'twirl' ? LOADERS.twirl(70) : id === 'kaleido' ? LOADERS.kaleido(100) : id === 'nkaleido' ? LOADERS.nkaleido(110) : id === 'walktop' || id === 'walkin' ? LOADERS[id](240) : LOADERS[id]()}</div><b>${name}</b><span>${txt}</span><div><span class="lab-v ${yes ? 'yes' : 'no'}">${yes ? 'Picked' : 'Dropped'}</span> <span>${yes ? verdict.replace('For: ', '') : 'It reads as a ball, not as Duo.'}</span></div>${earlier(id)}</div>`).join(''));
 
 
 // In the product
@@ -1862,7 +1876,7 @@ function wideBarOld() { return `<svg class="s-load blink" viewBox="0 0 320 64" r
 const wideBar = LOADERS.walktop(320) + '<div style="height:10px"></div>' + LOADERS.walkin(320);
 const indet = `<svg viewBox="0 0 320 20" role="img" aria-label="Electrons running along a bar"><rect x="8" y="7" width="304" height="6" rx="3" fill="var(--track)"/>${[0, 1, 2, 3].map((i) => `<circle class="run" cx="10" cy="10" r="5" fill="${ACC[i]}" stroke="#fff" stroke-width="1.5" style="--i:${i}"/>`).join('')}</svg>`;
 const sizesOf = (id, label) => [16, 24, 32, 48].map((s) => `<figure>${scene(id, `${label} ${s} pixels`, `width="${s}" height="${s}"`)}<figcaption>${s}</figcaption></figure>`).join('');
-document.getElementById('ui').innerHTML = `
+lazyFill('ui', () => `
   <div class="box wide"><h3>Loading bar · download, install</h3><b style="display:block;margin-bottom:6px">Downloading the Left 4 Dead 2 handler…</b>${wideBar}</div>
   <div class="box"><h3>Spinners · Duo twirl (16, 24), carousel (32, 48); Nucli</h3><div class="row">${[16, 24].map((s) => `<figure>${LOADERS.twirl(s)}<figcaption>${s}</figcaption></figure>`).join('')}${[32, 48].map((s) => `<figure>${LOADERS.carousel(s)}<figcaption>${s}</figcaption></figure>`).join('')}</div><div class="row" style="margin-top:10px">${sizesOf('n-spin', 'Nucli spinner')}</div></div>
   <div class="box"><h3>Busy buttons</h3><div class="row"><span class="fbtn">${scene('n-spin', 'Busy', 'width="18" height="18"')}Testing…</span><span class="fbtn ghost">${LOADERS.twirl(18)}Getting handlers…</span></div></div>
@@ -1874,7 +1888,7 @@ document.getElementById('ui').innerHTML = `
   <div class="box"><h3>Empty state · Check tab</h3><div class="state">${scene('n-sleep', 'Nucli dozing', 'width="96" height="96"')}<div><b>Nothing to check yet</b><span class="muted">Open a handler, or start a new one, and I'll read it.</span></div></div></div>
   <div class="box"><h3>Error · Hub unreachable</h3><div class="state">${scene('oops', 'Duo, oops', 'width="96" height="96"')}<div><b>Couldn't reach the Hub</b><span class="muted">Check your connection.</span><div style="margin-top:8px"><span class="fbtn ghost">Try again</span></div></div></div></div>
   <div class="box"><h3>Search · Open dialog</h3><div class="state">${scene('search', 'Duo searching', 'width="96" height="96"')}<div><b>Searching 600 handlers…</b><span class="muted">"Borderlands"</span></div></div></div>
-  <div class="box"><h3>Success · installed</h3><div class="state">${scene('joy', 'Duo, woohoo', 'width="96" height="96"')}<div><b>Ready to play!</b><span class="muted">Left 4 Dead 2 is set up for 4 players.</span></div></div></div>`;
+  <div class="box"><h3>Success · installed</h3><div class="state">${scene('joy', 'Duo, woohoo', 'width="96" height="96"')}<div><b>Ready to play!</b><span class="muted">Left 4 Dead 2 is set up for 4 players.</span></div></div></div>`);
 
 // Discord emoji
 const SIGN = {
@@ -1904,10 +1918,10 @@ function emojiBlock(who) {
     <div class="reacts"><span class="rx me">${S(1)} 14</span><span class="rx">${A(0)} 6</span><span class="rx">${S(4)} 2</span><span class="rx">${S(6)} 1</span></div></div>`;
   return `<h3 style="margin-top:22px">${who === 'duo' ? 'Duo' : 'Nucli'}</h3><div class="emo"><div class="emo-set"><h4>Static</h4><div class="emo-grid">${st}</div><h4 style="margin-top:10px">Animated</h4><div class="emo-grid">${an}</div></div><div style="display:grid;gap:8px">${chat('dark')}${chat('light')}</div></div>`;
 }
-document.getElementById('emoji').innerHTML = emojiBlock('duo') + emojiBlock('nucli') + '<p class="note">Once picked, I export them as files Discord takes: 128 × 128 PNG for the static ones, GIF for the animated ones, each under 256 KB.</p>';
+lazyFill('emoji', () => emojiBlock('duo') + emojiBlock('nucli') + '<p class="note">Once picked, I export them as files Discord takes: 128 × 128 PNG for the static ones, GIF for the animated ones, each under 256 KB.</p>');
 
 const sz = (inner, monoInner, name) => `<div class="box"><h3>${name}</h3><div class="sizes">${[64, 32, 24, 16].map((s) => `<figure>${still(inner(), `${name} ${s} pixels`, s)}<figcaption>${s}</figcaption></figure>`).join('')}${[32, 16].map((s) => `<figure class="mono">${still(monoInner(), `${name}, one colour, ${s} pixels`, s)}<figcaption>${s}, one colour</figcaption></figure>`).join('')}</div></div>`;
-document.getElementById('sizes').innerHTML = sz(() => duo({ noShadow: true }), () => duo({ mono: true }), 'Duo') + sz(() => nucli({ still: true, noShadow: true }), () => nucli({ mono: true, still: true }), 'Nucli');
+lazyFill('sizes', () => sz(() => duo({ noShadow: true }), () => duo({ mono: true }), 'Duo') + sz(() => nucli({ still: true, noShadow: true }), () => nucli({ mono: true, still: true }), 'Nucli'));
 
 // ---- Nucli explorations: ideas only, nothing here is in the product ----
 // nx() draws a Nucli variant: a palette, orbit weight, eye size, electron size, trails, and a small build for 16–24 px.
@@ -2103,10 +2117,10 @@ const NX_PLAN = [
   ['Undo, copy and save, yawn, big fix, hover', 'Plays', '—', '—', '—', '—'],
 ];
 const nxPlan = () => `<div class="nx-tw"><table class="nx-plan"><caption>Which preset plays what. When the device asks for less motion, everything is at most "Still".</caption><thead><tr><th scope="col">Animation</th>${['All', 'Default', 'Calm', 'Still', 'Off'].map((h) => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${NX_PLAN.map(([n, ...c]) => `<tr><th scope="row">${n}</th>${c.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-document.getElementById('nx-dirs').innerHTML = nxDirs();
-document.getElementById('nx-cols').innerHTML = nxCols();
-document.getElementById('nx-anims').innerHTML = nxAnims();
-document.getElementById('nx-plan').innerHTML = nxPlan();
+lazyFill('nx-dirs', () => nxDirs());
+lazyFill('nx-cols', () => nxCols());
+lazyFill('nx-anims', () => nxAnims());
+lazyFill('nx-plan', () => nxPlan());
 LCSS += NX_ANIMS.map((a) => a.css).join('\n') + RMQ('.nx-card svg .tcur, .nx-anim svg .tcur { animation: xt-blink 1.1s step-end infinite; }');
 
 // ---- Duo explorations: ideas only, nothing here is in the product ----
@@ -2185,8 +2199,8 @@ const DX_ANIMS = [
       + RMQ(`.s-y-layout .d-hl { animation: yl-hl 5s var(--spring) infinite; } .s-y-layout .d-hr { animation: yl-hr 5s var(--spring) infinite; } .s-y-layout .yl-m { animation: yl-m 5s var(--spring) infinite; } .s-y-layout .yl-m1 { animation-delay: .12s; }`) },
 ];
 const DX_TIER = { def: 'Default', all: 'All only', prod: 'In player setup' };
-document.getElementById('dx-dirs').innerHTML = dxDirs();
-document.getElementById('dx-anims').innerHTML = DX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${DX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
+lazyFill('dx-dirs', () => dxDirs());
+lazyFill('dx-anims', () => DX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${DX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join(''));
 LCSS += DX_ANIMS.map((a) => a.css).join('\n');
 
 // ---- Round 2: time first ----
@@ -2292,10 +2306,10 @@ const r2Cols = () => R2_PALS.map((p) => `<div class="nx-card${p.rec ? ' rec' : '
   <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli in ${p.name}">${nx({ pal: p, trails: true, ow: 1.8, eye: 1.14, er: 1.15 })}</svg></div>
   ${r2Ctx(p, 'light')}${r2Ctx(p, 'dark')}<p class="nx-con">Body against the page: ${nxCon([p.grad[1], p.shell])}</p><p>${p.note}</p></div>`).join('');
 
-document.getElementById('r2-chart').innerHTML = r2Chart();
-document.getElementById('r2-verdict').innerHTML = r2Table(R2_VERDICT, 'Nucli: round 1\'s animations against their time on screen.') + r2Table(R2_DUO, 'Duo: the same check.');
-document.getElementById('r2-anims').innerHTML = r2Anims();
-document.getElementById('r2-cols').innerHTML = r2Cols();
+lazyFill('r2-chart', () => r2Chart());
+lazyFill('r2-verdict', () => r2Table(R2_VERDICT, 'Nucli: round 1\'s animations against their time on screen.') + r2Table(R2_DUO, 'Duo: the same check.'));
+lazyFill('r2-anims', () => r2Anims());
+lazyFill('r2-cols', () => r2Cols());
 LCSS += R2_ANIMS.map((a) => a.css || '').join('\n');
 
 // The loader, by how long you wait: nothing, a spinner, progress, then progress with the time so far.
@@ -2394,8 +2408,8 @@ const SIMPLE_ANIMS = [
   ['n-idle', 'Nucli · Idle', () => ns({})], ['n-hula', 'Nucli · Hula hoop', () => ns({ expr: 'happy' })],
   ['hello', 'Duo · Hello!', () => ds({ expr: 'happy', arms: 'wave' })], ['joy', 'Duo · Woohoo', () => ds({ expr: 'happy', after: confetti() })],
 ];
-document.getElementById('r2-simple').innerHTML = simpleCards();
-document.getElementById('r2-simple-anims').innerHTML = SIMPLE_ANIMS.map(([id, name, svg]) => `<div class="scene"><div class="stage"><svg class="s-${id} blink" viewBox="0 0 120 120" role="img" aria-label="${name}, simpler drawing">${svg()}</svg></div><b>${name}</b><span>Same animation as in the library, on the simpler drawing.</span></div>`).join('');
+lazyFill('r2-simple', () => simpleCards());
+lazyFill('r2-simple-anims', () => SIMPLE_ANIMS.map(([id, name, svg]) => `<div class="scene"><div class="stage"><svg class="s-${id} blink" viewBox="0 0 120 120" role="img" aria-label="${name}, simpler drawing">${svg()}</svg></div><b>${name}</b><span>Same animation as in the library, on the simpler drawing.</span></div>`).join(''));
 
 // Performance: the generators sample every few milliseconds. Drop keyframes that a straight line between their
 // neighbours already gives (same declarations, numbers within 0.4 %), so the CSS is a fraction of the size.
@@ -2418,6 +2432,7 @@ function slimKeyframes(css) {
   });
 }
 document.getElementById('gen').textContent = slimKeyframes(genCSS() + LCSS);
+window.addGenCSS = (css) => { const s = document.createElement('style'); s.textContent = slimKeyframes(css); document.head.append(s); };
 // ---- Round 3: animations in the buttons; every look, light and dark, and the Motion settings ----
 // Button icons: 24 × 24, drawn with currentColor so they take each look's colours. Each plays where you clicked,
 // in 0.3 to 0.6 s, and can be cut off by the next click. With less motion (or Motion "Still"), only the state changes.
@@ -2518,7 +2533,7 @@ const r3Motion = () => {
 document.getElementById('r3-tools').innerHTML = Object.keys(BI).map((k) => biBtn(k, false)).join('');
 document.getElementById('r3-motion').addEventListener('change', r3Render);
 document.getElementById('r3-players').addEventListener('change', r3Render);
-r3Render();
+lazyFill('r3-matrix', () => { r3Render(); });
 document.getElementById('r3-play').addEventListener('click', () => document.querySelectorAll('#r3-tools .bi-btn').forEach((b, i) => setTimeout(() => b.click(), i * 260)));
 
 
@@ -2567,12 +2582,21 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
 (() => {
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     const s = e.target; s.classList.toggle('offscreen', !e.isIntersecting);
-    if (document.documentElement.classList.contains('paused')) return;
-    try { e.isIntersecting ? s.unpauseAnimations() : s.pauseAnimations(); } catch {}
+    try { if (document.documentElement.classList.contains('paused') || !e.isIntersecting) s.pauseAnimations(); else s.unpauseAnimations(); } catch {}
   }), { rootMargin: '120px' });
   const watch = (root) => root.querySelectorAll?.('svg').forEach((s) => { if (!s.ownerSVGElement && !s._seen) { s._seen = 1; io.observe(s); } });
   watch(document);
   new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType !== 1) return; if (n.tagName === 'svg' && !n.ownerSVGElement) watch(n.parentNode); else watch(n); }))).observe(document.body, { childList: true, subtree: true });
+})();
+(() => {
+  const fillAll = () => LAZY.forEach(([, f]) => f());
+  if (location.hash && location.hash !== '#app') fillAll();
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return; io.unobserve(e.target); LAZY.find(([el]) => el === e.target)?.[1](); }), { rootMargin: '1200px 0px' });
+  // Measure every section in one layout pass, then build the near ones (measuring between builds would force a layout each time).
+  const near = LAZY.map(([el]) => el.getBoundingClientRect().top < innerHeight + 1200);
+  LAZY.forEach(([el, f], i) => (near[i] ? f() : io.observe(el)));
+  document.addEventListener('click', (e) => { const a = e.target.closest('a[href^="#"]'); if (a && a.getAttribute('href').length > 1 && a.getAttribute('href') !== '#app') fillAll(); }, true);
+  addEventListener('hashchange', fillAll);
 })();
 </script>
 <script>
