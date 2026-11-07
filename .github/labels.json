@@ -1,0 +1,72 @@
+[
+  {
+    "name": "enhancement",
+    "color": "a2eeef",
+    "description": "A new feature or a better way to do something"
+  },
+  {
+    "name": "bug",
+    "color": "d73a4a",
+    "description": "Something doesn't work as it should"
+  },
+  {
+    "name": "documentation",
+    "color": "0075ca",
+    "description": "READMEs, AGENTS.md, docs, screenshots and SEO"
+  },
+  {
+    "name": "in progress",
+    "color": "fbca04",
+    "description": "Being worked on now"
+  },
+  {
+    "name": "in preview",
+    "color": "0e8a16",
+    "description": "Built on the preview branch; ships with the next release"
+  },
+  {
+    "name": "backlog",
+    "color": "c5def5",
+    "description": "Planned, not started"
+  },
+  {
+    "name": "full release",
+    "color": "5319e7",
+    "description": "Do it when the tools leave beta"
+  },
+  {
+    "name": "community idea",
+    "color": "d876e3",
+    "description": "Suggested by someone in the community (Discord, GitHub)"
+  },
+  {
+    "name": "needs windows",
+    "color": "0078d4",
+    "description": "Needs a Windows PC with Nucleus Co-op to build or test"
+  },
+  {
+    "name": "area: editor",
+    "color": "1d76db",
+    "description": "The workbench editor: Code, Form, Blocks, Lines, checks"
+  },
+  {
+    "name": "area: packages",
+    "color": "006b75",
+    "description": "Handler packages (.zip/.nc) and their files"
+  },
+  {
+    "name": "area: ux",
+    "color": "5319e7",
+    "description": "Look, layout, onboarding and ease of use"
+  },
+  {
+    "name": "area: mascots",
+    "color": "f9a03f",
+    "description": "Duo and Nucli, animations"
+  },
+  {
+    "name": "area: website",
+    "color": "bfd4f2",
+    "description": "The start page and other pages"
+  }
+]

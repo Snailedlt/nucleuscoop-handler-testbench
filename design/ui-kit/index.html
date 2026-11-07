@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duo and Nucli UI kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!--
+  A showcase, not a dependency. Every component on this page is plain HTML, CSS and JavaScript, and its "View code"
+  panel shows exactly what runs here. Use it as it is, or rebuild it in any UI library: the parts that matter are the
+  tokens (colours, corners, durations, easings) and the timing notes on each component.
+-->
+<style>
+/* ---------- The page around the kit (not part of the kit) ---------- */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--k-bg); color: var(--k-fg); font: 15px/1.55 var(--k-font); }
+.lead { color: var(--k-muted); max-width: 74ch; }
+.comp { content-visibility: auto; contain-intrinsic-size: auto 640px; background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); padding: 16px; margin-top: 16px; scroll-margin-top: 64px; }
+.comp > p { color: var(--k-muted); margin: 2px 0 10px; max-width: 80ch; }
+.comp .timing { font-size: 13.5px; color: var(--k-muted); border-left: 3px solid var(--k-accent); padding: 2px 0 2px 10px; margin: 10px 0 0; }
+.demo { background: var(--k-surface-2); border-radius: calc(var(--k-r-pane) - 4px); padding: 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; min-height: 90px; }
+.code { margin-top: 10px; }
+.code summary { cursor: pointer; font-weight: 600; color: var(--k-accent); width: max-content; }
+.code summary:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.code .tabs { display: flex; gap: 4px; margin: 8px 0 0; flex-wrap: wrap; }
+.code .tabs button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; }
+.code .tabs button[aria-selected="true"] { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.code .tabs button:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.code .tabs .copy { margin-left: auto; }
+.code pre { margin: 8px 0 0; max-height: 420px; overflow: auto; background: var(--k-code-bg); color: var(--k-code-fg); border: 1px solid var(--k-line); border-radius: 8px; padding: 12px; font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; tab-size: 2; }
+.code pre:focus-visible { outline: 2px solid var(--k-accent); }
+.sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; width: 100%; }
+.sw div { border: 1px solid var(--k-line); border-radius: 8px; padding: 8px; font-size: 12.5px; background: var(--k-surface); }
+.sw i { display: block; height: 28px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--k-line); }
+.sw code { font-size: 11.5px; color: var(--k-muted); }
+.motion-table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--k-surface); border-radius: 8px; }
+.motion-table th, .motion-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--k-line); }
+footer { margin-top: 40px; color: var(--k-muted); font-size: 13px; }
+/* ---------- Layout and navigation (the page, not the kit) ---------- */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: 8px; top: -40px; z-index: 40; padding: 6px 12px; background: var(--k-accent); color: var(--k-accent-fg); border-radius: 6px; }
+.skip:focus { top: 8px; }
+.bar-top { position: sticky; top: 0; z-index: 30; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
+.bar-top .in { max-width: 1360px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; }
+.brand { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 17px; color: var(--k-fg); text-decoration: none; }
+.site-nav { display: flex; gap: 2px; margin-right: auto; }
+.site-nav a { padding: 4px 10px; border-radius: 999px; color: var(--k-muted); text-decoration: none; font-size: 14px; }
+.site-nav a:hover { color: var(--k-fg); background: var(--k-surface-2); }
+.site-nav a[aria-current="page"] { color: var(--k-fg); font-weight: 600; background: var(--k-surface-2); }
+.site-nav a:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.ctls { display: flex; gap: 8px 14px; flex-wrap: wrap; }
+.ctls label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.k-select { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); }
+.k-select:focus-visible, .brand:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.nav-open { display: none; font: inherit; font-size: 14px; padding: 5px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; }
+.nav-open:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.layout { max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; padding: 0 16px; }
+.side { position: sticky; top: 54px; align-self: start; height: calc(100vh - 54px); overflow: auto; padding: 16px 4px 24px 0; }
+.filter input { width: 100%; font: inherit; font-size: 14px; padding: 6px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); }
+.filter input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 1px; }
+.side-top { display: block; margin: 12px 0 4px; font-weight: 600; color: var(--k-fg); text-decoration: none; padding: 4px 8px; border-radius: 6px; }
+.side h2 { font: 700 11.5px/1 var(--k-font); letter-spacing: .06em; text-transform: uppercase; color: var(--k-muted); margin: 16px 8px 6px; }
+.side ul { list-style: none; margin: 0; padding: 0; }
+.side li a { display: flex; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; color: var(--k-fg); text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+.side :is(li a, .side-top):hover { background: var(--k-surface-2); }
+.side :is(li a, .side-top):focus-visible { outline: 2px solid var(--k-accent); outline-offset: -2px; }
+.side li a[aria-current="true"] { border-left-color: var(--k-accent); background: var(--k-surface-2); font-weight: 600; }
+.side-none { color: var(--k-muted); font-size: 14px; margin: 12px 8px; }
+.page { min-width: 0; padding: 22px 0 64px; }
+.page h1 { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: clamp(28px, 6vw, 40px); margin: 0; }
+.howto { color: var(--k-muted); padding-left: 18px; margin: 6px 0 0; }
+.howto b { color: var(--k-fg); }
+kbd { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border: 1px solid var(--k-line); border-bottom-width: 2px; border-radius: 4px; background: var(--k-surface); color: var(--k-fg); }
+.glance-h, .group-h { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 26px; margin: 34px 0 4px; }
+.glance-group { margin-top: 14px; }
+.glance-group h3 { font: 700 12px/1 var(--k-font); letter-spacing: .06em; text-transform: uppercase; color: var(--k-muted); margin: 0 0 8px; }
+.glance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr)); gap: 10px; }
+.glance-card { display: grid; grid-template-rows: 76px auto; border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); color: var(--k-fg); text-decoration: none; overflow: hidden; transition: transform var(--k-quick) var(--k-out), border-color var(--k-quick), box-shadow var(--k-quick); }
+.glance-card:hover { transform: translateY(-2px); border-color: var(--k-accent); box-shadow: var(--k-shadow); }
+.glance-card:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.glance-card .thumb .k-mascot, .glance-card .thumb .k-mascot * { animation: none !important; }
+.glance-card .thumb { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 8px; background: var(--k-surface-2); pointer-events: none; overflow: hidden; }
+.glance-card .txt { padding: 8px 10px 10px; }
+.glance-card b { display: block; font-size: 14.5px; }
+.glance-card span.sum { display: block; font-size: 12.5px; color: var(--k-muted); line-height: 1.4; }
+.group-h { scroll-margin-top: 64px; padding-top: 6px; border-top: 1px solid var(--k-line); margin-top: 44px; }
+.group-h + p { color: var(--k-muted); margin: 0; }
+.comp h2 { font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 21px; margin: 0 0 4px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.comp h2 a.up { margin-left: auto; font: 13px var(--k-font); color: var(--k-accent); }
+/* Thumbnails: tiny static pictures of each component. */
+.t-sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--k-line); }
+.t-btn { font-size: 12px; padding: 3px 9px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); }
+.t-btn.p { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.t-line { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--k-fg) 18%, transparent); }
+.t-box { border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); background: var(--k-surface); padding: 6px 8px; display: grid; gap: 4px; }
+.t-m { width: 46px; height: 46px; display: inline-block; line-height: 0; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .nav-open { display: inline-block; }
+  .side { display: none; position: fixed; z-index: 35; inset: 0 auto 0 0; top: 0; width: min(300px, 86vw); height: 100vh; background: var(--k-surface); border-right: 1px solid var(--k-line); padding: 16px; box-shadow: var(--k-shadow); }
+  .side.open { display: block; }
+  .ctls { display: none; width: 100%; padding: 4px 0 6px; } .ctls.open { display: flex; }
+  .brand { display: none; } .site-nav { order: -1; margin-right: auto; } .site-nav a { padding: 4px 6px; font-size: 13px; }
+  .bar-top .in { gap: 6px 6px; padding: 8px 10px; } .nav-open { font-size: 13px; padding: 5px 8px; }
+  .scrim { position: fixed; inset: 0; z-index: 34; background: rgba(0, 0, 0, .4); }
+}
+
+/* Verdicts */
+.v-b { display: inline-block; vertical-align: middle; font: 700 11.5px/1 var(--k-font); padding: 4px 8px; border-radius: 999px; white-space: nowrap; letter-spacing: .01em; }
+.v-best { background: var(--k-accent); color: var(--k-accent-fg); }
+.v-good { border: 1px solid var(--k-line); color: var(--k-fg); background: var(--k-surface); }
+.v-maybe { border: 1px dashed var(--k-muted); color: var(--k-muted); }
+.glance-card.v-best-card { border-color: var(--k-accent); box-shadow: inset 0 0 0 1px var(--k-accent); }
+.glance-card.v-maybe-card { opacity: .8; }
+.glance-card b .v-b { margin-left: 4px; font-size: 10.5px; padding: 3px 6px; }
+.picks { padding: 14px; border-radius: var(--k-r-pane); background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface)); border: 1px solid color-mix(in srgb, var(--k-accent) 30%, var(--k-line)); }
+.picks .glance-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.picks-lead { margin: 0 0 10px; color: var(--k-muted); font-size: 14px; }
+.all-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 22px 0 0; }
+.all-h h3 { font: 700 13px/1 var(--k-font); letter-spacing: .06em; text-transform: uppercase; margin: 0; }
+.all-h label { font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.only-picks .glance-group:not(.picks) .glance-card:not([data-v="best"]) { display: none; }
+.only-picks .glance-group:not(.picks):not(:has(.glance-card[data-v="best"])) { display: none; }
+.comp .take { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: var(--k-surface-2); color: var(--k-fg); max-width: 80ch; font-size: 14px; }
+.comp.v-best-sec { border-color: var(--k-accent); box-shadow: inset 4px 0 0 var(--k-accent); }
+.side .star { color: var(--k-accent); font-size: 13px; }
+.side .mb { color: var(--k-muted); font-size: 11.5px; font-style: italic; }
+</style>
+<style id="kit-css"></style>
+</head>
+<body class="kit" data-look="www" data-mode="light" data-motion="default">
+<a class="skip" href="#content">Skip to the components</a>
+<header class="bar-top"><div class="in">
+  <button type="button" class="nav-open" id="nav-open" aria-controls="side" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="#top">Duo and Nucli UI kit</a>
+  <nav class="site-nav" aria-label="Duo and Nucli pages"><a href="../index.html">Overview</a><a href="../mascots/index.html">Mascots</a><a href="index.html" aria-current="page">UI kit</a></nav>
+  <button type="button" class="nav-open ctl-open" id="ctl-open" aria-controls="ctls" aria-expanded="false" aria-label="Look and motion">Look</button>
+  <div class="ctls" id="ctls">
+    <label>Look <select id="ctl-look" class="k-select"><option value="www">splitscreen.me</option><option value="v3">v3.splitscreen.me</option></select></label>
+    <label>Mode <select id="ctl-mode" class="k-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+    <label>Motion <select id="ctl-motion" class="k-select"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label>
+  </div>
+</div></header>
+<div class="layout">
+  <nav class="side" id="side" aria-label="Components">
+    <div class="side-in">
+      <label class="filter"><span class="sr">Find a component</span><input id="nav-filter" type="search" placeholder="Find a component  ( / )" autocomplete="off"></label>
+      <a class="side-top" href="#top">At a glance</a>
+      <div id="nav-groups"></div>
+      <p class="side-none" id="nav-none" hidden>Nothing matches.</p>
+    </div>
+  </nav>
+  <main class="page" id="top">
+    <h1>Duo and Nucli UI kit</h1>
+    <p class="lead">The mascots are the brand: <b>Duo</b> for splitscreen.me, <b>Nucli</b> for the handler tools. Every piece here carries one of them, or a bit of them (an electron, Duo's stripe, a player's colour), and moves the way they do: springs that overshoot a little, a squash on impact, a hold, then a snap. Messages appear where you acted, said by the mascot, not in a corner.</p>
+    <p class="lead">For the Nucleus Co-op handler tools, splitscreen.me, and anyone else who uses the mascots. A showcase: every piece is plain HTML, CSS and JavaScript, and <b>View code</b> shows exactly what runs here. Use it as it is, or rebuild it in your own UI library; keep the mascots, the tokens and the timing notes. When someone turns motion or mascots off, every piece falls back to plain icons and text.</p>
+    <ul class="howto">
+      <li><b>Find:</b> the list at the side (<b>Contents</b> on a phone; <kbd>/</kbd> to search), or the overview below.</li>
+      <li><b>Try:</b> every demo works. Switch the look, light or dark, and Motion at the top.</li>
+      <li><b>Take:</b> open <b>View code</b> under a demo; <b>Copy</b> takes the tab you're on. <a href="#install">Install</a> previews a future one-line install.</li>
+    </ul>
+    <h2 class="glance-h">At a glance</h2>
+    <div id="glance"></div>
+    <div id="content" tabindex="-1"><div id="kit"></div></div>
+    <footer>Duo is splitscreen.me's mascot, Nucli the mascot of the Nucleus Co-op handler tools. Made for those tools and for anyone who uses the mascots: copy what you need. Colours from splitscreen.me and v3.splitscreen.me; the player colours are the splitscreen.me button colours.</footer>
+  </main>
+</div>
+<div class="k-toasts" id="k-toasts" role="region" aria-label="Notifications"></div>
+
+<script>
+// =====================================================================================================================
+// Foundation: motion settings and the mascots. Everything below uses these.
+// =====================================================================================================================
+
+/** The Motion setting that applies to an element: the closest data-motion, capped by the device's preference.
+ *  "all" loops mascots; "default" plays them once (loaders keep going); "calm" keeps interface motion but still
+ *  mascots; "still": nothing moves; "off": no mascots, nothing moves. */
+function kitMotion(el) {
+  const m = el.closest('[data-motion]')?.dataset.motion || 'default';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return m === 'off' ? 'off' : 'still';
+  return m;
+}
+/** Whether the interface itself may move (buttons, toasts, dialogs). */
+function kitMoves(el) { return ['all', 'default', 'calm'].includes(kitMotion(el)); }
+
+/** Runs the mascots only while they're on screen, and as the Motion setting says. Offscreen mascots are paused
+ *  (CSS and SMIL), so a page full of them costs nothing; "Default" plays each one for 5 s from when you first see it.
+ *  Call it after adding mascots, and after the setting changes. */
+const kitSeen = new IntersectionObserver((es) => es.forEach((e) => { e.target._kVis = e.isIntersecting; kitSync(e.target); }), { rootMargin: '80px' });
+function kitSync(svg) {
+  const m = kitMotion(svg), busy = !!svg.closest('.k-busy'), vis = !!svg._kVis;
+  const run = vis && !svg.closest('.thumb') && (m === 'all' || (m === 'default' && (busy || !svg._kDone)));
+  svg.classList.toggle('k-paused', !run);
+  try {
+    if (run) {
+      svg.unpauseAnimations();
+      if (m === 'default' && !busy && !svg._kOnce) svg._kOnce = setTimeout(() => { svg._kDone = true; kitSync(svg); }, 5000);
+    } else {
+      svg.pauseAnimations();
+      if (m !== 'all' && m !== 'default') svg.setCurrentTime(0);
+    }
+  } catch { /* not in the document yet */ }
+}
+function kitApplyMotion(root = document) {
+  root.querySelectorAll('svg.k-mascot').forEach((svg) => {
+    if (!svg._kWatched) { svg._kWatched = true; kitSeen.observe(svg); }
+    kitSync(svg);
+  });
+}
+
+const KIT_PLAYERS = ['#fca53d', '#ff434d', '#3fbbd8', '#55d137'];
+/** Players 5 to 8 (the Nucleus Co-op setup allows up to 8). */
+const KIT_PLAYERS8 = [...KIT_PLAYERS, '#b18cff', '#ff7ac6', '#ffd84a', '#7be0a8'];
+/** A lighter (f > 0) or darker (f < 0) version of a colour. */
+function kitShade(hex, f) { const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f)); return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join(''); }
+const KIT_INK = '#1f2c46';
+let kitUid = 0;
+
+// ---- The detailed drawings (from the concept sheet, design/mascots): faces, eyes, mouths, shading ----
+const kitN1 = (v) => +v.toFixed(2);
+function kitEye(x, y, s, expr, ink, hl, side) {
+  let e;
+  const arc = (dy, flip) => `<path d="M${kitN1(x - 5 * s)} ${kitN1(y + dy * s)} q${kitN1(5 * s)} ${kitN1((flip ? 5 : -7) * s)} ${kitN1(10 * s)} 0" fill="none" stroke="${ink}" stroke-width="${kitN1(3 * s)}" stroke-linecap="round"/>`;
+  if (expr === 'happy' || (expr === 'wink' && side === 'l')) e = arc(1.5);
+  else if (expr === 'dizzy') { const r1 = 4.6 * s, r2 = 2.9 * s, r3 = 1.3 * s; e = `<path class="spiral" d="M${kitN1(x)} ${kitN1(y)} m${kitN1(-r1)} 0 a${kitN1(r1)} ${kitN1(r1)} 0 1 1 ${kitN1(r1)} ${kitN1(r1)} a${kitN1(r2)} ${kitN1(r2)} 0 1 1 ${kitN1(-r2)} ${kitN1(-r2)} a${kitN1(r3)} ${kitN1(r3)} 0 1 1 ${kitN1(r3)} ${kitN1(r3)}" fill="none" stroke="${ink}" stroke-width="${kitN1(1.9 * s)}" stroke-linecap="round"/>`; }
+  else if (expr === 'sleep') e = arc(-1, true);
+  else {
+    const r = (expr === 'wow' ? 6.3 : expr === 'worried' || expr === 'focus' ? 4.9 : 5.5) * s;
+    e = `<g class="k-eye"><circle cx="${x}" cy="${y}" r="${kitN1(r)}" fill="${ink}"/>${hl ? `<rect x="${kitN1(x + .4 * s)}" y="${kitN1(y - 3.6 * s)}" width="${kitN1(2.8 * s)}" height="${kitN1(2.8 * s)}" fill="${hl}"/><rect x="${kitN1(x - 2.6 * s)}" y="${kitN1(y + 1.2 * s)}" width="${kitN1(1.3 * s)}" height="${kitN1(1.3 * s)}" fill="${hl}" opacity=".8"/>` : ''}</g>`;
+  }
+  let brow = '';
+  const k = side === 'l' ? 1 : -1;
+  if (expr === 'worried') brow = `<path d="M${kitN1(x - 5 * s * k)} ${kitN1(y - 8.5 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(y - 11.5 * s)}" stroke="${ink}" stroke-width="${kitN1(2.4 * s)}" stroke-linecap="round"/>`;
+  if (expr === 'focus') brow = `<path d="M${kitN1(x - 5 * s * k)} ${kitN1(y - 10.5 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(y - 9.3 * s)}" stroke="${ink}" stroke-width="${kitN1(2.4 * s)}" stroke-linecap="round"/>`;
+  return `<g class="track"><g class="look look-${side}">${e}</g></g>${brow}`;
+}
+
+function kitMouth(cx, y, s, expr, ink) {
+  const S = (v) => kitN1(v * s);
+  switch (expr) {
+    case 'happy': return `<path d="M${kitN1(cx - 8 * s)} ${kitN1(y - 1 * s)} q${S(8)} ${S(12)} ${S(16)} 0 z" fill="${ink}" stroke="${ink}" stroke-width="${S(1.4)}" stroke-linejoin="round"/><ellipse cx="${cx}" cy="${kitN1(y + 4.6 * s)}" rx="${S(3.6)}" ry="${S(1.8)}" fill="#ff8fb1"/>`;
+    case 'wow': return `<ellipse cx="${cx}" cy="${kitN1(y + 2 * s)}" rx="${S(3.6)}" ry="${S(4.4)}" fill="${ink}"/>`;
+    case 'worried': return `<path d="M${kitN1(cx - 7 * s)} ${kitN1(y + 2 * s)} q${S(3.5)} ${S(-3.5)} ${S(7)} 0 q${S(3.5)} ${S(3.5)} ${S(7)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.6)}" stroke-linecap="round"/>`;
+    case 'sleep': return `<ellipse cx="${cx}" cy="${kitN1(y + 1.5 * s)}" rx="${S(2.6)}" ry="${S(2.2)}" fill="${ink}"/>`;
+    case 'focus': return `<path d="M${kitN1(cx - 5 * s)} ${kitN1(y + 1 * s)} q${S(5)} ${S(2.4)} ${S(10)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.6)}" stroke-linecap="round"/>`;
+    default: return `<path d="M${kitN1(cx - 6.5 * s)} ${y} q${S(6.5)} ${S(6)} ${S(13)} 0" fill="none" stroke="${ink}" stroke-width="${S(2.9)}" stroke-linecap="round"/>`;
+  }
+}
+
+const kitBlush = (x, y, s, col = '#ff8fb1') => `<ellipse cx="${x}" cy="${y}" rx="${kitN1(5.6 * s)}" ry="${kitN1(3.2 * s)}" fill="${col}" opacity=".62"/>`;
+
+const KIT_LID = '#8b70fa';
+
+function kitNEye(x, y, s, expr, side, ink) {
+  const S = (v) => kitN1(v * s);
+  if (expr === 'happy' || expr === 'sleep' || expr === 'dizzy' || (expr === 'wink' && side === 'l')) return kitEye(x, y, s * 1.05, expr === 'wink' ? 'happy' : expr, ink, '#fff', side);
+  const cid = 'ne' + (++kitUid);
+  const rx = (expr === 'wow' ? 7.3 : expr === 'excited' ? 7 : 6.4) * s, ry = rx * 1.08;
+  const pr = (expr === 'wow' ? 2.3 : expr === 'excited' ? 3.6 : 3.1) * s;
+  const k = side === 'l' ? 1 : -1;
+  let lid = '', brow;
+  const squint = expr === 'focus' || (expr === 'inspect' && side === 'l');
+  if (squint) { const h = ry * (expr === 'inspect' ? .9 : .6); lid = `<rect x="${kitN1(x - rx - 1)}" y="${kitN1(y - ry - 1)}" width="${kitN1(rx * 2 + 2)}" height="${kitN1(h + 1)}" fill="${KIT_LID}"/><path d="M${kitN1(x - rx)} ${kitN1(y - ry + h)} H${kitN1(x + rx)}" stroke="${ink}" stroke-width="${S(1.6)}" stroke-linecap="round"/>`; }
+  const by = y - ry - 2.4 * s, sw = S(1.7);
+  if (expr === 'worried') brow = `M${kitN1(x - 5 * s * k)} ${kitN1(by + 1 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(by - 2.2 * s)}`;
+  else if (squint) brow = `M${kitN1(x - 5 * s * k)} ${kitN1(by - .6 * s)} L${kitN1(x + 4 * s * k)} ${kitN1(by + 1.6 * s)}`;
+  else if (expr === 'wow' || expr === 'excited' || (expr === 'inspect' && side === 'r')) brow = `M${kitN1(x - 4.6 * s)} ${kitN1(by - 1.6 * s)} q${S(4.6)} ${S(-3.6)} ${S(9.2)} 0`;
+  else brow = `M${kitN1(x - 4.4 * s)} ${kitN1(by)} q${S(4.4)} ${S(-2.4)} ${S(8.8)} 0`;
+  return `<defs><clipPath id="${cid}"><ellipse cx="${x}" cy="${y}" rx="${kitN1(rx)}" ry="${kitN1(ry)}"/></clipPath></defs><g class="k-eye">
+    <ellipse cx="${x}" cy="${y}" rx="${kitN1(rx)}" ry="${kitN1(ry)}" fill="#fff"/>
+    <g clip-path="url(#${cid})"><g class="track"><g class="look look-${side}"><circle cx="${x}" cy="${kitN1(y + .3 * s)}" r="${kitN1(pr)}" fill="${ink}"/><circle cx="${kitN1(x + pr * .45)}" cy="${kitN1(y - pr * .4)}" r="${kitN1(pr * .38)}" fill="#fff"/>${expr === 'excited' ? `<circle cx="${kitN1(x - pr * .42)}" cy="${kitN1(y + pr * .45)}" r="${kitN1(pr * .22)}" fill="#fff"/>` : ''}</g></g>${lid}</g>
+    <ellipse cx="${x}" cy="${y}" rx="${kitN1(rx)}" ry="${kitN1(ry)}" fill="none" stroke="${ink}" stroke-width="${S(1.4)}"/></g><path d="${brow}" fill="none" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round"/>`;
+}
+
+const KIT_NMOUTH = { smile: 'focus', inspect: 'focus', excited: 'happy', dizzy: 'worried', attentive: 'smile', shy: 'smile' };
+
+function kitNFace(ex, ink = KIT_INK) {
+  const sp = ex === 'excited' ? `<path d="${'M40 46 l1.2 3 l3 1.2 l-3 1.2 l-1.2 3 l-1.2 -3 l-3 -1.2 l3 -1.2 z'}" fill="#ffd84a"/><path d="M82 46 l1.2 3 l3 1.2 l-3 1.2 l-1.2 3 l-1.2 -3 l-3 -1.2 l3 -1.2 z" fill="#ffd84a"/>` : '';
+  const bl = `<g opacity="${ex === 'excited' || ex === 'shy' ? 1 : .4}">${kitBlush(47, 65.5, .5, '#ffb3d9')}${kitBlush(73, 65.5, .5, '#ffb3d9')}</g>`;
+  return `${bl}${kitNEye(53, 57, .7, ex === 'shy' ? 'smile' : ex, 'l', ink)}${kitNEye(67, 57, .7, ex === 'shy' ? 'smile' : ex, 'r', ink)}${kitMouth(60, 66.5, .58, KIT_NMOUTH[ex] || ex, ink)}${sp}`;
+}
+
+/** The nucleus: a gradient ball, a shadow crescent, a rim light, a glint, a status light. */
+const kitNucCore = (g) => '<circle cx="60" cy="60" r="22" fill="url(#' + g + ')" stroke="#3c3fa8" stroke-width="2"/><path d="M78 49 A22 22 0 0 1 47 78 A26 26 0 0 0 78 49 Z" fill="#26288a" opacity=".26"/><path d="M38.6 63.5 Q60 71 81.4 63.5" fill="none" stroke="#3c3fa8" stroke-width="1.1" opacity=".4"/><path d="M42 50.5 A20 20 0 0 0 44 70" fill="none" stroke="#eef0ff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/><ellipse cx="51" cy="46" rx="6" ry="3.4" fill="#fff" opacity=".7" transform="rotate(-32 51 46)"/><circle class="led" cx="74.5" cy="44.5" r="2.3" fill="#55d137" stroke="#2c2f8a" stroke-width="1"/><circle cx="74" cy="44" r=".7" fill="#fff" opacity=".8"/>';
+
+/** Duo's drawn shading: a darker crescent, a rim light, glints (colours follow a player's tint). */
+const kitDuoShade = (sh = '#0b4fc2', rim = '#bfeaff') => '<path d="M88 46 A34 34 0 0 1 42 93 A38 38 0 0 0 88 46 Z" fill="' + sh + '" opacity=".26"/><path d="M34 44 A34 34 0 0 0 36 80" fill="none" stroke="' + rim + '" stroke-width="2.4" stroke-linecap="round" opacity=".75"/><circle cx="53" cy="33" r="1.7" fill="#fff" opacity=".8"/><circle cx="58.5" cy="31.6" r="1" fill="#fff" opacity=".7"/>';
+
+/** Two moods: the first shows, the second when an ancestor has .k-alt (a reaction, "done"). */
+const kitFaces = (moods, face) => face(moods[0], 'k-fa') + (moods[1] ? face(moods[1], 'k-fb') : '');
+
+/** Nucli, the detailed drawing: a violet nucleus with shading and a status light, white eyes with pupils, three
+ *  faint orbits, an electron per player with a comet trail (SMIL). small: for 24 px and under (thicker orbits,
+ *  bigger eyes and electrons, no trails). crop: the face only, for knobs and pills. */
+function kitNucli({ moods = ['smile'], electrons = 4, orbits = true, label = '', small = false, attrs = '', crop = false } = {}) {
+  const id = 'kn' + (++kitUid), g = id + 'g', ORB = 'M112 60 A52 15.5 0 1 1 8 60 A52 15.5 0 1 1 112 60';
+  const w = small ? 3.2 : 1.3, trails = !small && !crop;
+  const half = (back) => `<path d="${back ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="#7f88ee" stroke-width="${w}" opacity="${back ? (small ? .45 : .28) : (small ? .8 : .5)}" stroke-linecap="round"/>`;
+  const els = [[0, 0, 0], [1, .34, 1], [2, .67, 2], [0, .5, 3]].slice(0, electrons);
+  const dot = (col) => small ? `<circle r="7.4" fill="${col}" stroke="#fff" stroke-width="1.6"/>` : `<circle r="5.2" fill="${col}" stroke="#fff" stroke-width="1.7"/><path d="M0 -3.2 V3.2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>`;
+  const one = ([k, ph, ci]) => {
+    const d = +(4.6 * (1 + k * .18)).toFixed(2), col = KIT_PLAYERS[ci];
+    const tr = trails ? [1, 2, 3].map((q) => `<circle r="${3.6 - q * .7}" fill="${col}" opacity="${.34 - q * .08}"><animateMotion dur="${d}s" begin="${(q * .07 - ph * d - d).toFixed(2)}s" repeatCount="indefinite" path="${ORB}"/></circle>`).join('') : '';
+    return `${tr}<g><animateMotion dur="${d}s" begin="-${(ph * d).toFixed(2)}s" repeatCount="indefinite" path="${ORB}"/>${dot(col)}</g>`;
+  };
+  const orbit = (k, front) => `<g transform="rotate(${k * 60} 60 60)">${half(!front)}<g${front ? ` clip-path="url(#${id})"` : ''}>${els.filter((e) => e[0] === k).map(one).join('')}</g></g>`;
+  const ring = (front) => orbits && !crop ? [0, 1, 2].map((k) => orbit(k, front)).join('') : '';
+  const core = small ? `<circle cx="60" cy="60" r="22" fill="url(#${g})" stroke="#3c3fa8" stroke-width="2.8"/><ellipse cx="51" cy="46" rx="6" ry="3.4" fill="#fff" opacity=".5" transform="rotate(-32 51 46)"/>` : kitNucCore(g);
+  const face = (m, cls) => `<g class="k-face ${cls}">${small ? `<g transform="translate(60 61) scale(1.3) translate(-60 -61)">${kitNFace(m)}</g>` : kitNFace(m)}</g>`;
+  const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
+  return `<svg class="k-mascot k-nucli" viewBox="${crop ? '36 36 48 48' : '0 0 120 120'}" ${a11y} ${attrs}><defs><radialGradient id="${g}" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#c9ceff"/><stop offset=".45" stop-color="#7f88ee"/><stop offset="1" stop-color="#4f55c8"/></radialGradient><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath></defs><g class="k-float">${ring(false)}<g class="k-body">${core}${kitFaces(moods, face)}</g>${ring(true)}</g></svg>`;
+}
+
+/** Duo, the detailed drawing: a blue ball split by a white stripe, with drawn shading, a shine, arms and feet.
+ *  tint: a player's colour instead of splitscreen.me blue (one Duo per player). small: for 24 px and under (no arms
+ *  or feet, the ball 40 % bigger, bigger eyes). */
+function kitDuo({ moods = ['smile'], arms = 'down', label = '', small = false, attrs = '', tint = '' } = {}) {
+  const id = 'kd' + (++kitUid), g = id + 'g';
+  const B1 = tint ? kitShade(tint, .3) : '#4ec1fc', B2 = tint || '#1c7bff', A1 = tint ? kitShade(tint, -.04) : '#43b5fb', A2 = tint ? kitShade(tint, -.14) : '#2483ff';
+  const F = tint ? kitShade(tint, -.32) : '#1858c4', SH = tint ? kitShade(tint, -.5) : '#0b4fc2', RIM = tint ? kitShade(tint, .65) : '#bfeaff';
+  const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], hold: ['', 'rotate(-50 90 66)'] }[arms] || ['', ''];
+  const armL = small ? '' : `<g class="k-arm-l"><g transform="${pose[0]}"><ellipse cx="27" cy="76" rx="5.8" ry="10.5" transform="rotate(18 27 76)" fill="${A1}"/></g></g>`;
+  const armR = small ? '' : `<g class="k-arm-r"><g transform="${pose[1]}"><ellipse cx="93" cy="76" rx="5.8" ry="10.5" transform="rotate(-18 93 76)" fill="${A2}"/></g></g>`;
+  // The white is the stripe: each half is white underneath and its blue stops 1.5 short of the cut.
+  const clip = (k, x, w) => `<clipPath id="${id}${k}"><rect x="${x}" y="0" width="${w}" height="120"/></clipPath>`;
+  const piece = (k, top = '') => `<circle cx="60" cy="62" r="34" fill="#fff" clip-path="url(#${id}w${k})"/><g clip-path="url(#${id}c${k})"><circle cx="60" cy="62" r="34" fill="url(#${g})"/>${small ? '' : kitDuoShade(SH, RIM)}${top}</g>`;
+  const shine = '<ellipse cx="44" cy="40" rx="9" ry="4.6" fill="#fff" opacity=".42" transform="rotate(-38 44 40)"/>';
+  const s = small ? 1.3 : 1;
+  const face = (m, cls) => `<g class="k-face ${cls}">${small ? '' : kitBlush(39, 70, 1) + kitBlush(81, 70, 1)}${kitEye(small ? 45 : 47, 58, s, m, KIT_INK, '#fff', 'l')}${kitEye(small ? 75 : 73, 58, s, m, KIT_INK, '#fff', 'r')}${kitMouth(60, small ? 71 : 69, s, m, KIT_INK)}</g>`;
+  const body = `<g class="k-half-l">${armL}${piece('l', shine)}</g><g class="k-half-r">${armR}${piece('r')}</g>${kitFaces(moods, face)}`;
+  const feet = small ? '' : `<ellipse class="k-foot-l" cx="48" cy="99" rx="8.6" ry="4.6" fill="${F}"/><ellipse class="k-foot-r" cx="72" cy="99" rx="8.6" ry="4.6" fill="${F}"/>`;
+  const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
+  return `<svg class="k-mascot k-duo" viewBox="0 0 120 120" ${a11y} ${attrs}><defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="30" y1="28" x2="92" y2="96"><stop offset="0" stop-color="${B1}"/><stop offset="1" stop-color="${B2}"/></linearGradient>${clip('wl', 0, 60.8)}${clip('cl', 0, 58.5)}${clip('wr', 60, 60)}${clip('cr', 61.5, 58.5)}</defs><g class="k-jump">${feet}<g class="k-body">${small ? `<g transform="translate(60 62) scale(1.4) translate(-60 -62)">${body}</g>` : body}</g></g></svg>`;
+}
+</script>
+
+<script id="kit-hl">
+// ---- Syntax highlighting: a small lexer per language (JavaScript, HTML, CSS, shell, JSON, file trees). No library. ----
+const kitHighlight = (() => {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const tok = (cls, s) => (s ? `<span class="hl-${cls}">${esc(s)}</span>` : '');
+  const KW = new Set('const let var function return if else for while do switch case break continue new try catch finally throw typeof instanceof in of async await class extends super this void delete yield default import export from'.split(' '));
+  const LIT = new Set(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);
+  const REGEX_BEFORE = /(^|[(,=:[!&|?{};+\-*%<>~^]|\breturn|\btypeof|\bcase)\s*$/;
+
+  /** JavaScript, from position i to the end (or to an unmatched "}" when inside a template's ${…}). */
+  function js(src, i = 0, stopAtBrace = false) {
+    let out = '', depth = 0, prev = '';
+    while (i < src.length) {
+      const c = src[i], rest = src.slice(i);
+      let m;
+      if (stopAtBrace && c === '}' && depth === 0) return [out, i];
+      if ((m = /^\s+/.exec(rest))) { out += m[0]; i += m[0].length; continue; }
+      if (rest.startsWith('//')) { const e = src.indexOf('\n', i); const s = src.slice(i, e < 0 ? src.length : e); out += tok('com', s); i += s.length; continue; }
+      if (rest.startsWith('/*')) { const e = src.indexOf('*/', i + 2); const s = src.slice(i, e < 0 ? src.length : e + 2); out += tok('com', s); i += s.length; prev = ''; continue; }
+      if (c === '"' || c === "'") { let j = i + 1; while (j < src.length && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1; out += tok('str', src.slice(i, j + 1)); i = j + 1; prev = 's'; continue; }
+      if (c === '`') { const [h, j] = template(src, i); out += h; i = j; prev = 's'; continue; }
+      if (c === '/' && REGEX_BEFORE.test(prev)) {
+        let j = i + 1, cls = false;
+        while (j < src.length && src[j] !== '\n') { if (src[j] === '\\') { j += 2; continue; } if (src[j] === '[') cls = true; else if (src[j] === ']') cls = false; else if (src[j] === '/' && !cls) break; j++; }
+        if (src[j] === '/') { j++; while (/[a-z]/.test(src[j] || '')) j++; out += tok('re', src.slice(i, j)); i = j; prev = 's'; continue; }
+      }
+      if ((m = /^(?:0x[\da-f]+|\d[\d_]*\.?\d*(?:e[+-]?\d+)?|\.\d+)/i.exec(rest))) { out += tok('num', m[0]); i += m[0].length; prev = 'n'; continue; }
+      if ((m = /^[A-Za-z_$][\w$]*/.exec(rest))) {
+        const w = m[0], after = src.slice(i + w.length).match(/^\s*(\(|=>)?/)[1], dot = /\.\s*$/.test(prev);
+        out += KW.has(w) ? tok('kw', w) : LIT.has(w) ? tok('num', w) : after === '(' ? tok('fn', w) : dot ? tok('prop', w) : /^[A-Z][A-Z\d_]+$/.test(w) ? tok('const', w) : tok('var', w);
+        i += w.length; prev = KW.has(w) ? w : 'w'; continue;
+      }
+      if (c === '{') depth++;
+      if (c === '}') depth--;
+      out += tok('punct', c); i++; prev = c; continue;
+    }
+    return [out, i];
+  }
+  /** A template literal, with ${…} highlighted as JavaScript (templates inside templates included). */
+  function template(src, i) {
+    let out = '', j = i + 1, start = i;
+    while (j < src.length) {
+      if (src[j] === '\\') { j += 2; continue; }
+      if (src[j] === '`') { out += tok('str', src.slice(start, j + 1)); return [out, j + 1]; }
+      if (src[j] === '$' && src[j + 1] === '{') {
+        out += tok('str', src.slice(start, j)) + tok('punct', '${');
+        const [h, k] = js(src, j + 2, true);
+        out += h + tok('punct', '}'); j = k + 1; start = j; continue;
+      }
+      j++;
+    }
+    return [out + tok('str', src.slice(start)), src.length];
+  }
+  function html(src) {
+    let out = '', i = 0, m;
+    while (i < src.length) {
+      const rest = src.slice(i);
+      if (rest.startsWith('<!--')) { const e = src.indexOf('-->', i); const s = src.slice(i, e < 0 ? src.length : e + 3); out += tok('com', s); i += s.length; continue; }
+      if ((m = /^<\/?[A-Za-z][\w-]*/.exec(rest))) {
+        out += tok('punct', m[0][1] === '/' ? '</' : '<') + tok('tag', m[0].replace(/^<\/?/, '')); i += m[0].length;
+        while (i < src.length && src[i] !== '>') {
+          const r = src.slice(i);
+          if ((m = /^\s+/.exec(r))) { out += m[0]; i += m[0].length; continue; }
+          if ((m = /^([^\s=>/]+)(\s*=\s*)("[^"]*"|'[^']*'|[^\s>]+)?/.exec(r))) { out += tok('attr', m[1]) + (m[2] ? tok('punct', m[2]) : '') + (m[3] ? tok('str', m[3]) : ''); i += m[0].length; continue; }
+          out += tok('punct', src[i]); i++;
+        }
+        if (src[i] === '>') { out += tok('punct', '>'); i++; }
+        continue;
+      }
+      if ((m = /^&[#\w]+;/.exec(rest))) { out += tok('num', m[0]); i += m[0].length; continue; }
+      const e = src.slice(i + 1).search(/<|&[#\w]+;/); const s = e < 0 ? rest : rest.slice(0, e + 1);
+      out += esc(s); i += s.length;
+    }
+    return out;
+  }
+  function cssValue(v) {
+    return v.replace(/(\/\*[\s\S]*?\*\/)|("[^"]*"|'[^']*')|(#[\da-f]{3,8}\b)|(-?\d*\.?\d+(?:px|ms|s|deg|%|em|rem|vh|vw|fr)?)\b|(!important)|([\w-]+)(?=\()|(--[\w-]+)|([^\s])|(\s+)/gi, (all, com, str, hex, num, imp, fn, cvar, ch, ws) =>
+      com ? tok('com', com) : str ? tok('str', str) : hex ? tok('num', hex) : num ? tok('num', num) : imp ? tok('kw', imp) : fn ? tok('fn', fn) : cvar ? tok('const', cvar) : ch ? (/[\w-]/.test(ch) ? esc(ch) : tok('punct', ch)) : ws || '');
+  }
+  function css(src) {
+    let out = '', i = 0;
+    while (i < src.length) {
+      const rest = src.slice(i);
+      if (rest.startsWith('/*')) { const e = src.indexOf('*/', i + 2); const s = src.slice(i, e < 0 ? src.length : e + 2); out += tok('com', s); i += s.length; continue; }
+      if (/^\s/.test(rest)) { out += rest[0]; i++; continue; }
+      if (rest[0] === '{' || rest[0] === '}' || rest[0] === ';') { out += tok('punct', rest[0]); i++; continue; }
+      // A selector (or an at-rule) runs to the next "{"; a declaration to the next ";" or "}".
+      const next = rest.search(/[;{}]/), seg = next < 0 ? rest : rest.slice(0, next), isSel = rest[next] === '{';
+      if (isSel) out += seg.startsWith('@') ? seg.replace(/^(@[\w-]+)(.*)$/s, (a, at, r) => tok('kw', at) + cssValue(r)) : tok('sel', seg);
+      else { const k = seg.indexOf(':'); out += k < 0 ? cssValue(seg) : tok('prop', seg.slice(0, k)) + tok('punct', ':') + cssValue(seg.slice(k + 1)); }
+      i += seg.length || 1;
+    }
+    return out;
+  }
+  const sh = (src) => src.split('\n').map((l) => {
+    if (/^\s*#/.test(l)) return tok('com', l);
+    return l.replace(/("[^"]*"|'[^']*')|(\s--?[\w-]+)|(^\s*\$?\s*[\w.@/-]+)|([^\s"']+)|(\s+)/g, (a, str, flag, cmd, word, ws) => str ? tok('str', str) : flag ? tok('kw', flag) : cmd ? tok('fn', cmd) : word ? (/^[\w-]+@/.test(word) ? tok('tag', word) : esc(word)) : ws);
+  }).join('\n');
+  const json = (src) => src.replace(/(\/\/[^\n]*)|("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+\.?\d*)|(true|false|null)|([{}[\],:])|([^\s"]+)|(\s+)/g, (a, com, str, colon, num, lit, p, w, ws) => com ? tok('com', com) : str ? (colon ? tok('prop', str) + tok('punct', colon) : tok('str', str)) : num ? tok('num', num) : lit ? tok('num', lit) : p ? tok('punct', p) : w ? esc(w) : ws);
+  const tree = (src) => src.split('\n').map((l) => { const m = /^([│├└─\s]*)(\S+)(\s{2,}.*)?$/.exec(l); if (!m) return esc(l); return tok('punct', m[1]) + (m[2].endsWith('/') ? tok('tag', m[2]) : tok('var', m[2])) + (m[3] ? tok('com', m[3]) : ''); }).join('\n');
+  return { js: (s) => js(s)[0], html, css, sh, json, tree, esc };
+})();
+
+/** A code field: a textarea over a highlighted copy of its text. */
+function kitCodeField(el) {
+  const ta = el.querySelector('textarea'), code = el.querySelector('pre code'), lang = el.dataset.lang || 'js';
+  const draw = () => { code.innerHTML = kitHighlight[lang](ta.value) + (ta.value.endsWith('\n') || !ta.value ? ' ' : ''); };
+  ta.addEventListener('input', draw); draw();
+}
+</script>
+
+<script>
+// =====================================================================================================================
+// The kit: tokens, then one entry per component. Each has its HTML, CSS and setup function; the page runs exactly
+// these, and "View code" shows them.
+// =====================================================================================================================
+const KIT = [];
+
+KIT.push({ id: 'tokens', name: 'Tokens', about: 'Colours for the two splitscreen.me looks, light and dark, the player colours, corners, and the motion tokens every component uses. Durations come from how long each moment is on screen.',
+  timing: 'Tap feedback 120 ms. Small state changes 200 ms. Icons in buttons 340 ms. Things that enter 260 ms, leave 180 ms. A confirmation ("Copied") stays 1.6 s. Toasts 3.5 s + 25 ms a letter (errors 8 s).',
+  html: `<div class="sw" id="tok-sw"></div>`,
+  css: `/* Colours: one set per look and mode. The kit only reads --k-* tokens. */
+.kit, .kit[data-look="www"][data-mode="light"] { --k-bg: #f5f6f7; --k-surface: #ffffff; --k-surface-2: #ebedf0; --k-line: #c9cdd3; --k-fg: #1c1e21; --k-muted: #5c636c; --k-accent: #0c76a5; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #f6f8fa; --k-code-fg: #1c1e21; --k-code-kw: #6f2db8; --k-code-str: #b0175a; --k-code-num: #0f6f6d; --k-code-cmt: #6a737d; --k-code-prop: #0b5c8a; --k-code-muted: #5c636c; --k-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --k-r-ctl: 8px; --k-r-pane: 12px; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
+.kit[data-look="www"][data-mode="dark"] { --k-bg: #1b1b1d; --k-surface: #242526; --k-surface-2: #2e3033; --k-line: #555b63; --k-fg: #e3e3e3; --k-muted: #b0b4ba; --k-accent: #30bbf8; --k-accent-fg: #06131c; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #282a36; --k-code-fg: #f8f8f2; --k-code-kw: #ff79c6; --k-code-str: #f1fa8c; --k-code-num: #bd93f9; --k-code-cmt: #8b96c4; --k-code-prop: #8be9fd; --k-code-muted: #b0b4ba; --k-shadow: 0 6px 24px rgba(0, 0, 0, .5); color-scheme: dark; }
+.kit[data-look="v3"] { --k-font: "Archivo", system-ui, sans-serif; --k-r-ctl: 8px; --k-r-pane: 14px; }
+.kit[data-look="v3"][data-mode="light"] { --k-bg: #eceef2; --k-surface: #ffffff; --k-surface-2: #f3f4f7; --k-line: #ccd1da; --k-fg: #0b0d12; --k-muted: #4f5767; --k-accent: #0b0d12; --k-accent-fg: #ffffff; --k-ok: #1a7f37; --k-err: #c42b2b; --k-warn: #9a6700; --k-code-bg: #fafbfc; --k-code-fg: #0b0d12; --k-code-kw: #6d28d9; --k-code-str: #0f6b3f; --k-code-num: #9a5200; --k-code-cmt: #626b7b; --k-code-prop: #1d5fd1; --k-code-muted: #4f5767; --k-shadow: 0 6px 24px rgba(15, 23, 42, .14); color-scheme: light; }
+.kit[data-look="v3"][data-mode="dark"] { --k-bg: #000000; --k-surface: #14171e; --k-surface-2: #1b1f28; --k-line: #3a4254; --k-fg: #f3f4f6; --k-muted: #a3abba; --k-accent: #f3f4f6; --k-accent-fg: #07080a; --k-ok: #4ac26b; --k-err: #ff7b72; --k-warn: #e3b341; --k-code-bg: #0e1015; --k-code-fg: #f3f4f6; --k-code-kw: #c4b5fd; --k-code-str: #8fe3b8; --k-code-num: #f5b971; --k-code-cmt: #8b93a3; --k-code-prop: #93c5fd; --k-code-muted: #a3abba; --k-shadow: 0 6px 24px rgba(0, 0, 0, .6); color-scheme: dark; }
+
+/* Players (the electrons) and motion. */
+.kit {
+  --k-p1: #fca53d; --k-p2: #ff434d; --k-p3: #3fbbd8; --k-p4: #55d137;
+  --k-tap: 120ms; --k-quick: 200ms; --k-icon: 340ms; --k-enter: 260ms; --k-exit: 180ms; --k-confirm: 1600ms;
+  --k-spring: cubic-bezier(.34, 1.56, .64, 1); /* overshoots a little, then settles: Duo's bounce */
+  --k-soft: cubic-bezier(.45, 0, .55, 1);      /* breathing, floating */
+  --k-out: cubic-bezier(.2, .7, .3, 1);        /* quick start, gentle stop */
+  --k-in: cubic-bezier(.5, 0, .75, 0);         /* leaving */
+}
+
+/* Motion settings. "still" and "off": nothing moves (every state still shows). The device's preference wins. */
+.kit[data-motion="still"] *, .kit[data-motion="off"] * { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .kit *, .kit *::before, .kit *::after { animation: none !important; transition: none !important; } }
+.kit[data-motion="calm"] .k-mascot * { animation: none !important; }
+/* Mascots off screen, or done playing, hold their frame (kitSync decides). */
+.k-mascot.k-paused, .k-mascot.k-paused * { animation-play-state: paused !important; }
+/* "off": the mascots step aside; a .k-plain fallback takes their place. */
+.k-plain { display: none; }
+.kit[data-motion="off"] .k-mascot { display: none !important; }
+.kit[data-motion="off"] .k-plain { display: inline-flex; }`,
+  js: function setupTokens(root) {
+    const names = ['bg', 'surface', 'surface-2', 'line', 'fg', 'muted', 'accent', 'ok', 'err', 'warn', 'p1', 'p2', 'p3', 'p4'];
+    const draw = () => { const cs = getComputedStyle(document.body); root.querySelector('#tok-sw').innerHTML = names.map((n) => `<div><i style="background:var(--k-${n})"></i>--k-${n}<br><code>${cs.getPropertyValue('--k-' + n).trim()}</code></div>`).join(''); };
+    draw(); document.addEventListener('kit-look', draw);
+  } });
+
+KIT.push({ id: 'mascots', name: 'Mascots', about: 'Nucli and Duo, the detailed drawings from the concept sheet, built in code: gradients, drawn shading, white eyes with pupils, Nucli\'s comet-trail electrons. Moods: smile, happy, focus, worried, wow, sleep. A small build for 24 px and under (thicker orbits, bigger eyes, no trails), and a face-only crop for knobs and pills. They float and blink; the electrons orbit.',
+  timing: 'Idle loops are slow (3.4 s float, a blink every 4.6 s). In "Default" they play for 5 s, then hold; loaders keep going.',
+  html: `<span class="k-m" style="width:96px;height:96px" data-nucli></span>
+<span class="k-m" style="width:96px;height:96px" data-duo></span>
+<span class="k-m" style="width:24px;height:24px" data-nucli-small></span>
+<span class="k-m" style="width:24px;height:24px" data-duo-small></span>
+<span class="k-m" style="width:16px;height:16px" data-nucli-small></span>
+<span class="k-m" style="width:16px;height:16px" data-duo-small></span>
+<span class="k-plain">The mascots are off (Motion: Off). Everywhere else, plain icons and text take their place.</span>`,
+  css: `.k-m { display: inline-block; line-height: 0; flex: none; }
+.k-mascot { width: 100%; height: 100%; overflow: visible; display: block; }
+/* Only the parts that animate get an origin: the drawings' own transform attributes must keep theirs. */
+.k-mascot .k-eye { transform-box: fill-box; transform-origin: center; }
+.k-mascot :is(.k-float, .k-body, .k-jump) { transform-box: view-box; transform-origin: 60px 100px; }
+.k-mascot .k-float { animation: k-float 3.4s var(--k-soft) infinite; }
+.k-mascot .k-eye { animation: k-blink 4.6s infinite; }
+.k-mascot .k-fb, .k-alt .k-mascot .k-fa { opacity: 0; }
+.k-alt .k-mascot .k-fb { opacity: 1; }
+@keyframes k-float { 50% { transform: translateY(-3px); } }
+@keyframes k-blink { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.1); } }`,
+  js: function setupMascots(root) {
+    root.querySelectorAll('[data-nucli]').forEach((e) => (e.innerHTML = kitNucli({ label: 'Nucli' })));
+    root.querySelectorAll('[data-duo]').forEach((e) => (e.innerHTML = kitDuo({ label: 'Duo' })));
+    root.querySelectorAll('[data-nucli-small]').forEach((e) => (e.innerHTML = kitNucli({ small: true, label: 'Nucli, small' })));
+    root.querySelectorAll('[data-duo-small]').forEach((e) => (e.innerHTML = kitDuo({ small: true, label: 'Duo, small' })));
+  } });
+
+KIT.push({ id: 'buttons', name: 'Buttons', about: 'Primary, secondary, quiet and danger, in two sizes. They squash a little under your finger and spring back. Each icon has its own short animation inside the button; copy, save and share confirm in the label. A busy button shows a tiny Nucli.',
+  timing: 'Press 120 ms down, spring back 260 ms. Icons 0.34 to 0.6 s, restarted by the next click (undo comes in bursts). The confirmation stays 1.6 s.',
+  html: `<button class="k-btn k-primary" data-icon="run">Try it</button>
+<button class="k-btn" data-icon="copy" data-done="Copied">Copy</button>
+<button class="k-btn" data-icon="save" data-done="Saved">Save</button>
+<button class="k-btn" data-icon="undo">Undo</button>
+<button class="k-btn" data-icon="redo">Redo</button>
+<button class="k-btn" data-icon="format">Format</button>
+<button class="k-btn" data-icon="fix">Fix all</button>
+<button class="k-btn" data-icon="share" data-done="Link copied">Share</button>
+<button class="k-btn k-quiet">Cancel</button>
+<button class="k-btn k-danger">Delete</button>
+<button class="k-btn k-sm" data-icon="copy" data-done="Copied">Small</button>
+<button class="k-btn" disabled>Disabled</button>
+<button class="k-btn k-primary" data-busy-demo>Test all</button>`,
+  css: `.k-btn { font: inherit; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 14px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; transition: transform var(--k-enter) var(--k-spring), border-color var(--k-quick), background var(--k-quick); }
+.k-btn:hover:not(:disabled) { border-color: var(--k-accent); }
+.k-btn:active:not(:disabled) { transform: scale(.95, .92); transition-duration: var(--k-tap); transition-timing-function: var(--k-out); }
+.k-btn:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-btn:disabled { opacity: .5; cursor: not-allowed; }
+.k-btn.k-primary { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.k-btn.k-quiet { background: transparent; border-color: transparent; }
+.k-btn.k-quiet:hover { background: var(--k-surface-2); }
+.k-btn.k-danger { color: var(--k-err); }
+.k-btn.k-sm { min-height: 28px; padding: 3px 10px; font-size: 13px; }
+.k-btn.k-done { border-color: var(--k-ok); color: var(--k-ok); }
+.k-btn.k-primary.k-done { background: var(--k-ok); color: #fff; }
+.k-btn[aria-busy="true"] { cursor: progress; }
+.k-ico { width: 18px; height: 18px; flex: none; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.k-ico * { transform-box: fill-box; transform-origin: center; }
+.k-ico .t { transform-origin: 50% 100%; }
+.k-ico :is(.u, .w) { transform-box: view-box; }
+.k-ico .u { transform-origin: 12px 12px; } .k-ico .w { transform-origin: 4px 20px; }
+.k-ico .o { offset-path: path('M12 2 a10 10 0 1 1 0 20 a10 10 0 1 1 0 -20'); offset-rotate: 0deg; }
+.k-spin { width: 18px; height: 18px; flex: none; }`,
+  js: function setupButtons(root) {
+    const P = ['var(--k-p1)', 'var(--k-p2)', 'var(--k-p3)', 'var(--k-p4)'];
+    // Icons: 24 × 24, currentColor, with named parts for their animation.
+    const ICONS = {
+      copy: `<rect x="9" y="9" width="11" height="11" rx="2"/><rect class="f" x="4" y="4" width="11" height="11" rx="2" style="fill:var(--k-btn-bg, var(--k-surface))"/><path class="k" d="M11.6 14.6 l2 2 l4 -4.3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>`,
+      save: `<path class="t" d="M4 15 v4 h16 v-4"/><g class="a"><path d="M12 3 v11"/><path d="M7.5 9.5 L12 14 L16.5 9.5"/></g>`,
+      undo: `<g class="u"><path d="M9 14 L4 9 L9 4"/><path d="M4 9 h10 a6 6 0 0 1 0 12 h-3"/><circle class="e" cx="4" cy="9" r="2" style="fill:${P[0]}" stroke="none" opacity="0"/></g>`,
+      redo: `<g class="u"><path d="M15 14 L20 9 L15 4"/><path d="M20 9 h-10 a6 6 0 0 0 0 12 h3"/><circle class="e" cx="20" cy="9" r="2" style="fill:${P[2]}" stroke="none" opacity="0"/></g>`,
+      format: `<path class="l1" d="M4 6 h13"/><path class="l2" d="M8 12 h12"/><path class="l3" d="M8 18 h8"/>`,
+      fix: `<g class="w"><path d="M4 20 L14 10"/><path d="M12.5 11.5 l2 2" stroke-width="3"/></g><path class="s" d="M17 3.5 l1 2.5 l2.5 1 l-2.5 1 l-1 2.5 l-1 -2.5 l-2.5 -1 l2.5 -1 z" fill="currentColor" stroke-width="1"/>${[1, 2, 3].map((i) => `<circle class="d d${i}" cx="17" cy="7" r="1.3" style="fill:${P[i]}" stroke="none" opacity="0"/>`).join('')}`,
+      share: `<circle class="r" cx="12" cy="12" r="5" stroke-width="1.4" opacity="0"/><path class="h1" d="M10 14 a4 4 0 0 1 0 -5.6 l2 -2 a4 4 0 0 1 5.6 5.6 l-1 1"/><path class="h2" d="M14 10 a4 4 0 0 1 0 5.6 l-2 2 a4 4 0 0 1 -5.6 -5.6 l1 -1"/>`,
+      run: `<path class="p" d="M8.5 5.5 v13 l10 -6.5 z" fill="currentColor"/><circle class="o" r="2" style="fill:${P[3]}" stroke="none" opacity="0"/>`,
+    };
+    const S = 'cubic-bezier(.34, 1.56, .64, 1)';
+    const swing = (deg) => (q) => { q('.u').animate([{ transform: 'none' }, { transform: `rotate(${deg}deg)`, offset: .4 }, { transform: `rotate(${-deg / 5}deg)`, offset: .72 }, { transform: 'none' }], { duration: 340, easing: 'ease-out' }); q('.e').animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1.3)', offset: .4 }, { opacity: 0, transform: 'scale(0)' }], { duration: 340 }); };
+    const PLAY = {
+      copy: (q) => { q('.f').animate([{ transform: 'none' }, { transform: 'translate(5px, 5px)', offset: .4 }, { transform: 'translate(-1.5px, -1.5px)', offset: .75 }, { transform: 'none' }], { duration: 380, easing: 'ease-in-out' }); },
+      save: (q) => { q('.a').animate([{ transform: 'none' }, { transform: 'translateY(4.5px)', offset: .35 }, { transform: 'translateY(-1.5px)', offset: .65 }, { transform: 'none' }], { duration: 380, easing: 'ease-in' }); q('.t').animate([{ transform: 'none' }, { transform: 'none', offset: .3 }, { transform: 'scale(1.14, .7)', offset: .42 }, { transform: 'scale(.96, 1.08)', offset: .65 }, { transform: 'none' }], { duration: 420 }); },
+      undo: swing(-38), redo: swing(38),
+      format: (q) => ['.l1', '.l2', '.l3'].forEach((s, i) => q(s).animate([{ transform: `translateX(${[4, -5, 3][i]}px)`, opacity: .5 }, { transform: 'none', opacity: 1 }], { duration: 360, delay: i * 55, easing: S, fill: 'backwards' })),
+      fix: (q) => { q('.w').animate([{ transform: 'none' }, { transform: 'rotate(-20deg)', offset: .35 }, { transform: 'rotate(4deg)', offset: .7 }, { transform: 'none' }], { duration: 360, easing: 'ease-out' }); q('.s').animate([{ transform: 'none' }, { transform: 'scale(.4)', offset: .3 }, { transform: 'scale(1.4) rotate(90deg)', offset: .6 }, { transform: 'rotate(90deg)' }], { duration: 420, easing: 'ease-out' }); [[-6, -2], [5, -5], [4, 5]].forEach(([x, y], i) => q('.d' + (i + 1)).animate([{ opacity: 0 }, { opacity: 1, transform: 'none', offset: .45 }, { opacity: 0, transform: `translate(${x}px, ${y}px) scale(.4)` }], { duration: 520, easing: 'ease-out' })); },
+      share: (q) => { q('.h1').animate([{ transform: 'translate(-3px, 3px)' }, { transform: 'translate(.7px, -.7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' }); q('.h2').animate([{ transform: 'translate(3px, -3px)' }, { transform: 'translate(-.7px, .7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' }); q('.r').animate([{ opacity: .9, transform: 'scale(.6)' }, { opacity: 0, transform: 'scale(1.8)' }], { duration: 380, delay: 190, easing: 'ease-out', fill: 'backwards' }); },
+      run: (q) => { q('.p').animate([{ transform: 'none' }, { transform: 'scale(.8)', offset: .25 }, { transform: 'scale(1.12)', offset: .55 }, { transform: 'none' }], { duration: 380, easing: 'ease-out' }); q('.o').animate([{ offsetDistance: '0%', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .85 }, { offsetDistance: '100%', opacity: 0 }], { duration: 620, delay: 120, easing: 'cubic-bezier(.4, 0, .3, 1)' }); },
+    };
+    root.querySelectorAll('[data-icon]').forEach((b) => {
+      const k = b.dataset.icon, label = b.textContent;
+      b.innerHTML = `<svg class="k-ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg><span>${label}</span>`;
+      b.addEventListener('click', () => {
+        const svg = b.querySelector('svg'), q = (s) => svg.querySelector(s);
+        svg.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+        if (kitMoves(b)) PLAY[k](q);
+        if (k === 'copy') q('.k').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0, offset: .1 }, { strokeDashoffset: 0, offset: .9 }, { strokeDashoffset: 0, opacity: 0 }], { duration: kitMoves(b) ? 1900 : 1600, delay: kitMoves(b) ? 260 : 0 });
+        if (b.dataset.done) {
+          const span = b.querySelector('span');
+          clearTimeout(b._t); span.textContent = b.dataset.done; b.classList.add('k-done');
+          b._t = setTimeout(() => { span.textContent = label; b.classList.remove('k-done'); }, 1600);
+        }
+      });
+    });
+    // A busy button: a tiny Nucli replaces the icon while it works (only after 0.4 s, so quick work doesn't flash).
+    root.querySelectorAll('[data-busy-demo]').forEach((b) => b.addEventListener('click', () => {
+      if (b.getAttribute('aria-busy') === 'true') return;
+      b.setAttribute('aria-busy', 'true');
+      const label = b.textContent;
+      const show = setTimeout(() => { b.innerHTML = `<span class="k-spin k-busy">${kitNucli({ small: true, electrons: 3 })}</span><span class="k-plain">…</span><span>Testing</span>`; kitApplyMotion(b); }, 400);
+      setTimeout(() => { clearTimeout(show); b.textContent = label; b.removeAttribute('aria-busy'); b.classList.add('k-done'); b.textContent = 'All passed'; setTimeout(() => { b.classList.remove('k-done'); b.textContent = label; }, 1600); }, 2600);
+    }));
+  } });
+
+KIT.push({ id: 'toggles', name: 'Switch, checkbox, players', about: 'The switch\'s knob is a tiny Nucli: asleep when off, awake when on, and he stretches as he travels. When you tick a box, an electron runs along the check. Choosing how many players: one Duo per player, in the players\' colours; they hop in a wave when you pick.',
+  timing: 'Switch 260 ms with a stretch in the middle. Check 200 ms, the electron 280 ms. Players: a hop each, 60 ms apart.',
+  html: `<button class="k-switch" role="switch" aria-checked="false" aria-label="Lint as I type"><i class="k-knob"></i></button>
+<label class="k-check"><input type="checkbox" checked><span class="k-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg><i class="k-check-e"></i></span>Show hints</label>
+<fieldset class="k-radios"><legend>Players</legend>
+  <label class="k-radio"><input type="radio" name="kp" value="2" checked><span class="k-duos" data-n="2" aria-hidden="true"></span>2</label>
+  <label class="k-radio"><input type="radio" name="kp" value="3"><span class="k-duos" data-n="3" aria-hidden="true"></span>3</label>
+  <label class="k-radio"><input type="radio" name="kp" value="4"><span class="k-duos" data-n="4" aria-hidden="true"></span>4</label>
+</fieldset>`,
+  css: `.k-switch { position: relative; width: 50px; height: 28px; flex: none; border-radius: 14px; border: 1px solid var(--k-line); background: var(--k-surface-2); cursor: pointer; padding: 0; transition: background var(--k-quick), border-color var(--k-quick); }
+.k-switch .k-knob { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; line-height: 0; }
+.k-switch[aria-checked="true"] { background: var(--k-accent); border-color: var(--k-accent); }
+.k-switch[aria-checked="true"] .k-knob { transform: translateX(22px); }
+.k-switch:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-switch .k-plain { width: 100%; height: 100%; border-radius: 50%; background: var(--k-muted); box-shadow: 0 0 0 2px var(--k-surface); }
+.k-switch[aria-checked="true"] .k-plain { background: var(--k-surface); }
+.k-check, .k-radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; position: relative; }
+.k-check input, .k-radio input { appearance: none; margin: 0; width: 20px; height: 20px; border: 2px solid var(--k-muted); border-radius: calc(var(--k-r-ctl) * .6); background: var(--k-surface); cursor: pointer; transition: background var(--k-quick), border-color var(--k-quick); }
+.k-check input:checked { background: var(--k-accent); border-color: var(--k-accent); animation: k-pop var(--k-enter) var(--k-spring); }
+.k-check-box { position: absolute; left: 0; top: 50%; width: 20px; height: 20px; margin-top: -10px; pointer-events: none; }
+.k-check-box svg { width: 20px; height: 20px; fill: none; stroke: var(--k-accent-fg); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.k-check-box path { stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset var(--k-quick) var(--k-out); }
+.k-check input:checked + .k-check-box path { stroke-dashoffset: 0; }
+.k-check-e { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--k-p4); box-shadow: 0 0 0 1.5px #fff; offset-path: path('M5 10.5 l3.2 3.2 l6.8 -7'); offset-rotate: 0deg; opacity: 0; }
+.k-radios { display: inline-flex; gap: 10px; border: 0; padding: 0; margin: 0; align-items: center; flex-wrap: wrap; }
+.k-radios legend { float: left; margin-right: 6px; color: var(--k-muted); }
+.k-radio { padding: 4px 10px 4px 6px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); }
+.k-radio:has(input:checked) { border-color: var(--k-accent); box-shadow: inset 0 0 0 1px var(--k-accent); }
+.k-radio:has(input:focus-visible) { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-radio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.k-duos { display: inline-flex; gap: 1px; }
+.k-duos .k-m { width: 20px; height: 20px; }
+.k-radio:not(:has(input:checked)) .k-duos { filter: saturate(.35); opacity: .7; }
+.kit[data-motion="off"] .k-radio input { position: static; opacity: 1; width: 20px; height: 20px; border-radius: 50%; }
+@keyframes k-pop { 40% { transform: scale(.82); } 75% { transform: scale(1.1); } }`,
+  js: function setupToggles(root) {
+    root.querySelectorAll('.k-switch').forEach((s) => {
+      const knob = s.querySelector('.k-knob');
+      knob.innerHTML = kitNucli({ moods: ['sleep', 'happy'], orbits: false, crop: true }) + '<span class="k-plain"></span>';
+      s.addEventListener('click', () => {
+        const on = s.getAttribute('aria-checked') !== 'true';
+        s.setAttribute('aria-checked', String(on)); s.classList.toggle('k-alt', on);
+        if (!kitMoves(s)) return;
+        const [a, b] = on ? [0, 22] : [22, 0];
+        knob.animate([{ transform: `translateX(${a}px)` }, { transform: `translateX(${(a + b) / 2}px) scale(1.35, .8)`, offset: .45 }, { transform: `translateX(${b}px) scale(.88, 1.1)`, offset: .78 }, { transform: `translateX(${b}px)` }], { duration: 260, easing: 'ease-out' });
+      });
+    });
+    root.querySelectorAll('.k-check input').forEach((c) => c.addEventListener('change', () => {
+      if (c.checked && kitMoves(c)) c.parentElement.querySelector('.k-check-e').animate([{ offsetDistance: '0%', opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { offsetDistance: '100%', opacity: 0 }], { duration: 280, delay: 60, easing: 'ease-in-out' });
+    }));
+    root.querySelectorAll('.k-duos').forEach((d) => { d.innerHTML = Array.from({ length: +d.dataset.n }, (_, i) => `<span class="k-m">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span>`).join(''); });
+    root.querySelectorAll('.k-radio input').forEach((r) => r.addEventListener('change', () => {
+      if (!kitMoves(r)) return;
+      r.parentElement.querySelectorAll('.k-duos .k-m').forEach((m, i) => m.animate([{ transform: 'none' }, { transform: 'translateY(-7px) scale(.92, 1.1)', offset: .4 }, { transform: 'scale(1.12, .86)', offset: .75 }, { transform: 'none' }], { duration: 360, delay: i * 60, easing: 'ease-out' }));
+    }));
+  } });
+
+KIT.push({ id: 'slider', name: 'Player slider', about: 'Picking a number of players from 1 to 8: the handle is Duo\'s ball with its white stripe, and a Duo in each player\'s colour pops in, or out, as you slide. The number is always written too.',
+  timing: 'A Duo pops in 300 ms (springy), out 180 ms. Pressing the handle squashes it.',
+  html: `<div class="k-slider">
+  <label for="ks-n">Players</label>
+  <div class="k-slider-duos" aria-hidden="true"></div>
+  <input type="range" id="ks-n" min="1" max="8" value="2">
+  <output for="ks-n">2 players</output>
+</div>`,
+  css: `.k-slider { display: grid; gap: 6px; width: min(100%, 380px); }
+.k-slider label { font-weight: 600; font-size: 14px; }
+.k-slider-duos { display: flex; gap: 6px; height: 34px; align-items: flex-end; }
+.k-slider-duos .k-m { width: 32px; height: 32px; }
+.k-slider input { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; margin: 8px 0; border-radius: 4px; background: linear-gradient(var(--k-accent), var(--k-accent)) 0 / var(--fill, 14%) 100% no-repeat, color-mix(in srgb, var(--k-fg) 14%, transparent); }
+.k-slider input::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; background: linear-gradient(90deg, #2b8bff 0 44%, #fff 44% 56%, #2b8bff 56%); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); cursor: grab; transition: transform var(--k-tap) var(--k-out); }
+.k-slider input:active::-webkit-slider-thumb { transform: scale(1.15, .88); cursor: grabbing; }
+.k-slider input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; background: linear-gradient(90deg, #2b8bff 0 44%, #fff 44% 56%, #2b8bff 56%); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.k-slider input:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 6px; }
+.k-slider output { font-size: 14px; color: var(--k-muted); }
+.kit[data-motion="off"] .k-slider input::-webkit-slider-thumb { background: var(--k-accent); }
+.kit[data-motion="off"] .k-slider-duos { display: none; }`,
+  js: function setupSlider(root) {
+    const input = root.querySelector('#ks-n'), out = root.querySelector('output'), row = root.querySelector('.k-slider-duos');
+    const duo = (i) => { const s = document.createElement('span'); s.className = 'k-m'; s.innerHTML = kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] }); return s; };
+    const sync = (first) => {
+      const n = +input.value;
+      out.textContent = n + (n === 1 ? ' player' : ' players');
+      input.style.setProperty('--fill', ((n - 1) / 7 * 100) + '%');
+      while (row.children.length < n) { const s = duo(row.children.length); row.append(s); if (!first && kitMoves(row)) s.animate([{ transform: 'translateY(-14px) scale(.5)', opacity: 0 }, { transform: 'scale(1.15, .85)', opacity: 1, offset: .6 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' }); }
+      [...row.children].slice(n).forEach((s) => { if (s.dataset.out) return; s.dataset.out = '1'; if (kitMoves(row)) s.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.3)', opacity: 0 }], { duration: 180, easing: 'ease-in' }).finished.then(() => s.remove()); else s.remove(); });
+    };
+    input.addEventListener('input', () => sync(false)); sync(true);
+  } });
+KIT.push({ id: 'tabs', name: 'Tabs', about: 'The underline travels like a body with weight: the edge in front leads, the back one follows, so it stretches on the way and settles on arrival. An electron rides its end. Arrow keys move between tabs.',
+  timing: 'Lead edge 220 ms, trailing edge 300 ms, both springy.',
+  html: `<div class="k-tabs" role="tablist" aria-label="Panels">
+  <button role="tab" aria-selected="true" aria-controls="kt1" id="kt1t">Check</button>
+  <button role="tab" aria-selected="false" aria-controls="kt2" id="kt2t" tabindex="-1">Try it</button>
+  <button role="tab" aria-selected="false" aria-controls="kt3" id="kt3t" tabindex="-1">Players and screens</button>
+  <i class="k-tabs-bar" aria-hidden="true"></i>
+</div>
+<div class="k-tabpanel" role="tabpanel" id="kt1" aria-labelledby="kt1t">Nothing to fix.</div>
+<div class="k-tabpanel" role="tabpanel" id="kt2" aria-labelledby="kt2t" hidden>Pick players and press Try it.</div>
+<div class="k-tabpanel" role="tabpanel" id="kt3" aria-labelledby="kt3t" hidden>Two players, side by side.</div>`,
+  css: `.k-tabs { position: relative; display: flex; gap: 2px; border-bottom: 1px solid var(--k-line); width: 100%; }
+.k-tabs [role="tab"] { font: inherit; font-size: 14px; background: none; border: 0; color: var(--k-muted); padding: 8px 12px; cursor: pointer; border-radius: var(--k-r-ctl) var(--k-r-ctl) 0 0; }
+.k-tabs [role="tab"][aria-selected="true"] { color: var(--k-fg); font-weight: 600; }
+.k-tabs [role="tab"]:hover { color: var(--k-fg); }
+.k-tabs [role="tab"]:focus-visible { outline: 2px solid var(--k-accent); outline-offset: -2px; }
+.k-tabs-bar { position: absolute; bottom: -1px; left: 0; height: 3px; width: 0; border-radius: 2px; background: var(--k-accent); }
+.k-tabs-bar::after { content: ""; position: absolute; right: -5px; top: -3.5px; width: 10px; height: 10px; border-radius: 50%; background: var(--k-p1); box-shadow: 0 0 0 2px var(--k-surface); }
+.kit[data-motion="off"] .k-tabs-bar::after { display: none; }
+.k-tabpanel { width: 100%; padding: 6px 2px; color: var(--k-muted); }`,
+  js: function setupTabs(root) {
+    const list = root.querySelector('.k-tabs'), tabs = [...list.querySelectorAll('[role="tab"]')], bar = list.querySelector('.k-tabs-bar');
+    const edges = (t) => [t.offsetLeft + 8, t.offsetLeft + t.offsetWidth - 8];
+    const place = (t) => { const [l, r] = edges(t); bar.style.left = l + 'px'; bar.style.width = r - l + 'px'; };
+    const select = (t) => {
+      const old = tabs.find((x) => x.getAttribute('aria-selected') === 'true');
+      tabs.forEach((x) => { const on = x === t; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; root.querySelector('#' + x.getAttribute('aria-controls')).hidden = !on; });
+      if (kitMoves(list) && old && old !== t) {
+        const [ol, or] = edges(old), [nl, nr] = edges(t), right = nl > ol;
+        // the leading edge arrives first, the trailing edge catches up: a stretch, then a settle
+        const mid = right ? [ol, nr] : [nl, or];
+        bar.animate([{ left: ol + 'px', width: or - ol + 'px' }, { left: mid[0] + 'px', width: mid[1] - mid[0] + 'px', offset: .55 }, { left: nl + 'px', width: nr - nl + 'px' }], { duration: 320, easing: 'cubic-bezier(.3, .8, .4, 1.15)' });
+      }
+      place(t);
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = tabs[(i + d + tabs.length) % tabs.length]; n.focus(); select(n); });
+    });
+    requestAnimationFrame(() => place(tabs[0]));
+    addEventListener('resize', () => place(tabs.find((x) => x.getAttribute('aria-selected') === 'true')));
+    document.addEventListener('kit-look', () => requestAnimationFrame(() => place(tabs.find((x) => x.getAttribute('aria-selected') === 'true'))));
+  } });
+
+KIT.push({ id: 'fields', name: 'Text field', about: 'A small Nucli sits at the end of the field and helps: he concentrates while you type, beams when it\'s right, and looks worried (with one small shake of the field) when it\'s wrong. The message is written under the field, where the mistake is.',
+  timing: 'Face changes instantly; shake 280 ms, 3 px; never on every keystroke, only when you submit or leave the field.',
+  html: `<form class="k-form" novalidate>
+  <div class="k-field">
+    <label for="kf-exe">Game.ExecutableName</label>
+    <div class="k-input"><input id="kf-exe" placeholder="Game.exe" aria-describedby="kf-exe-hint"><span class="k-m k-field-m"></span><svg class="k-ok-ico k-plain" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 l3.2 3.2 l6.8 -7"/></svg></div>
+    <p class="k-hint" id="kf-exe-hint">The game's .exe file name.</p>
+  </div>
+  <button class="k-btn k-primary">Save</button>
+</form>`,
+  css: `.k-form { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.k-field { display: grid; gap: 4px; min-width: min(100%, 280px); }
+.k-field label { font-weight: 600; font-size: 14px; }
+.k-input { position: relative; }
+.k-input input { font: inherit; width: 100%; padding: 7px 40px 7px 10px; border-radius: var(--k-r-ctl); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); transition: border-color var(--k-quick), box-shadow var(--k-quick); }
+.k-input input:focus { outline: none; border-color: var(--k-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-accent) 25%, transparent); }
+.k-input input[aria-invalid="true"] { border-color: var(--k-err); }
+.k-field-m { position: absolute; right: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; pointer-events: none; }
+.k-hint { margin: 0; font-size: 13px; color: var(--k-muted); }
+.k-hint.k-err { color: var(--k-err); }
+.k-ok-ico { position: absolute; right: 8px; top: 50%; width: 20px; height: 20px; margin-top: -10px; fill: none; stroke: var(--k-ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transform: scale(0); }
+.k-field.k-valid .k-ok-ico { transform: scale(1); }
+.k-form > .k-btn { margin-top: 26px; }`,
+  js: function setupFields(root) {
+    const form = root.querySelector('.k-form'), input = form.querySelector('input'), hint = form.querySelector('.k-hint'), field = form.querySelector('.k-field'), m = form.querySelector('.k-field-m');
+    const original = hint.textContent;
+    const face = (mood) => { if (m.dataset.mood === mood) return; m.dataset.mood = mood; m.innerHTML = kitNucli({ moods: [mood], orbits: false, crop: true }); };
+    face('smile');
+    input.addEventListener('focus', () => !field.classList.contains('k-valid') && face('focus'));
+    input.addEventListener('blur', () => !field.classList.contains('k-valid') && input.getAttribute('aria-invalid') !== 'true' && face('smile'));
+    input.addEventListener('input', () => { field.classList.remove('k-valid'); face('focus'); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ok = /\.exe$/i.test(input.value.trim());
+      input.setAttribute('aria-invalid', String(!ok));
+      field.classList.toggle('k-valid', ok);
+      hint.classList.toggle('k-err', !ok);
+      hint.textContent = ok ? original : input.value.trim() ? 'End it with .exe, like Game.exe.' : 'Type the game\'s .exe file name.';
+      face(ok ? 'happy' : 'worried');
+      if (kitMoves(form)) m.animate(ok ? [{ transform: 'none' }, { transform: 'translateY(-4px) scale(1.15)', offset: .4 }, { transform: 'none' }] : [{ transform: 'none' }, { transform: 'rotate(-12deg)', offset: .3 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
+      if (!ok) { input.focus(); if (kitMoves(form)) input.animate([{ transform: 'none' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(-2px)' }, { transform: 'none' }], { duration: 280, easing: 'ease-out' }); }
+    });
+  } });
+KIT.push({ id: 'menus', name: 'Menu and tooltip', about: 'The menu grows from its button with a little spring; arrow keys, Enter and Escape work. A tooltip waits 0.3 s before it shows (so passing over doesn\'t flash it) and slides 4 px into place; Nucli says it.',
+  timing: 'Menu 200 ms in, 140 ms out. Tooltip after 300 ms, 120 ms in.',
+  html: `<div class="k-menu">
+  <button class="k-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="km1">Open ▾</button>
+  <ul class="k-menu-list" role="menu" id="km1" hidden>
+    <li role="menuitem" tabindex="-1">Examples</li>
+    <li role="menuitem" tabindex="-1">Hub handlers</li>
+    <li role="menuitem" tabindex="-1">A file from this computer</li>
+  </ul>
+</div>
+<span class="k-tip-wrap"><button class="k-btn k-quiet" aria-describedby="ktip1">Hover me</button><span class="k-tip" role="tooltip" id="ktip1"><span class="k-m k-tip-m"></span>Runs the handler once per player</span></span>`,
+  css: `.k-menu { position: relative; }
+.k-menu-list { position: absolute; z-index: 5; top: calc(100% + 6px); left: 0; min-width: 220px; margin: 0; padding: 4px; list-style: none; background: var(--k-surface); border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); box-shadow: var(--k-shadow); transform-origin: top left; }
+.k-menu-list [role="menuitem"] { padding: 7px 10px; border-radius: calc(var(--k-r-ctl) - 2px); cursor: pointer; }
+.k-menu-list [role="menuitem"]:is(:hover, :focus) { background: var(--k-surface-2); outline: none; }
+.k-menu-list [role="menuitem"]:focus-visible { box-shadow: inset 0 0 0 2px var(--k-accent); }
+.k-tip-wrap { position: relative; display: inline-flex; }
+.k-tip { position: absolute; bottom: calc(100% + 6px); left: 50%; width: max-content; max-width: 220px; padding: 5px 9px; font-size: 13px; border-radius: 6px; background: var(--k-fg); color: var(--k-bg); opacity: 0; transform: translate(-50%, 4px); pointer-events: none; transition: opacity 120ms var(--k-out), transform 120ms var(--k-out); }
+.k-tip.k-show { opacity: 1; transform: translate(-50%, 0); }
+.k-tip { display: flex; gap: 6px; align-items: center; } .k-tip-m { width: 20px; height: 20px; flex: none; }`,
+  js: function setupMenus(root) {
+    const btn = root.querySelector('[aria-haspopup="menu"]'), list = root.querySelector('.k-menu-list'), items = [...list.children];
+    const open = () => { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); items[0].focus(); if (kitMoves(btn)) list.animate([{ opacity: 0, transform: 'scale(.92, .85)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.34, 1.4, .64, 1)' }); };
+    const close = (focus = true) => { if (list.hidden) return; btn.setAttribute('aria-expanded', 'false'); const done = () => { list.hidden = true; }; if (kitMoves(btn)) list.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.96)' }], { duration: 140, easing: 'ease-in' }).finished.then(done); else done(); if (focus) btn.focus(); };
+    btn.addEventListener('click', () => (list.hidden ? open() : close()));
+    list.addEventListener('keydown', (e) => { const i = items.indexOf(document.activeElement); if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); } if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); } if (e.key === 'Escape' || e.key === 'Enter') close(); });
+    items.forEach((it) => it.addEventListener('click', () => close()));
+    document.addEventListener('click', (e) => { if (!e.target.closest('.k-menu')) close(false); });
+    root.querySelectorAll('.k-tip-m').forEach((m) => (m.innerHTML = kitNucli({ moods: ['smile'], orbits: false, crop: true })));
+    root.querySelectorAll('.k-tip-wrap').forEach((w) => {
+      const tip = w.querySelector('.k-tip'); let t;
+      const show = () => { clearTimeout(t); t = setTimeout(() => tip.classList.add('k-show'), 300); };
+      const hide = () => { clearTimeout(t); tip.classList.remove('k-show'); };
+      w.addEventListener('pointerenter', show); w.addEventListener('pointerleave', hide); w.addEventListener('focusin', show); w.addEventListener('focusout', hide);
+      w.addEventListener('keydown', (e) => e.key === 'Escape' && hide());
+    });
+  } });
+
+KIT.push({ id: 'badges', name: 'Badges and counters', about: 'Status pills wear Nucli\'s face for their mood. The problem counter bumps when its number changes, and when it reaches zero Nucli takes its place, pleased.',
+  timing: 'Bump 300 ms, springy; Nucli pops in at zero in 300 ms.',
+  html: `<span class="k-pill k-pill-ok" data-mood="happy">Ready for Nucleus</span>
+<span class="k-pill k-pill-err" data-mood="worried">Nucleus can't use this handler yet</span>
+<span class="k-pill k-pill-warn" data-mood="focus">2 settings may not work</span>
+<span class="k-count-demo"><button class="k-btn k-sm" data-d="-1" aria-label="One problem fewer">−</button> Problems <span class="k-count" aria-live="polite">2</span> <button class="k-btn k-sm" data-d="1" aria-label="One more problem">+</button></span>`,
+  css: `.k-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 4px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid currentColor; }
+.k-pill .k-m { width: 20px; height: 20px; }
+.k-pill .k-plain { width: 7px; height: 7px; margin-left: 4px; border-radius: 50%; background: currentColor; }
+.k-pill-ok { color: var(--k-ok); } .k-pill-err { color: var(--k-err); } .k-pill-warn { color: var(--k-warn); }
+.k-count-demo { display: inline-flex; align-items: center; gap: 8px; }
+.k-count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--k-err); color: #fff; font-weight: 700; font-size: 13px; }
+.k-count.k-zero { background: transparent; padding: 0; }
+.k-count .k-m { width: 26px; height: 26px; }
+.k-count.k-zero .k-plain { background: var(--k-ok); color: #fff; min-width: 26px; height: 26px; border-radius: 13px; align-items: center; justify-content: center; }`,
+  js: function setupBadges(root) {
+    root.querySelectorAll('.k-pill[data-mood]').forEach((p) => p.insertAdjacentHTML('afterbegin', `<span class="k-m">${kitNucli({ moods: [p.dataset.mood], orbits: false, crop: true })}</span><span class="k-plain"></span>`));
+    const c = root.querySelector('.k-count');
+    root.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
+      const was = c.classList.contains('k-zero') ? 0 : +c.textContent, n = Math.max(0, was + +b.dataset.d), up = n > was;
+      if (n === was) return;
+      c.classList.toggle('k-zero', n === 0);
+      c.innerHTML = n === 0 ? `<span class="k-m">${kitNucli({ moods: ['happy'], orbits: false, crop: true, label: 'No problems' })}</span><span class="k-plain">0</span>` : n;
+      if (!kitMoves(c)) return;
+      if (n === 0) c.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.2)', opacity: 1, offset: .6 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
+      else c.animate(up ? [{ transform: 'none' }, { transform: 'translateY(-4px) scale(1.25)', offset: .35 }, { transform: 'none' }] : [{ transform: 'none' }, { transform: 'translateY(2px) scale(.85)', offset: .35 }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.34, 1.56, .64, 1)' });
+    }));
+  } });
+KIT.push({ id: 'toasts', name: 'Messages near the action', about: 'Say it where it happened. A message appears next to the button you pressed or in the row it concerns: the mascot says it in a small speech bubble that never covers what you clicked. A toast in the corner is only the fallback, when that place is gone (a menu that closed, a page you left).',
+  timing: 'Bubble in 220 ms with a little spring; the mascot reacts once, then holds. It stays 3.5 s + 25 ms a letter (errors until you close them or click elsewhere). Hovering or focusing it keeps it. Toast (fallback only): in 260 ms, out 180 ms.',
+  html: `<div class="k-say-demo">
+  <button class="k-btn k-primary" data-say="fix">Fix all</button>
+  <button class="k-btn" data-say="try">Try it</button>
+</div>
+<ul class="k-rows">
+  <li><span>Borderlands 2</span><span class="k-row-act"><button class="k-btn k-sm" data-install>Install</button></span></li>
+  <li><span>Terraria</span><span class="k-row-act"><button class="k-btn k-sm" data-install>Install</button></span></li>
+</ul>
+<div class="k-menu">
+  <button class="k-btn k-quiet" aria-haspopup="menu" aria-expanded="false" aria-controls="ksm">More ▾</button>
+  <ul class="k-menu-list" role="menu" id="ksm" hidden><li role="menuitem" tabindex="-1" data-fallback>Copy share link</li></ul>
+</div>`,
+  css: `.k-say-demo { display: flex; gap: 10px; flex-wrap: wrap; }
+.k-say { position: absolute; z-index: 45; display: flex; gap: 8px; align-items: center; max-width: min(320px, calc(100vw - 24px)); padding: 7px 10px 7px 6px; border-radius: 14px; background: var(--k-surface); color: var(--k-fg); border: 1px solid var(--k-line); box-shadow: var(--k-shadow); font-size: 14px; }
+.k-say::before { content: ""; position: absolute; top: -7px; left: var(--tail, 22px); width: 12px; height: 12px; background: inherit; border-left: 1px solid var(--k-line); border-top: 1px solid var(--k-line); transform: rotate(45deg); }
+.k-say.k-above::before { top: auto; bottom: -7px; transform: rotate(225deg); }
+.k-say .k-m { width: 34px; height: 34px; }
+.k-say.k-err { border-color: var(--k-err); } .k-say.k-err::before { border-color: var(--k-err); }
+.k-say .k-x { font: inherit; background: none; border: 0; color: var(--k-muted); cursor: pointer; font-size: 17px; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+.k-say .k-x:focus-visible { outline: 2px solid var(--k-accent); }
+.k-say .k-plain { width: 20px; height: 20px; flex: none; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 700; background: var(--k-ok); }
+.k-say.k-err .k-plain { background: var(--k-err); }
+.k-rows { list-style: none; margin: 0; padding: 0; width: min(100%, 420px); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); }
+.k-rows li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; min-height: 52px; }
+.k-rows li + li { border-top: 1px solid var(--k-line); }
+.k-row-act { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.k-row-act .k-m { width: 34px; height: 34px; }
+.k-row-act .k-done-t { color: var(--k-ok); font-weight: 600; }
+.k-toasts { position: fixed; z-index: 50; right: 16px; bottom: 16px; display: grid; gap: 8px; width: min(340px, calc(100vw - 32px)); }
+.k-toast { position: relative; display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--k-surface); color: var(--k-fg); border: 1px solid var(--k-line); border-radius: var(--k-r-pane); box-shadow: var(--k-shadow); font-size: 14px; }
+.k-toast .k-m { width: 34px; height: 34px; }
+.k-toast p { margin: 0; flex: 1; }
+.k-react-ok .k-body { animation: k-hop .7s var(--k-spring) 1; }
+.k-react-err .k-body { animation: k-flinch .5s ease-out 1; }
+@keyframes k-hop { 0% { transform: none; } 20% { transform: scale(1.12, .86); } 45% { transform: translateY(-9px) scale(.95, 1.06); } 70% { transform: scale(1.06, .94); } 100% { transform: none; } }
+@keyframes k-flinch { 0% { transform: none; } 18% { transform: translateX(-4px) rotate(-6deg); } 40% { transform: translateX(2px); } 100% { transform: none; } }`,
+  js: function setupMessages(root) {
+    /** The mascot says it next to `anchor` (below it, or above when there's no room). Falls back to a toast when the
+     *  anchor is gone or hidden. kind: 'ok' | 'err' | 'info'; who: 'nucli' | 'duo'. */
+    function kitSay(anchor, text, { kind = 'ok', who = 'nucli' } = {}) {
+      const r = anchor?.isConnected && anchor.offsetParent ? anchor.getBoundingClientRect() : null;
+      if (!r || r.bottom < 0 || r.top > innerHeight) return kitToast(text, { kind, who });
+      document.querySelectorAll('.k-say').forEach((b) => b._close?.());
+      const mood = kind === 'err' ? ['worried'] : ['smile', 'happy'];
+      const el = document.createElement('div');
+      el.className = `k-say k-${kind}`; el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+      el.innerHTML = `<span class="k-m k-react-${kind === 'err' ? 'err' : 'ok'}">${who === 'duo' ? kitDuo({ small: true, moods: mood }) : kitNucli({ small: true, moods: mood })}</span><span class="k-plain" aria-hidden="true">${kind === 'err' ? '!' : '✓'}</span><span>${text}</span><button class="k-x" aria-label="Close">×</button>`;
+      document.body.append(el); kitApplyMotion(el);
+      const w = el.offsetWidth, h = el.offsetHeight, below = r.bottom + h + 14 < innerHeight;
+      const left = Math.min(Math.max(8, r.left + r.width / 2 - 28), innerWidth - w - 8);
+      el.style.left = left + scrollX + 'px';
+      el.style.top = (below ? r.bottom + 10 : r.top - h - 10) + scrollY + 'px';
+      el.style.setProperty('--tail', Math.min(w - 24, Math.max(10, r.left + r.width / 2 - left - 6)) + 'px');
+      el.classList.toggle('k-above', !below);
+      if (kind !== 'err') setTimeout(() => el.classList.add('k-alt'), 250);
+      const moves = kitMoves(el);
+      if (moves) el.animate([{ opacity: 0, transform: `translateY(${below ? -6 : 6}px) scale(.94)` }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      let timer, closed = false;
+      const close = () => { if (closed) return; closed = true; clearTimeout(timer); removeEventListener('pointerdown', outside, true); if (moves) el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).finished.then(() => el.remove()); else el.remove(); };
+      const arm = () => { clearTimeout(timer); if (kind !== 'err') timer = setTimeout(close, Math.min(8000, 3500 + text.length * 25)); };
+      const outside = (e) => { if (!el.contains(e.target) && e.target !== anchor) close(); };
+      setTimeout(() => addEventListener('pointerdown', outside, true), 0);
+      el._close = close; arm();
+      el.querySelector('.k-x').addEventListener('click', () => { close(); anchor.focus(); });
+      el.addEventListener('keydown', (e) => e.key === 'Escape' && (close(), anchor.focus()));
+      ['pointerenter', 'focusin'].forEach((t) => el.addEventListener(t, () => clearTimeout(timer)));
+      ['pointerleave', 'focusout'].forEach((t) => el.addEventListener(t, arm));
+      return el;
+    }
+    /** Only when the place is gone. */
+    function kitToast(text, { kind = 'ok', who = 'nucli' } = {}) {
+      const box = document.getElementById('k-toasts'), el = document.createElement('div');
+      el.className = `k-toast k-${kind}`; el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+      el.innerHTML = `<span class="k-m k-react-${kind === 'err' ? 'err' : 'ok'}">${who === 'duo' ? kitDuo({ small: true }) : kitNucli({ small: true, moods: [kind === 'err' ? 'worried' : 'happy'] })}</span><span class="k-plain" aria-hidden="true">✓</span><p>${text}</p><button class="k-x" aria-label="Close">×</button>`;
+      box.append(el); kitApplyMotion(el);
+      const moves = kitMoves(el);
+      if (moves) el.animate([{ opacity: 0, transform: 'translateY(20px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      const close = () => (moves ? el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(20px)' }], { duration: 180 }).finished.then(() => el.remove()) : el.remove());
+      el.querySelector('.k-x').addEventListener('click', close);
+      setTimeout(close, kind === 'err' ? 8000 : Math.min(8000, 3500 + text.length * 25));
+    }
+    window.kitSay = kitSay; window.kitToast = kitToast;
+    root.querySelector('[data-say="fix"]').addEventListener('click', (e) => kitSay(e.currentTarget, 'Fixed 12 problems. Ready for Nucleus.'));
+    root.querySelector('[data-say="try"]').addEventListener('click', (e) => kitSay(e.currentTarget, 'Player 2 failed: Context.PlayerID is undefined.', { kind: 'err' }));
+    // In a row: the result replaces the button, right where you clicked.
+    root.querySelectorAll('[data-install]').forEach((b) => b.addEventListener('click', () => {
+      const act = b.parentElement;
+      act.innerHTML = `<span class="k-m k-busy">${kitDuo({ small: true, moods: ['focus'] })}</span><span>Installing…</span>`; kitApplyMotion(act);
+      if (kitMoves(act)) act.querySelector('svg').animate([{ transform: 'rotate(-8deg)' }, { transform: 'rotate(8deg)' }], { duration: 300, iterations: 4, direction: 'alternate', easing: 'ease-in-out' });
+      setTimeout(() => { act.innerHTML = `<span class="k-m k-react-ok">${kitDuo({ small: true, moods: ['happy'] })}</span><span class="k-plain" aria-hidden="true">✓</span><span class="k-done-t" role="status">Installed</span>`; kitApplyMotion(act); }, 1300);
+    }));
+    // From a menu: the menu is gone once you pick, so the confirmation is the one place a toast is right.
+    const mb = root.querySelector('[aria-haspopup="menu"]'), ml = root.querySelector('#ksm');
+    mb.addEventListener('click', () => { ml.hidden = !ml.hidden; mb.setAttribute('aria-expanded', String(!ml.hidden)); if (!ml.hidden) ml.firstElementChild.focus(); });
+    ml.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ml.hidden = true; mb.setAttribute('aria-expanded', 'false'); mb.focus(); } if (e.key === 'Enter') e.target.click(); });
+    ml.querySelector('[data-fallback]').addEventListener('click', () => { ml.hidden = true; mb.setAttribute('aria-expanded', 'false'); mb.focus(); kitToast('Share link copied.'); });
+  } });
+KIT.push({ id: 'banners', name: 'Banners', about: 'Results that stay on the page (Try it, Test all). Nucli\'s face says it at a glance; on repeated failures he escalates once per run, never per keystroke: a flinch, then worried, then he offers help.',
+  timing: 'Reaction ≤ 0.5 s when the result changes, then a still pose: the banner can stay for minutes.',
+  html: `<div class="k-banner k-ok"><span class="k-m" data-mood="happy"></span><span class="k-plain">✓</span><div><b>All 4 players start.</b> Nucleus can use this handler.</div></div>
+<div class="k-banner k-err" id="kb-fail"><span class="k-m" data-mood="worried"></span><span class="k-plain">!</span><div><b>Run <span class="kb-n">1</span>: failed.</b> Player 2 has no Context.PlayerID. <a href="#kb-fail" class="kb-help" hidden>Explain this</a></div></div>
+<button class="k-btn" id="kb-again">Run again</button>`,
+  css: `.k-banner { display: flex; gap: 12px; align-items: center; width: 100%; padding: 10px 14px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); }
+.k-banner.k-ok { border-left: 4px solid var(--k-ok); } .k-banner.k-err { border-left: 4px solid var(--k-err); }
+.k-banner .k-m { width: 48px; height: 48px; }
+.k-banner .k-plain { width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; }
+.k-banner.k-ok .k-plain { background: var(--k-ok); } .k-banner.k-err .k-plain { background: var(--k-err); }
+.k-banner a { color: var(--k-accent); font-weight: 600; }`,
+  js: function setupBanners(root) {
+    root.querySelectorAll('.k-m[data-mood]').forEach((m) => (m.innerHTML = kitNucli({ moods: [m.dataset.mood] })));
+    const fail = root.querySelector('#kb-fail'), n = fail.querySelector('.kb-n'), help = fail.querySelector('.kb-help');
+    root.querySelector('#kb-again').addEventListener('click', () => {
+      const runs = +n.textContent + 1; n.textContent = runs;
+      if (runs >= 3) { help.hidden = false; fail.querySelector('.k-m').innerHTML = kitNucli({ moods: ['sleep'] }); }
+      if (kitMoves(fail)) fail.querySelector('.k-m svg').animate([{ transform: 'none' }, { transform: `translateX(-${runs >= 3 ? 2 : 4}px) rotate(-${runs >= 3 ? 10 : 6}deg)`, offset: .25 }, { transform: 'none' }], { duration: 420, easing: 'ease-out' });
+      kitApplyMotion(fail);
+    });
+  } });
+
+KIT.push({ id: 'dialog', name: 'Dialog', about: 'Grows from the middle with a little spring over a fading backdrop; closes quicker than it opens. Native &lt;dialog&gt;: focus moves in and comes back, Escape closes. Here Duo holds up his "?" sign: the third failed launch.',
+  timing: 'Open 260 ms, springy; close 180 ms. The sign pops 0.4 s after it opens, once.',
+  html: `<button class="k-btn" id="kd-open">Launch the game</button>
+<dialog class="k-dialog" aria-labelledby="kd-title">
+  <div class="k-dialog-head"><span class="k-m k-sign"></span><span class="k-plain">?</span><h3 id="kd-title">The game didn't start, three times in a row</h3></div>
+  <p>Nucleus started the instances, but the game closed itself. That usually means a missing file next to the game.</p>
+  <div class="k-dialog-foot"><button class="k-btn k-quiet" value="close">Close</button><button class="k-btn k-primary" value="help">Show me what to check</button></div>
+</dialog>`,
+  css: `.k-dialog { border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); color: var(--k-fg); padding: 18px; width: min(460px, calc(100vw - 32px)); box-shadow: var(--k-shadow); }
+.k-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.k-dialog h3 { margin: 0; font-size: 18px; }
+.k-dialog-head { display: flex; gap: 12px; align-items: center; }
+.k-dialog .k-m { width: 64px; height: 64px; }
+.k-dialog .k-plain { width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 50%; background: var(--k-err); color: #fff; font-weight: 700; }
+.k-dialog-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.k-sign .k-signboard { transform-box: view-box; transform-origin: 97px 52px; }`,
+  js: function setupDialog(root) {
+    const dlg = root.querySelector('.k-dialog'), m = dlg.querySelector('.k-m');
+    m.innerHTML = kitDuo({ moods: ['worried'], label: 'Duo holds up a question mark' }).replace('</svg>', `<g class="k-signboard"><rect x="84" y="14" width="26" height="24" rx="5" fill="#fff" stroke="${KIT_INK}" stroke-width="2"/><text x="97" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#c42b2b" font-family="system-ui, sans-serif">?</text><path d="M97 38 V52" stroke="${KIT_INK}" stroke-width="2.4" stroke-linecap="round"/></g></svg>`);
+    root.querySelector('#kd-open').addEventListener('click', () => {
+      dlg.showModal(); kitApplyMotion(dlg);
+      if (!kitMoves(dlg)) return;
+      dlg.animate([{ opacity: 0, transform: 'scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.34, 1.4, .64, 1)' });
+      m.querySelector('.k-signboard').animate([{ opacity: 0, transform: 'scale(.3) rotate(-20deg)' }, { opacity: 1, transform: 'scale(1.1)', offset: .6 }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 400, easing: 'ease-out', fill: 'backwards' });
+    });
+    dlg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      if (!kitMoves(dlg)) return dlg.close();
+      dlg.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.96)' }], { duration: 180, easing: 'ease-in' }).finished.then(() => dlg.close());
+    }));
+  } });
+
+KIT.push({ id: 'progress-ring', name: 'Progress ring (Nucli)', about: 'For known progress (Test all). Set the value from your code; the four electrons ride just behind the tip of the arc on springs. When the value jumps, the first one bumps into the tip and the others crash into each other and rebound. At 100 % they have gone a full circle and Nucli is pleased. Without motion it simply shows the value.',
+  timing: 'The arc eases to a new value in ~0.2 s; the electrons settle in ~0.5 s. Nothing loops: it only moves when the value changes.',
+  html: `<div class="k-ring" role="progressbar" aria-label="Test all" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <svg viewBox="0 0 120 120" aria-hidden="true">
+    <circle cx="60" cy="60" r="44" class="k-ring-track"/>
+    <circle cx="60" cy="60" r="44" class="k-ring-arc" transform="rotate(-90 60 60)"/>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="6" fill="var(--k-p1)"/></g></g>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="5.6" fill="var(--k-p2)"/></g></g>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="5.2" fill="var(--k-p3)"/></g></g>
+    <g class="k-ring-e"><g><circle cx="60" cy="16" r="4.8" fill="var(--k-p4)"/></g></g>
+    <svg class="k-ring-face" x="28" y="28" width="64" height="64" viewBox="0 0 120 120"></svg>
+  </svg>
+  <span class="k-ring-pct">0 %</span>
+</div>
+<div><button class="k-btn" id="kr-run">Run Test all</button> <button class="k-btn k-quiet" id="kr-step">+10 %</button></div>`,
+  css: `.k-ring { position: relative; width: 132px; height: 132px; flex: none; }
+.k-ring > svg { width: 100%; height: 100%; overflow: visible; }
+.k-ring-track { fill: none; stroke: color-mix(in srgb, var(--k-fg) 14%, transparent); stroke-width: 7; }
+.k-ring-arc { fill: none; stroke: var(--k-accent); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 276.46; stroke-dashoffset: 276.46; }
+.k-ring.k-complete .k-ring-arc { stroke: var(--k-ok); transition: stroke var(--k-quick); }
+.k-ring-e { transform-box: view-box; transform-origin: 60px 60px; }
+.k-ring-e > g { transform-box: fill-box; transform-origin: center; }
+.k-ring-e circle { stroke: #fff; stroke-width: 2; }
+.kit[data-motion="off"] :is(.k-ring-e, .k-ring-face) { display: none; }
+.k-ring-pct { position: absolute; left: 0; right: 0; bottom: -22px; text-align: center; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }`,
+  js: function setupRing(root) {
+    function kitRing(el) {
+      const arc = el.querySelector('.k-ring-arc'), es = [...el.querySelectorAll('.k-ring-e')], pct = el.querySelector('.k-ring-pct'), face = el.querySelector('.k-ring-face');
+      const LEN = 2 * Math.PI * 44, gap = .046, cap = .034, K0 = 1400, K1 = 700, D0 = 2 * Math.sqrt(K0) * .3, D1 = 2 * Math.sqrt(K1) * .3, e = .45;
+      let target = 0, head = 0, x = [0, 1, 2, 3].map((k) => -cap - k * gap), v = [0, 0, 0, 0], sq = [0, 0, 0, 0], raf = 0, last = 0;
+      const setFace = (done) => { face.innerHTML = kitNucli({ moods: [done ? 'happy' : 'focus'], orbits: false }).replace(/^<svg[^>]*>|<\/svg>$/g, ''); };
+      setFace(false);
+      const draw = () => {
+        arc.style.strokeDashoffset = LEN * (1 - head);
+        es.forEach((g, k) => { g.style.transform = `rotate(${x[k] * 360}deg)`; g.firstElementChild.style.transform = `scale(${1 - sq[k]}, ${1 + sq[k] * .7})`; });
+      };
+      draw();
+      const physics = (dt) => {
+        const prev = head; head += (target - head) * (1 - Math.exp(-dt / .07)); const vh = (head - prev) / dt;
+        v[0] += (K0 * (head - cap - x[0]) - D0 * v[0]) * dt;
+        for (let k = 1; k < 4; k++) v[k] += (K1 * (x[k - 1] - gap - x[k]) - D1 * v[k]) * dt;
+        for (let k = 0; k < 4; k++) x[k] += v[k] * dt;
+        if (x[0] > head - cap) { x[0] = head - cap; if (v[0] > vh) { sq[0] = Math.max(sq[0], Math.min(.34, (v[0] - vh) * .22)); v[0] = vh - e * (v[0] - vh); } }
+        for (let k = 1; k < 4; k++) {
+          const lim = x[k - 1] - gap * .92;
+          if (x[k] > lim) { x[k] = lim; const rel = v[k] - v[k - 1]; if (rel > 0) { const m = (v[k] + v[k - 1]) / 2; v[k] = m - e * rel / 2; v[k - 1] = m + e * rel / 2; const s = Math.min(.34, rel * .25); sq[k] = Math.max(sq[k], s); sq[k - 1] = Math.max(sq[k - 1], s * .8); } }
+        }
+        for (let k = 0; k < 4; k++) sq[k] *= Math.exp(-dt / .07);
+      };
+      const frame = (t) => {
+        const dt = Math.min(.05, (t - last) / 1000) || .016; last = t;
+        for (let i = 0; i < 10; i++) physics(dt / 10);
+        draw();
+        const still = Math.abs(target - head) < 1e-4 && v.every((s) => Math.abs(s) < 1e-3) && sq.every((s) => s < .01);
+        raf = still ? 0 : requestAnimationFrame(frame);
+      };
+      return {
+        set(p) {
+          p = Math.min(1, Math.max(0, p));
+          if (p < head - .5) { x = x.map((a) => a - 1); head -= 1; } // a new run: the electrons are already at the top
+          target = p;
+          el.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+          pct.textContent = Math.round(p * 100) + ' %';
+          el.classList.toggle('k-complete', p >= 1); setFace(p >= 1);
+          if (!kitMoves(el)) { cancelAnimationFrame(raf); raf = 0; head = p; x = x.map((_, k) => p - cap - k * gap); sq = [0, 0, 0, 0]; v = [0, 0, 0, 0]; draw(); return; }
+          if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+        },
+      };
+    }
+    const ring = kitRing(root.querySelector('.k-ring'));
+    let value = 0, timer;
+    root.querySelector('#kr-step').addEventListener('click', () => { value = value >= 1 ? 0 : Math.min(1, value + .1); ring.set(value); });
+    root.querySelector('#kr-run').addEventListener('click', () => {
+      clearTimeout(timer); value = 0; ring.set(0);
+      // uneven, like real runs: some combinations take longer
+      const steps = [.1, .26, .31, .5, .57, .72, .86, 1], waits = [350, 450, 400, 500, 450, 400, 550, 450];
+      let i = 0; const next = () => { if (i >= steps.length) return; value = steps[i]; ring.set(value); timer = setTimeout(next, waits[i++]); }; timer = setTimeout(next, 300);
+    });
+    window.kitRingDemo = ring;
+  } });
+
+KIT.push({ id: 'progress-bar', name: 'Progress bar (Duo)', about: 'For downloads and installs. Set the value; Duo pushes the end of the bar, leaning in when it moves fast. If the value hasn\'t changed for 0.7 s he strains (a sweat drop, his feet scramble); at 100 % the bar turns green, a check pops and he hops. Without a size it runs as indeterminate: he pushes on the spot while the stripes go by.',
+  timing: 'Follows the value with a spring (~0.3 s). Strain after 0.7 s without progress. Done: check 260 ms, hop 400 ms, once.',
+  html: `<div class="k-pbar" role="progressbar" aria-label="Getting Borderlands 2" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="--p:0">
+  <div class="k-pbar-track"><div class="k-pbar-fill"></div></div>
+  <span class="k-pbar-duo"><span class="k-pbar-lean"></span><i class="k-pbar-sweat"></i></span>
+  <span class="k-pbar-check" aria-hidden="true">✓</span>
+</div>
+<div><button class="k-btn" id="kp-run">Download</button> <button class="k-btn k-quiet" id="kp-indet">Unknown size</button></div>`,
+  css: `.k-pbar { position: relative; flex: 1 1 280px; max-width: 420px; height: 64px; }
+.k-pbar-track { position: absolute; left: 0; right: 14px; bottom: 4px; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--k-fg) 12%, transparent); overflow: hidden; }
+.k-pbar-fill { height: 100%; width: calc(var(--p) * 100%); border-radius: 5px; background: var(--k-accent); }
+.k-pbar.k-indet .k-pbar-fill { width: 100%; background: repeating-linear-gradient(-45deg, var(--k-accent) 0 10px, color-mix(in srgb, var(--k-accent) 60%, var(--k-surface)) 10px 20px); background-size: 28px 100%; animation: k-stripes .8s linear infinite; }
+.k-pbar.k-complete .k-pbar-fill { background: var(--k-ok); transition: background var(--k-quick); }
+.k-pbar-duo { position: absolute; bottom: 8px; left: clamp(0px, calc(var(--p) * (100% - 14px) - 36px), calc(100% - 72px)); width: 44px; height: 44px; }
+.k-pbar.k-indet .k-pbar-duo { left: calc(50% - 22px); }
+.k-pbar-lean { display: block; width: 100%; height: 100%; transform-origin: 50% 100%; transform: rotate(var(--lean, 0deg)); }
+.k-pbar.k-moving .k-pbar-lean .k-body, .k-pbar.k-indet .k-pbar-lean .k-body { animation: k-waddle .36s ease-in-out infinite alternate; }
+.k-pbar.k-strain .k-pbar-lean { transform: rotate(13deg); }
+.k-pbar.k-strain .k-pbar-lean .k-body { animation: k-strain .12s linear infinite alternate; }
+.k-pbar-sweat { position: absolute; left: 2px; top: 2px; width: 6px; height: 8px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #7cc8ff; opacity: 0; }
+.k-pbar.k-strain .k-pbar-sweat { opacity: 1; animation: k-drip .7s ease-in infinite; }
+.k-pbar-check { position: absolute; right: 0; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--k-ok); color: #fff; font-size: 13px; font-weight: 700; transform: scale(0); }
+.k-pbar.k-complete .k-pbar-check { transform: scale(1); animation: k-pop var(--k-enter) var(--k-spring); }
+.k-pbar.k-complete .k-pbar-duo .k-jump { animation: k-hop .5s var(--k-spring) .15s 1 backwards; }
+@keyframes k-waddle { from { transform: rotate(-5deg); } to { transform: rotate(5deg) translateY(-2px); } }
+@keyframes k-strain { from { transform: translateX(-.6px); } to { transform: translateX(.6px) scale(1.02, .97); } }
+@keyframes k-drip { from { transform: translateY(0); opacity: 1; } to { transform: translateY(8px); opacity: 0; } }
+@keyframes k-stripes { to { background-position: 28px 0; } }`,
+  js: function setupBar(root) {
+    function kitProgressBar(el) {
+      const lean = el.querySelector('.k-pbar-lean'), duo = el.querySelector('.k-pbar-lean');
+      duo.innerHTML = kitDuo({ moods: ['focus', 'happy'], arms: 'hold' });
+      let target = 0, pos = 0, vel = 0, raf = 0, last = 0, strain;
+      const frame = (t) => {
+        const dt = Math.min(.05, (t - last) / 1000) || .016; last = t;
+        const k = 120, d = 2 * Math.sqrt(k) * .9; // a firm, nearly critical spring: he never pushes backwards
+        vel += (k * (target - pos) - d * vel) * dt; pos += vel * dt;
+        el.style.setProperty('--p', pos.toFixed(4));
+        lean.style.setProperty('--lean', Math.min(12, Math.max(0, vel * 30)).toFixed(1) + 'deg');
+        el.classList.toggle('k-moving', Math.abs(vel) > .01);
+        if (Math.abs(target - pos) < 1e-4 && Math.abs(vel) < 1e-4) { pos = target; el.style.setProperty('--p', pos); el.classList.remove('k-moving'); lean.style.setProperty('--lean', '0deg'); raf = 0; }
+        else raf = requestAnimationFrame(frame);
+      };
+      return {
+        set(p) {
+          p = Math.min(1, Math.max(0, p)); el.classList.remove('k-indet', 'k-strain');
+          if (p < target) { pos = p; vel = 0; } target = p;
+          el.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+          el.classList.toggle('k-complete', p >= 1); el.classList.toggle('k-alt', p >= 1);
+          clearTimeout(strain); if (p > 0 && p < 1) strain = setTimeout(() => el.classList.add('k-strain'), 700);
+          if (!kitMoves(el)) { cancelAnimationFrame(raf); raf = 0; pos = p; el.style.setProperty('--p', p); return; }
+          if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+        },
+        indeterminate() { clearTimeout(strain); el.classList.remove('k-complete', 'k-alt', 'k-strain'); el.classList.add('k-indet'); el.removeAttribute('aria-valuenow'); },
+      };
+    }
+    const bar = kitProgressBar(root.querySelector('.k-pbar'));
+    let timers = [];
+    root.querySelector('#kp-run').addEventListener('click', () => {
+      timers.forEach(clearTimeout); timers = []; bar.set(0);
+      // a real download: quick, a stall, steady, a short stall, the end
+      [[200, .08], [500, .22], [800, .38], [2200, .44], [2600, .58], [3000, .72], [3300, .8], [4400, .9], [4800, 1]].forEach(([t, p]) => timers.push(setTimeout(() => bar.set(p), t)));
+    });
+    root.querySelector('#kp-indet').addEventListener('click', () => { timers.forEach(clearTimeout); bar.indeterminate(); });
+  } });
+
+KIT.push({ id: 'wait', name: 'Waiting, by how long', about: 'One helper for every wait: nothing under 0.4 s (it would only flash), then a small spinner, and past 2 s the progress if you have it; past 10 s it also says how long it has been. Wrap any promise.',
+  timing: '0.4 s before anything shows; 2 s before the full loader; 10 s before the time so far.',
+  html: `<div class="k-wait" aria-live="polite"><span class="k-wait-m"></span><span class="k-wait-t">Press a wait.</span></div>
+<div class="k-wait-btns"><button class="k-btn k-sm" data-ms="200">0.2 s</button><button class="k-btn k-sm" data-ms="1200">1.2 s</button><button class="k-btn k-sm" data-ms="5000">5 s</button><button class="k-btn k-sm" data-ms="14000">14 s</button></div>`,
+  css: `.k-wait { display: flex; gap: 10px; align-items: center; min-height: 48px; min-width: 260px; }
+.k-wait-m { width: 40px; height: 40px; flex: none; }
+.k-wait-btns { display: flex; gap: 6px; flex-wrap: wrap; }`,
+  js: function setupWait(root) {
+    /** Shows what a wait deserves, by how long it takes. `onProgress` gives a setter for 0..1 when you have one. */
+    async function kitWait(el, work, { what = 'Working', onProgress } = {}) {
+      const m = el.querySelector('.k-wait-m'), t = el.querySelector('.k-wait-t'), t0 = performance.now();
+      let tick;
+      const timers = [
+        setTimeout(() => { m.innerHTML = `<span class="k-m k-busy" style="width:40px;height:40px">${kitNucli({ small: true, electrons: 3 })}</span><span class="k-plain">…</span>`; kitApplyMotion(m); t.textContent = what + '…'; }, 400),
+        setTimeout(() => { tick = setInterval(() => { const s = (performance.now() - t0) / 1000; if (s > 10) t.textContent = `${what}… ${Math.floor(s)} s so far`; }, 1000); }, 2000),
+      ];
+      onProgress?.((p) => { if (performance.now() - t0 > 2000) t.textContent = `${what}: ${Math.round(p * 100)} %`; });
+      try { return await work; } finally {
+        timers.forEach(clearTimeout); clearInterval(tick);
+        const s = (performance.now() - t0) / 1000;
+        m.innerHTML = s < .4 ? '' : `<span class="k-m k-alt" style="width:40px;height:40px">${kitNucli({ moods: ['happy'], small: true })}</span><span class="k-plain">✓</span>`; kitApplyMotion(m);
+        t.textContent = `Done in ${s < 1 ? Math.round(s * 1000) + ' ms' : s.toFixed(1) + ' s'}.`;
+      }
+    }
+    const el = root.querySelector('.k-wait');
+    root.querySelectorAll('[data-ms]').forEach((b) => b.addEventListener('click', () => {
+      const ms = +b.dataset.ms;
+      let set; const work = new Promise((r) => setTimeout(r, ms));
+      const iv = setInterval(() => set?.(Math.min(1, (performance.now() - start) / ms)), 250), start = performance.now();
+      kitWait(el, work, { what: ms > 10000 ? 'AI fix' : ms > 2000 ? 'Test all' : 'Getting the handler', onProgress: (s) => (set = s) }).then(() => clearInterval(iv));
+    }));
+  } });
+
+KIT.push({ id: 'empty', name: 'Empty states', about: 'When there is nothing to show, the mascot of that product keeps you company. Nucli dozes in an empty editor and wakes the moment you start (the wake-up is the part people see). Duo waits for your first game and perks up when you point at the button that adds one.',
+  timing: 'Wake-up 0.6 s, once. Asleep and waiting are still poses: nothing loops while nobody watches.',
+  html: `<div class="k-empty"><span class="k-m" data-empty="nucli"></span><span class="k-plain">…</span><div><b>Waiting for code.</b><br><span>Type or paste a handler.</span></div></div>
+<div class="k-code-field k-empty-input" data-lang="js"><pre aria-hidden="true"><code></code></pre><textarea rows="2" spellcheck="false" aria-label="Type here to wake Nucli" placeholder="Type here…"></textarea></div>
+<div class="k-empty k-empty-duo"><span class="k-m" data-empty="duo"></span><span class="k-plain">…</span><div><b>No games yet.</b><br><span>Add one from the Hub to get started.</span></div><button class="k-btn k-primary" data-add-game>Add a game</button></div>`,
+  css: `.k-empty { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.k-empty .k-m { width: 72px; height: 72px; }
+.k-empty span { color: var(--k-muted); }
+.k-empty-duo { width: 100%; padding-top: 10px; border-top: 1px solid var(--k-line); }
+.k-empty-input { min-width: min(100%, 300px); flex: 1 1 300px; }
+.k-empty .k-asleep .k-float { animation: none; transform: translateY(3px) rotate(-5deg); }
+.k-empty .k-asleep g[transform^="rotate"] { opacity: .35; }`,
+  js: function setupEmpty(root) {
+    kitCodeField(root.querySelector('.k-empty-input'));
+    const m = root.querySelector('[data-empty="nucli"]'), input = root.querySelector('.k-empty-input textarea'), text = root.querySelector('.k-empty b');
+    const sleep = () => { m.innerHTML = kitNucli({ moods: ['sleep'], label: 'Nucli, dozing' }); m.querySelector('svg').classList.add('k-asleep'); kitApplyMotion(m); text.textContent = 'Waiting for code.'; m.classList.remove('k-alt'); };
+    sleep();
+    let awake = false;
+    input.addEventListener('input', () => {
+      if (!input.value) { awake = false; return sleep(); }
+      if (awake) return; awake = true;
+      m.innerHTML = kitNucli({ moods: ['wow', 'smile'], label: 'Nucli, awake' }); kitApplyMotion(m); text.textContent = 'Checking as you type.';
+      const svg = m.querySelector('svg');
+      if (kitMoves(m)) svg.animate([{ transform: 'translateY(3px) rotate(-5deg)' }, { transform: 'translateY(-6px) scale(1.04)', offset: .3 }, { transform: 'rotate(4deg)' }], { duration: 600, easing: 'cubic-bezier(.34, 1.4, .64, 1)', fill: 'forwards' });
+      setTimeout(() => m.classList.add('k-alt'), kitMoves(m) ? 350 : 0);
+    });
+    const d = root.querySelector('[data-empty="duo"]'), add = root.querySelector('[data-add-game]');
+    d.innerHTML = kitDuo({ moods: ['smile', 'happy'], label: 'Duo, waiting for a game' }); kitApplyMotion(d);
+    const perk = (on) => { d.classList.toggle('k-alt', on); if (on && kitMoves(d)) d.querySelector('.k-jump').animate([{ transform: 'none' }, { transform: 'translateY(-8px)', offset: .4 }, { transform: 'none' }], { duration: 380, easing: 'ease-out' }); };
+    ['pointerenter', 'focus'].forEach((t) => add.addEventListener(t, () => perk(true)));
+    ['pointerleave', 'blur'].forEach((t) => add.addEventListener(t, () => perk(false)));
+    add.addEventListener('click', () => kitSay(add, 'The Hub opens in the real app.', { who: 'duo' }));
+  } });
+KIT.push({ id: 'cards', name: 'Cards and lists', about: 'Things you can open lift a little when you point at them. A game\'s player count is its Duos, in the players\' colours (the number is written too); point at the card and they hop, one after another.',
+  timing: 'Lift 200 ms; press 120 ms; the Duos hop 360 ms each, 60 ms apart, once per hover.',
+  html: `<ul class="k-cards">
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p1)"></span><b>Borderlands 2</b><span class="k-card-meta"><span class="k-duos" data-n="4" aria-hidden="true"></span>4 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p3)"></span><b>Left 4 Dead 2</b><span class="k-card-meta"><span class="k-duos" data-n="4" aria-hidden="true"></span>4 players</span></a></li>
+  <li><a class="k-card" href="#cards"><span class="k-card-art" style="--a:var(--k-p4)"></span><b>Terraria</b><span class="k-card-meta"><span class="k-duos" data-n="8" aria-hidden="true"></span>8 players</span></a></li>
+</ul>`,
+  css: `.k-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; list-style: none; margin: 0; padding: 0; width: 100%; }
+.k-card { display: grid; gap: 4px; padding: 10px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); text-decoration: none; transition: transform var(--k-quick) var(--k-out), box-shadow var(--k-quick), border-color var(--k-quick); }
+.k-card:hover { transform: translateY(-2px); box-shadow: var(--k-shadow); border-color: var(--k-accent); }
+.k-card:active { transform: scale(.98); transition-duration: var(--k-tap); }
+.k-card:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: var(--k-muted); font-size: 13px; }
+.k-card .k-duos .k-m { width: 18px; height: 18px; }
+.k-card .k-card-art { display: block; aspect-ratio: 16 / 9; border-radius: calc(var(--k-r-pane) - 4px); background: linear-gradient(135deg, var(--a), color-mix(in srgb, var(--a) 40%, var(--k-surface-2))); margin-bottom: 4px; }`,
+  js: function setupCards(root) {
+    root.querySelectorAll('.k-duos').forEach((d) => { d.innerHTML = Array.from({ length: +d.dataset.n }, (_, i) => `<span class="k-m">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span>`).join(''); });
+    root.querySelectorAll('.k-card').forEach((c) => {
+      const hop = () => { if (!kitMoves(c) || c._hopping) return; c._hopping = true; const ms = [...c.querySelectorAll('.k-duos .k-m')]; ms.forEach((m, i) => m.animate([{ transform: 'none' }, { transform: 'translateY(-6px) scale(.92, 1.1)', offset: .4 }, { transform: 'scale(1.12, .86)', offset: .75 }, { transform: 'none' }], { duration: 360, delay: i * 60, easing: 'ease-out' })); setTimeout(() => (c._hopping = false), 360 + ms.length * 60); };
+      c.addEventListener('pointerenter', hop); c.addEventListener('focus', hop);
+    });
+  } });
+KIT.push({ id: 'appbar', name: 'App bars', about: 'Each product wears its mascot in its header: Nucli for the handler tools, Duo for splitscreen.me. The mascot is also the status light: Nucli is pleased when the handler is ready, worried when there are problems, and concentrates (electrons running) while something works. Point at the logo and it says hello.',
+  timing: 'Mood changes instantly; the hello on hover is a 0.6 s hop, once. The status is written next to it too.',
+  html: `<header class="k-appbar">
+  <a class="k-brand" href="#appbar"><span class="k-m" data-brand="nucli"></span><span class="k-plain k-brand-plain">N</span><b>Nucleus handler tools</b></a>
+  <nav aria-label="Handler tools (example)"><a href="#appbar" aria-current="page">Editor</a><a href="#appbar">Hub</a><a href="#appbar">Help</a></nav>
+  <span class="k-status" role="status">Ready</span>
+</header>
+<header class="k-appbar k-appbar-duo">
+  <a class="k-brand" href="#appbar"><span class="k-m" data-brand="duo"></span><span class="k-plain k-brand-plain">S</span><b>splitscreen.me</b></a>
+  <nav aria-label="splitscreen.me (example)"><a href="#appbar" aria-current="page">Games</a><a href="#appbar">Hub</a><a href="#appbar">Discord</a></nav>
+</header>
+<div class="k-appbar-ctl" role="group" aria-label="Pretend status"><button class="k-btn k-sm" data-st="ready">Ready</button><button class="k-btn k-sm" data-st="problems">3 problems</button><button class="k-btn k-sm" data-st="working">Working</button></div>`,
+  css: `.k-appbar { display: flex; align-items: center; gap: 8px 18px; flex-wrap: wrap; width: 100%; padding: 8px 14px; border-radius: var(--k-r-pane); border: 1px solid var(--k-line); background: var(--k-surface); }
+.k-brand { display: inline-flex; align-items: center; gap: 8px; color: var(--k-fg); text-decoration: none; font-family: Fredoka, var(--k-font); font-size: 17px; }
+.k-brand b { font-weight: 600; }
+.k-brand .k-m { width: 40px; height: 40px; }
+.k-brand:hover .k-body, .k-brand:focus-visible .k-body { animation: k-hop .6s var(--k-spring) 1; }
+.k-brand:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 3px; border-radius: 6px; }
+.k-brand-plain { width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: var(--k-r-ctl); background: var(--k-accent); color: var(--k-accent-fg); font-weight: 700; }
+.k-appbar nav { display: flex; gap: 4px; }
+.k-appbar nav a { padding: 5px 10px; border-radius: var(--k-r-ctl); color: var(--k-muted); text-decoration: none; font-size: 14px; }
+.k-appbar nav a:hover { color: var(--k-fg); background: var(--k-surface-2); }
+.k-appbar nav a[aria-current="page"] { color: var(--k-fg); font-weight: 600; box-shadow: inset 0 -2px 0 var(--k-accent); }
+.k-appbar nav a:focus-visible { outline: 2px solid var(--k-accent); }
+.k-status { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--k-ok); }
+.k-status.k-st-problems { color: var(--k-err); } .k-status.k-st-working { color: var(--k-muted); }
+.k-appbar-duo .k-brand b { color: #2b8bff; }
+.k-appbar-ctl { display: flex; gap: 6px; }`,
+  js: function setupAppbar(root) {
+    const n = root.querySelector('[data-brand="nucli"]'), status = root.querySelector('.k-status');
+    const set = (st) => {
+      const mood = { ready: 'happy', problems: 'worried', working: 'focus' }[st];
+      n.classList.toggle('k-busy', st === 'working');
+      n.innerHTML = kitNucli({ moods: [mood], small: true, electrons: st === 'working' ? 4 : 3, label: 'Nucli: ' + { ready: 'ready', problems: 'problems', working: 'working' }[st] });
+      status.textContent = { ready: 'Ready', problems: '3 problems', working: 'Working…' }[st];
+      status.className = 'k-status k-st-' + st;
+      kitApplyMotion(n);
+    };
+    set('ready');
+    root.querySelector('[data-brand="duo"]').innerHTML = kitDuo({ small: true, label: 'Duo' });
+    root.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', () => set(b.dataset.st)));
+  } });
+
+KIT.push({ id: 'players', name: 'Player chips', about: 'One Duo per player, in that player\'s colour, with their device. A new player drops in (and lands with a squash); one who leaves shrinks away. Up to 8, as in Nucleus Co-op.',
+  timing: 'Join: drop 520 ms with a landing squash. Leave: 180 ms. The chip itself scales in 300 ms.',
+  html: `<ul class="k-players" aria-label="Players" aria-live="polite"></ul>
+<div class="k-players-ctl"><button class="k-btn k-sm" data-pl="add">A player joins</button><button class="k-btn k-sm k-quiet" data-pl="rm">One leaves</button></div>`,
+  css: `.k-players { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; width: 100%; min-height: 40px; }
+.k-player { display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px 3px 4px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); font-size: 14px; }
+.k-player .k-m { width: 32px; height: 32px; }
+.k-player svg { transform-origin: 50% 100%; }
+.k-player .k-plain { width: 22px; height: 22px; border-radius: 50%; background: var(--c); }
+.k-player small { color: var(--k-muted); margin-left: 4px; }
+.k-players-ctl { display: flex; gap: 6px; }`,
+  js: function setupPlayers(root) {
+    const list = root.querySelector('.k-players'), DEV = ['Controller', 'Keyboard and mouse', 'Controller', 'Controller', 'Controller', 'Keyboard', 'Controller', 'Mouse'];
+    const add = () => {
+      const i = list.children.length; if (i >= 8) return;
+      const li = document.createElement('li');
+      li.className = 'k-player'; li.style.setProperty('--c', KIT_PLAYERS8[i]);
+      li.innerHTML = `<span class="k-m">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span><span class="k-plain" aria-hidden="true"></span><span>Player ${i + 1}<small>${DEV[i]}</small></span>`;
+      list.append(li); kitApplyMotion(li);
+      if (!kitMoves(li)) return;
+      li.animate([{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'scale(1.05)', offset: .6 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
+      li.querySelector('svg').animate([{ transform: 'translateY(-22px) scale(.9, 1.1)' }, { transform: 'scale(1.25, .72)', offset: .55 }, { transform: 'scale(.94, 1.06)', offset: .8 }, { transform: 'none' }], { duration: 520, easing: 'ease-in' });
+    };
+    const rm = () => {
+      const li = list.lastElementChild; if (!li || list.children.length <= 1) return;
+      if (kitMoves(li)) li.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.6)' }], { duration: 180, easing: 'ease-in' }).finished.then(() => li.remove()); else li.remove();
+    };
+    add(); add();
+    root.querySelector('[data-pl="add"]').addEventListener('click', add);
+    root.querySelector('[data-pl="rm"]').addEventListener('click', rm);
+  } });
+
+KIT.push({ id: 'stepper', name: 'Stepper', about: 'Steps through a setup (pick a game, players, screens, start). Duo stands on the step you\'re on and hops to the next one; steps behind you get a check.',
+  timing: 'The hop takes 420 ms: up, across, a landing squash. Going back is the same hop the other way.',
+  html: `<div class="k-stepper">
+  <span class="k-step-duo" aria-hidden="true"></span>
+  <ol class="k-steps"><li aria-current="step">Pick a game</li><li>Players</li><li>Screens</li><li>Start</li></ol>
+</div>
+<div class="k-step-ctl"><button class="k-btn k-sm" data-step="-1">Back</button><button class="k-btn k-sm k-primary" data-step="1">Next</button></div>`,
+  css: `.k-stepper { position: relative; width: 100%; padding-top: 40px; }
+.k-steps { display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; margin: 0; padding: 0; counter-reset: s; }
+.k-steps li { counter-increment: s; display: grid; justify-items: center; gap: 4px; font-size: 13px; color: var(--k-muted); text-align: center; position: relative; }
+.k-steps li::before { content: counter(s); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--k-line); background: var(--k-surface); font-weight: 700; font-size: 12px; position: relative; z-index: 1; }
+.k-steps li::after { content: ""; position: absolute; top: 12px; left: calc(-50% + 14px); right: calc(50% + 14px); height: 2px; background: var(--k-line); }
+.k-steps li:first-child::after { display: none; }
+.k-steps li[aria-current="step"] { color: var(--k-fg); font-weight: 600; }
+.k-steps li[aria-current="step"]::before { border-color: var(--k-accent); color: var(--k-accent); }
+.k-steps li.k-did { color: var(--k-fg); }
+.k-steps li.k-did::before { content: "✓"; background: var(--k-ok); border-color: var(--k-ok); color: #fff; }
+.k-steps li.k-did::after, .k-steps li[aria-current="step"]::after { background: var(--k-ok); }
+.k-step-duo { position: absolute; top: 0; left: 0; width: 38px; height: 38px; margin-left: -19px; }
+.k-step-duo svg { transform-origin: 50% 100%; }
+.k-step-ctl { display: flex; gap: 6px; }`,
+  js: function setupStepper(root) {
+    const wrap = root.querySelector('.k-stepper'), steps = [...root.querySelectorAll('.k-steps li')], duo = root.querySelector('.k-step-duo');
+    duo.innerHTML = kitDuo({ small: true, moods: ['smile', 'happy'] });
+    let at = 0;
+    const x = (i) => steps[i].offsetLeft + steps[i].offsetWidth / 2;
+    const place = () => (duo.style.transform = `translateX(${x(at)}px)`);
+    const go = (d) => {
+      const to = Math.min(steps.length - 1, Math.max(0, at + d)); if (to === at) return;
+      const from = x(at), dest = x(to);
+      at = to;
+      steps.forEach((s, i) => { s.classList.toggle('k-did', i < at); i === at ? s.setAttribute('aria-current', 'step') : s.removeAttribute('aria-current'); });
+      duo.classList.toggle('k-alt', at === steps.length - 1);
+      place();
+      if (!kitMoves(wrap)) return;
+      duo.animate([{ transform: `translateX(${from}px)` }, { transform: `translate(${(from + dest) / 2}px, -22px)`, offset: .5, easing: 'ease-in' }, { transform: `translateX(${dest}px)` }], { duration: 420, easing: 'ease-out' });
+      duo.querySelector('svg').animate([{ transform: 'scale(1.1, .9)' }, { transform: 'scale(.92, 1.1)', offset: .3 }, { transform: 'none', offset: .85 }, { transform: 'scale(1.2, .78)', offset: .92 }, { transform: 'none' }], { duration: 480, easing: 'ease-out' });
+    };
+    root.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => go(+b.dataset.step)));
+    requestAnimationFrame(place); addEventListener('resize', place); document.addEventListener('kit-look', () => requestAnimationFrame(place));
+  } });
+
+KIT.push({ id: 'notfound', name: 'Not found (404)', about: 'A page that isn\'t there: Duo looks around for it, worried; Nucli checks the links. One clear way back. A brand moment, but the message and the button come first.',
+  timing: 'Duo looks left and right every 3 s; in "Default" they play for 5 s, then hold.',
+  html: `<div class="k-404">
+  <div class="k-404-art"><span class="k-m k-404-duo"></span><span class="k-m k-404-nucli"></span><span class="k-plain k-404-plain">404</span></div>
+  <div><h3>This page wandered off</h3><p>Duo is looking for it and Nucli is checking the links. It may have moved, or the address has a typo.</p><a class="k-btn k-primary" href="#top">Back to the start</a></div>
+</div>`,
+  css: `.k-404 { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; width: 100%; }
+.k-404-art { display: flex; align-items: flex-end; gap: 4px; }
+.k-404-duo { width: 110px; height: 110px; } .k-404-nucli { width: 72px; height: 72px; }
+.k-404-plain { font: 700 44px/1 var(--k-font); color: var(--k-muted); }
+.k-404 h3 { margin: 0 0 4px; font-family: Fredoka, var(--k-font); font-weight: 600; font-size: 22px; }
+.k-404 p { margin: 0 0 10px; color: var(--k-muted); max-width: 46ch; }
+.k-404-duo .k-face { animation: k-lookabout 3s var(--k-soft) infinite; }
+@keyframes k-lookabout { 0%, 20% { transform: translateX(-4px); } 50%, 70% { transform: translateX(4px); } 100% { transform: translateX(-4px); } }`,
+  js: function setupNotFound(root) {
+    root.querySelector('.k-404-duo').innerHTML = kitDuo({ moods: ['worried'], label: 'Duo, looking around' });
+    root.querySelector('.k-404-nucli').innerHTML = kitNucli({ moods: ['focus'], label: 'Nucli, checking' });
+  } });
+
+KIT.push({ id: 'skeleton', name: 'Skeleton', about: 'Before a list arrives, grey lines hold its place. The shimmer is an electron running along each line with a soft trail, in the players\' colours, so even waiting looks like Nucli.',
+  timing: 'One run per line every 1.6 s, the lines 0.2 s apart. Without motion, plain grey lines.',
+  html: `<div class="k-skel" role="status" aria-label="Loading handlers"><i style="width:72%"></i><i style="width:92%"></i><i style="width:56%"></i><i style="width:80%"></i></div>`,
+  css: `.k-skel { display: grid; gap: 12px; width: min(100%, 380px); padding: 16px; border: 1px solid var(--k-line); border-radius: var(--k-r-pane); background: var(--k-surface); }
+.k-skel i { position: relative; display: block; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--k-fg) 10%, transparent); overflow: hidden; }
+.k-skel i::after { content: ""; position: absolute; top: 2px; left: -12px; width: 6px; height: 6px; border-radius: 50%; background: var(--c, var(--k-p3)); box-shadow: -10px 0 8px 3px color-mix(in srgb, var(--c, var(--k-p3)) 40%, transparent); animation: k-skel 1.6s var(--k-soft) infinite; }
+.k-skel i:nth-child(1) { --c: var(--k-p1); } .k-skel i:nth-child(2) { --c: var(--k-p2); } .k-skel i:nth-child(3) { --c: var(--k-p3); } .k-skel i:nth-child(4) { --c: var(--k-p4); }
+.k-skel i:nth-child(2)::after { animation-delay: .2s; } .k-skel i:nth-child(3)::after { animation-delay: .4s; } .k-skel i:nth-child(4)::after { animation-delay: .6s; }
+@keyframes k-skel { from { left: -12px; } to { left: calc(100% + 12px); } }
+.kit:is([data-motion="still"], [data-motion="off"]) .k-skel i::after { display: none; }
+@media (prefers-reduced-motion: reduce) { .k-skel i::after { display: none; } }`,
+  js: function setupSkeleton() {} });
+
+KIT.push({ id: 'install', name: 'Install (preview)', about: 'What installing could look like if this becomes a real library, in the style of shadcn/ui: a small command line copies a component\'s source into your project, where it\'s yours to change. <b>Nothing here exists yet</b>: "duo-nucli" is a placeholder name and the commands don\'t run. Until then, every section\'s <b>View code</b> is the way to take a piece.',
+  timing: 'Not a component: how adding one would work. Each section\'s View code has an Install tab with its own command.',
+  html: `<div class="k-install">
+  <div class="k-pm" role="tablist" aria-label="Package manager"><button role="tab" aria-selected="true" data-pm="npx">npm</button><button role="tab" aria-selected="false" data-pm="pnpm dlx">pnpm</button><button role="tab" aria-selected="false" data-pm="yarn dlx">yarn</button><button role="tab" aria-selected="false" data-pm="bunx">bun</button></div>
+  <ol class="k-install-steps">
+    <li><b>Set up once.</b> Adds the tokens (colours, corners, motion), the Motion setting and the two mascots.
+      <div class="k-cmd"><code data-cmd="duo-nucli@latest init"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
+    <li><b>Add what you need.</b> One or more components; the files they depend on come along.
+      <div class="k-cmd"><code data-cmd="duo-nucli@latest add progress-ring messages players"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
+    <li><b>Or the picks.</b> The seven components I'd build first.
+      <div class="k-cmd"><code data-cmd="duo-nucli@latest add --picks"></code><button class="k-btn k-sm k-copy-cmd">Copy</button></div></li>
+  </ol>
+  <div class="k-install-cols">
+    <figure><figcaption>What you get</figcaption><pre class="k-tree" data-hl="tree">src/ui/duo-nucli/
+├─ tokens.css         colours, corners, motion
+├─ motion.js          the Motion setting
+├─ mascots/
+│  ├─ nucli.js
+│  └─ duo.js
+├─ progress-ring/
+│  ├─ progress-ring.js
+│  └─ progress-ring.css
+├─ messages/          the bubble, and the toast fallback
+└─ players/</pre></figure>
+    <figure><figcaption>duo-nucli.json, written by init</figcaption><pre class="k-tree" data-hl="json">{
+  "dir": "src/ui/duo-nucli",
+  "framework": "none",     // or "react", "svelte", "vue"
+  "look": "www",           // or "v3"
+  "motion": "default",
+  "mascots": "detailed"
+}</pre></figure>
+  </div>
+  <p class="k-install-note">Also planned: a CDN build for a page without a build step, <code>&lt;script src="…/duo-nucli.js"&gt;</code>, and the mascots alone as SVG and Lottie files.</p>
+</div>`,
+  css: `.k-install { width: 100%; min-width: 0; display: grid; gap: 12px; }
+.k-install > *, .k-install-steps li, .k-install-cols figure { min-width: 0; }
+.k-pm { display: flex; flex-wrap: wrap; gap: 4px; }
+.k-pm button { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-surface); color: var(--k-fg); cursor: pointer; }
+.k-pm button[aria-selected="true"] { background: var(--k-accent); color: var(--k-accent-fg); border-color: var(--k-accent); }
+.k-pm button:focus-visible { outline: 2px solid var(--k-accent); outline-offset: 2px; }
+.k-install-steps { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+.k-cmd { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 6px 6px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); border: 1px solid var(--k-line); }
+.k-cmd code { flex: 1; min-width: 0; font: 13px ui-monospace, Consolas, monospace; overflow-x: auto; white-space: nowrap; }
+.k-cmd code::before { content: "$ "; opacity: .55; }
+.k-cmd .k-btn { flex: none; }
+.k-install-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.k-install-cols figure { margin: 0; }
+.k-install-cols figcaption { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.k-tree { margin: 0; padding: 10px 12px; border-radius: var(--k-r-ctl); background: var(--k-code-bg); color: var(--k-code-fg); border: 1px solid var(--k-line); font: 12.5px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
+.k-install-note { margin: 0; color: var(--k-muted); font-size: 14px; }
+.k-install-note code { padding: 1px 6px; border-radius: 4px; background: var(--k-code-bg); color: var(--k-code-fg); font-size: 12.5px; }`,
+  js: function setupInstall(root) {
+    const set = (pm) => { document.querySelectorAll('[data-cmd]').forEach((c) => (c.innerHTML = kitHighlight.sh(`${pm} ${c.dataset.cmd}`))); document.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.pm === pm))); };
+    root.querySelectorAll('.k-pm [data-pm]').forEach((b) => b.addEventListener('click', () => set(b.dataset.pm)));
+    set('npx');
+    root.querySelectorAll('pre[data-hl]').forEach((pre) => (pre.innerHTML = kitHighlight[pre.dataset.hl](pre.textContent)));
+    root.querySelectorAll('.k-install-note code').forEach((c) => (c.innerHTML = kitHighlight.html(c.textContent)));
+    document.addEventListener('click', async (e) => {
+      const b = e.target.closest('.k-copy-cmd'); if (!b) return;
+      const code = b.parentElement.querySelector('code');
+      try { await navigator.clipboard.writeText(code.textContent); b.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNodeContents(code); getSelection().removeAllRanges(); getSelection().addRange(r); b.textContent = 'Selected'; }
+      setTimeout(() => (b.textContent = 'Copy'), 1600);
+    });
+  } });
+
+KIT.push({ id: 'code', name: 'Code blocks and fields', about: 'Code in the kit\'s colours: a block to read and copy, and a field you can type code into that highlights as you go (a textarea over a highlighted copy, so typing, selecting, undo and screen readers all work as in a plain field). JavaScript, HTML, CSS, shell, JSON and file trees, with a small built-in highlighter.',
+  timing: 'No motion. Highlighting runs on every keystroke; it takes well under a millisecond for a handler.',
+  html: `<figure class="k-codeblock"><figcaption>handler.js</figcaption><pre data-hl="js"><code>// One Nucli electron per player.
+Game.GameName = "Borderlands 2";
+Game.ExecutableName = "Borderlands2.exe";
+Game.MaxPlayers = 4;
+Game.Play = function () {
+  Context.StartArguments = " -windowed -nostartupmovies";
+};</code></pre></figure>
+<div class="k-code-field" data-lang="js"><pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" aria-label="Handler code" rows="4">Game.Hook.ForceFocus = true;
+var players = Context.NumberOfPlayers; // 1 to 8
+</textarea></div>`,
+  css: `.k-codeblock { margin: 0; width: 100%; max-width: 520px; border-radius: var(--k-r-ctl); overflow: hidden; background: var(--k-code-bg); border: 1px solid var(--k-line); }
+.k-codeblock figcaption { padding: 6px 12px; font: 12px ui-monospace, Consolas, monospace; color: color-mix(in srgb, var(--k-code-fg) 65%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--k-code-fg) 15%, transparent); }
+.k-codeblock pre { margin: 0; padding: 10px 12px; overflow: auto; color: var(--k-code-fg); font: 13px/1.5 ui-monospace, Consolas, monospace; }
+.k-code-field { position: relative; display: grid; width: 100%; max-width: 520px; border: 1px solid var(--k-line); border-radius: var(--k-r-ctl); background: var(--k-code-bg); }
+.k-code-field > * { grid-area: 1 / 1; margin: 0; padding: 8px 10px; border: 0; font: 13px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
+.k-code-field pre { pointer-events: none; color: var(--k-code-fg); overflow: hidden; }
+.k-code-field textarea { resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: var(--k-code-fg); outline: none; min-height: 3.2em; }
+.k-code-field textarea::placeholder { color: var(--k-muted); }
+.k-code-field textarea::selection { background: color-mix(in srgb, var(--k-accent) 30%, transparent); color: transparent; }
+.k-code-field:focus-within { outline: 2px solid var(--k-accent); outline-offset: 1px; }
+/* Highlight colours: each look's code colours from the workbench (contrast-checked, light and dark), mapped as its
+   editor does: keywords, strings, numbers and literals, comments in italics, properties; names in the text colour,
+   punctuation muted. Tags and selectors read as keywords, functions and attributes as properties. */
+.hl-kw, .hl-tag, .hl-sel { color: var(--k-code-kw); } .hl-str, .hl-re { color: var(--k-code-str); } .hl-num, .hl-const { color: var(--k-code-num); }
+.hl-com { color: var(--k-code-cmt); font-style: italic; } .hl-prop, .hl-fn, .hl-attr { color: var(--k-code-prop); } .hl-punct { color: var(--k-code-muted); } .hl-var { color: inherit; }`,
+  js: function setupCode(root) {
+    root.querySelectorAll('pre[data-hl]').forEach((pre) => { const c = pre.querySelector('code') || pre; c.innerHTML = kitHighlight[pre.dataset.hl](c.textContent); });
+    root.querySelectorAll('.k-code-field').forEach((f) => kitCodeField(f));
+  } });
+
+KIT.push({ id: 'guidelines', name: 'Using the mascots', about: 'The few rules that keep Duo and Nucli recognisable, wherever they appear: in these tools, on splitscreen.me, in a fan site or a video.',
+  timing: 'One moving mascot per view at a time. Every animation ends in a still pose, and stops when the person asks for less motion.',
+  html: `<div class="k-rules">
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="who"></div><figcaption><b>Do</b> use Duo for splitscreen.me, games and players; Nucli for the handler tools and code.</figcaption></figure>
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="space"></div><figcaption><b>Do</b> give them room: clear space of a quarter of their size all round.</figcaption></figure>
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="sizes"></div><figcaption><b>Do</b> use the small build at 24 px and under, the detailed one from 32 px.</figcaption></figure>
+  <figure class="k-rule k-do"><div class="k-rule-art" data-art="tint"></div><figcaption><b>Do</b> tint Duo in a player's colour when one Duo stands for one player.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="over"></div><figcaption><b>Don't</b> put a mascot over text, code or a control.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="recolour"></div><figcaption><b>Don't</b> recolour Nucli, or Duo in anything but a player's colour.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="stretch"></div><figcaption><b>Don't</b> stretch, skew, outline or add effects.</figcaption></figure>
+  <figure class="k-rule k-dont"><div class="k-rule-art" data-art="crowd"></div><figcaption><b>Don't</b> crowd a view: one moving mascot at a time.</figcaption></figure>
+</div>`,
+  css: `.k-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; width: 100%; }
+.k-rule { margin: 0; border-radius: var(--k-r-pane); background: var(--k-surface); border: 1px solid var(--k-line); overflow: hidden; }
+.k-rule-art { position: relative; height: 110px; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--k-surface-2); }
+.k-rule .k-m { width: 64px; height: 64px; }
+.k-rule figcaption { padding: 8px 10px 10px; font-size: 13.5px; border-top: 4px solid var(--k-ok); }
+.k-rule.k-dont figcaption { border-top-color: var(--k-err); }
+.k-rule b { color: var(--k-ok); } .k-rule.k-dont b { color: var(--k-err); }
+.k-rule.k-dont .k-rule-art::after { content: ""; position: absolute; inset: 14px; background: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--k-err) calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)); opacity: .8; pointer-events: none; }
+.k-space { position: relative; padding: 14px; outline: 1.5px dashed var(--k-accent); outline-offset: -1px; border-radius: 4px; }
+.k-lines { display: grid; gap: 6px; width: 120px; }
+.k-lines i { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--k-fg) 22%, transparent); }`,
+  js: function setupGuidelines(root) {
+    const m = (svg, size = 64) => `<span class="k-m" style="width:${size}px;height:${size}px">${svg}</span>`;
+    const art = {
+      who: m(kitDuo({ label: 'Duo' })) + m(kitNucli({ label: 'Nucli' })),
+      space: `<span class="k-space">${m(kitNucli({ label: 'Nucli with clear space' }), 56)}</span>`,
+      sizes: [16, 24, 48].map((s) => m(kitNucli({ small: s <= 24, label: `Nucli at ${s} px` }), s)).join(''),
+      tint: [0, 1, 2].map((i) => m(kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'], label: `Player ${i + 1}` }), 36)).join(''),
+      over: `<span style="position:relative"><span class="k-lines"><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></span><span style="position:absolute;left:34px;top:-14px">${m(kitDuo({ label: 'Duo covering text' }), 56)}</span></span>`,
+      recolour: `<span style="filter:hue-rotate(150deg)">${m(kitNucli({ label: 'Nucli recoloured' }))}</span>${m(kitDuo({ tint: '#2e7d32', label: 'Duo in green, not a player colour' }))}`,
+      stretch: `<span style="transform:scaleX(1.5) skewX(-10deg);display:inline-block">${m(kitDuo({ label: 'Duo stretched' }), 56)}</span>`,
+      crowd: [0, 1, 2].map(() => m(kitNucli({ moods: ['happy'], label: 'Many Nuclis' }), 40)).join('') + m(kitDuo({ moods: ['happy'], label: 'And a Duo' }), 40),
+    };
+    root.querySelectorAll('[data-art]').forEach((a) => { a.innerHTML = art[a.dataset.art]; });
+    kitApplyMotion(root);
+  } });
+
+KIT.push({ id: 'voice', name: 'How they talk', about: 'When a mascot says something (a bubble, a banner, an empty state), it says what happened and what to do next, in a few plain words. The face carries the feeling, so the words don\'t have to.',
+  timing: 'Short enough to read in the time the message stays: about 3.5 s plus 25 ms a letter.',
+  html: `<table class="k-voice"><thead><tr><th scope="col">Moment</th><th scope="col">Say</th><th scope="col">Not</th></tr></thead><tbody>
+  <tr><th scope="row">Success</th><td>Fixed 12 problems. Ready for Nucleus.</td><td>Yay!!! All your bugs are gone!!!</td></tr>
+  <tr><th scope="row">Failure</th><td>Player 2 failed: Context.PlayerID is undefined.</td><td>Oops, something went wrong.</td></tr>
+  <tr><th scope="row">Long wait</th><td>Still working, 12 s so far.</td><td>Hang tight, almost there!</td></tr>
+  <tr><th scope="row">Empty</th><td>No games yet. Add one from the Hub.</td><td>It's lonely in here…</td></tr>
+  <tr><th scope="row">Third failure</th><td>The game didn't start, three times in a row. Show me what to check?</td><td>You keep breaking it.</td></tr>
+</tbody></table>
+<ul class="k-voice-rules"><li>Say what happened, then what to do.</li><li>Name the thing: the player, the file, the setting.</li><li>No blame, no jokes about failure, no exclamation marks except for real wins.</li><li>Duo and Nucli don't talk about themselves.</li></ul>`,
+  css: `.k-voice { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--k-surface); border-radius: var(--k-r-ctl); }
+.k-voice th, .k-voice td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--k-line); vertical-align: top; }
+.k-voice td:nth-child(2)::before { content: "✓ "; color: var(--k-ok); font-weight: 700; }
+.k-voice td:nth-child(3) { color: var(--k-muted); text-decoration: line-through; text-decoration-color: var(--k-err); }
+.k-voice td:nth-child(3)::before { content: "✗ "; color: var(--k-err); font-weight: 700; display: inline-block; text-decoration: none; }
+.k-voice-rules { margin: 0; padding-left: 18px; color: var(--k-muted); font-size: 14px; }`,
+  js: function setupVoice() {} });
+
+KIT.push({ id: 'assets', name: 'Mascot gallery', about: 'Every mood of both mascots, ready to take: pick a size and copy the SVG (animated: it floats and blinks, Nucli\'s electrons orbit). It works on its own, in a page, an app or a design tool.',
+  timing: 'The copied SVG animates by itself; for a still one, remove its &lt;animateMotion&gt; elements.',
+  html: `<div class="k-assets-ctl" role="group" aria-label="Size"><span>Size</span><button class="k-btn k-sm" data-size="24">24</button><button class="k-btn k-sm" data-size="48" aria-pressed="true">48</button><button class="k-btn k-sm" data-size="120">120</button></div>
+<div class="k-assets"></div>`,
+  css: `.k-assets-ctl { display: flex; gap: 6px; align-items: center; width: 100%; font-size: 14px; }
+.k-assets-ctl [aria-pressed="true"] { border-color: var(--k-accent); color: var(--k-accent); font-weight: 700; }
+.k-assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; width: 100%; }
+.k-asset { display: grid; justify-items: center; gap: 4px; padding: 10px 6px 8px; border-radius: var(--k-r-pane); background: var(--k-surface); border: 1px solid var(--k-line); font-size: 12.5px; }
+.k-asset .k-m { width: 64px; height: 64px; }
+.k-asset span { color: var(--k-muted); }`,
+  js: function setupAssets(root) {
+    const grid = root.querySelector('.k-assets'), MOODS = ['smile', 'happy', 'focus', 'worried', 'wow', 'sleep'];
+    let size = 48;
+    const svgOf = (who, mood) => (who === 'duo' ? kitDuo : kitNucli)({ moods: [mood], small: size <= 24, label: `${who === 'duo' ? 'Duo' : 'Nucli'}, ${mood}` })
+      .replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" `);
+    grid.innerHTML = ['nucli', 'duo'].flatMap((who) => MOODS.map((mood) => `<div class="k-asset"><span class="k-m">${svgOf(who, mood)}</span><b>${who === 'duo' ? 'Duo' : 'Nucli'}</b><span>${mood}</span><button class="k-btn k-sm" data-copy="${who}:${mood}">Copy SVG</button></div>`)).join('');
+    kitApplyMotion(grid);
+    grid.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-copy]'); if (!b) return;
+      const [who, mood] = b.dataset.copy.split(':');
+      try { await navigator.clipboard.writeText(svgOf(who, mood)); b.textContent = 'Copied'; } catch { b.textContent = 'Copy blocked'; }
+      setTimeout(() => (b.textContent = 'Copy SVG'), 1600);
+    });
+    root.querySelectorAll('[data-size]').forEach((b) => b.addEventListener('click', () => { size = +b.dataset.size; root.querySelectorAll('[data-size]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  } });
+
+// The showcase: groups, an overview, navigation with the current section marked, each entry and its code.
+(() => {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const FOUNDATION = [kitMotion, kitMoves, kitSync, kitApplyMotion, kitShade, kitEye, kitMouth, kitNEye, kitNFace, kitNucli, kitDuo].map((f) => f.toString()).join('\n\n')
+    + `\n\nconst kitSeen = new IntersectionObserver((es) => es.forEach((e) => { e.target._kVis = e.isIntersecting; kitSync(e.target); }), { rootMargin: '80px' });\nconst KIT_PLAYERS = ${JSON.stringify(KIT_PLAYERS)};\nconst KIT_PLAYERS8 = ${JSON.stringify(KIT_PLAYERS8)};\nconst KIT_INK = '${KIT_INK}';\nlet kitUid = 0;\nconst kitN1 = ${kitN1.toString()};\nconst kitBlush = ${kitBlush.toString()};\nconst KIT_LID = '${KIT_LID}';\nconst KIT_NMOUTH = ${JSON.stringify(KIT_NMOUTH)};\nconst kitNucCore = ${kitNucCore.toString()};\nconst kitDuoShade = ${kitDuoShade.toString()};\nconst kitFaces = ${kitFaces.toString()};`;
+  KIT.push({ id: 'motion', name: 'Motion settings', about: 'The motion settings and the two mascots\' code, which every component uses. "All" loops the mascots, "Default" plays them once (loaders keep going), "Calm" keeps the interface\'s motion with still mascots, "Still" stops everything, "Off" also hides the mascots. The device\'s "reduce motion" always wins.',
+    timing: 'Default for new users: "Default". Nothing that slows people down or covers content.',
+    html: `<table class="motion-table"><thead><tr><th scope="col">Setting</th><th scope="col">Interface</th><th scope="col">Mascots</th><th scope="col">Loaders</th></tr></thead><tbody><tr><th scope="row">All</th><td>Moves</td><td>Loop</td><td>Move</td></tr><tr><th scope="row">Default</th><td>Moves</td><td>Once, 5 s</td><td>Move</td></tr><tr><th scope="row">Calm</th><td>Moves</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Still</th><td>No motion</td><td>Still pose</td><td>Show the value</td></tr><tr><th scope="row">Off</th><td>No motion</td><td>Plain icons</td><td>Plain bar and text</td></tr></tbody></table>`,
+    css: '/* The rules for the Motion settings are in Tokens, at the end. */', js: function setupMotion() {}, code: [['JavaScript', FOUNDATION]] });
+  const GROUPS = [
+    ['foundations', 'Foundations', 'How you\'d install it, and the colours, motion and two mascots everything is built on.', ['install', 'tokens', 'motion', 'mascots']],
+    ['guide', 'Brand guide', 'How to use the mascots anywhere: the rules, how they talk, and the files to take.', ['guidelines', 'voice', 'assets']],
+    ['brand', 'Brand', 'Where the mascots are the interface: headers, players, the moments people remember.', ['appbar', 'players', 'notfound']],
+    ['actions', 'Actions', 'Things you press.', ['buttons']],
+    ['inputs', 'Inputs', 'Things you set, type and choose.', ['toggles', 'slider', 'fields', 'menus']],
+    ['navigation', 'Navigation', 'Getting around and through a setup.', ['tabs', 'stepper']],
+    ['feedback', 'Feedback', 'How the interface answers, close to where you acted.', ['toasts', 'badges', 'banners', 'dialog', 'empty']],
+    ['progress', 'Progress and waiting', 'Known progress, downloads, and waits of any length.', ['progress-ring', 'progress-bar', 'wait', 'skeleton']],
+    ['content', 'Content', 'Lists of things to open, and code.', ['cards', 'code']],
+  ];
+  const SUM = {
+    guidelines: 'Who goes where, room, sizes, and what not to do.', voice: 'What the mascots say, and what they don\'t.', assets: 'Every mood of both, as SVG to copy.',
+    install: 'Preview: one command adds a component\'s source to your project.', tokens: 'Colours per look and mode, players, corners, durations, easings.', motion: 'All, Default, Calm, Still, Off; the shared code.', mascots: 'Nucli and Duo in code: moods, sizes.',
+    buttons: 'Squash on press; animated icons; confirm in the label.', toggles: 'A Nucli knob, an electron check, Duos per player.', slider: '1 to 8 players: a Duo-ball handle, a Duo each.', fields: 'Nucli helps: concentrates, beams, worries.', tabs: 'An underline with weight; an electron rides it.', menus: 'Springs from its button; Nucli says the tooltip.', appbar: 'The mascot is the logo and the status light.', players: 'One Duo per player: they drop in and leave.', notfound: 'Duo looks around, Nucli checks the links.', stepper: 'Duo hops from step to step.', skeleton: 'Grey lines; an electron is the shimmer.',
+    badges: 'Pills with Nucli\'s face; a counter that turns into him at zero.', toasts: 'The mascot says it next to what you clicked.', banners: 'Results that stay; escalate per run.', dialog: 'Grows from the middle; Duo\'s "?" sign.', empty: 'Nucli dozes and wakes; Duo waits for a game.',
+    'progress-ring': 'Electrons ride the arc on springs.', 'progress-bar': 'Duo pushes the bar; strains when it stalls.', wait: 'Nothing, spinner, progress, time: by wait.', cards: 'Player counts as Duos; they hop on hover.', code: 'Highlighted code to read, copy and type.',
+  };
+  const mini = (svg) => `<span class="t-m">${svg}</span>`;
+  const THUMB = {
+    code: `<span class="k-codeblock" style="padding:6px 10px;font:11px/1.5 ui-monospace,monospace;color:var(--k-code-fg)">${kitHighlight.js('Game.MaxPlayers = 4;\n// one per player')}</span>`,
+    tokens: ['--k-accent', '--k-ok', '--k-err', '--k-p1', '--k-p2', '--k-p3', '--k-p4'].map((v) => `<i class="t-sw" style="background:var(${v})"></i>`).join(''),
+    install: '<span class="k-cmd" style="font-size:11px;padding:6px 10px"><code>npx duo-nucli add ring</code></span>',
+    guidelines: '<span style="display:grid;grid-template-columns:auto auto;gap:4px 10px;font-size:12px;font-weight:700"><span style="color:var(--k-ok)">✓ Room</span><span style="color:var(--k-err)">✗ Over text</span><span style="color:var(--k-ok)">✓ Sizes</span><span style="color:var(--k-err)">✗ Recolour</span></span>',
+    voice: '<span style="display:grid;gap:3px;font-size:11.5px"><span>✓ Fixed 12 problems.</span><span style="color:var(--k-muted);text-decoration:line-through">Yay!!! Bugs gone!!!</span></span>',
+    assets: ['smile', 'happy', 'worried'].map((m) => `<span class="t-m" style="width:30px;height:30px">${kitNucli({ moods: [m], small: true })}</span>`).join('') + `<span class="t-m" style="width:30px;height:30px">${kitDuo({ small: true, moods: ['happy'] })}</span>`,
+    motion: ['All', 'Default', 'Calm', 'Still', 'Off'].map((v, i) => `<span class="t-btn${i === 1 ? ' p' : ''}">${v}</span>`).join(''),
+    mascots: mini(kitNucli({ small: true })) + mini(kitDuo({ small: true })),
+    buttons: '<span class="t-btn p">▶ Try it</span><span class="t-btn">Copy</span><span class="t-btn">↶ Undo</span>',
+    toggles: `<span class="t-m" style="width:28px;height:28px">${kitNucli({ moods: ['happy'], orbits: false, crop: true })}</span>${[0, 1, 2].map((i) => `<span class="t-m" style="width:22px;height:22px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span>`).join('')}`,
+    slider: `<span style="display:grid;gap:4px;width:140px"><span style="display:flex;gap:2px">${[0, 1, 2, 3].map((i) => `<span class="t-m" style="width:20px;height:20px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i] })}</span>`).join('')}</span><i class="t-line" style="background:linear-gradient(var(--k-accent),var(--k-accent)) 0/45% 100% no-repeat, color-mix(in srgb, var(--k-fg) 18%, transparent)"></i></span>`,
+    appbar: `<span class="t-box" style="grid-auto-flow:column;align-items:center;gap:6px;width:160px"><span class="t-m" style="width:26px;height:26px">${kitNucli({ small: true, moods: ['happy'] })}</span><i class="t-line" style="width:80px"></i></span>`,
+    players: [0, 1, 2].map((i) => `<span class="t-box" style="grid-auto-flow:column;align-items:center;gap:4px;border-radius:999px;padding:2px 8px 2px 2px"><span class="t-m" style="width:22px;height:22px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i], moods: ['happy'] })}</span><i class="t-line" style="width:18px"></i></span>`).join(''),
+    notfound: `<span class="t-m" style="width:48px;height:48px">${kitDuo({ moods: ['worried'] })}</span><span class="t-m" style="width:34px;height:34px">${kitNucli({ moods: ['focus'], small: true })}</span>`,
+    stepper: `<span style="display:grid;justify-items:start;gap:2px"><span class="t-m" style="width:22px;height:22px;margin-left:34px">${kitDuo({ small: true })}</span><span style="display:flex;gap:18px">${'<i class="t-sw" style="width:14px;height:14px;background:var(--k-ok)"></i>'.repeat(2)}<i class="t-sw" style="width:14px;height:14px"></i><i class="t-sw" style="width:14px;height:14px"></i></span></span>`,
+    skeleton: '<span class="t-box" style="width:150px"><i class="t-line"></i><i class="t-line" style="width:70%"></i><i class="t-line" style="width:85%"></i></span>',
+    fields: '<span class="t-box" style="width:140px"><i class="t-line" style="width:60%"></i></span><span style="color:var(--k-ok);font-weight:700">✓</span>',
+    tabs: '<span class="t-box" style="grid-auto-flow:column;gap:10px;font-size:12px">Check <b style="border-bottom:3px solid var(--k-accent)">Try it</b> Players</span>',
+    menus: '<span class="t-box" style="width:120px"><i class="t-line"></i><i class="t-line" style="width:70%"></i><i class="t-line" style="width:85%"></i></span>',
+    badges: `<span class="k-pill k-pill-ok" style="font-size:11px"><span class="t-m" style="width:16px;height:16px">${kitNucli({ moods: ['happy'], orbits: false, crop: true })}</span>Ready</span><span class="k-count">3</span>`,
+    toasts: `<span class="t-btn p" style="align-self:start">Fix all</span><span class="t-box" style="grid-auto-flow:column;align-items:center;gap:6px;width:120px;border-radius:12px;box-shadow:var(--k-shadow);align-self:end"><span class="t-m" style="width:22px;height:22px">${kitNucli({ small: true, moods: ['happy'] })}</span><i class="t-line" style="width:70px"></i></span>`,
+    banners: '<span class="t-box" style="width:160px;border-left:4px solid var(--k-err)"><i class="t-line"></i><i class="t-line" style="width:60%"></i></span>',
+    dialog: '<span class="t-box" style="width:120px;box-shadow:var(--k-shadow)"><i class="t-line"></i><i class="t-line" style="width:70%"></i><span style="justify-self:end" class="t-btn p">OK</span></span>',
+    empty: mini(kitNucli({ moods: ['sleep'] })) + mini(kitDuo({ moods: ['smile'] })),
+    'progress-ring': `<svg viewBox="0 0 120 120" width="62" height="62" aria-hidden="true"><circle cx="60" cy="60" r="44" fill="none" stroke="color-mix(in srgb, var(--k-fg) 14%, transparent)" stroke-width="9"/><circle cx="60" cy="60" r="44" fill="none" stroke="var(--k-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="110" transform="rotate(-90 60 60)"/>${[0, 1, 2, 3].map((k) => `<circle cx="60" cy="16" r="7" fill="var(--k-p${k + 1})" stroke="#fff" stroke-width="2" transform="rotate(${(0.6 - .034 - k * .046) * 360} 60 60)"/>`).join('')}</svg>`,
+    'progress-bar': `<span style="position:relative;width:150px;height:44px"><i class="t-line" style="position:absolute;left:0;right:0;bottom:4px;height:8px"></i><i style="position:absolute;left:0;bottom:4px;height:8px;width:60%;border-radius:4px;background:var(--k-accent)"></i><span class="t-m" style="position:absolute;left:58px;bottom:8px;width:34px;height:34px">${kitDuo({ arms: 'hold', moods: ['focus'] })}</span></span>`,
+    wait: '<span style="font-size:11.5px;display:grid;grid-template-columns:auto auto;gap:2px 8px;color:var(--k-muted)"><b>0.4 s</b><span>spinner</span><b>2 s</b><span>progress</span><b>10 s</b><span>time so far</span></span>',
+    cards: ['--k-p1', '--k-p3'].map((v) => `<span class="t-box" style="width:64px;padding:4px"><i style="display:block;height:22px;border-radius:4px;background:var(${v})"></i><span style="display:flex">${[0, 1, 2].map((i) => `<span class="t-m" style="width:12px;height:12px">${kitDuo({ small: true, tint: KIT_PLAYERS8[i] })}</span>`).join('')}</span></span>`).join(''),
+  };
+  // My verdict on each idea: 'best' (my picks), 'good', 'maybe' (optional, or I'd leave it out).
+  const PICK = {
+    'progress-ring': ['best', 'The signature piece: the electrons are the progress, and it only moves when something happens.'],
+    'progress-bar': ['best', 'Duo pushing tells you more than a bar: you see a stall before you wonder about it.'],
+    toasts: ['best', 'The message where you acted, said by the mascot: on-brand and easier to notice than a corner toast.'],
+    players: ['best', 'One Duo per player is the brand\'s own idea: splitscreen means players. Reuse it everywhere players appear.'],
+    buttons: ['best', 'Small, everyday, and always exactly where you look. Cheap to build, felt on every click.'],
+    empty: ['best', 'Empty screens are where the mascots have room and time; the wake-up is the moment people remember.'],
+    wait: ['best', 'Not a look but a rule: no flashing loaders, and long waits say how long. Worth it everywhere.'],
+    appbar: ['good', 'The mascot as the status light is useful at a glance. Keep the hover hello small.'],
+    notfound: ['good', 'A good brand moment, and rare enough not to wear thin.'],
+    dialog: ['good', 'Duo\'s sign fits serious moments without making light of them.'],
+    banners: ['good', 'Escalating per run is the right rule; the faces carry the result.'],
+    stepper: ['good', 'Nice for a first setup; skip it where people go through steps often.'],
+    cards: ['good', 'Player counts as Duos read faster than the number. The hop on hover is optional.'],
+    skeleton: ['good', 'Subtle enough to stay on all the time.'],
+    code: ['good', 'Code in the kit\'s colours; the field that highlights as you type is the useful part.'],
+    slider: ['good', 'A natural home for the player Duos; the Duo-ball handle is a nice touch.'],
+    tabs: ['good', 'The electron is quiet branding that costs nothing.'],
+    toggles: ['good', 'The players picker is a pick. The Nucli knob and the check\'s electron are nice-to-haves.'],
+    badges: ['good', 'Nucli taking the counter\'s place at zero is a pick. Faces on the pills are optional: the colour and text already say it.'],
+    fields: ['maybe', 'The helper competes with the error message for attention. I\'d keep the shake and the message, and leave Nucli out.'],
+    menus: ['maybe', 'Tooltips should stay plain and fast; the menu\'s spring is enough.'],
+  };
+  const BADGE = { best: '★ My pick', good: 'Good', maybe: 'Maybe' };
+  const badge = (id) => PICK[id] ? `<span class="v-b v-${PICK[id][0]}">${BADGE[PICK[id][0]]}</span>` : '';
+  const byId = Object.fromEntries(KIT.map((c) => [c.id, c]));
+  // Code panels are built (and highlighted) the first time they're opened, so the page loads light.
+  const CODE = [];
+  const fillCode = (pre) => { if (pre.dataset.done) return; pre.dataset.done = '1'; const [n, src] = CODE[+pre.dataset.code]; pre.firstElementChild.innerHTML = kitHighlight[{ Install: 'sh', HTML: 'html', CSS: 'css', JavaScript: 'js' }[n] || 'js'](src); };
+  // The Install tab: what a future one-line install would be (a preview; nothing to install yet).
+  const installText = (id) => ['tokens', 'motion', 'mascots'].includes(id)
+    ? `# Preview only: no package exists yet ("duo-nucli" is a placeholder).\nnpx duo-nucli@latest init\n\n# Adds src/ui/duo-nucli/: tokens.css, motion.js, mascots/nucli.js, mascots/duo.js`
+    : `# Preview only: no package exists yet ("duo-nucli" is a placeholder).\nnpx duo-nucli@latest add ${id}\n\n# Adds src/ui/duo-nucli/${id}/ (${id}.js, ${id}.css)\n# Needs the foundations from "npx duo-nucli@latest init" (tokens, motion, mascots).\n# Until then: the HTML, CSS and JavaScript tabs are the whole component.`;
+  document.getElementById('kit-css').textContent = KIT.map((c) => `/* ${c.name} */\n${c.css}`).join('\n\n');
+  const codeBlock = (name, parts) => `<details class="code"><summary>View code</summary><div class="tabs" role="tablist" aria-label="Code for ${name}">${parts.map(([n], i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${n}</button>`).join('')}<button class="copy" type="button">Copy</button></div>${parts.map(([n, src], i) => { CODE.push([n, src]); return `<pre tabindex="0" aria-label="${n} of ${name}" data-code="${CODE.length - 1}"${i ? ' hidden' : ''}><code></code></pre>`; }).join('')}</details>`;
+  // Overview
+  const card = (id, why) => `<a class="glance-card${PICK[id] ? ' v-' + PICK[id][0] + '-card' : ''}" href="#${id}" data-v="${PICK[id]?.[0] || 'base'}"><span class="thumb" aria-hidden="true">${THUMB[id]}</span><span class="txt"><b>${byId[id].name} ${badge(id)}</b><span class="sum">${why ? PICK[id][1] : SUM[id]}</span></span></a>`;
+  const picks = Object.keys(PICK).filter((id) => PICK[id][0] === 'best');
+  document.getElementById('glance').innerHTML = `<div class="glance-group picks"><h3>★ My picks</h3><p class="picks-lead">If you build only some of this, build these. Everything else is marked <span class="v-b v-good">Good</span> (worth having) or <span class="v-b v-maybe">Maybe</span> (optional, or I'd leave it out).</p><div class="glance-grid">${picks.map((id) => card(id, true)).join('')}</div></div>
+    <div class="all-h"><h3>Everything</h3><label class="auto"><input type="checkbox" id="only-picks"> Only my picks</label></div>`
+    + GROUPS.map(([gid, gname, , ids]) => `<div class="glance-group" data-g="${gid}"><h3>${gname}</h3><div class="glance-grid">${ids.map((id) => card(id)).join('')}</div></div>`).join('');
+  document.getElementById('only-picks').addEventListener('change', (e) => document.body.classList.toggle('only-picks', e.target.checked));
+  // Sections, grouped
+  document.getElementById('kit').innerHTML = GROUPS.map(([gid, gname, gabout, ids]) => `<h2 class="group-h" id="g-${gid}">${gname}</h2><p>${gabout}</p>` + ids.map((id) => {
+    const c = byId[id];
+    return `<section class="comp${PICK[id] ? ' v-' + PICK[id][0] + '-sec' : ''}" id="${c.id}" aria-labelledby="${c.id}-h"><h2 id="${c.id}-h">${c.name} ${badge(id)}<a class="up" href="#top">Back to overview ↑</a></h2><p>${c.about}</p>${PICK[id] ? `<p class="take"><b>My take:</b> ${PICK[id][1]}</p>` : ''}<div class="demo">${c.html}</div><p class="timing"><b>Timing:</b> ${c.timing}</p>${codeBlock(c.name, [...(c.id === 'install' ? [] : [['Install', installText(c.id)]]), ...(c.code || [['HTML', c.html], ['CSS', c.css], ['JavaScript', c.js.toString() + (c.id === 'code' ? '\n\n' + document.getElementById('kit-hl').textContent.trim() : '')]])])}</section>`;
+  }).join('')).join('');
+  // Navigation
+  const nav = document.getElementById('nav-groups');
+  nav.innerHTML = GROUPS.map(([gid, gname, , ids]) => `<h2 id="n-${gid}">${gname}</h2><ul aria-labelledby="n-${gid}">${ids.map((id) => `<li data-name="${byId[id].name.toLowerCase()}" data-words="${SUM[id].toLowerCase()}" data-v="${PICK[id]?.[0] || 'base'}"><a href="#${id}">${byId[id].name}${PICK[id]?.[0] === 'best' ? '<span class="star" aria-label="my pick">★</span>' : PICK[id]?.[0] === 'maybe' ? '<span class="mb">maybe</span>' : ''}</a></li>`).join('')}</ul>`).join('');
+  const links = [...nav.querySelectorAll('a')];
+  const filter = document.getElementById('nav-filter'), none = document.getElementById('nav-none');
+  filter.addEventListener('input', () => {
+    const q = filter.value.trim().toLowerCase(); let shown = 0;
+    nav.querySelectorAll('ul').forEach((ul) => { let any = 0; ul.querySelectorAll('li').forEach((li) => { const on = !q || li.dataset.name.includes(q) || new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(li.dataset.words); li.hidden = !on; any += on; }); ul.hidden = !any; ul.previousElementSibling.hidden = !any; shown += any; });
+    none.hidden = shown > 0;
+  });
+  filter.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const q = filter.value.trim().toLowerCase(), vis = links.filter((a) => !a.closest('li').hidden); const best = vis.find((a) => a.closest('li').dataset.name.startsWith(q)) || vis.find((a) => a.closest('li').dataset.name.includes(q)) || vis[0]; best?.click(); } if (e.key === 'Escape') { filter.value = ''; filter.dispatchEvent(new Event('input')); } });
+  addEventListener('keydown', (e) => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); openNav(); filter.focus(); } });
+  // The section on screen is marked in the list.
+  const mark = (id) => links.forEach((a) => (a.getAttribute('href') === '#' + id ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+  const seen = new Map();
+  const io = new IntersectionObserver((es) => { es.forEach((e) => seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null)); const vis = [...seen].filter(([, t]) => t !== null).sort((a, b) => a[1] - b[1]); if (vis.length) mark(vis[0][0]); }, { rootMargin: '-60px 0px -55% 0px' });
+  document.querySelectorAll('.comp').forEach((s) => io.observe(s));
+  // On narrow screens the list is a drawer.
+  const side = document.getElementById('side'), openBtn = document.getElementById('nav-open'); let scrim;
+  function openNav() { if (getComputedStyle(openBtn).display === 'none') return; side.classList.add('open'); openBtn.setAttribute('aria-expanded', 'true'); scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.addEventListener('click', closeNav); document.body.append(scrim); if (kitMoves(side)) side.animate([{ transform: 'translateX(-24px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.2, .7, .3, 1)' }); filter.focus(); }
+  function closeNav() { side.classList.remove('open'); openBtn.setAttribute('aria-expanded', 'false'); scrim?.remove(); scrim = null; }
+  openBtn.addEventListener('click', () => (side.classList.contains('open') ? closeNav() : openNav()));
+  const ctlBtn = document.getElementById('ctl-open'), ctls = document.getElementById('ctls');
+  ctlBtn.addEventListener('click', () => { const on = !ctls.classList.contains('open'); ctls.classList.toggle('open', on); ctlBtn.setAttribute('aria-expanded', String(on)); });
+  side.addEventListener('click', (e) => { if (e.target.closest('a')) closeNav(); });
+  side.addEventListener('keydown', (e) => { if (e.key === 'Escape' && side.classList.contains('open')) { closeNav(); openBtn.focus(); } });
+  // Run the components, then the code tabs and copy buttons.
+  KIT.forEach((c) => c.js(document.getElementById(c.id)));
+  document.getElementById('kit').addEventListener('toggle', (e) => { if (e.target.matches?.('details.code') && e.target.open) e.target.querySelectorAll('pre[data-code]').forEach(fillCode); }, true);
+  document.getElementById('kit').addEventListener('click', async (e) => {
+    const tab = e.target.closest('.code .tabs [role="tab"]'), copy = e.target.closest('.code .copy');
+    if (tab) { const d = tab.closest('details'); d.querySelectorAll('[role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t === tab))); d.querySelectorAll('pre').forEach((p, i) => (p.hidden = i !== +tab.dataset.i)); }
+    if (copy) {
+      const pre = [...copy.closest('details').querySelectorAll('pre')].find((p) => !p.hidden);
+      try { await navigator.clipboard.writeText(pre.textContent); copy.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNodeContents(pre); getSelection().removeAllRanges(); getSelection().addRange(r); copy.textContent = 'Selected: press Ctrl+C'; }
+      setTimeout(() => (copy.textContent = 'Copy'), 1600);
+    }
+  });
+  // Settings bar
+  const b = document.body, store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+  [['ctl-look', 'look'], ['ctl-mode', 'mode'], ['ctl-motion', 'motion']].forEach(([id, key]) => {
+    const sel = document.getElementById(id), saved = store.get('kit-' + key);
+    if (key === 'mode' && !saved && matchMedia('(prefers-color-scheme: dark)').matches) sel.value = 'dark';
+    if (saved && [...sel.options].some((o) => o.value === saved)) sel.value = saved;
+    b.dataset[key] = sel.value;
+    sel.addEventListener('change', () => { b.dataset[key] = sel.value; store.set('kit-' + key, sel.value); kitApplyMotion(); document.dispatchEvent(new Event('kit-look')); });
+  });
+  kitApplyMotion();
+  document.dispatchEvent(new Event('kit-look'));
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+})();
+</script>
+</body>
+</html>

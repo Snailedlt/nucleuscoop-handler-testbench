@@ -53,9 +53,16 @@ body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body);
 .app { height: 100%; display: flex; flex-direction: column; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px calc(12px + var(--devbar-h, 0px)); gap: 10px; box-sizing: border-box; }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-a.brand { color: inherit; text-decoration: none; border-radius: var(--r-ctl); }
-a.brand:hover h1 { text-decoration: underline; text-underline-offset: 3px; }
-a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.brand { flex-direction: column; align-items: flex-start; gap: 0; }
+.brand-link { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; border-radius: var(--r-ctl); }
+.brand-link:hover h1 { text-decoration: underline; text-underline-offset: 3px; }
+.brand .sub { margin-left: 40px; }
+.brand-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.home-link { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 11px; font-weight: 600; line-height: 1; color: var(--muted); text-decoration: none; padding: 2px 7px 2px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); transition: color .12s, border-color .12s, background-color .12s; }
+.home-link:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.home-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.brand-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .logo { width: 30px; height: 30px; flex: none; display: block; }
 .logo-v3, :root[data-site="v3"] .logo-www { display: none; }
 :root[data-site="v3"] .logo-v3 { display: block; }
@@ -100,6 +107,12 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #lines[hidden] { display: none; }
 #lines { position: relative; }
 #lines.wide { width: 520px; }
+@media (min-width: 861px) {
+  :root[data-files-side="left"] #files-panel, :root[data-lines-side="left"] #lines { order: -1; border-left: 0; border-right: 1px solid var(--line); }
+  :root[data-files-side="left"][data-lines-side="left"] #files-panel { order: -2; }
+  :root[data-files-side="left"] #split-files, :root[data-lines-side="left"] #split-lines { left: auto; right: -5px; }
+}
+@media (min-width: 861px) and (max-width: 1100px) { :root[data-lines-side="left"] #lines { right: auto; left: 0; box-shadow: 6px 0 18px rgba(0, 0, 0, .25); } }
 #lines-kinds[hidden], .lines-opts[hidden], #lines-info[hidden] { display: none; }
 #lines-gear { display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
 #lines-gear[aria-expanded=true] { color: var(--accent-fg); background: var(--accent); border-color: transparent; }
@@ -214,6 +227,105 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #sim-matrix .mx-fails { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; }
 #sim-matrix .mx-fails li { margin: 2px 0; }
 
+/* Debugger (debugui.ts): breakpoints in the gutter, the current line, the panel in Try it */
+.CodeMirror-gutter.nc-bp { width: 16px; }
+#editor .CodeMirror-gutter-wrapper::before { content: ""; position: absolute; left: 3px; top: .38em; width: 10px; height: 10px; border-radius: 50%; cursor: pointer; }
+#editor .CodeMirror-gutter-wrapper:hover::before { background: color-mix(in srgb, var(--err) 35%, transparent); }
+.dbg-gm { position: relative; width: 16px; height: 1.55em; cursor: pointer; }
+.dbg-gm.bp::before { content: ""; position: absolute; left: 3px; top: .38em; width: 10px; height: 10px; border-radius: 50%; background: var(--err); }
+.dbg-gm.cond::before { box-shadow: inset 0 0 0 2px var(--err), inset 0 0 0 4px var(--code-bg, var(--surface)); }
+.dbg-gm.here::after { content: ""; position: absolute; left: 4px; top: .3em; border: 6px solid transparent; border-left: 9px solid var(--accent); border-right: 0; filter: drop-shadow(0 0 1px var(--code-bg, var(--surface))); }
+.CodeMirror .dbg-line { background: color-mix(in srgb, var(--warn) 7%, transparent); box-shadow: inset 3px 0 0 var(--accent), inset 0 1px 0 color-mix(in srgb, var(--warn) 45%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--warn) 45%, transparent); }
+.CodeMirror .dbg-line-err { background: color-mix(in srgb, var(--err) 8%, transparent); box-shadow: inset 3px 0 0 var(--err); }
+.dbg { margin: 0 0 14px; }
+.dbg[hidden], #dbg-body[hidden], #dbg-pop[hidden] { display: none; }
+#panel-simulate.debugging > #sim-out, #panel-simulate.debugging > #sim-matrix, #panel-simulate.debugging > p.muted { display: none; }
+.dbg-bar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0; background: var(--surface); }
+.dbg-bar .dbg-sp { flex: 1; }
+.dbg-b { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 13px; }
+.dbg-b:disabled { opacity: .5; cursor: default; }
+.dbg-i { font-size: 12px; line-height: 1; }
+.dbg-banner { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r-pane); padding: 8px 12px; margin: 6px 0 8px; background: var(--surface-2); font-size: 13.5px; }
+.dbg-banner:empty { display: none; }
+.dbg-banner p { margin: 0; }
+.dbg-banner p + p { margin-top: 4px; }
+.dbg-banner.bp { border-left-color: var(--err); }
+.dbg-banner.error { border-color: var(--err); background: var(--err-bg); }
+.dbg-banner.done { border-left-color: var(--ok); background: var(--ok-bg); }
+.dbg-banner.stale { border-left-color: var(--warn); background: var(--warn-bg); }
+.dbg-reason { font-weight: 600; color: var(--muted); }
+.dbg-banner.error .dbg-reason, .dbg-cond-err { color: var(--err); }
+.dbg-chip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.dbg-chip::before, .dbg-ph::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: var(--pc, var(--muted)); vertical-align: 0; }
+.dbg-chip.p1, .dbg-ph.p1, .dbg-seg.p1 { --pc: var(--p1); } .dbg-chip.p2, .dbg-ph.p2, .dbg-seg.p2 { --pc: var(--p2); } .dbg-chip.p3, .dbg-ph.p3, .dbg-seg.p3 { --pc: var(--p3); } .dbg-chip.p4, .dbg-ph.p4, .dbg-seg.p4 { --pc: var(--p4); }
+.dbg-chip.p5, .dbg-ph.p5, .dbg-seg.p5 { --pc: var(--p5); } .dbg-chip.p6, .dbg-ph.p6, .dbg-seg.p6 { --pc: var(--p6); } .dbg-chip.p7, .dbg-ph.p7, .dbg-seg.p7 { --pc: var(--p7); } .dbg-chip.p8, .dbg-ph.p8, .dbg-seg.p8 { --pc: var(--p8); }
+.dbg-chip.ph-cb, .dbg-ph.ph-cb, .dbg-seg.ph-cb { --pc: var(--info); }
+.dbg-peek { margin: 0 0 8px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--code-bg); color: var(--code-fg, var(--fg)); font: 12.5px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--line); }
+.dbg-peek-n { display: inline-block; min-width: 2.5em; margin-right: 8px; color: var(--code-muted, var(--muted)); text-align: right; user-select: none; }
+.dbg-scrub { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.dbg-scrub-l { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.dbg-scrub-w { position: relative; flex: 1; min-width: 0; padding-top: 7px; }
+.dbg-scrub-w input { width: 100%; margin: 0; min-height: 24px; }
+.dbg-track { position: absolute; left: 8px; right: 8px; top: 0; height: 5px; }
+.dbg-segs { display: flex; gap: 1px; height: 100%; border-radius: 3px; overflow: hidden; }
+.dbg-seg { background: var(--pc, var(--muted)); opacity: .8; min-width: 2px; }
+.dbg-seg.ph-top { --pc: var(--muted); opacity: .5; }
+.dbg-tick { position: absolute; top: -3px; width: 3px; height: 11px; margin-left: -1px; border-radius: 1px; background: var(--err); }
+.dbg-pos { font: 12px var(--font-mono); white-space: nowrap; min-width: 6ch; text-align: right; }
+.dbg-errs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12.5px; margin: 0 0 8px; }
+.dbg-errs:empty { display: none; }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.dbg-err-b { border-color: var(--err); }
+.dbg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; align-items: start; }
+.dbg-sec { border: 1px solid var(--line); border-radius: var(--r-pane); padding: 8px 10px; min-width: 0; }
+.dbg-sec h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.dbg-vars { grid-row: span 2; }
+.dbg-help { margin: 0 0 6px; font-size: 12px; }
+.dbg-empty { margin: 2px 0; font-size: 12.5px; }
+.dbg-list { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.dbg-calls { max-height: 240px; overflow: auto; }
+.dbg-calls li { padding: 3px 0; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; }
+.dbg-calls li.dbg-ph { border-top: 0; padding-top: 6px; font-weight: 600; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+.dbg-calls code { font: 11.5px var(--font-mono); overflow-wrap: anywhere; }
+.dbg-calls li.now { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.dv-group { margin: 0 0 4px; }
+.dv-group > summary { cursor: pointer; font-weight: 600; font-size: 12.5px; padding: 2px 0; }
+.dv-tree, .dv-kids { list-style: none; margin: 0; padding: 0 0 0 10px; font: 12px/1.5 var(--font-mono); }
+.dv-kids { border-left: 1px solid var(--line); margin-left: 4px; }
+.dv-row { overflow-wrap: anywhere; }
+.dv-row > details > summary { cursor: pointer; }
+.dv-n { color: var(--muted); }
+.dv-n::after { content: ": "; }
+.dv-v.t-string { color: color-mix(in srgb, var(--ok) 70%, var(--fg)); }
+.dv-v.t-number, .dv-v.t-boolean { color: color-mix(in srgb, var(--info) 75%, var(--fg)); }
+.dv-v.t-undefined, .dv-v.t-null, .dv-v.t-default, .dv-v.t-getter { color: var(--muted); font-style: italic; }
+.dv-ch { margin-left: 6px; font: 600 10.5px var(--font-body); color: color-mix(in srgb, var(--accent) 60%, var(--fg)); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 999px; padding: 0 6px; }
+.dv-row.is-ch > .dv-v, .dv-row.is-ch > details > summary > .dv-v { font-weight: 700; }
+.dbg-watch-form { display: flex; gap: 6px; margin: 0 0 6px; }
+.dbg-watch-form input { flex: 1; min-width: 0; font: 12.5px var(--font-mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); }
+.dbg-w, .dbg-bp { display: flex; gap: 8px; align-items: center; padding: 2px 0; }
+.dbg-w-e { font: 12px var(--font-mono); }
+.dbg-w-v { flex: 1; min-width: 0; font: 12px var(--font-mono); overflow-wrap: anywhere; }
+.dbg-w-v.err { color: var(--err); font-family: var(--font-body); }
+.dbg-w .btn.icon, .dbg-bp .btn.icon { width: 26px; padding: 2px 0; }
+.dbg-bp .muted { flex: 1; min-width: 0; }
+.dbg-stack li { padding: 2px 0; }
+.dbg-stack [aria-current] { font-weight: 700; }
+.dbg-stack-ph { font-size: 12px; }
+.dbg-check { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 12.5px; }
+#dbg-pop { position: fixed; z-index: 60; width: min(340px, calc(100vw - 16px)); box-sizing: border-box; padding: 10px 12px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: var(--sh-2); font-size: 13px; }
+#dbg-pop label { font-weight: 600; display: block; margin-bottom: 4px; }
+#dbg-pop input { width: 100%; box-sizing: border-box; font: 12.5px var(--font-mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); }
+#dbg-pop p { margin: 6px 0; font-size: 12px; }
+.dbg-pop-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 600px) {
+  .dbg-bar { gap: 4px; }
+  .dbg-b { padding: 7px 9px; }
+  .dbg-bar .dbg-sp { display: none; }
+  .dbg-grid { grid-template-columns: 1fr; }
+  .dbg-vars { grid-row: auto; }
+}
+
 /* Update note and What's new */
 #updated { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--info); background: var(--info-bg); color: var(--fg); border-radius: var(--r-pane); font-size: 13px; }
 #updated[hidden] { display: none; }
@@ -235,6 +347,13 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #news-body details.shot { margin-top: 6px; }
 #news-body details.shot > summary { cursor: pointer; color: var(--accent); font-size: 12.5px; width: max-content; }
 #news-body details.shot img { display: block; margin-top: 6px; max-width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); }
+#news-body .anim { position: relative; display: block; width: max-content; max-width: 100%; margin-top: 6px; }
+#news-body .anim img, #news-body .anim video { display: block; margin: 0; max-width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); }
+#news-body .anim-btn { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); cursor: pointer; }
+#news-body .anim-btn:hover { background: var(--surface-2); }
+#news-body .anim-btn svg { width: 16px; height: 16px; fill: currentColor; }
+#news-body .anim .p-pause, #news-body .anim.playing .p-play { display: none; }
+#news-body .anim.playing .p-pause { display: inline; }
 #news-body .rel-count { margin-left: auto; color: var(--muted); font-size: 12px; }
 #news-body .rel-body { padding: 4px 14px 12px; }
 #news-body h3 { margin: 12px 0 4px; font-size: 13.5px; }
@@ -248,13 +367,44 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 /* Settings dialog, More menu, symbol keys */
 .phone-only { display: none !important; }
 #settings-open { display: inline-flex; align-items: center; justify-content: center; }
-#settings-dialog { width: min(520px, 94vw); }
-#settings-dialog[open] { display: flex; flex-direction: column; height: min(600px, 86vh); }
-.set-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 0 -2px 4px; overflow-x: auto; scrollbar-width: none; flex: none; }
-.set-tabs [role=tab] { font: 600 13.5px var(--font-body); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px; cursor: pointer; white-space: nowrap; }
-.set-tabs [role=tab][aria-selected=true] { color: var(--fg); border-bottom-color: var(--accent); }
-.set-tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
-.set-panels { flex: 1; min-height: 0; overflow: auto; }
+#settings-dialog { width: min(820px, 96vw); }
+#settings-dialog[open] { display: flex; flex-direction: column; height: min(640px, 88vh); }
+.set-layout-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 0 18px; }
+.set-nav { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: auto; border-right: 1px solid var(--line); padding: 3px 12px 3px 3px; }
+.set-search input { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); }
+.set-tabs { display: flex; flex-direction: column; gap: 1px; }
+.set-g { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 10px 8px 3px; }
+.set-tabs [role=tab] { font: 500 13.5px var(--font-body); color: var(--fg); background: none; border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer; text-align: left; }
+.set-tabs [role=tab]:hover { background: var(--surface-2); }
+.set-tabs [role=tab][aria-selected=true] { background: color-mix(in srgb, var(--accent) 16%, transparent); font-weight: 650; }
+.set-tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.set-panels { min-height: 0; overflow: auto; padding-right: 4px; }
+.set-intro { margin: 0 0 6px; }
+#settings-dialog.searching .set-panel { display: block !important; }
+#settings-dialog.searching .set-panel::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 2px; }
+#settings-dialog.searching .set-panel.no-match, #settings-dialog.searching .set-sec.no-match, #settings-dialog.searching .set-intro { display: none !important; }
+#settings-dialog.searching .set-tabs [role=tab] { opacity: .6; }
+@media (max-width: 700px) {
+  .set-layout-wrap { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .set-nav { border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 8px; max-height: 38vh; }
+  .set-tabs { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .set-g { display: none; }
+  .set-tabs [role=tab] { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; }
+}
+/* Accessibility settings (a11y.ts) */
+:root[data-a11y-focus] :focus { outline: 3px solid var(--accent) !important; outline-offset: 2px !important; }
+:root[data-a11y-targets] :is(.btn, .htab, .rail-btn, .fix, .fs-tab, .tab, [role=tab], .link, .loc, .filter) { min-height: 34px; }
+:root[data-a11y-targets] .btn, :root[data-a11y-targets] .fix { padding-inline: 12px; }
+:root[data-a11y-font] { --font-body: "Atkinson Hyperlegible", system-ui, sans-serif; --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace; }
+:root[data-a11y-font] body, :root[data-a11y-font] .CodeMirror { font-family: var(--font-body); }
+:root[data-a11y-font] .CodeMirror, :root[data-a11y-font] code, :root[data-a11y-font] kbd { font-family: var(--font-mono); }
+:root[data-a11y-cb] { --err: #0068a8; --warn: #a65d00; }
+@media (prefers-color-scheme: dark) { :root[data-a11y-cb]:not([data-theme="light"]) { --err: #6cc0f0; --warn: #f0a830; } }
+:root[data-a11y-cb][data-theme="dark"] { --err: #6cc0f0; --warn: #f0a830; }
+:root[data-a11y-underline="straight"] .CodeMirror-lint-mark::after { --sq-mask: linear-gradient(#000, #000); height: 2px; }
+:root[data-a11y-underline="dotted"] .CodeMirror-lint-mark::after { --sq-mask: radial-gradient(circle, #000 0.9px, transparent 1.2px); -webkit-mask-size: 4px 3px; mask-size: 4px 3px; }
+:root[data-a11y-underline="thick"] .CodeMirror-lint-mark::after { height: 4px; -webkit-mask-size: 8px 4px; mask-size: 8px 4px; bottom: -2px; }
+
 .set-panel > .set-sec:first-child { border-top: 0; }
 .set-fields { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 2px 0 4px 26px; box-sizing: border-box; }
 .set-fields[hidden] { display: none; }
@@ -285,6 +435,23 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
 .code-list .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .code-list .btn small { color: var(--muted); font-size: 12px; font-weight: 400; }
+/* Save or copy: one recommended action (the .zip for Nucleus), the rest as a grid of small choices. */
+#code-dialog { width: min(560px, calc(100vw - 32px)); }
+#code-dialog button svg { flex: none; color: var(--accent); }
+#code-dialog button span { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+#code-dialog button small { color: var(--muted); font-size: 12.5px; font-weight: 400; }
+.code-hero { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid var(--accent); border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--fg); font: inherit; font-size: 15px; cursor: pointer; }
+.code-hero:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+.code-hero > span:nth-child(2) { flex: 1; }
+.code-badge { font-size: 11.5px; font-weight: 600; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; flex: none !important; }
+.code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.code-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
+.code-opt:hover { background: var(--surface-2); }
+.code-opt[hidden], .code-hero[hidden] { display: none; }
+.code-saved { font-weight: 600; margin: 0 0 6px; }
+.code-saved::before { content: '✓ '; color: var(--ok, #2e9e5b); }
+.code-warn { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 4px; }
+@media (max-width: 520px) { .code-grid { grid-template-columns: 1fr; } }
 #code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; padding: 2px 9px; align-self: stretch; }
 .lines-toggle { align-self: stretch; }
 #keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
@@ -310,6 +477,10 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #tipbar.contextual #tip-label { color: var(--info); }
 #tipbar code { font: 11.5px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 3px; }
 #tipbar .tip-actions { display: flex; gap: 6px; flex: none; }
+/* The control a tip is about, while that tip shows: a ring (a soft pulse when motion is on). */
+.tip-target { box-shadow: 0 0 0 2px var(--accent) !important; border-radius: var(--r-ctl); }
+:root:not([data-motion-ui="off"]) .tip-target { animation: tip-target 1.6s ease-in-out 3; }
+@keyframes tip-target { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent) !important; } }
 #tipbar .tip-btn { padding: 3px 9px; font-size: 12px; }
 #tipbar .tip-btn.icon { width: 26px; padding: 3px 0; }
 @media (prefers-reduced-motion: no-preference) { #tipbar.contextual { animation: tip-in .25s ease-out; } @keyframes tip-in { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } } }
@@ -337,9 +508,37 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
 .cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
 .cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--code-muted, var(--muted)); }
-.CodeMirror-lint-mark-error { background: none; border-bottom: 2px wavy var(--err); }
-.CodeMirror-lint-mark-warning { background: none; border-bottom: 2px wavy var(--warn); }
-.CodeMirror-lint-mark-info { background: none; border-bottom: 2px dotted var(--info); }
+/* Tokens other file types use (batch, PowerShell, ini, xml, yaml): mapped onto the same code colours. */
+.cm-s-default .cm-builtin, .cm-s-default .cm-tag { color: var(--kw); } .cm-s-default .cm-attribute, .cm-s-default .cm-qualifier { color: var(--prop); }
+.cm-s-default .cm-meta, .cm-s-default .cm-header, .cm-s-default .cm-bracket { color: var(--code-muted, var(--muted)); } .cm-s-default .cm-variable-3, .cm-s-default .cm-type { color: var(--num); }
+/* Read-only code coloured like the editor (codehl.ts): the editor's code colours on its code background, so the
+   contrast is the editor's in every look and code-colour theme. */
+.hl { background: var(--code-bg) !important; color: var(--code-fg, var(--fg)) !important; }
+code.hl { border-radius: 4px; }
+ul.hl { padding: 4px 8px; border-radius: var(--r-ctl); }
+/* The small code editors in Form and Blocks (codefield.ts): a text area until they're on screen, then a CodeMirror. */
+.cf { display: block; min-width: 0; max-width: 100%; font: 12.5px/1.5 var(--font-mono); }
+.cf-one { display: inline-block; vertical-align: middle; width: min(100%, calc(var(--cf-ch, 12) * 1ch + 18px)); }
+.cf .cf-ta, .cf .CodeMirror { display: block; width: 100%; box-sizing: border-box; font: inherit; background: var(--code-bg); color: var(--code-fg, var(--fg)); border: 1px solid var(--line); border-radius: var(--r-ctl); }
+.cf .cf-ta { padding: 4px 7px; resize: none; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; min-height: 30px; }
+.cf-one .cf-ta { overflow: hidden; }
+.cf .CodeMirror { height: auto; min-height: 30px; }
+.cf .CodeMirror-scroll { max-height: 24em; min-height: 0; }
+.cf-one .CodeMirror-scroll { max-height: 9em; }
+.cf .CodeMirror-lines { padding: 4px 0; }
+.cf .CodeMirror pre.CodeMirror-line, .cf .CodeMirror pre.CodeMirror-line-like { padding: 0 7px; }
+.cf .CodeMirror-focused { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cf-invalid .cf-ta, .cf-invalid .CodeMirror { border-color: var(--err); }
+/* Squiggles under the exact code a problem is about: VS Code's own 6x3 wave (Monaco's SVG), used as a mask so it
+   takes each theme's colour. Tips get a dotted line. */
+.CodeMirror-lint-mark { background: none; position: relative; }
+.CodeMirror-lint-mark::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; pointer-events: none; background: var(--sq);
+  -webkit-mask: var(--sq-mask) repeat-x left bottom / 6px 3px; mask: var(--sq-mask) repeat-x left bottom / 6px 3px;
+  --sq-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' width='6' height='3'%3E%3Cpolygon points='5.5,0 2.5,3 1.1,3 4.1,0'/%3E%3Cpolygon points='4,0 6,2 6,0.6 5.4,0'/%3E%3Cpolygon points='0,2 1,3 2.4,3 0,0.6'/%3E%3C/svg%3E"); }
+.CodeMirror-lint-mark-error { --sq: var(--err); }
+.CodeMirror-lint-mark-warning { --sq: var(--warn); }
+.CodeMirror-lint-mark-info { --sq: var(--info); }
+.CodeMirror-lint-mark-info::after { height: 2px; --sq-mask: radial-gradient(circle, #000 0.7px, transparent 1px); -webkit-mask-size: 4px 2px; mask-size: 4px 2px; }
 .CodeMirror-lint-tooltip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px/1.45 var(--font-body); max-width: 460px; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 50; }
 .CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px var(--font-mono); max-height: 260px; box-shadow: 0 8px 22px rgba(0,0,0,.2); z-index: 60; }
 .CodeMirror-hint { color: var(--fg); display: flex; justify-content: space-between; gap: 16px; padding: 3px 8px; }
@@ -350,8 +549,135 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 
 #sig { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 10px; font: 12px/1.5 var(--font-mono); box-shadow: 0 4px 14px rgba(0,0,0,.15); overflow-x: auto; }
 #sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }
-#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); pointer-events: none; }
+#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
+#tip[hidden] { display: none; }
+/* The hover card (one box): over a problem, the problem with an icon in its colour, its message (names as code) and
+   its fixes; the docs of the name fold away below. */
+#tip .hc-item { display: flex; gap: 10px; }
+#tip .hc-item + .hc-item { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+#tip .hc-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); margin-top: 1px; }
+#tip .error .hc-ico { background: var(--err); }
+#tip .warning .hc-ico { background: var(--warn); color: #1b1f2a; }
+#tip .info .hc-ico { background: var(--info); }
+#tip .hc-body { min-width: 0; }
+#tip .hc-title { font-weight: 600; color: var(--fg); }
+#tip .hc-msg { color: var(--muted); margin-top: 2px; line-height: 1.45; }
+#tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 4px; border-radius: 3px; overflow-wrap: anywhere; }
+#tip .hc-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+#tip .hc-actions .btn { padding: 3px 10px; font-size: 12px; }
+#tip .hc-actions .btn code { background: transparent; color: inherit; padding: 0; }
+#tip .hc-key { display: inline-flex; gap: 2px; margin-left: 2px; }
+#tip .hc-key kbd { font: 10.5px var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+#tip .hc-rule { font: 11px var(--font-mono); color: var(--muted); }
+#tip details.hc-doc { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 6px; }
+#tip details.hc-doc > summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+#tip details.hc-doc[open] > summary { margin-bottom: 6px; }
 #tip p, .api p { margin: 0 0 6px; }
+/* API docs card (doccard.ts): signature, description, facts, and who wrote it. */
+.dc-sig { font: 12.5px/1.5 var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 7px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }
+.dc-sig div + div { margin-top: 2px; border-top: 1px dashed var(--line); padding-top: 2px; }
+.sg-o { color: var(--muted); } .sg-n { color: var(--prop, var(--accent)); font-weight: 700; } .sg-p { color: var(--code-fg, var(--fg)); }
+.sg-t { color: var(--kw, var(--accent)); } .sg-c { color: var(--muted); }
+.dc p { margin: 0 0 6px; line-height: 1.5; }
+.dc-dep { color: var(--warn); font-weight: 600; }
+.dc-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+.dc-chip { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.dc-chip.req { color: var(--err); border-color: currentColor; }
+.dc-chip code { font-size: 11px; padding: 0 3px; }
+.dc-ai { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+.dc-ai .ai-spark { margin-top: 1px; }
+/* The AI mark: two four-point sparkles with a purple-to-cyan gradient, wherever something was written by AI. */
+.ai-spark, .ai-doc::before { content: ''; display: inline-block; flex: none; width: 1.1em; height: 1.1em; vertical-align: -0.18em; background: linear-gradient(135deg, #a855f7 10%, #22d3ee 90%);
+  -webkit-mask: var(--spark) center / contain no-repeat; mask: var(--spark) center / contain no-repeat;
+  --spark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 1.5Q15 9.5 23 10.5Q15 11.5 14 19.5Q13 11.5 5 10.5Q13 9.5 14 1.5Z'/%3E%3Cpath d='M5.5 13.5Q6 17.5 10 18Q6 18.5 5.5 22.5Q5 18.5 1 18Q5 17.5 5.5 13.5Z'/%3E%3C/svg%3E"); }
+.ai-doc::before { margin-right: 4px; }
+/* Reference home: the docs to check, apart from the Browse grid. */
+.api-ai { display: flex; gap: 12px; align-items: flex-start; text-align: left; font: inherit; color: var(--fg); cursor: pointer; padding: 12px 14px; border-radius: var(--r-pane); border: 1px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, #a855f7, #22d3ee) border-box; }
+.api-ai:hover { background: linear-gradient(color-mix(in srgb, #a855f7 7%, var(--surface)), color-mix(in srgb, #22d3ee 7%, var(--surface))) padding-box, linear-gradient(135deg, #a855f7, #22d3ee) border-box; }
+.api-ai .ai-spark { width: 26px; height: 26px; margin-top: 2px; }
+.api-ai .t { font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.api-ai .d { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.dc-check { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.dc-check a { font-size: 12px; }
+.votes { display: inline-flex; gap: 2px; }
+.vote-btn { font: 13px/1 var(--font-body); background: none; border: 1px solid transparent; border-radius: 6px; padding: 3px 5px; cursor: pointer; filter: grayscale(1); opacity: .7; }
+.vote-btn:hover, .vote-btn:focus-visible { opacity: 1; filter: none; border-color: var(--line); }
+.vote-btn[aria-pressed="true"] { opacity: 1; filter: none; background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+#tip-votes .votes { margin-right: 2px; }
+.ai-doc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+/* Shortcut hints (keyhints.ts). */
+.keyhint { position: fixed; z-index: 90; display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 12px; pointer-events: none; white-space: nowrap; }
+.keyhint[hidden] { display: none; }
+#ai-bar:not(:has(> .btn:not([hidden]))) { display: none; }
+/* Links on the status bar's grey: a touch toward the text colour, so they keep 4.5:1 in every look. */
+.verdict .link { color: color-mix(in srgb, var(--accent) 82%, var(--fg)); }
+/* After a fix: one line (what was fixed, Undo), the details folded; the changed lines light up in the code. */
+#ai-box.compact { padding: 8px 12px; }
+.fix-done { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; }
+.fix-ok { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--ok); color: #fff; font-size: 12px; font-weight: 700; flex: none; }
+.fix-msg { flex: 1; min-width: 12em; font-size: 13px; }
+.fix-more { flex-basis: 100%; font-size: 13px; }
+.fix-more > summary { cursor: pointer; color: var(--muted); }
+.fix-more[open] > summary { margin-bottom: 6px; }
+.fix-more .diff-wrap { max-height: 260px; }
+.CodeMirror .line-changed { background: color-mix(in srgb, var(--ok) 7%, transparent); box-shadow: inset 3px 0 0 var(--ok); transition: background-color 1s; }
+/* Help test this beta (testguide.ts). */
+#test-dialog { width: min(720px, calc(100vw - 32px)); }
+#test-dialog { width: min(720px, 96vw); }
+.tg-ask { display: flex; gap: 14px; align-items: center; margin: 0 0 6px; }
+.rel-intro { margin: 2px 0 10px; font-size: 14px; line-height: 1.5; }
+.rel-intro strong { font-size: 15px; }
+.tg-asking .tg-compare { display: none !important; }
+.probe-intro { max-width: 75ch; margin: 0 0 10px; }
+.probe-intro p { margin: 0 0 8px; line-height: 1.5; }
+.probe-cols { margin: 0 0 12px; }
+.probe-cols summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.tg-you .link { color: color-mix(in srgb, var(--accent) 65%, var(--fg)); }
+.tg-compare .link { color: color-mix(in srgb, var(--accent) 65%, var(--fg)); }
+.tg-hello { margin: 0; font-size: 15px; line-height: 1.45; }
+.tg-q { border: 0; padding: 0; margin: 14px 0 0; }
+.tg-q legend { font-weight: 650; font-size: 15px; padding: 0; margin-bottom: 8px; }
+.tg-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.tg-card { position: relative; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; transition: border-color .12s, background-color .12s; }
+.tg-card input { position: absolute; opacity: 0; pointer-events: none; }
+.tg-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.tg-card:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.tg-card:has(input:checked)::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font: 700 12px/20px var(--font-body); text-align: center; }
+.tg-card:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tg-ic { font-size: 22px; line-height: 1; margin-top: 1px; }
+.tg-cl { display: flex; flex-direction: column; gap: 2px; padding-right: 18px; }
+.tg-cl small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.tg-go { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.tg-go .btn.primary:disabled { opacity: .5; cursor: not-allowed; }
+.tg-you { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 12px; margin: 0 0 12px; border-radius: var(--r-ctl); background: var(--surface-2); font-size: 13.5px; }
+.tg-h { font-size: 14px; margin: 4px 0 8px; } .tg-h .muted { font-weight: 400; font-size: 12.5px; }
+.tg-h:focus { outline: none; }
+.tg-more { margin-top: 10px; } .tg-more > summary { cursor: pointer; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.tg-area { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; cursor: help; color: var(--fg); }
+.tg-area.a-api { background: color-mix(in srgb, #a855f7 22%, transparent); }
+.tg-area.a-devx { background: color-mix(in srgb, #22c55e 22%, transparent); }
+.tg-area.a-uiux { background: color-mix(in srgb, #f59e0b 25%, transparent); }
+.tg-time { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--surface-2); color: var(--fg); cursor: help; }
+.tg-need { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--fg); cursor: help; }
+@media (max-width: 520px) { .tg-ask .masc { display: none; } .tg-cards { grid-template-columns: 1fr; } }
+.tg-count { margin: 0 0 8px; }
+.tg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow: auto; }
+.tg-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
+.tg-item.done { opacity: .65; }
+.tg-item.done strong { text-decoration: line-through; }
+.tg-done input { width: 18px; height: 18px; margin-top: 2px; }
+.tg-item p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
+.tg-title { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tg-kind, .tg-for { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.tg-kind { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--fg); border-color: transparent; cursor: help; }
+.tg-legend { margin-top: 10px; font-size: 13px; } .tg-legend dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; } .tg-legend dt { font-weight: 600; } .tg-legend dd { margin: 0; color: var(--muted); }
+@media (pointer: coarse) { .no-touch { display: none !important; } }
+/* Problem cards: the text starts at the same place whatever the line number. */
+.problem .loc { min-width: 7ch; }
+.keyhint .kh-keys { display: flex; gap: 3px; }
+.keyhint kbd { font: 11px var(--font-mono); background: var(--surface-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
 .doc-code, #tip pre { background: var(--surface-2); border-radius: 5px; padding: 6px 8px; font: 12px/1.45 var(--font-mono); margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
 code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
 a { color: var(--accent); }
@@ -372,6 +698,48 @@ a { color: var(--accent); }
 .ok.pill, .chip.ok { background: var(--ok-bg); color: var(--ok); }
 .muted { color: var(--muted); }
 .empty { color: var(--muted); }
+/* Duo and Nucli (src/mascots.ts) */
+.masc-empty { display: flex; align-items: center; gap: 14px; padding: 14px 10px !important; }
+.masc-empty .masc { margin: -6px 0; }
+.masc-banner { display: flex; align-items: center; gap: 10px; }
+.masc-banner { overflow: visible; }
+/* Game.ProtoInput.BlockedMessages: names after the numbers, and a + to add one (src/wmhints.ts) */
+.CodeMirror .wm-hint { margin: 0 2px 0 6px; padding: 0 5px; border-radius: 4px; font-size: .82em; color: var(--muted); background: var(--surface-2); font-family: var(--font, system-ui), sans-serif; user-select: none; }
+.CodeMirror .wm-hint.bad { color: var(--warning-fg, #b45309); }
+.CodeMirror .wm-add { margin: 0 2px; padding: 0 6px; height: 1.35em; line-height: 1.2; border: 1px dashed var(--line); border-radius: 4px; background: transparent; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; vertical-align: baseline; }
+.CodeMirror .wm-add:hover, .CodeMirror .wm-add:focus-visible { border-style: solid; background: var(--surface-2); }
+.wm-menu { position: fixed; z-index: 40; width: min(420px, calc(100vw - 16px)); max-height: 60vh; overflow: auto; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--sh-3, 0 10px 30px rgba(0,0,0,.25)); }
+.wm-menu-h { padding: 6px 8px; font-weight: 700; font-size: 13px; }
+.wm-menu button { display: grid; grid-template-columns: auto auto 1fr; gap: 2px 8px; align-items: baseline; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); cursor: pointer; font: inherit; font-size: 13.5px; }
+.wm-menu button:hover, .wm-menu button:focus-visible { background: var(--surface-2); }
+.wm-menu button[disabled] { opacity: .5; cursor: default; }
+.wm-menu button small { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.wm-menu .wm-n { justify-self: end; color: var(--muted); font-size: 12px; }
+.wm-menu-f { margin: 4px 8px 6px; font-size: 12px; }
+/* A note under the line it's about (src/codenote.ts) */
+.code-note { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 4px 6px 4px 8px; width: max-content; max-width: calc(100% - 16px); font: 13px/1.4 var(--font, system-ui), sans-serif; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid #55d137; border-radius: 8px; box-shadow: var(--sh-1, 0 2px 8px rgba(0,0,0,.12)); }
+.code-note.info { border-left-color: var(--accent); }
+.code-note .masc { margin: -6px -2px -6px -4px; }
+.code-note .cn-x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+.code-note .cn-x:hover { color: var(--fg); background: var(--surface-2); }
+@media (prefers-reduced-motion: no-preference) { :root:not([data-motion-ui="off"]) .code-note { animation: cn-in .22s var(--spring, ease-out); } @keyframes cn-in { from { opacity: 0; transform: translateY(-4px); } } }
+/* Settings → Theme → Motion → Moving interface off (src/motion.ts): the workbench's own transitions and animations stop. */
+:root[data-motion-ui="off"] *:not(.masc, .masc *, .fx-layer *), :root[data-motion-ui="off"] *::before, :root[data-motion-ui="off"] *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+/* Nucli fixing the code (src/fixfx.ts) */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+.fx-nucli { position: absolute; left: 0; top: 0; filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
+.fx-ghost { position: absolute; white-space: pre; color: #e5484d; text-decoration: line-through; text-decoration-thickness: 2px; background: rgba(229, 72, 77, .14); border-radius: 3px; padding: 0 2px; margin-left: -2px; transform-origin: left center; }
+.fx-beam { position: absolute; height: 3px; border-radius: 2px; background: linear-gradient(90deg, #55d137, #b9ff9e); box-shadow: 0 0 8px #55d137; transform-origin: right center; }
+.CodeMirror .fx-new { animation: fx-glow 1.5s ease-out both; }
+.CodeMirror .fx-new-still { box-shadow: inset 3px 0 #55d137; }
+@keyframes fx-glow { 0% { background: rgba(85, 209, 55, 0); } 20% { background: rgba(85, 209, 55, .38); box-shadow: inset 3px 0 #55d137; } 100% { background: rgba(85, 209, 55, 0); box-shadow: inset 3px 0 transparent; } }
+.masc-banner > .masc { margin: -2px 0 -2px -4px; }
+#sim-matrix .mx-head { position: relative; padding-left: 50px; min-height: 40px; align-items: center; }
+#sim-matrix .mx-head > .muted { flex: 1 1 220px; min-width: 0; } /* the details take the room; Stop and × stay on the first line */
+#sim-matrix .mx-masc { position: absolute; left: 0; top: 50%; translate: 0 -50%; }
+.toast-masc { margin: -6px 0 -6px -4px; }
+.ai-status .ai-masc { margin: -10px 0; }
+#notice .notice-masc { margin: -10px 2px -10px 0; }
 
 #problems { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 /* Check cards: soft cards with a rounded severity bar instead of a hard left border. */
@@ -413,8 +781,9 @@ table { border-collapse: collapse; width: 100%; }
 .lede { margin: 0 0 12px; max-width: 65ch; }
 .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
 #api-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 12px; }
-.api { border-bottom: 1px solid var(--line); padding: 8px 0; }
-.api h3 { margin: 0 0 4px; font: 600 13px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.api { border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; margin: 0 0 10px; background: var(--surface); }
+.api:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.api h3 { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font: 600 13.5px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .chip-btn { cursor: pointer; font: inherit; border: 0; }
 .chip-btn:hover { filter: brightness(1.1); }
@@ -495,8 +864,15 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .tip-line { font-size: 11.5px; margin-left: auto; }
 .problem.current { outline: 2px solid var(--accent); outline-offset: 1px; }
 .fixable { font-size: 11px; color: var(--ok); font-weight: 600; }
-#welcome { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r-pane); padding: 8px 10px; margin-bottom: 10px; font-size: 13px; }
+/* Getting started: at the top of the code, where reading starts. Closed, the footer's Getting started brings it back. */
+#welcome { border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); padding: 8px 12px; font-size: 13px; }
 #welcome[hidden] { display: none; }
+/* Where a put-away thing now lives (flyTo in app.ts): a short glow on the link. */
+:root:not([data-motion-ui="off"]) #welcome.welcome-in { animation: welcome-in .35s cubic-bezier(.2, .8, .2, 1); transform-origin: top; }
+@keyframes welcome-in { from { opacity: 0; transform: scaleY(.6); } }
+.fly-ghost { position: fixed; z-index: 95; pointer-events: none; transform-origin: top left; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.moved-here { animation: moved-here 1.6s ease-out; border-radius: 4px; }
+@keyframes moved-here { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 #welcome .w-head { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
 #welcome .w-head > span { flex: 1; min-width: 0; }
 #welcome .w-head strong { color: var(--fg); }
@@ -698,21 +1074,22 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 :root[data-site="alpha8"] .pane, :root[data-site="alpha8"] .problem, :root[data-site="alpha8"] .player { box-shadow: none; }
 :root[data-site="alpha8"] *, :root[data-site="alpha8"] *::before, :root[data-site="alpha8"] *::after, :root[data-site="alpha8"] *::backdrop { animation: none !important; transition: none !important; }
 
-/* ---- Motion (inspired by BSManager): springy dialogs, a glow on the main button, icons that answer the
+/* ---- Motion (inspired by BSManager): springy dialogs, a glow on AI buttons, icons that answer the
    pointer, actions that slide in on a row, a tab marker that glides. Never under reduced motion, never in
    the alpha 8 look. ---- */
 :root { --spring: cubic-bezier(.34, 1.4, .64, 1); }
 @media (prefers-reduced-motion: no-preference) {
   /* The main button: a slow ribbon of the player colours around it while the pointer is on it (not in v3,
      whose rule is that colour means a player, nor alpha 8). */
-  .btn.primary { position: relative; isolation: isolate; }
-  .btn.primary::after { content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit; background: linear-gradient(90deg, var(--p1), var(--p3), var(--p4), var(--p7), var(--p2), var(--p6), var(--p5), var(--p1)); background-size: 400% 100%; filter: blur(7px); opacity: 0; transition: opacity .25s ease; animation: glow-ribbon 8s linear infinite paused; pointer-events: none; }
-  .btn.primary:hover::after, .btn.primary:focus-visible::after { opacity: .55; animation-play-state: running; }
+  /* The colour glow is for AI features only (Fix with AI), not everyday buttons. */
+  .btn.ai { position: relative; isolation: isolate; }
+  .btn.ai::after { content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit; background: linear-gradient(90deg, var(--p1), var(--p3), var(--p4), var(--p7), var(--p2), var(--p6), var(--p5), var(--p1)); background-size: 400% 100%; filter: blur(7px); opacity: 0; transition: opacity .25s ease; animation: glow-ribbon 8s linear infinite paused; pointer-events: none; }
+  .btn.ai:hover::after, .btn.ai:focus-visible::after { opacity: .55; animation-play-state: running; }
   /* and it widens a little under the pointer, with a soft overshoot (bsmanager.io's download button) */
   .btn.primary { transition: background-color .12s, border-color .12s, filter .12s, padding .3s cubic-bezier(.3, 1, .7, 1); }
   .btn.primary:hover { padding-inline: 18px; }
   :root[data-site="alpha8"] .btn.primary:hover { padding-inline: 12px; }
-  :root[data-site="v3"] .btn.primary::after, :root[data-site="alpha8"] .btn.primary::after { display: none; }
+  :root[data-site="v3"] .btn.ai::after, :root[data-site="alpha8"] .btn.ai::after { display: none; }
   @keyframes glow-ribbon { to { background-position: 400% 0; } }
   /* Icon buttons: a little turn under the pointer, a kick back when pressed */
   .btn.icon svg, #settings-open svg { transition: transform .18s var(--spring); }
@@ -737,9 +1114,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 /* More after BSManager: the logo kicks when clicked and beats while Test all runs; notices slide
    in from above; Test all fills a progress bar. */
 @media (prefers-reduced-motion: no-preference) {
-  a.brand .logo { transition: transform .25s var(--spring); }
-  a.brand:active .logo { transform: rotate(-12deg) scale(.94); transition-duration: .08s; }
-  html.busy a.brand .logo { animation: logo-beat .55s ease-in-out infinite; }
+  .brand-link .logo { transition: transform .25s var(--spring); }
+  .brand-link:active .logo { transform: rotate(-12deg) scale(.94); transition-duration: .08s; }
+  html.busy .brand-link .logo { animation: logo-beat .55s ease-in-out infinite; }
   @keyframes logo-beat { 50% { transform: scale(1.08); } }
   #notice:not([hidden]) { animation: notice-in .35s var(--spring); }
   @keyframes notice-in { from { opacity: 0; transform: translateY(-10px); } }
@@ -779,6 +1156,51 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .mode button { border: 0; background: var(--surface); padding: 6px 10px; cursor: pointer; }
 .mode button[aria-pressed=true] { background: var(--fg); color: var(--bg); font-weight: 600; }
 .plain-title { font-weight: 600; }
+/* Check cards (Settings › General › Check): a row with the essentials; open it for the why, other fixes and details. */
+.problem:has(> .pcard) { display: block; padding: 6px 10px 6px 16px; }
+.pcard .prow { display: flex; align-items: center; gap: 8px; min-height: 30px; cursor: pointer; }
+.ptoggle { flex: none; width: 26px; height: 26px; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
+.ptoggle::before { content: '›'; display: inline-block; transition: transform .15s; }
+.pcard.open .ptoggle::before { transform: rotate(90deg); }
+.ptoggle:hover { background: var(--surface-2); color: var(--fg); }
+.pcard .plain-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard.open .plain-title { white-space: normal; }
+.pcard .row-fix { flex: none; }
+.pcard .row-fix .fix { white-space: nowrap; }
+.pcard .loc { flex: none; }
+.pcard .body { padding: 4px 0 6px 26px; }
+.pcard .body .plain-why { margin-top: 0; }
+.sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); }
+.problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); color: #1b1f2a; } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
+#problems[data-density="compact"] { gap: 4px; }
+/* First visit: Nucli's two questions (firstrun.ts) */
+#firstrun-dialog { width: min(600px, 94vw); }
+.fr-head { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
+.fr-head h2 { margin: 0 0 2px; } .fr-head p { margin: 0; color: var(--muted); }
+.fr-q { border: 0; padding: 0; margin: 12px 0 0; }
+.fr-q legend { font-weight: 650; font-size: 14.5px; margin-bottom: 6px; padding: 0; }
+.fr-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fr-opt { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--surface); }
+.fr-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.fr-opt:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.fr-opt:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.fr-opt:has(input:checked)::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font: 700 12px/20px var(--font-body); text-align: center; }
+.fr-opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fr-opt > span:last-child { display: flex; flex-direction: column; gap: 2px; padding-right: 22px; }
+.fr-opt small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.fr-pic { display: grid; height: 54px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); gap: 3px; padding: 4px; }
+.fr-pic i { background: color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 3px; }
+.fr-pic b { background: var(--surface-2); border-radius: 3px; }
+.fr-bar { grid-template: 9px 1fr / 1.4fr 1fr; } .fr-bar i { grid-column: 1 / -1; }
+.fr-rail { grid-template: 1fr / 9px 1.4fr 1fr; }
+#firstrun-dialog .actions { margin-top: 16px; }
+@media (max-width: 520px) { .fr-opts { grid-template-columns: 1fr; } .fr-head .masc { display: none; } .fr-pic { display: none; } }
+.set-layouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.set-layout { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); cursor: pointer; }
+.set-layout:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.set-layout span { display: flex; flex-direction: column; } .set-layout small { color: var(--muted); font-size: 12px; }
+#sp-general .set-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+@media (max-width: 600px) { .pcard .row-fix { display: none; } .pcard.open .row-fix { display: inline; } }
 .plain-why { margin: 2px 0 0; }
 .tech { margin-top: 4px; font-size: 12px; color: var(--muted); }
 .banner .small { font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; font-weight: 400; }
@@ -880,7 +1302,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   .switch button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); }
   .switch button[aria-pressed=true] .count { background: color-mix(in srgb, var(--accent-fg) 25%, transparent); color: inherit; }
   .main, .main.sized, .main.sized:has(#lines:not([hidden])) { grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
-  #split-main, #split-lines { display: none; }
+  #split-main, #split-lines, #split-files { display: none; }
   .sheet-grip { display: block; height: 18px; flex: none; cursor: row-resize; touch-action: none; position: relative; }
   .sheet-grip::after { content: ""; position: absolute; left: 50%; top: 7px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--line); }
   #lines.custom-h { height: var(--sheet-h) !important; }
@@ -925,7 +1347,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   /* Settings: the theme as one segmented control, bigger rows, Done always in reach */
   #settings-dialog { padding-bottom: 0; }
   #settings-dialog[open] { height: min(78dvh, 640px); }
-  .set-tabs [role=tab] { padding: 10px 12px; font-size: 15px; }
   #settings-dialog h2 { margin-bottom: 8px; }
   .set-radios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; width: 100%; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
   .set-radios label { justify-content: center; padding: 10px 4px; font-size: 14px; text-align: center; }
@@ -957,6 +1378,550 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .adv:has(input:checked) { color: var(--fg); }
 @media (prefers-reduced-motion: reduce) { .adv .track, .adv .track::after { transition: none; } }
 header .toolbar { order: 2; }
+/* ---- Header: one slim row (layout "bar"), or tools in a side rail (layout "rail"); open handlers as tabs ---- */
+header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
+.brand-long { font-weight: inherit; }
+@media (max-width: 1280px) { .brand-long { display: none; } }
+.htabs-wrap { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-width: 0; align-self: stretch; }
+#htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; align-self: flex-end; }
+.htab-all[hidden] { display: none; }
+.htab-all { font-size: 12px; }
+.htab-w { display: inline-flex; align-items: center; max-width: 250px; border: 1px solid transparent; border-bottom: 0; border-radius: 9px 9px 0 0; flex: none; }
+.htab-w:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.htab-w.on { background: var(--surface); border-color: var(--line); }
+.htab { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 7px 4px 7px 12px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; border-radius: 9px 0 0 0; }
+.htab-w:hover .htab, .htab-w.on .htab { color: var(--fg); }
+.htab-w.on .htab { font-weight: 600; }
+.htab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.htab .ht-name { overflow: hidden; text-overflow: ellipsis; }
+.htab .ht-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--line); }
+.htab .ht-dot.e { background: var(--err); } .htab .ht-dot.w { background: var(--warn); } .htab .ht-dot.ok { background: var(--ok); }
+.htab .ht-pk { font: 700 10px/1 var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; flex: none; }
+.ht-x { width: 22px; height: 22px; margin-right: 5px; display: grid; place-items: center; flex: none; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 15px; line-height: 1; cursor: pointer; opacity: 0; padding: 0; }
+.htab-w:hover .ht-x, .htab-w.on .ht-x, .ht-x:focus-visible { opacity: 1; }
+.ht-x:hover { background: var(--surface-2); color: var(--fg); }
+@media (pointer: coarse) { .ht-x { opacity: 1; } }
+.htab-add { flex: none; width: 30px; height: 30px; margin-bottom: 2px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.htab-add:hover, .htab-add[aria-expanded="true"] { background: var(--surface); color: var(--fg); }
+.save-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.save-btn:hover { filter: brightness(1.08); }
+.split-save { display: inline-flex; }
+.split-save #code-menu-open { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.split-save .save-more { padding: 0 8px; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid color-mix(in srgb, var(--accent-fg) 35%, transparent); }
+.split-save .save-more[aria-expanded=true] { background: var(--accent); color: var(--accent-fg); filter: brightness(.88); }
+.share-btn { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 860px) { .split-save.wide-only, .share-btn.wide-only { display: none; } }
+#app-menu-open { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+#app-menu-open .phone-dots { display: none; }
+.app-hidden { display: none !important; }
+.phone-name { display: none !important; }
+.rail { display: none; }
+/* Menus (menus.ts) */
+.app-menu { position: fixed; z-index: 90; min-width: 240px; max-width: min(340px, calc(100vw - 16px)); padding: 6px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 12px 32px rgba(0,0,0,.28); font-size: 13.5px; }
+.app-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: 7px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.app-menu button:hover, .app-menu button:focus-visible { background: var(--surface-2); outline: none; }
+.app-menu button[disabled] { opacity: .5; cursor: default; }
+.app-menu .am-l { flex: 1; }
+.app-menu .am-k { font: 11px var(--font-mono); color: var(--muted); }
+.app-menu .am-check { width: 14px; color: var(--accent); font-weight: 700; }
+.app-menu .am-sep { height: 1px; background: var(--line); margin: 5px 4px; }
+.app-menu .am-h { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px 2px; }
+/* Side rail */
+:root[data-layout="rail"] .rail { display: flex; flex-direction: column; align-items: center; gap: 6px; position: fixed; left: 0; top: 0; bottom: 0; width: 52px; padding: 12px 0; background: var(--surface); border-right: 1px solid var(--line); z-index: 20; }
+:root[data-layout="rail"] .app { padding-left: calc(52px + 12px); }
+:root[data-layout="rail"] header .brand, :root[data-layout="rail"] header .toolbar { display: none; }
+.rail-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 9px; background: none; color: var(--muted); cursor: pointer; font-size: 16px; text-decoration: none; }
+.rail-btn:hover, .rail-btn[aria-pressed="true"], .rail-btn[aria-expanded="true"] { background: var(--surface-2); color: var(--fg); }
+.rail-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rail-logo { color: var(--accent); }
+.rail-sp { flex: 1; }
+.rail-btn { position: relative; }
+.rail-btn.confirmed::after { content: "✓"; position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ok); color: #fff; font: 700 10px/14px var(--font-body); text-align: center; }
+.rail-label { display: none; }
+:root[data-layout="rail"][data-rail-open] .rail { width: 196px; box-sizing: border-box; align-items: stretch; padding: 12px 8px; }
+:root[data-layout="rail"][data-rail-open] .app { padding-left: calc(196px + 12px); }
+:root[data-layout="rail"][data-rail-open] .rail-btn { width: auto; display: flex; align-items: center; gap: 10px; padding: 0 10px; justify-content: flex-start; }
+:root[data-layout="rail"][data-rail-open] .rail-label { display: inline; font: 500 13.5px var(--font-body); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail-toggle svg { transition: transform .15s; }
+:root[data-rail-open] .rail-toggle svg { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .rail-toggle svg { transition: none; } }
+@media (max-width: 860px) {
+  :root[data-layout="rail"] .rail { display: none; }
+  :root[data-layout="rail"] .app { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  :root[data-layout="rail"] header .brand, :root[data-layout="rail"] header .toolbar { display: flex; }
+  .htabs-wrap { display: none; }
+  .phone-name { display: inline-flex !important; }
+  #app-menu-open svg { display: none; }
+  #app-menu-open .phone-dots { display: inline; font-size: 18px; }
+  header .home-link { display: none; }
+}
+/* ---- Form view (formview.ts) ---- */
+/* Form view (src/formview.ts). Uses the page's variables only. */
+.fv { container-type: inline-size; font: 14px/1.45 var(--font-body); color: var(--fg); padding: 12px 14px 32px; overflow: auto; box-sizing: border-box; height: 100%; }
+.fv [hidden] { display: none !important; }
+.fv *, .fv *::before, .fv *::after { box-sizing: border-box; }
+.fv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fv-muted, .fv-empty { color: var(--muted); }
+.fv-empty { margin: 0 0 6px; font-size: 13px; }
+.fv code { font: 0.92em var(--font-mono); }
+
+.fv-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.fv-status { font-size: 12.5px; color: var(--muted); min-height: 1.2em; }
+.fv button { font: inherit; color: var(--fg); }
+.fv :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Groups and rows */
+.fv-group { margin: 0 0 12px; }
+.fv-group-title { display: flex; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; padding: 4px 2px; cursor: pointer; list-style: none; border-radius: 6px; }
+.fv-group-title::-webkit-details-marker { display: none; }
+.fv-group-title::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; align-self: center; margin-right: 2px; }
+details[open] > .fv-group-title::before { transform: rotate(45deg); }
+.fv-count { font-weight: 500; letter-spacing: 0; text-transform: none; }
+.fv-group-title:hover { color: var(--fg); }
+.fv-rows { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); overflow: hidden; }
+.fv-row { padding: 0 6px 0 12px; border-top: 1px solid var(--line); }
+.fv-row:first-child { border-top: 0; }
+.fv-row.fv-has-err { box-shadow: inset 3px 0 0 var(--err); }
+.fv-row.fv-has-warn { box-shadow: inset 3px 0 0 var(--warn); }
+.fv-row.fv-open { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+.fv-line { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(160px, 3fr) auto; align-items: center; column-gap: 12px; min-height: 42px; padding: 4px 0; }
+.fv-head { min-width: 0; }
+.fv-label { display: block; font: 600 13.5px/1.35 var(--font-mono); overflow-wrap: anywhere; min-width: 0; }
+.fv-owner { color: var(--muted); font-weight: 400; font-size: .86em; }
+.fv-doc { display: none; font-size: 12px; line-height: 1.35; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fv[data-density=comfortable] .fv-row:not(.fv-open) .fv-doc { display: block; }
+.fv-doc .fv-ai, .fv-doc-full .fv-ai { width: .95em; height: .95em; vertical-align: -0.12em; }
+.fv-ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.fv-toggle { flex: none; width: 28px; height: 28px; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; display: inline-grid; place-items: center; color: var(--muted) !important; }
+.fv-toggle::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.6px 1.6px 0; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+.fv-toggle[aria-expanded=true]::before { transform: translateY(2px) rotate(-135deg); }
+.fv-toggle:hover { background: var(--surface-2); border-color: var(--line); color: var(--fg) !important; }
+.fv-sum:not(:empty) { padding: 0 34px 8px 0; margin-top: -2px; }
+.fv-open .fv-sum { display: none; }
+.fv-sum .fv-prob { padding: 4px 8px; align-items: center; }
+.fv-more-n { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.fv-more { padding: 2px 34px 12px 0; display: flex; flex-direction: column; gap: 8px; }
+.fv-doc-full { margin: 0; font-size: 13px; color: var(--muted); }
+.fv-more-ctl:empty { display: none; }
+.fv-probs { display: flex; flex-direction: column; gap: 6px; }
+.fv-probs:empty { display: none; }
+.fv-tech { display: none; }
+.fv[data-density=detailed] .fv-tech { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.fv-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.fv-acts:empty { display: none; }
+.fv-act { font-size: 12.5px; padding: 3px 10px; }
+.fv-act.fv-info[aria-expanded=true] { border-color: var(--accent); color: var(--accent); }
+.fv-del:hover { border-color: var(--err); color: var(--err); }
+.fv-peek { font: 12.5px var(--font-mono); text-align: left; padding: 5px 8px; border: 1px dashed var(--line); border-radius: var(--r-ctl); background: transparent; cursor: pointer; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fv-peek:hover { border-style: solid; background: var(--surface-2); }
+.fv-only[aria-pressed=true] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.fv-only-probs .fv-row:not(.fv-has-prob), .fv-only-probs .fv-group-ok { display: none; }
+.fv-else-sum { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding: 6px 8px; border-radius: var(--r-ctl); background: var(--surface-2); list-style: none; }
+.fv-else-sum::-webkit-details-marker { display: none; }
+.fv-else-sum::after { content: "Show"; margin-left: auto; color: var(--accent); font-weight: 600; font-size: 12.5px; }
+.fv-elsewhere[open] .fv-else-sum::after { content: "Hide"; }
+.fv-card { margin-top: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); font-size: 13px; }
+.fv-icon { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: var(--muted) !important; cursor: pointer; font-size: 15px; line-height: 1; }
+.fv-icon:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); color: var(--fg) !important; }
+.fv-icon:disabled { opacity: .35; cursor: default; }
+.fv-info { font: italic 600 13px/1 Georgia, serif; }
+.fv-info::before { content: ""; position: absolute; width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 50%; }
+.fv-info { position: relative; }
+.fv-info[aria-expanded="true"] { background: var(--surface-2); border-color: var(--line); color: var(--accent) !important; }
+
+/* Inputs */
+.fv-input, .fv-select { font: 13px var(--font-mono); color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 8px; min-height: 32px; min-width: 0; }
+.fv-input { flex: 1 1 200px; width: 100%; }
+.fv-num { flex: 0 1 140px; }
+.fv-select { flex: 0 1 auto; max-width: 100%; cursor: pointer; }
+.fv-input[aria-invalid="true"] { border-color: var(--err); }
+.fv-default { font-size: 12px; color: var(--muted); }
+.fv-src { font: 12.5px/1.4 var(--font-mono); border: 1px dashed var(--line); border-radius: var(--r-ctl); padding: 4px 8px; overflow-wrap: anywhere; white-space: pre-wrap; flex: 1 1 200px; min-width: 0; max-height: calc(3 * 1.4em + 10px); overflow: hidden; }
+.fv-open .fv-src { max-height: none; }
+.fv-code-ed { margin: 2px 0 8px; }
+.fv-code-keys { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+
+/* Text fields that grow with their value (growfield.ts): one line for short values, wrapping up to five lines. */
+.xf { position: relative; display: flex; align-items: flex-start; gap: 2px; min-width: 0; flex: 1 1 200px; max-width: 100%; }
+.xf > .xf-ta { flex: 1 1 auto; resize: none; overflow-wrap: anywhere; white-space: pre-wrap; line-height: 1.45; max-height: calc(5lh + 14px); overflow-y: auto; display: block; }
+@supports (field-sizing: content) { .xf > .xf-ta { field-sizing: content; } }
+.xf-btn { flex: none; width: 28px; height: 28px; margin-top: 2px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: var(--muted); cursor: pointer; visibility: hidden; }
+.xf-long > .xf-btn, .xf:focus-within > .xf-btn, .xf:hover > .xf-btn { visibility: visible; }
+.xf-btn:hover { background: var(--surface-2); border-color: var(--line); color: var(--fg); }
+.xf-btn[aria-expanded="true"] { color: var(--accent); border-color: var(--line); }
+.xf-panel { flex-basis: 100%; margin: 6px 0 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,.08); display: grid; gap: 6px; }
+.xf-head { display: flex; align-items: center; gap: 8px; }
+.xf-title { font: 600 12.5px var(--font-mono); flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.xf-done { font-size: 13px; padding: 3px 12px; }
+.xf-big { width: 100%; box-sizing: border-box; min-height: 7em; font: 13px/1.5 var(--font-mono); color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 8px; resize: vertical; }
+.xf-keys { margin: 0; font-size: 12px; color: var(--muted); }
+.xf-doc { font-size: 13px; max-height: 14em; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
+.xf-doc p { margin: 0 0 6px; }
+.xf-dialog { width: min(96vw, 560px); max-height: 86vh; color: var(--fg); }
+.xf-dialog::backdrop { background: rgba(0,0,0,.4); }
+
+/* Switch: a checkbox with role=switch */
+.fv-switch { display: inline-flex; align-items: center; gap: 8px; }
+.fv-switch input { appearance: none; -webkit-appearance: none; margin: 0; width: 40px; height: 22px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); position: relative; cursor: pointer; flex: none; transition: background-color .15s; }
+.fv-switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform .15s, background-color .15s; }
+.fv-switch input:checked { background: var(--accent); border-color: var(--accent); }
+.fv-switch input:checked::after { transform: translateX(18px); background: var(--surface); }
+.fv-state { font-size: 13px; min-width: 2em; }
+
+/* List editor */
+.fv-list { flex: 1 1 100%; min-width: 0; }
+.fv-items { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; counter-reset: fv-i; }
+.fv-item { display: flex; align-items: center; gap: 2px; counter-increment: fv-i; }
+.fv-item::before { content: counter(fv-i); flex: none; width: 1.6em; font: 11px var(--font-mono); color: var(--muted); text-align: right; margin-right: 4px; }
+.fv-item .fv-input { flex: 1 1 auto; }
+.fv-item-add { font-size: 13px; padding: 4px 10px; }
+
+/* Problems */
+.fv-prob { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 6px 8px; border-radius: var(--r-ctl); background: var(--surface-2); }
+.fv-msg { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+.fv-sev { flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; display: inline-grid; place-items: center; font: 700 11px/1 var(--font-body); color: var(--surface); background: var(--info); }
+.fv-sev::before { content: "i"; }
+.fv-sev-error .fv-sev { background: var(--err); }
+.fv-sev-error .fv-sev::before { content: "!"; }
+.fv-sev-warning .fv-sev { background: var(--warn); border-radius: 3px; }
+.fv-sev-warning .fv-sev::before { content: "!"; }
+.fv-sev-hint .fv-sev { background: var(--muted); }
+.fv-fixes { display: flex; gap: 6px; flex-wrap: wrap; }
+.fv-fix { font-size: 12.5px; padding: 3px 10px; }
+.fv-fix code { font-size: 11.5px; }
+.fv .btn code, #blocksview .btn code { color: inherit; background: none; padding: 0; }
+.fv-elsewhere { margin: 0 0 12px; }
+.fv-elsewhere[open] { display: flex; flex-direction: column; gap: 6px; }
+.fv-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 0 0 14px; border: 1px solid var(--err); border-radius: var(--r-pane); background: var(--surface); }
+.fv-banner > span:nth-child(2) { flex: 1 1 240px; }
+.fv-banner .fv-sev { background: var(--err); }
+.fv-banner .fv-sev::before { content: "!"; }
+
+/* Option picker */
+.fv-picker { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); padding: 10px 12px; margin: 0 0 16px; }
+.fv-pick-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.fv-pick-label { font-weight: 600; }
+.fv-search { width: 100%; font-family: var(--font-body); font-size: 14px; }
+.fv-pick-count { font-size: 12px; margin: 6px 0; }
+.fv-results { max-height: min(420px, 55vh); overflow: auto; }
+.fv-pick-group h4 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; }
+.fv-pick-group ul { list-style: none; margin: 0; padding: 0; }
+.fv-pick { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; width: 100%; text-align: left; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; }
+.fv-pick:hover, .fv-pick:focus-visible { background: var(--surface-2); border-color: var(--line); }
+.fv-pick-name { font: 600 13px var(--font-mono); overflow-wrap: anywhere; }
+.fv-pick-meta { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.fv-pick-doc { grid-column: 1 / -1; font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Narrow: fields stack */
+@container (max-width: 560px) {
+  .fv-line { grid-template-columns: 1fr auto; grid-template-areas: "head toggle" "ctl ctl"; row-gap: 6px; padding: 8px 0; }
+  .fv-head { grid-area: head; } .fv-ctl { grid-area: ctl; } .fv-toggle { grid-area: toggle; }
+  .fv-sum:not(:empty), .fv-more { padding-right: 0; }
+  .fv-pick { grid-template-columns: 1fr; }
+  .fv-pick-meta { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .fv-switch input, .fv-switch input::after { transition: none; } }
+
+/* ---- Game folder (gamefolder.ts) ---- */
+/* The game folder (src/gamefolder.ts): the "+" in the symlink lists (the button also has .wm-add for its look), its menu, the summary */
+.CodeMirror .gf-add.gf-nofolder { color: var(--muted); }
+.gf-menu { position: fixed; z-index: 40; width: min(440px, calc(100vw - 16px)); max-height: min(60vh, 520px); display: flex; flex-direction: column; padding: 6px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane, 12px); box-shadow: var(--sh-3, 0 10px 30px rgba(0,0,0,.25)); }
+.gf-menu-h { padding: 6px 8px; font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.gf-menu-p { margin: 0 8px 8px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.gf-menu .gf-pick { margin: 0 8px 8px; align-self: flex-start; }
+.gf-q { margin: 0 4px 6px; padding: 6px 8px; min-height: 32px; border: 1px solid var(--line); border-radius: var(--r-ctl, 6px); background: var(--surface-2); color: var(--fg); font: inherit; font-size: 13.5px; }
+.gf-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gf-list { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.gf-list li[role="option"] { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: baseline; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.gf-list li[role="option"] .gf-l { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; overflow-wrap: anywhere; }
+.gf-list li[role="option"] small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.gf-list li[role="option"]:hover, .gf-list li[aria-selected="true"] { background: var(--surface-2); }
+.gf-list li[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--accent); }
+.gf-list li[aria-disabled="true"] { opacity: .55; cursor: default; }
+.gf-list .gf-tag { color: var(--muted); font-size: 12px; }
+.gf-list .gf-more { padding: 6px 8px; color: var(--muted); font-size: 12.5px; }
+.gf-menu-f { margin: 6px 8px 4px; font-size: 12px; }
+@media (pointer: coarse) { .gf-list li[role="option"] { padding: 10px 8px; } .gf-q { min-height: 40px; } }
+/* The summary (folderSummaryHtml) */
+.gf-summary { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane, 12px); background: var(--surface); color: var(--fg); font-size: 13.5px; line-height: 1.45; }
+.gf-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.gf-name { overflow-wrap: anywhere; }
+.gf-dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0; }
+.gf-dl dt { color: var(--muted); }
+.gf-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.gf-dl code, .gf-facts code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; }
+.gf-bad { color: var(--warn); font-weight: 600; }
+.gf-note { margin: 6px 0; padding: 4px 8px; border-left: 3px solid var(--warn); background: var(--surface-2); border-radius: 4px; }
+.gf-facts { margin: 6px 0; padding-left: 18px; }
+.gf-facts li { margin: 3px 0; }
+.gf-facts li::marker { color: var(--info); }
+.gf-privacy { margin: 6px 0; font-size: 12px; }
+.gf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Code | Form switch, the game folder button, and Check's extra groups (game folder, package) */
+.view-switch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
+.view-switch button { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12.5px; padding: 3px 10px; cursor: pointer; }
+.view-switch button[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); font-weight: 600; }
+.gf-btn { display: inline-flex; align-items: center; gap: 5px; }
+.gf-btn.on { border-color: var(--ok); }
+.gf-btn .gf-n { font-size: 11px; color: var(--muted); }
+#formview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
+#formview[hidden] { display: none; }
+#blocksview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
+#blocksview[hidden] { display: none; }
+/* Blocks, compact like Form: one line per step; the arrow opens the rest (blocksview.ts collapsible). */
+#blocksview .bv-toggle { flex: none; width: 28px; height: 28px; margin-left: auto; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; display: inline-grid; place-items: center; color: var(--muted); align-self: center; }
+#blocksview .bv-toggle::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.6px 1.6px 0; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+#blocksview .bv-toggle[aria-expanded=true]::before { transform: translateY(2px) rotate(-135deg); }
+#blocksview .bv-toggle:hover { background: var(--surface-2); border-color: var(--line); color: var(--fg); }
+#blocksview .bv-sum:empty { display: none; }
+#blocksview .bv-sum { padding: 4px 0 2px; }
+#blocksview .bv-sum .bv-prob { align-items: center; padding: 4px 8px; }
+#blocksview .bv-open > .bv-sum { display: none; }
+#blocksview .bv-more { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 4px; }
+#blocksview .bv-more[hidden] { display: none; }
+#blocksview .bv-acts { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+#blocksview .bv-probs:empty { display: none; }
+#blocksview .bv-more-n { color: var(--muted); font-size: 12px; white-space: nowrap; }
+#blocksview .bv-tech { display: none; }
+#blocksview .bv[data-density=detailed] .bv-tech, #blocksview[data-density=detailed] .bv-tech { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { #blocksview .bv-toggle::before { transition: none; } }
+/* Blocks view (src/blocksview.ts). Uses the page's variables only. */
+.bv { container-type: inline-size; font: 14px/1.45 var(--font-body); color: var(--fg); padding: 12px 14px 32px; overflow: auto; box-sizing: border-box; height: 100%; }
+.bv [hidden] { display: none !important; }
+.bv *, .bv *::before, .bv *::after { box-sizing: border-box; }
+.bv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bv-muted { color: var(--muted); }
+.bv code { font: 0.92em var(--font-mono); }
+.bv button, .bv select, .bv input, .bv textarea { font: inherit; color: var(--fg); }
+.bv :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Bar: add a callback, status */
+.bv-bar { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.bv-add-cbs { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.bv-add-cbs:empty { display: none; }
+.bv-add-cb { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; text-align: left; }
+.bv-add-cb-path { font: 600 13px var(--font-mono); }
+.bv-add-cb-plain { font-size: 12px; color: var(--muted); }
+.bv-add-play { border-color: var(--accent); }
+.bv-more-cbs { position: relative; }
+.bv-more-cbs > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 32px; }
+.bv-more-cbs > summary::-webkit-details-marker { display: none; }
+.bv-more-cbs > summary::after { content: ""; width: 6px; height: 6px; margin-left: 8px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); }
+.bv-more-cbs[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+.bv-cb-menu { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); display: flex; flex-direction: column; gap: 2px; min-width: min(320px, 90vw); }
+.bv-status { font-size: 12.5px; color: var(--muted); min-height: 1.2em; align-self: center; }
+
+/* A callback */
+.bv-cb { margin: 0 0 20px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); padding: 10px 12px 12px; }
+.bv-cb-head { display: flex; align-items: flex-start; gap: 8px; }
+.bv-cb-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; flex: 1 1 auto; min-width: 0; }
+.bv-cb-path { display: inline-block; font: 500 12.5px var(--font-mono); color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 0 6px; margin-left: 4px; overflow-wrap: anywhere; }
+.bv-cb > .bv-doc { margin: 2px 0 10px; }
+.bv-none { margin: 4px 0 16px; }
+
+/* Branches: a list of rows; nested ones are indented with a rail on the left */
+.bv-branch { position: relative; }
+.bv-clauses > .bv-branch { margin: 0 0 4px 14px; padding-left: 12px; border-left: 3px solid var(--line); }
+.bv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bv-branch.bv-empty > .bv-list { display: none; }
+.bv-add { margin-top: 6px; font-size: 13px; color: color-mix(in srgb, var(--accent) 78%, var(--fg)); background: transparent; border: 1px dashed var(--line); border-radius: var(--r-ctl); padding: 4px 10px; cursor: pointer; min-height: 30px; }
+.bv-add:hover, .bv-add[aria-expanded="true"] { background: var(--surface-2); border-style: solid; }
+
+/* A row: tag, sentence, tools; the docs line under it */
+.bv-row { border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); padding: 6px 8px; min-width: 0; }
+.bv-row.bv-k-if { padding: 0; border-color: transparent; background: transparent; }
+.bv-row.bv-k-code { background: var(--surface-2); }
+.bv-row.bv-has-err, .bv-clause.bv-has-err { box-shadow: inset 3px 0 0 var(--err); }
+.bv-row.bv-has-warn, .bv-clause.bv-has-warn { box-shadow: inset 3px 0 0 var(--warn); }
+.bv-line { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.bv-tag { flex: none; font: 600 10.5px/1 var(--font-body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 7px; margin-top: 5px; }
+.bv-k-action .bv-tag { color: var(--accent); border-color: currentColor; }
+.bv-tag-if { color: var(--info); border-color: currentColor; }
+.bv-sentence { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.bv-word { color: var(--muted); }
+.bv-kw { font-weight: 600; }
+.bv-target { font: 600 13.5px/1.35 var(--font-mono); overflow-wrap: anywhere; }
+.bv-owner { color: var(--muted); font-weight: 400; }
+.bv-arg { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.bv-param { font-size: 12px; color: var(--muted); }
+.bv-param::after { content: ":"; }
+.bv-doc { font-size: 12.5px; color: var(--muted); margin: 3px 0 0 0; }
+.bv-row > .bv-doc { padding-left: 2px; }
+.bv-doc .bv-ai { width: .95em; height: .95em; vertical-align: -0.12em; }
+.bv-card { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface-2); font-size: 13px; }
+.bv-hint { flex-basis: 100%; font-size: 12px; color: var(--warn); }
+
+/* Condition parts: If … then / Otherwise, if … / Otherwise */
+.bv-clause { border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); padding: 6px 8px; margin: 0 0 4px; }
+.bv-cond { border-left: 3px solid var(--info); }
+.bv-else { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-left: 3px solid var(--info); }
+.bv-else .bv-tools { margin-left: auto; }
+.bv-else:has(> .bv-link), .bv-endif { border: 0; background: transparent; padding: 0 0 0 14px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* Value slots: a kind picker and the value */
+.bv-val { display: inline-flex; align-items: flex-start; min-width: 0; max-width: 100%; flex-wrap: nowrap; }
+.bv-v-opt, .bv-v-enum { flex-wrap: wrap; align-items: center; gap: 4px; }
+.bv-kind { height: 30px; align-self: flex-start; font-size: 11.5px !important; color: var(--muted) !important; background: var(--surface-2); border: 1px solid var(--line); border-right: 0; border-radius: var(--r-ctl) 0 0 var(--r-ctl); padding: 0 2px 0 4px; min-height: 30px; cursor: pointer; max-width: 6.5em; }
+.bv-kind + .bv-input, .bv-kind + .bv-select, .bv-kind + .xf > .bv-input, .bv-kind + .cf .cf-ta, .bv-kind + .cf .CodeMirror { border-radius: 0 var(--r-ctl) var(--r-ctl) 0; }
+.bv-v-join > .bv-kind { border-right: 1px solid var(--line); border-radius: var(--r-ctl); margin-right: 4px; }
+.bv-v-opt .bv-kind + .bv-word, .bv-v-enum .bv-kind + .bv-word { margin-left: 4px; }
+.bv-input, .bv-select { font: 13px var(--font-mono) !important; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 4px 7px; min-height: 30px; min-width: 0; }
+.bv-input { width: 16em; max-width: 100%; }
+@supports (field-sizing: content) {
+  .bv-val > .bv-input { field-sizing: content; width: auto; min-width: 5em; max-width: min(36em, 100%); }
+  .bv-val > .bv-num { min-width: 4em; }
+}
+.bv-num { width: 6em; }
+.bv-v-code .bv-input { width: 20em; }
+.bv-select { max-width: 100%; cursor: pointer; }
+.bv-prop { max-width: 18em; }
+.bv-op { font-family: var(--font-body) !important; color: var(--info) !important; font-weight: 600; }
+.bv-input[aria-invalid="true"] { border-color: var(--err); }
+.bv-codeblock { display: block; width: 100%; }
+
+/* Small square buttons and links */
+.bv-tools { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-left: auto; }
+.bv-icon { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: var(--muted) !important; cursor: pointer; font-size: 15px; line-height: 1; }
+.bv-icon:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); color: var(--fg) !important; }
+.bv-icon:disabled { opacity: .35; cursor: default; }
+.bv-info { position: relative; font: italic 600 13px/1 Georgia, serif; }
+.bv-info::before { content: ""; position: absolute; width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 50%; }
+.bv-info[aria-expanded="true"] { background: var(--surface-2); border-color: var(--line); color: var(--accent) !important; }
+.bv-del:hover:not(:disabled) { color: var(--err) !important; }
+.bv-link { background: transparent; border: 0; padding: 4px 6px; color: color-mix(in srgb, var(--accent) 78%, var(--fg)) !important; cursor: pointer; font-size: 12.5px !important; text-decoration: underline; text-underline-offset: 2px; border-radius: var(--r-ctl); white-space: nowrap; min-height: 28px; }
+.bv-link:hover { background: var(--surface-2); }
+
+/* Problems */
+.bv-probs { display: flex; flex-direction: column; gap: 6px; }
+.bv-probs:not(:empty) { margin-top: 6px; }
+.bv-prob { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; font-size: 13px; padding: 6px 8px; border-radius: var(--r-ctl); background: var(--surface-2); }
+.bv-msg { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.bv-sev { flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; display: inline-grid; place-items: center; font: 700 11px/1 var(--font-body); color: var(--surface); background: var(--info); }
+.bv-sev::before { content: "i"; }
+.bv-sev-error .bv-sev { background: var(--err); }
+.bv-sev-error .bv-sev::before { content: "!"; }
+.bv-sev-warning .bv-sev { background: var(--warn); border-radius: 3px; }
+.bv-sev-warning .bv-sev::before { content: "!"; }
+.bv-sev-hint .bv-sev { background: var(--muted); }
+.bv-fix { font-size: 12.5px; padding: 3px 10px; }
+.bv-elsewhere { margin: 0 0 12px; font-size: 13px; }
+.bv-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 0 0 14px; border: 1px solid var(--err); border-radius: var(--r-pane); background: var(--surface); }
+.bv-banner > span:nth-child(2) { flex: 1 1 240px; }
+.bv-banner .bv-sev { background: var(--err); }
+.bv-banner .bv-sev::before { content: "!"; }
+
+/* The action palette (opens under the "+ Add a step" it belongs to) */
+.bv-palette { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); padding: 10px 12px; margin: 8px 0 4px; box-shadow: 0 6px 20px rgb(0 0 0 / .08); }
+.bv-pick-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.bv-pick-label { font-weight: 600; }
+.bv-search { width: 100%; font-family: var(--font-body) !important; font-size: 14px !important; }
+.bv-pick-count { font-size: 12px; margin: 6px 0; }
+.bv-results { max-height: min(420px, 60vh); overflow: auto; }
+.bv-pick-group h4 { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+.bv-pick-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bv-pick { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; width: 100%; text-align: left; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; cursor: pointer; }
+.bv-pick:hover, .bv-pick:focus-visible { background: var(--surface-2); border-color: var(--line); }
+.bv-pick-name { font: 600 13px var(--font-mono); overflow-wrap: anywhere; }
+.bv-pick-meta { font-size: 11.5px; color: var(--muted); align-self: center; }
+.bv-pick-doc { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+.bv-cb-menu .bv-add-cb { display: flex; }
+
+/* Narrow: tools under the sentence, slots take the full width */
+@container (max-width: 560px) {
+  .bv-line { flex-wrap: wrap; }
+  .bv-tag { margin-top: 0; }
+  .bv-sentence { flex-basis: 100%; order: 2; }
+  .bv-tools { margin-left: auto; }
+  .bv-arg, .bv-val { flex: 1 1 100%; }
+  .bv-val .bv-input, .bv-val .bv-select { flex: 1 1 auto; width: auto; }
+  .bv-prop { max-width: none; }
+  .bv-clauses > .bv-branch { margin-left: 4px; padding-left: 8px; }
+  .bv-pick { grid-template-columns: 1fr; }
+  .bv-pick-meta { align-self: start; }
+}
+
+/* Joined text: parts with + between them */
+.bv-join { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; max-width: 100%; padding: 2px 4px; border: 1px dashed var(--line); border-radius: var(--r-ctl); }
+.bv-plus { font: 600 13px var(--font-mono); color: var(--muted); }
+@container (max-width: 560px) { .bv-join { flex: 1 1 100%; } .bv-join .bv-val { flex: 1 1 100%; } }
+
+/* Code over several lines */
+.bv-arg:has(.cf-multi), .bv-val:has(> .cf-multi) { flex: 1 1 100%; }
+.bv-val > .cf-multi { flex: 1 1 auto; width: auto; min-width: 0; }
+.bv-sentence > .bv-codeblock { flex: 1 1 100%; }
+/* Text values: as wide as the text (up to the row), then wrapping */
+.bv-val > .xf { flex: 0 1 auto; }
+.bv-val > .xf > .bv-input { width: 16em; max-width: 100%; }
+@supports (field-sizing: content) { .bv-val > .xf > .bv-input { width: auto; min-width: 5em; max-width: min(36em, 100%); } }
+.bv-val > .xf > .xf-btn { width: 26px; height: 26px; display: none; }
+.bv-val > .xf.xf-long > .xf-btn, .bv-val > .xf:focus-within > .xf-btn { display: inline-grid; }
+.bv-val > .xf > .bv-input { padding-top: 5px; padding-bottom: 4px; }
+
+/* Comments above a statement, read-only */
+.bv-note { font: italic 12.5px/1.4 var(--font-body); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 4px 2px; }
+.bv-note::before { content: "// "; font-style: normal; font-family: var(--font-mono); }
+.bv-k-if > .bv-note { margin: 0 0 4px 4px; }
+
+#extra-problems { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#extra-problems .xp-h { font-size: 12px; font-weight: 700; color: var(--muted); margin: 8px 2px 2px; display: flex; gap: 6px; align-items: center; }
+#extra-problems .xp { display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); font-size: 13px; }
+#extra-problems .xp .xp-b { flex: 1; min-width: 0; }
+#extra-problems .xp .xp-why { color: var(--muted); margin: 2px 0 0; }
+#extra-problems .xp .xp-act { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+#extra-problems .xp.error .sev-ico { background: var(--err); } #extra-problems .xp.warning .sev-ico { background: var(--warn); color: #1b1f2a; } #extra-problems .xp.info .sev-ico { background: var(--info); }
+#gf-dialog { width: min(560px, calc(100vw - 32px)); }
+
+/* ---- Packages: the Files panel, the file tabs, file icons, the second editor ---- */
+.fi-badge { display: inline-grid; place-items: center; min-width: 22px; height: 16px; padding: 0 3px; border-radius: 4px; font: 700 9px/1 var(--font-mono); color: #fff; background: #64748b; flex: none; letter-spacing: -.2px; margin-right: 5px; }
+.fi-js { background: #e0b100; color: #1b1f2a; } .fi-ini, .fi-cfg { background: #57657a; } .fi-json { background: #0f766e; } .fi-xml, .fi-toml, .fi-yaml { background: #9a3412; } .fi-txt { background: #6b7280; } .fi-bat { background: #166534; } .fi-ps1 { background: #1e3a8a; } .fi-lua { background: #1e40af; } .fi-reg { background: #57657a; } .fi-vdf { background: #374151; } .fi-dll { background: #6d28d9; } .fi-exe { background: #b91c1c; } .fi-img { background: #be185d; } .fi-bin { background: #475569; }
+.fi-dir { background: none; color: var(--muted); font-size: 12px; min-width: 14px; }
+.files-toggle { display: inline-flex; align-items: center; }
+.files-toggle[aria-pressed="true"] { background: var(--surface-2); }
+.files-n { font-size: 11px; color: var(--muted); margin-left: 4px; }
+#file-strip { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--line); background: var(--surface-2); overflow-x: auto; }
+#file-strip[hidden] { display: none; }
+.fs-tab { display: inline-flex; align-items: center; gap: 2px; padding: 4px 10px; border: 1px solid transparent; border-bottom: 0; border-radius: 7px 7px 0 0; background: none; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.fs-tab[aria-selected="true"] { background: var(--surface); color: var(--fg); border-color: var(--line); font-weight: 600; }
+.fs-tab .fs-x { margin-left: 6px; color: var(--muted); border-radius: 4px; padding: 0 3px; }
+.fs-tab .fs-x:hover { background: var(--surface-2); color: var(--fg); }
+#file-editor { flex: 1; min-width: 0; position: relative; }
+#file-editor[hidden], #file-card[hidden] { display: none; }
+#file-editor .CodeMirror { height: 100%; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--code-fg, var(--fg)); }
+#file-card { flex: 1; min-width: 0; padding: 18px; overflow: auto; background: var(--surface); }
+#file-card h2 { margin: 0 0 6px; display: flex; align-items: center; gap: 6px; font-size: 13.5px; }
+#file-card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; margin: 10px 0; } #file-card dt { color: var(--muted); } #file-card dd { margin: 0; overflow-wrap: anywhere; }
+#file-card img { max-width: 100%; max-height: 320px; border: 1px solid var(--line); border-radius: 6px; background: repeating-conic-gradient(#8882 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+#files-panel { width: 260px; flex: none; border-left: 1px solid var(--line); background: var(--surface); font-size: 13px; position: relative; display: flex; flex-direction: column; min-height: 0; }
+#files-list { flex: 1; min-height: 0; overflow: auto; padding: 8px; }
+#split-files { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; z-index: 5; }
+#files-panel[hidden] { display: none; }
+.fp-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 2px 4px 6px; }
+.fp-where { font-size: 12px; color: var(--muted); margin: 0 4px 8px; overflow-wrap: anywhere; }
+.fp-list { list-style: none; margin: 0; padding: 0; }
+.fp-item { display: flex; align-items: center; gap: 2px; }
+.fp-open { flex: 1; min-width: 0; display: flex; align-items: center; padding: 4px 6px; border: 0; border-radius: 6px; background: none; color: var(--fg); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.fp-open:hover { background: var(--surface-2); } .fp-open[aria-current="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); font-weight: 600; }
+.fp-open .fp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-open .fp-size { margin-left: auto; padding-left: 8px; font-size: 11px; color: var(--muted); flex: none; }
+.fp-item.dropped .fp-name { color: var(--warn); }
+.fp-open .fp-hub { margin-left: auto; padding: 0 5px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 16px; background: var(--info-bg); color: var(--info); flex: none; }
+.fp-open .fp-hub + .fp-size { margin-left: 0; padding-left: 6px; }
+.fp-del { width: 24px; height: 24px; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; opacity: 0; flex: none; }
+.fp-item:hover .fp-del, .fp-del:focus-visible { opacity: 1; } .fp-del:hover { background: var(--surface-2); color: var(--err); }
+.fp-dir { padding: 4px 6px; color: var(--muted); font-size: 12.5px; display: flex; align-items: center; }
+.fp-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 4px 0; }
+.tg-compare { margin: 0 0 12px; padding: 8px 12px; border-radius: var(--r-ctl); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); font-size: 13.5px; }
+.fp-game { margin: 16px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.fp-game p { margin: 0 4px 8px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.fp-game .fp-gname { display: flex; align-items: center; gap: 6px; margin: 0 4px 8px; font: 600 13px var(--font-body); color: var(--fg); overflow-wrap: anywhere; }
+.fp-game .fp-gacts { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 4px; }
+.files-game { margin-left: 4px; font-size: 11.5px; font-weight: 600; color: var(--accent); }
+.fp-drop { margin: 10px 4px 0; padding: 10px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 12px; text-align: center; }
+@media (max-width: 860px) { #files-panel { position: fixed; left: 0; right: 0; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); width: auto; height: min(58vh, 520px); z-index: 30; border-left: 0; border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0,0,0,.2); } }
+.install-map { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr); gap: 4px 10px; font-size: 13px; align-items: center; margin: 6px 0 10px; }
+.install-map .im-to { font: 12px var(--font-mono); color: var(--muted); overflow-wrap: anywhere; }
+.install-map .im-drop { color: var(--warn); }
 footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -964,45 +1929,62 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <div class="app">
   <header>
-    <a class="brand" href="./" aria-label="Nucleus Handler Workbench: home" title="Home: start a handler, open one or pick an example">
+    <div class="brand">
+      <div class="brand-top"><a class="brand-link" href="./" aria-label="Nucleus Handler Workbench">
       <img class="logo logo-www" src="data:image/png;base64,/*WWW_LOGO*/" alt="" width="30" height="30">
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
-      <div>
-        <h1>Nucleus Handler Workbench</h1>
-        <div class="sub">Write a Nucleus Co-op handler and see what Nucleus will make of it</div>
-      </div>
-    </a>
+      <h1><span class="brand-long">Nucleus Handler </span>Workbench</h1></a><a class="start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></div>
+    </div>
+    <div class="htabs-wrap"><div id="htabs" role="tablist" aria-label="Open handlers"></div><button class="htab-add" id="tab-add" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="New handler, open a file, or an example">+</button></div>
     <div class="switch" role="group" aria-label="Show">
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
       <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
     </div>
-    <label class="adv" title="Show rule details, filters, the API reference, engine probes and keyboard shortcuts">
-      <input type="checkbox" id="advanced" role="switch"><span class="track" aria-hidden="true"></span>Advanced mode
-    </label>
     <div class="toolbar">
-      <button class="btn wide-only" id="file-open" type="button" title="Open a handler .js, .zip or .nc from your computer">Open file…</button>
-      <input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
-      <button class="btn wide-only" id="new-open" type="button">New handler…</button>
-      <button class="btn wide-only" id="save" type="button" hidden title="Save a .zip that Nucleus Co-op can install">Save for Nucleus</button>
-      <button class="btn wide-only" id="copy" type="button" title="Copy the handler source">Copy</button>
-      <button class="btn icon wide-only" id="help-open" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
-      <button class="btn icon phone-only" id="more-open" type="button" title="More" aria-label="More: what's new, keyboard shortcuts">⋯</button>
-      <button class="btn icon gear" id="settings-open" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn share-btn wide-only" id="share-open" type="button" aria-haspopup="dialog" title="Share: a link, the code, or a post for Discord"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Share</span></button><span class="split-save wide-only"><button class="btn save-btn" id="code-menu-open" type="button" aria-label="Save the handler"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Save</span></button><button class="btn save-btn save-more" id="save-more" type="button" aria-haspopup="menu" aria-label="Save as: pick the format" title="Save as…"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span>
+      <button class="btn icon gear" id="app-menu-open" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu: settings, Advanced mode, help"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="phone-dots" aria-hidden="true">⋯</span></button>
+      <!-- Reached from the menus (and still by their shortcuts); kept so everything wired to them keeps working. -->
+      <div class="app-hidden" hidden>
+        <button id="file-open" type="button">Open file…</button><input type="file" id="file-input" accept=".js,.zip,.nc,text/javascript" hidden>
+        <button id="new-open" type="button">New handler…</button>
+        <button id="save" type="button" hidden>Save for Nucleus…</button>
+        <button id="help-open" type="button">Keyboard shortcuts</button>
+        <button id="more-open" type="button">More</button>
+        <button id="settings-open" type="button">Settings</button>
+        <label class="adv"><input type="checkbox" id="advanced" role="switch">Advanced mode</label>
+      </div>
     </div>
+    <nav class="rail" aria-label="Tools">
+      <a class="rail-btn rail-logo start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" aria-label="Home" data-rail="Home"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Home</span></a>
+      <button class="rail-btn" type="button" data-rail="add" aria-label="New, open a file or an example" aria-haspopup="menu"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="rail-label" aria-hidden="true">New or open</span></button>
+      <button class="rail-btn" type="button" data-rail="lines" aria-label="Lines"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="rail-label" aria-hidden="true">Lines</span></button>
+      <button class="rail-btn" type="button" data-rail="share" aria-label="Share: a link, the code, or a post for Discord"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Share</span></button><button class="rail-btn" type="button" data-rail="save" aria-label="Save the handler"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Save</span></button>
+      <span class="rail-sp"></span>
+      <button class="rail-btn" type="button" data-rail="test" aria-label="Help test the beta">🧪<span class="rail-label" aria-hidden="true">Help test the beta</span></button>
+      <button class="rail-btn" type="button" data-rail="menu" aria-label="Menu: settings, Advanced mode, help" aria-haspopup="menu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Settings and menu</span></button>
+      <button class="rail-btn rail-toggle" type="button" id="rail-toggle" aria-expanded="false" aria-label="Show labels in the sidebar" title="Show labels"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Hide labels</span></button>
+    </nav>
   </header>
 
   <div id="updated" role="status" hidden><span id="updated-text"></span> <button class="link" type="button" id="updated-open">What's new</button><button class="btn icon" type="button" id="updated-close" aria-label="Dismiss">×</button></div>
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" title="Switch to an example or a Hub handler (Ctrl+K)" aria-haspopup="dialog"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><kbd class="dev-only">Ctrl K</kbd></button><span id="doc-edited" class="muted" hidden>· edited</span><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon" id="code-menu-open" type="button" title="Copy or download the handler" aria-label="Copy or download the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><span class="view-switch" role="group" aria-label="View"><button type="button" data-view-mode="code" aria-pressed="true">Code</button><button type="button" data-view-mode="form" aria-pressed="false">Form</button><button type="button" data-view-mode="blocks" aria-pressed="false" title="Game.Play and the other callbacks as if / do steps">Blocks</button></span><button class="btn files-toggle" id="files-toggle" type="button" aria-pressed="false" aria-controls="files-panel"><span class="fi-badge fi-dir" aria-hidden="true">▤</span>Files<span class="files-n" id="files-n"></span><span class="files-game" id="files-game" hidden title="Your game's folder is linked">+ game</span></button><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
+      <div id="welcome" hidden></div>
+      <div id="file-strip" role="tablist" aria-label="Files in this package" hidden></div>
       <div class="code-row">
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>
         <div id="editor"><div id="sig" hidden></div></div>
+        <div id="formview" hidden></div>
+        <div id="blocksview" hidden></div>
+        <div id="file-editor" hidden></div>
+        <div id="file-card" hidden></div>
+        <section id="files-panel" aria-label="Files in this package" hidden><div class="splitter" id="split-files" role="separator" aria-orientation="vertical" aria-label="Resize the Files panel (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div><div id="files-list"></div></section>
         <section id="lines" aria-label="Names a handler can use" hidden>
           <div class="splitter" id="split-lines" role="separator" aria-orientation="vertical" aria-label="Resize the Lines list (double-click to reset)" title="Drag to resize · double-click to reset" tabindex="0"></div>
           <div class="sheet-grip" id="split-sheet" role="separator" aria-orientation="horizontal" aria-label="Resize the list (double-click to reset)" title="Drag to resize · double-tap to reset" tabindex="0"></div>
@@ -1031,9 +2013,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <svg class="tip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="tip-body"><strong id="tip-label">Tip</strong> <span id="tip-text"></span></div>
         <div class="tip-actions">
-          <button class="btn tip-btn" id="tip-action" type="button" hidden></button>
+          <span id="tip-votes"></span><button class="btn tip-btn" id="tip-action" type="button" hidden></button>
           <button class="btn icon tip-btn" id="tip-prev" type="button" title="Previous tip" aria-label="Previous tip">‹</button>
-          <button class="btn tip-btn" id="tip-next" type="button" title="Next tip" aria-label="Next tip"><span class="long">Next tip</span><span class="short">›</span></button>
+          <button class="btn icon tip-btn" id="tip-next" type="button" title="Next tip" aria-label="Next tip">›</button>
           <button class="btn icon tip-btn" id="tip-off" type="button" title="Turn tips off (turn them back on in Settings)" aria-label="Turn tips off"><span class="long">×</span><span class="short">Turn off</span></button>
         </div>
         <button class="tip-x" id="tip-off-2" type="button" aria-label="Turn tips off" title="Turn tips off">×</button>
@@ -1046,19 +2028,17 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <button role="tab" data-tab="problems" type="button">Check <span class="count" id="count-problems">0</span></button>
         <button role="tab" data-tab="simulate" type="button">Try it</button>
         <button role="tab" data-tab="api" type="button" title="Every option and function a handler can use">Reference</button>
-        <button role="tab" data-tab="probes" type="button" class="dev-only">Engine probes <span class="count" id="count-probes"></span></button>
+        <button role="tab" data-tab="probes" type="button" class="dev-only" title="Tiny handlers run in Nucleus' real JavaScript engine: the proof behind Check and Try it">Engine probes <span class="count" id="count-probes"></span></button>
       </div>
       <div role="tabpanel" id="panel-problems"><h2 class="sr-only">Check</h2>
         <div class="verdict" id="verdict">
           <div id="status"></div>
           <div class="ai-bar" id="ai-bar">
             <button class="btn primary" id="fix-all" type="button" title="Apply every safe automatic fix (also in the command palette, Ctrl+Shift+P)">Fix problems</button>
-            <button class="btn" id="ai-fix" type="button" hidden>Fix with AI</button>
-            <label class="toggle" title="Apply fixes without reviewing the diff first"><input type="checkbox" id="ai-auto"> Apply without review</label>
+            <button class="btn ai" id="ai-fix" type="button" hidden>Fix with AI</button>
             <input id="ai-note" type="text" placeholder="For AI: anything else to change" aria-label="Extra instructions for Claude" hidden>
           </div>
         </div>
-        <div id="welcome" hidden></div>
         <div id="ai-box" hidden></div>
         <div class="filters dev-only" role="group" aria-label="Show problems">
           <button class="filter" type="button" data-filter="all" aria-pressed="true">All <span id="f-all"></span></button>
@@ -1069,6 +2049,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <span class="muted tip-line">F8 next problem · hover code for docs · <kbd>.</kbd> or <kbd>Ctrl Space</kbd> completes</span>
         </div>
         <ul id="problems"></ul>
+        <ul id="extra-problems" aria-label="More problems: the game folder and the package" hidden></ul>
       </div>
       <div role="tabpanel" id="panel-simulate" hidden><h2 class="sr-only">Try it</h2>
         <div class="panel-tools">
@@ -1078,7 +2059,9 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
           <button class="btn" id="sim-all" type="button" title="Every player count, input setup and monitor size">Test all combinations</button>
         </div>
+          <button class="btn" id="sim-debug" type="button" title="Debug (F5): run the handler step by step, pause on breakpoints, and see every value"><span aria-hidden="true">▶ </span>Step through</button>
         <p class="muted" style="margin:0 0 12px;max-width:65ch">Each player's window, launch arguments and file changes, as Nucleus would set them up. Simulated: nothing on your computer is touched, and the game itself still needs a test in Nucleus.<span class="dev-only"> How: the handler is loaded and <code>Game.Play</code> runs once per player in this browser, following the Jint 2.11.58 rules Nucleus uses (checked against the real engine on every probe). File, registry and process calls are recorded, not performed.</span></p>
+        <div id="dbg" class="dbg" hidden></div>
         <div id="sim-matrix" hidden></div>
         <div id="sim-out"></div>
       </div>
@@ -1089,7 +2072,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </main>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="welcome-open" type="button">Getting started</button><button class="link tg-open" id="test-open" type="button">🧪 Help test the beta</button><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -1106,24 +2089,31 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <dialog id="settings-dialog" aria-label="Settings">
   <h2>Settings</h2>
-  <div class="set-tabs" role="tablist" aria-label="Settings sections">
-    <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general" aria-selected="true">General</button>
-    <button type="button" role="tab" id="st-theme" data-st="theme" aria-controls="sp-theme" aria-selected="false" tabindex="-1">Theme</button>
-    <button type="button" role="tab" id="st-editor" data-st="editor" aria-controls="sp-editor" aria-selected="false" tabindex="-1">Editor</button>
-    <button type="button" role="tab" id="st-lines" data-st="lines" aria-controls="sp-lines" aria-selected="false" tabindex="-1">Lines</button>
-    <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help" aria-selected="false" tabindex="-1">Help</button>
-    <button type="button" role="tab" id="st-advanced" data-st="advanced" aria-controls="sp-advanced" aria-selected="false" tabindex="-1">Advanced</button>
-  </div>
+  <div class="set-layout-wrap">
+  <nav class="set-nav" aria-label="Settings sections">
+    <label class="set-search"><span class="sr-only">Search settings</span><input type="search" id="set-q" placeholder="Search settings" autocomplete="off"></label>
+    <div role="tablist" aria-orientation="vertical" aria-label="Settings sections" class="set-tabs">
+      <span class="set-g" role="presentation">Look and feel</span>
+      <button type="button" role="tab" id="st-theme" data-st="theme" aria-controls="sp-theme">Theme and colours</button>
+      <button type="button" role="tab" id="st-motion" data-st="motion" aria-controls="sp-motion">Motion</button>
+      <button type="button" role="tab" id="st-layout" data-st="layout" aria-controls="sp-layout">Layout</button>
+      <span class="set-g" role="presentation">Working</span>
+      <button type="button" role="tab" id="st-editor" data-st="editor" aria-controls="sp-editor">Editor</button>
+      <button type="button" role="tab" id="st-check" data-st="check" aria-controls="sp-check">Check</button>
+      <button type="button" role="tab" id="st-lines" data-st="lines" aria-controls="sp-lines">Lines</button>
+      <span class="set-g" role="presentation">You</span>
+      <button type="button" role="tab" id="st-a11y" data-st="a11y" aria-controls="sp-a11y">Accessibility</button>
+      <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help">Tips and help</button>
+      <button type="button" role="tab" id="st-feedback" data-st="feedback" aria-controls="sp-feedback">Feedback and privacy</button>
+      <span class="set-g" role="presentation">More</span>
+      <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general">Updates and backup</button>
+      <button type="button" role="tab" id="st-advanced" data-st="advanced" aria-controls="sp-advanced">Advanced</button>
+    </div>
+  </nav>
   <div class="set-panels">
-  <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general">
-    <div class="set-sec"><h3>Updates</h3>
-      <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
-      <button class="link" type="button" id="set-news-open">What's new</button></div>
-    <div class="set-sec"><h3>Layout</h3>
-      <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
-      <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
-  </div>
-  <div class="set-panel" role="tabpanel" id="sp-theme" aria-labelledby="st-theme" hidden>
+    <p class="set-none muted" id="set-none" hidden>No setting matches.</p>
+  <div class="set-panel" role="tabpanel" id="sp-theme" aria-labelledby="st-theme" data-label="Theme and colours" hidden>
+
     <div class="set-sec"><h3>Light or dark</h3>
       <div class="set-radios" role="radiogroup" aria-label="Light or dark">
         <label><input type="radio" name="set-theme" value="auto"> <span class="wide-only">Match my device</span><span class="phone-only">Auto</span></label>
@@ -1143,23 +2133,88 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <p class="muted small" style="margin:0">The editor's colours, with any look.</p>
       <div class="code-themes" id="set-code" role="radiogroup" aria-labelledby="code-h"></div></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-editor" aria-labelledby="st-editor" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-motion" aria-labelledby="st-motion" data-label="Motion" hidden>
+    <div class="set-sec motion-sec"><h3>Motion</h3>
+      <label class="set-line">How much moves <select id="set-motion"><option value="all">All</option><option value="default">Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option><option value="custom" disabled>Custom</option></select></label>
+      <label class="set-check"><input type="checkbox" id="set-motion-ui"> <span>Moving interface<small>Dialogs, tabs and notes slide and spring into place</small></span></label>
+      <label class="set-line">Duo and Nucli <select id="set-motion-masc"><option value="loop">Lively</option><option value="once">Play once, then rest</option><option value="still">Still</option><option value="off">Off</option></select></label>
+      <label class="set-check"><input type="checkbox" id="set-motion-edit"> <span>Nucli edits the code during fixes<small>He zaps the old text and the new text glows. It briefly covers the code.</small></span></label>
+      <label class="set-check"><input type="checkbox" id="set-motion-news"> <span>What's new plays animations by itself<small>Otherwise they wait for Play</small></span></label>
+      <p class="muted small" id="set-motion-note" style="margin:0"></p></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-layout" aria-labelledby="st-layout" data-label="Layout" hidden>
+    <div class="set-sec"><h3>Layout</h3>
+      <div class="set-layouts" role="radiogroup" aria-label="Layout">
+        <label class="set-layout"><input type="radio" name="set-layout" value="bar"><span><strong>Slim bar</strong><small>Open handlers, Save and the menu in one row above the code</small></span></label>
+        <label class="set-layout"><input type="radio" name="set-layout" value="rail"><span><strong>Side rail</strong><small>Tools in a strip on the left, like VS Code; more room for code</small></span></label>
+      </div></div>
+    <div class="set-sec"><h3>Files and Lines</h3>
+      <label class="set-row">Files panel <select id="set-files-side"><option value="right">Right of the code</option><option value="left">Left of the code</option></select></label>
+      <label class="set-row">Lines list <select id="set-lines-side"><option value="right">Right of the code</option><option value="left">Left of the code</option></select></label>
+      <p class="muted small" style="margin:0">On a phone both open as a sheet from the bottom.</p></div>
+    <div class="set-sec"><h3>Panel sizes</h3>
+      <p class="muted small wide-only" style="margin:0">Drag the edges between panels to resize them. Double-click an edge to reset it.</p><p class="muted small phone-only" style="margin:0">Drag the bar at the top of the Lines sheet to make it taller or shorter.</p>
+      <button class="link" type="button" id="set-reset-sizes">Reset panel sizes</button></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-editor" aria-labelledby="st-editor" data-label="Editor" hidden>
+
     <div class="set-sec">
       <label class="set-line">Text size <select id="set-size"><option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option></select></label>
       <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>Instead of scrolling sideways. On by default on phones.</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-keybar"> <span>Symbol keys on touch screens<small>A row with ; = " ( ) { } [ ], Suggest and Undo above the on-screen keyboard</small></span></label></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-lines" aria-labelledby="st-lines" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-check" aria-labelledby="st-check" data-label="Check" hidden>
+    <div class="set-sec"><h3>Check</h3>
+      <label class="set-row">How much each problem, and each option in Form, shows <select id="set-density"><option value="compact">Compact: one line, open for more</option><option value="comfortable">Comfortable: what and why</option><option value="detailed">Detailed: everything open</option></select></label></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-lines" aria-labelledby="st-lines" data-label="Lines" hidden>
+
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-lines"> <span>Show the Lines list<small>Every name a handler can use, click to insert<span class="wide-only"> (Ctrl+Shift+L)</span></small></span></label></div>
     <div class="set-sec" id="lines-settings" aria-label="List settings"></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-help" aria-labelledby="st-help" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-a11y" aria-labelledby="st-a11y" data-label="Accessibility" hidden>
+
+    <p class="muted small set-intro">Built in everywhere: keyboard access, contrast that meets WCAG 2.1 AA in every look, screen-reader labels, and less motion when your device asks for it (Motion has more). These go further.</p>
+    <div class="set-sec"><h3>Problems, not by colour alone</h3>
+      <label class="set-line">Underline under problems <select id="a11y-underline"><option value="wavy">Wavy (default)</option><option value="straight">Straight</option><option value="dotted">Dotted</option><option value="thick">Thick and wavy</option></select></label>
+      <label class="set-check"><input type="checkbox" id="a11y-cb"> <span>Colour-blind-friendly colours<small>Errors in blue, warnings in orange, instead of red and yellow. The icons (✖ and !) stay.</small></span></label></div>
+    <div class="set-sec"><h3>Seeing where you are</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-focus"> <span>A strong focus ring<small>A thicker outline on whatever has focus, also after a click (not only with the keyboard)</small></span></label>
+      <label class="set-check"><input type="checkbox" id="a11y-targets"> <span>Larger buttons and tabs<small>Easier to hit with a mouse, a touchpad or a finger</small></span></label></div>
+    <div class="set-sec"><h3>Reading</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-font"> <span>An easier-to-read font<small>Atkinson Hyperlegible, made to tell similar letters apart (for the code too). Loaded from Google Fonts when you turn it on.</small></span></label>
+      <p class="muted small" style="margin:0">Text size: Editor › Text size for the code, and your browser's zoom (Ctrl and +) for everything.</p></div>
+    <div class="set-sec"><h3>Timing</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-notes"> <span>Notes stay until I close them<small>Instead of fading after a few seconds</small></span></label>
+      <label class="set-check"><input type="checkbox" id="a11y-slowhover"> <span>Slower hover cards<small>They wait a moment longer before opening, so they don't pop up while you move the pointer</small></span></label></div>
+    <div class="set-sec"><h3>Screen readers</h3>
+      <label class="set-check"><input type="checkbox" id="a11y-announce"> <span>Say the problems on the line I move to<small>When the cursor moves to a line with a problem, its title is read out</small></span></label></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-help" aria-labelledby="st-help" data-label="Tips and help" hidden>
+
+    <div class="set-sec"><h3>Start-up questions</h3><p class="muted small" style="margin:0 0 6px">Nucli's two questions from your first visit: how much guidance, and where the tools go.</p><button class="btn" type="button" id="fr-again">Ask me again</button></div>
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-tips"> <span>Tips under the code<small>General tips, and a heads-up when the code makes one relevant</small></span></label>
       <button class="link" type="button" id="set-heads">Show heads-ups again</button></div>
   </div>
-  <div class="set-panel" role="tabpanel" id="sp-advanced" aria-labelledby="st-advanced" hidden>
+  <div class="set-panel" role="tabpanel" id="sp-feedback" aria-labelledby="st-feedback" data-label="Feedback and privacy" hidden>
+    <div class="set-sec"><h3>Feedback</h3>
+      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Share my votes and feature use, anonymously<small><b>On:</b> your 👍/👎 on tips and docs, and which features you used (each counted once per visit), are added to the project's anonymous counts, so we see what helps. <b>Off:</b> nothing leaves your browser; your votes still show here, only to you. Either way: no code, no names, no cookies.</small></span></label>
+      <p class="small" id="set-feedback-totals" hidden>The totals are public, for anyone to see: <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">see the votes and feature use</a>.</p>
+      <p class="muted small" id="set-feedback-note" hidden></p></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general" data-label="Updates and backup" hidden>
+    <div class="set-sec"><h3>Updates</h3>
+      <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
+      <button class="link" type="button" id="set-news-open">What's new</button></div>
+    <div class="set-sec"><h3>Back up or move your settings</h3>
+      <p class="muted small" style="margin:0 0 8px">A file with your settings (look, layout, editor, Check, Lines, accessibility, tips), to use in another browser or on another computer. Your handlers, drafts and WakaTime key aren't in it.</p>
+      <div class="set-row"><button class="btn" type="button" id="set-export">Export settings…</button><button class="btn" type="button" id="set-import">Import settings…</button><input type="file" id="set-import-file" accept=".json,application/json" hidden></div>
+      <p class="small" id="set-io-msg" role="status" aria-live="polite"></p></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-advanced" aria-labelledby="st-advanced" data-label="Advanced" hidden>
+
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-advanced"> <span>Advanced mode<small>Rule ids, filters, suggestions, recorded calls and engine probes</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-devbar"> <span>Developer bar<small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
@@ -1174,25 +2229,37 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       </div></div>
   </div>
   </div>
+  </div>
   <div class="actions"><span class="muted" id="set-build" style="margin-right:auto;font-size:12px"></span><button class="btn primary" type="button" id="settings-close" autofocus>Done</button></div>
 </dialog>
 
-<dialog id="code-dialog" aria-label="Copy or download">
-  <h2>Copy or download</h2>
-  <div class="more-list code-list">
-    <button class="btn" type="button" data-code="copy"><span>Copy the code</span><small>To paste into a .js file or a message</small></button>
-    <button class="btn" type="button" data-code="link"><span>Copy a link</span><small>Opens this handler, or only the selected lines</small></button>
-    <button class="btn dl" type="button" data-code="zip"><span>Download for Nucleus (.zip)</span><small>Drag it onto Extract handler in Nucleus Co-op</small></button>
-    <button class="btn dl" type="button" data-code="js"><span>Download the code (.js)</span><small>For the <code>handlers</code> folder or your own editor</small></button>
-    <button class="btn dl" type="button" data-code="nc"><span>Download as .nc</span><small>The same package with the extension Hub downloads use</small></button>
+<dialog id="code-dialog" aria-labelledby="save-h">
+  <h2 id="save-h">Share</h2>
+  <div id="code-main">
+    <button class="code-hero" type="button" data-code="link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy a link</b><small id="code-link-sub">Opens this handler for anyone, or just the selected lines</small></span></button>
+    <div class="code-grid">
+      <button class="code-opt" type="button" data-code="copy"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 9h10v10H9zM5 15V5h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy the code</b><small>To paste anywhere</small></span></button>
+      <button class="code-opt" type="button" data-code="discord"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 5h14v10H9l-4 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span><b>Copy for Discord</b><small id="code-discord-sub">The code in a code block, ready to paste</small></span></button>
+    </div>
+    <p class="muted small" style="margin:10px 0 0">To get a file for Nucleus, use <b>Save</b> (Ctrl+S).</p>
+  </div>
+  <div id="code-done" hidden>
+    <p class="code-saved" id="code-saved"></p>
+    <p id="code-warn" class="code-warn" hidden></p>
+    <ol class="steps">
+      <li>Open Nucleus Co-op and drag the file onto the <strong>Extract handler</strong> button (the box-with-arrow icon next to the game list).</li>
+      <li>Nucleus asks to replace the old handler if there is one, then offers to add the game. Pick the game's .exe when asked.</li>
+    </ol>
+    <p class="muted small">By hand instead: copy the code into <code>Nucleus Co-op\handlers\<span id="code-js-name"></span></code>, then restart Nucleus.</p>
   </div>
   <div class="actions"><button class="btn" type="button" id="code-close">Close</button></div>
 </dialog>
 <dialog id="more-dialog" aria-label="More">
   <div class="more-list">
-    <button class="btn" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
+    <button class="btn no-touch" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
-    <button class="btn" type="button" data-proxy="a.start-link">About these tools</button>
+    <button class="btn" type="button" data-proxy="#test-open">🧪 Help test the beta</button>
+    <button class="btn" type="button" data-proxy="a.home-link">⌂ Home: about these tools</button>
   </div>
   <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
 </dialog>
@@ -1211,23 +2278,47 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div id="files-body"></div>
   <div class="actions"><button class="btn primary" type="button" id="files-close">Close</button></div>
 </dialog>
+<dialog id="firstrun-dialog"></dialog>
+<dialog id="test-dialog" aria-labelledby="test-h">
+  <h2 id="test-h">🧪 Help test this beta</h2>
+  <p class="muted" id="test-intro" style="margin:0 0 10px">Each item says what to try, how long it takes and what to look for. Tick what you've tried (kept in this browser), and report anything you find.</p>
+  <p class="tg-compare" id="tg-compare" hidden><span>⇄ This is a big update.</span> <button class="link" type="button" id="tg-compare-btn">Open this handler in the previous version</button> <span class="muted">to compare: what got better, what got worse, what you miss.</span></p>
+  <div id="test-body"></div>
+  <div class="actions"><button class="btn primary" type="button" id="test-close">Done</button></div>
+</dialog>
+
+<dialog id="gf-dialog" aria-labelledby="gf-h">
+  <h2 id="gf-h">Your game on this PC</h2>
+  <div id="gf-body"></div>
+  <p class="muted small">Only the names and sizes of the files are read, in this browser. Nothing is uploaded.</p>
+  <div class="actions"><button class="btn primary" type="button" id="gf-close">Done</button></div>
+</dialog>
+
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">
-  <h2>Keyboard shortcuts</h2>
+  <h2 tabindex="-1" autofocus>Keyboard shortcuts</h2>
   <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl.</p>
   <table class="keys"><tbody>
     <tr class="kh"><th colspan="2">Workbench</th></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>P</kbd> · <kbd>F1</kbd></td><td>Command palette: every command (format, fix, try it, theme…)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>P</kbd> · <kbd>Ctrl</kbd> <kbd>K</kbd></td><td>Examples and Hub handlers (type <kbd>&gt;</kbd> for commands)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Enter</kbd></td><td>Try it (simulate the handler)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save for Nucleus</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save (the .zip for Nucleus, or the format you picked last)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>S</kbd></td><td>Save as: .zip, .js or .nc</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>B</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the Lines list</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>,</kbd></td><td>Settings</td></tr>
     <tr><td><kbd>?</kbd></td><td>This list (outside the editor)</td></tr>
+    <tr><td><kbd>Esc</kbd> then <kbd>Tab</kbd></td><td>Leave the code editor (Tab alone indents)</td></tr>
     <tr class="kh"><th colspan="2">Problems</th></tr>
     <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>.</kbd></td><td>Problems and fixes on this line</td></tr>
     <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>F</kbd></td><td>Format the code (indentation and spacing)</td></tr>
     <tr class="kh"><th colspan="2">Editing</th></tr>
+    <tr class="kh"><th colspan="2">Debugger (Try it › Step through)</th></tr>
+    <tr><td><kbd>F9</kbd></td><td>Breakpoint on this line (or click beside the line number); <kbd>Shift</kbd> <kbd>F9</kbd> a condition (Advanced mode)</td></tr>
+    <tr><td><kbd>F5</kbd></td><td>Start, or continue to the next breakpoint (in the code or Try it)</td></tr>
+    <tr><td><kbd>F10</kbd> · <kbd>F11</kbd> · <kbd>Shift</kbd> <kbd>F11</kbd></td><td>Step over · into · out</td></tr>
+    <tr><td><kbd>Alt</kbd> <kbd>F10</kbd> · <kbd>Alt</kbd> <kbd>F5</kbd></td><td>Step back · back to the previous breakpoint</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>F5</kbd> · <kbd>Shift</kbd> <kbd>F5</kbd></td><td>Restart · stop</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Suggestions (also after typing <kbd>.</kbd>)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>/</kbd></td><td>Comment or uncomment the line</td></tr>
     <tr><td><kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Move the line up / down</td></tr>
@@ -1248,23 +2339,13 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="actions"><button class="btn primary" type="button" id="help-close">Close</button></div>
 </dialog>
 
-<dialog id="save-dialog">
-  <h2>Install it in Nucleus Co-op</h2>
-  <ol class="steps">
-    <li>Save the file: <strong id="save-name"></strong>.<br><span class="muted" id="save-files" hidden></span></li>
-    <li>Open Nucleus Co-op and drag the file onto the <strong>Extract handler</strong> button (the box-with-arrow icon next to the game list).</li>
-    <li>Nucleus asks to replace the old handler if there is one, then offers to add the game. Pick the game's .exe when asked.</li>
-  </ol>
-  <p class="muted">Prefer doing it by hand? Copy the handler and paste it into <code>Nucleus Co-op\handlers\<span id="save-js"></span></code>, then restart Nucleus.</p>
-  <div class="actions"><button class="btn" type="button" id="save-cancel">Cancel</button><button class="btn primary" type="button" id="save-go">Save .zip</button></div>
-</dialog>
 
 <dialog id="new-dialog">
   <form id="new-form">
     <h2>New handler</h2>
-    <div class="field"><label for="new-name">Game name</label><input id="new-name" required value="Deep Rock Galactic"><small>Shown in Nucleus. Also used for <code>Game.GUID</code> (letters, digits and spaces only).</small></div>
-    <div class="field"><label for="new-exe">Executable</label><input id="new-exe" required pattern="[^\\/:*?&quot;&lt;&gt;|]+\.exe" value="FSD-Win64-Shipping.exe"></div>
-    <div class="field"><label for="new-steam">Steam app ID <span class="muted">(optional)</span></label><input id="new-steam" inputmode="numeric" pattern="\d*" value="548430"></div>
+    <div class="field"><label for="new-name">Game name</label><input id="new-name" required placeholder="e.g. Deep Rock Galactic"><small>Shown in Nucleus. Also used for <code>Game.GUID</code> (letters, digits and spaces only).</small></div>
+    <div class="field"><label for="new-exe">Executable</label><input id="new-exe" required pattern="[^\\/:*?&quot;&lt;&gt;|]+\.exe" placeholder="e.g. FSD-Win64-Shipping.exe"></div>
+    <div class="field"><label for="new-steam">Steam app ID <span class="muted">(optional)</span></label><input id="new-steam" inputmode="numeric" pattern="\d*" placeholder="e.g. 548430"></div>
     <div id="feature-list"></div>
     <div class="actions"><button class="btn" type="button" id="new-cancel">Cancel</button><button class="btn primary" type="submit">Create</button></div>
   </form>

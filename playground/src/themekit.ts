@@ -120,7 +120,7 @@ export interface CodeTheme {
   dark?: Tokens;
 }
 /** Where code colours apply: the editor, the before/after views and file previews. */
-export const CODE_SCOPE = ['#editor', '.diff-wrap', '.pkg-text', '.ct-sample'];
+export const CODE_SCOPE = ['#editor', '.diff-wrap', '.pkg-text', '.ct-sample', '.hl', '.cf'];
 /** A code theme's tokens with the line numbers, gutter and gutter edge worked out from its text and background. */
 export function codeTokens(t: Tokens): Tokens {
   const out = { ...t };

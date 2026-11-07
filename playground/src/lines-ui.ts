@@ -38,7 +38,8 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   const LINES = allLines();
   const kinds = new Set<Kind>();
   const DEFAULTS = {
-    group: 'tree' as 'object' | 'topic' | 'tree',
+    view: 'tree' as 'tree' | 'list', // a tree you browse level by level, or one list with group headings
+    group: 'object' as 'object' | 'topic' | 'type' | 'scope' | 'tree', // 'tree': an old saved value (now view)
     sort: 'az' as 'az' | 'used',
     // Basic settings
     meta: true, // type and default beside each name
@@ -56,13 +57,15 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     shorthand: true, // "kmd" finds KillMutexDelay
     info: true, // details of the hovered name at the bottom
     wide: false, // a wider column
-    tree: true, // "as a tree" in Group
   };
   type Prefs = typeof DEFAULTS;
   const prefs: Prefs = { ...DEFAULTS };
   try {
     Object.assign(prefs, JSON.parse(store.get(PREFS_KEY) || '{}'));
   } catch {}
+  // Before View existed, the tree was a Group choice (and a setting).
+  if (prefs.group === 'tree') { prefs.view = 'tree'; prefs.group = 'object'; }
+  if ((prefs as any).tree === false && !('view' in JSON.parse(store.get(PREFS_KEY) || '{}'))) prefs.view = 'list';
   const saved = store.get(LINES_KEY);
   // Phones always start with the list closed (it's a sheet over the code there).
   let open = window.matchMedia('(max-width: 860px)').matches ? false : saved ? saved === '1' : window.matchMedia('(min-width: 1680px)').matches;
@@ -87,6 +90,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
       return;
     }
     if (l.doc) info.append(text('div', '', l.doc));
+    if (l.aiDoc) info.append(text('div', 'ai-doc', 'AI-written, not from the official docs.'));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
     if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
@@ -107,6 +111,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     const d = text('div', 'ln-doc', '');
     d.append(text('code', '', l.sig));
     if (l.doc) d.append(text('div', '', l.doc));
+    if (l.aiDoc) d.append(text('div', 'ai-doc', 'AI-written, not from the official docs.'));
     const facts: string[] = [];
     if (l.default !== undefined) facts.push(`Default: ${l.default}`);
     if (l.used && prefs.usage) facts.push(`Used by ${l.used} of ${l.of} Hub handlers`);
@@ -154,9 +159,16 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   // Tree (a list setting, off by default): Game, Context, System… one level at a time, like a file browser.
   // Typing a filter searches everything, as a flat list.
   let treePath: string[] = [];
-  const treeOn = () => prefs.tree;
+  const treeOn = () => prefs.view === 'tree';
   const ROOT_ORDER = ['Game', 'Context', 'Player', 'ProtoInput', 'System', 'Nucleus'];
   const segs = (l: Line) => l.path.replace(/^new /, '').split('.');
+  // Grouping (both views): by object, topic, type, or where a name works.
+  const KIND_LABEL: Record<string, string> = { bool: 'Yes / no', number: 'Numbers', string: 'Text', list: 'Lists', function: 'Functions', other: 'Other' };
+  const SCOPE_LABEL: Record<string, string> = { top: 'Top level only (before the session)', callback: 'Inside Game.Play and other callbacks', any: 'Anywhere' };
+  const groupOf = (l: Line) => (prefs.group === 'topic' ? l.topic : prefs.group === 'type' ? KIND_LABEL[l.kind] ?? 'Other' : prefs.group === 'scope' ? SCOPE_LABEL[l.scope] ?? 'Anywhere' : l.owner);
+  /** A name's place in the tree: its path by object, else its group, then the name. */
+  const treeSegs = (l: Line) => (prefs.group === 'object' ? segs(l) : [groupOf(l), l.text]);
+  const LAST = ['Nucleus values', 'Other', 'Anywhere'];
   /** The folders and names directly under `path`. */
   function levelAt(shown: Line[], path: string[]) {
     const depth = path.length;
@@ -164,12 +176,12 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     const nodes = new Map<string, number>();
     const leaves: Line[] = [];
     for (const l of shown) {
-      const sg = segs(l);
+      const sg = treeSegs(l);
       if (depth && sg.slice(0, depth).join('.') !== here) continue;
       if (sg.length === depth + 1) leaves.push(l);
       else if (sg.length > depth + 1) nodes.set(sg[depth], (nodes.get(sg[depth]) ?? 0) + 1);
     }
-    const rank = (n: string) => (depth ? 0 : ROOT_ORDER.includes(n) ? ROOT_ORDER.indexOf(n) : ROOT_ORDER.length);
+    const rank = (n: string) => (depth ? 0 : prefs.group !== 'object' ? (LAST.includes(n) ? 1 : 0) : ROOT_ORDER.includes(n) ? ROOT_ORDER.indexOf(n) : ROOT_ORDER.length);
     const names = [...nodes.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
     if (prefs.sort === 'used' && prefs.usage) leaves.sort((a, b) => (b.of ? b.used / b.of : 0) - (a.of ? a.used / a.of : 0) || a.text.localeCompare(b.text));
     else leaves.sort((a, b) => a.text.localeCompare(b.text, 'en', { sensitivity: 'base' }));
@@ -216,7 +228,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     frag.append(crumbs);
     const here = document.createDocumentFragment();
     for (const n of cur.names) here.append(nodeRow(treePath, n, cur.counts.get(n)!));
-    for (const l of cur.leaves) here.append(rowFor(l, segs(l).pop()! + (l.method ? '()' : '')));
+    for (const l of cur.leaves) here.append(rowFor(l, prefs.group === 'object' ? segs(l).pop()! + (l.method ? '()' : '') : l.text));
     if (!cur.names.length && !cur.leaves.length) here.append(text('div', 'none', 'Nothing here.'));
     twoColumns = depth > 0 && list.clientWidth >= TWO_COLUMNS;
     if (twoColumns) {
@@ -241,23 +253,23 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   // Switch between one and two columns when the list is resized.
   let twoColumns = false;
   new ResizeObserver(() => {
-    if (prefs.group !== 'tree' || !treeOn() || !treePath.length) return;
+    if (!treeOn() || !treePath.length) return;
     if ((list.clientWidth >= TWO_COLUMNS) !== twoColumns) render();
   }).observe(list);
 
   function render() {
     const q = ($('#lines-q') as HTMLInputElement).value.trim().toLowerCase();
     const base = LINES.filter((l) => (prefs.deprecated || !l.deprecated) && (!kinds.size || kinds.has(l.kind)));
-    if (prefs.group === 'tree' && treeOn() && !q) return renderTree(base);
+    if (treeOn() && !q) return renderTree(base);
     const shown = base.filter((l) => matches(l, q, prefs.shorthand));
     const groups = new Map<string, Line[]>();
     for (const l of shown) {
-      const g = prefs.group === 'topic' ? l.topic : l.owner; // a tree outside Advanced mode: by object
+      const g = groupOf(l);
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g)!.push(l);
     }
     const order = [...groups.keys()];
-    if (prefs.group === 'topic') order.sort((a, b) => (a === 'Nucleus values' ? 1 : b === 'Nucleus values' ? -1 : a.localeCompare(b)));
+    if (prefs.group !== 'object') order.sort((a, b) => Number(LAST.includes(a)) - Number(LAST.includes(b)) || a.localeCompare(b));
     list.textContent = '';
     const frag = document.createDocumentFragment();
     for (const g of order) {
@@ -312,6 +324,13 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
 
   // --- inserting
   function pick(l: Line, forceInsert: boolean) {
+    // In Form or Blocks the code is hidden: that view adds it (an option in Form, a step or callback in Blocks).
+    if ((document.getElementById('editor') as HTMLElement | null)?.hidden) {
+      const ev = new CustomEvent('lines-pick', { detail: { path: l.path, msg: '' }, cancelable: true });
+      document.dispatchEvent(ev);
+      flash(ev.detail.msg || `Switch to Code to insert ${l.path}.`);
+      return;
+    }
     const u = scan?.uses.get(l.path);
     if (!forceInsert && prefs.jump && u?.assigned.length) {
       // Already set: go there instead of adding a second line (the most common Hub warning).
@@ -411,18 +430,24 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   }
   const groupSel = $('#lines-group') as HTMLSelectElement;
   const sortSel = $('#lines-sort') as HTMLSelectElement;
-  // "as a tree" is in Group only with the Tree setting on (added and removed, since some phones ignore hidden options).
-  const treeOpt = groupSel.querySelector('option[value=tree]') as HTMLOptionElement;
+  groupSel.innerHTML = '<option value="object">by object</option><option value="topic">by topic</option><option value="type">by type</option><option value="scope">by where it works</option>';
+  const viewLabel = document.createElement('label');
+  viewLabel.textContent = 'View ';
+  const viewSel = document.createElement('select');
+  viewSel.id = 'lines-view';
+  viewSel.innerHTML = '<option value="tree">Tree</option><option value="list">List</option>';
+  viewSel.title = 'Tree: open one group at a time. List: everything, with group headings.';
+  viewLabel.append(viewSel);
+  groupSel.closest('label')!.before(viewLabel);
   const syncTreeOption = () => {
-    if (treeOn()) {
-      if (!treeOpt.parentElement) groupSel.append(treeOpt);
-    } else treeOpt.remove();
-    groupSel.value = prefs.group === 'tree' && !treeOn() ? 'object' : prefs.group;
+    viewSel.value = prefs.view;
+    groupSel.value = prefs.group;
   };
   syncTreeOption();
   sortSel.value = prefs.sort;
   const savePrefs = () => store.set(PREFS_KEY, JSON.stringify(prefs));
-  groupSel.addEventListener('change', () => ((prefs.group = groupSel.value as any), savePrefs(), render()));
+  viewSel.addEventListener('change', () => ((prefs.view = viewSel.value as any), (treePath = []), savePrefs(), render()));
+  groupSel.addEventListener('change', () => ((prefs.group = groupSel.value as any), (treePath = []), savePrefs(), render()));
   sortSel.addEventListener('change', () => ((prefs.sort = sortSel.value as any), savePrefs(), render()));
 
   // --- settings (the gear): what the list shows and does. Niche ones under Advanced.
@@ -440,7 +465,6 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     { key: 'params', label: 'Insert parameter names for functions', advanced: true },
     { key: 'shorthand', label: 'Shorthand filter', hint: '"kmd" finds KillMutexDelay', advanced: true },
     { key: 'info', label: 'Details of the hovered name', hint: 'Signature and docs at the bottom of the list', advanced: true },
-    { key: 'tree', label: 'Tree grouping', hint: 'Adds "as a tree" to Group: browse Game, Context, System… one level at a time', advanced: true },
     { key: 'wide', label: 'Wider column', hint: '520 px instead of 310: room for long names and values, and two columns in the tree. You can also drag the left edge of the list.', advanced: true, wideOnly: true },
   ];
   const panel = $('#lines-settings');
@@ -541,7 +565,8 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     store.set(LINES_KEY, o ? '1' : '0');
     editor.refresh();
     if (o) update();
-    if (o && focus) ($('#lines-q') as HTMLInputElement).focus();
+    // On a touch screen the on-screen keyboard would cover the list: focus the filter only with a real keyboard.
+    if (o && focus && !matchMedia('(pointer: coarse)').matches) ($('#lines-q') as HTMLInputElement).focus();
   }
 
   showInfo(undefined);

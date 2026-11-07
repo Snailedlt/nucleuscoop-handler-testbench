@@ -1,7 +1,7 @@
 import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
-import { clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
+import { announce, clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
 import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
@@ -11,33 +11,56 @@ import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
 import { vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
-import { lint, Diagnostic, RULES, lineOf, pluginGlobals } from '@core/lint';
-import { api, membersOf, memberMarkdown, ownerLabel, Resolved } from '@core/api';
-import { memberContextAt, resolveAt, callContextAt } from '@core/complete';
+import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
+import { api, membersOf, ownerLabel, Resolved } from '@core/api';
+import { memberContextAt, resolveAt, callContextAt, valueContextAt } from '@core/complete';
 import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
-import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems } from './aifix';
+import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
-import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, PackageFile } from './package';
+import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
+import { announceLine, hoverDelay, initA11y } from './a11y';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
+import { mascot, mascotsOn } from './mascots';
+import { fixWithNucli, applyEditsToText } from './fixfx';
+import { codeNote } from './codenote';
+import { initMessageHints } from './wmhints';
+import { memberCard } from './doccard';
+import { initKeyHints } from './keyhints';
+import { mountFormView, type FormView } from './formview';
+import { mountBlocksView, type BlocksView } from './blocksview';
+import { initPackageUI, fileIcon } from './packageui';
+import { installMap, type PkgProblem } from './pkgcheck';
+import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
+import { openMenu, type MenuItem } from './menus';
+import { initTestGuide } from './testguide';
+import { exportSettings, importSettings } from './settingsio';
+import { BETA } from './testplan';
+import { feedbackUrl, setReportState } from './report';
+import { firstRunDone, initFirstRun } from './firstrun';
+import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
+import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
+import { mountDebugger } from './debugui';
+import { hlCode, hlHtml } from './codehl';
+import { setCodeFieldSupport } from './codefield';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
 applyCustomTheme();
 applyCodeTheme();
 watchPictures();
-declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null };
-interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number } }
+declare const BUILD: { bench?: string; core: string; nucleus: string | null; jint: string | null; feedback?: string | null };
+interface HubExample { id: string; title: string; game: string; owner: string; version: number; downloads: number; maxPlayers: number | null; multiKbm: boolean; updated: string | null; url: string; source?: string; /** The game's cover: a file beside the page, or a data: URL. */ cover?: string; /** Its current version isn't verified on the Hub. */ unverified?: boolean; lint?: { errors: number; warnings: number }; /** How many other files its package has (hub/<id>.files.json). */ files?: number; /** Those files, in the page (single-file build) or once fetched; no b64: too big to bring along. */ filesData?: { name: string; size: number; b64?: string }[] }
 /** base: where hub/<id>.js are fetched from when the sources aren't in the page (GitHub Pages). */
 declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; base: string | null; /** every handler on the Hub (our mirror), not only the most downloaded */ all?: boolean };
 declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
@@ -62,7 +85,7 @@ function md(src: string): string {
       }
     } else if (i % 3 === 2) out.push(`<pre class="doc-code">${esc(parts[i].trim())}</pre>`);
   }
-  return out.join('');
+  return hlHtml(out.join(''));
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +122,7 @@ Game.Play = function () {
 
 /** Plain-language explanations for the Simple view. */
 const PLAIN: Record<string, { title: string; why: string }> = {
-  'syntax-error': { title: "Nucleus can't read this file", why: 'Something is missing or extra here, often a bracket, a quote or a comma. Nothing else can be checked until this is fixed.' },
+  'syntax-error': { title: "Nucleus can't read this file", why: 'Something is missing or extra here, often a bracket, a quote or a comma. The rest is still checked, but Nucleus won\'t load the file until this is fixed.' },
   'es5-only': { title: 'Newer JavaScript than Nucleus understands', why: 'Nucleus only reads an older form of JavaScript, so it stops loading the handler here.' },
   'let-const-semantics': { title: 'Written in a newer style', why: 'Nucleus treats this like a plain "var". Usually harmless.' },
   'unknown-member': { title: "A setting Nucleus doesn't know", why: "Nucleus skips it, so it does nothing. It's usually a typo." },
@@ -112,6 +135,10 @@ const PLAIN: Record<string, { title: string; why: string }> = {
   'hub-install-parse': { title: 'Would break installing this handler', why: 'When installing, Nucleus reads the game name and .exe from these lines in a strict way.' },
   'guid-characters': { title: 'Special characters in the GUID', why: 'The GUID becomes a folder name. Letters, digits and spaces are safest.' },
   'protoinput-legacy-hooks': { title: 'Old input settings are still on', why: 'With Proto Input they should be turned off, or two input systems run at once.' },
+  'protoinput-inactive': { title: "Proto Input never starts", why: "None of its start options (InjectStartup or an InjectRuntime method) is on, so Nucleus ignores every Proto Input setting here." },
+  'protoinput-needs-hook': { title: 'Blocked messages and filters do nothing yet', why: "They only work inside Proto Input's message filter hook, which isn't turned on." },
+  'needs-option': { title: 'A setting that needs another one turned on', why: "Nucleus only reads it when the other setting is on, so on its own it does nothing." },
+  'blocked-message': { title: "A window message Proto Input can't block as written", why: "It isn't in Proto Input's message list (it blocks something else, or nothing), or it's in the list twice." },
   'missing-builtin': { title: "A JavaScript function Nucleus doesn't have", why: "Nucleus uses an older JavaScript engine that lacks this function, so the handler stops with an error when it reaches this line." },
   deprecated: { title: 'An outdated setting', why: 'It still works, but it has been replaced.' },
 };
@@ -146,7 +173,7 @@ let packageFiles: PackageFile[] = storedFiles();
 // A package's pluginsInfo.txt (in its handler folder, Game.Folder): Nucleus adds each plugin as a
 // global. Without a package the linter can't see it, and only warns on unknown `Name.Member`.
 const pluginsText = (): string | undefined => {
-  const f = packageFiles.find((x) => /(^|\/)pluginsInfo\.txt$/i.test(x.name) && x.name.split('/').length <= 2);
+  const f = packageFiles.find((x) => /(^|\/)pluginsInfo\.txt$/i.test(x.name) && x.name.split('/').length <= 2 && !x.remote);
   return f ? new TextDecoder().decode(f.data) : undefined;
 };
 const lintPlugins = (): string[] | undefined => {
@@ -165,6 +192,13 @@ try {
 }
 
 let current: Diagnostic[] = [];
+let currentText = '';
+// The game's folder, if the author picked one for this tab (gamefolder.ts): only names and sizes, kept in this page.
+let gameFolder: GameFolder | null = null;
+let folderProblems: FolderProblem[] = [];
+// The package's own problems (pkgcheck.ts) and its UI (packageui.ts).
+let pkgProblems: PkgProblem[] = [];
+let pkgUI: ReturnType<typeof initPackageUI> | null = null;
 // Problems-panel state; declared before the editor because it lints as soon as it is created.
 let filter: 'all' | 'error' | 'warning' | 'info' | 'hint' = 'all';
 let problemIndex = -1;
@@ -252,18 +286,28 @@ const editor = CodeMirror($('#editor'), {
     getAnnotations: (text: string) =>
       analyze(text).then((r) => {
         current = r.diagnostics;
+        currentText = text;
+        folderProblems = gameFolder ? checkAgainstFolder(text, gameFolder) : [];
+        pkgProblems = pkgUI ? pkgUI.problems() : [];
         setFixCount(r.fixable);
         renderProblems(text);
-        return current
-          .filter((d) => d.severity !== 'hint' || (mode === 'dev' && filter === 'hint'))
-          .map((d) => ({
-            from: posAt(text, d.start),
-            to: posAt(text, Math.max(d.end, d.start + 1)),
-            message: `${plainFor(d).title}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
-            severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
-          }));
+        if (formView && viewMode === 'form') formView.refresh();
+        if (blocksView && viewMode === 'blocks') blocksView.refresh();
+        return [
+          ...current
+            .filter((d) => d.severity !== 'hint' || (mode === 'dev' && filter === 'hint'))
+            .map((d) => ({
+              from: posAt(text, d.start),
+              to: posAt(text, Math.max(d.end, d.start + 1)),
+              message: `${plainFor(d).title}. ${d.message.replace(/`/g, '')}${mode === 'dev' ? ` [${d.rule}]` : ''}`,
+              severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
+            })),
+          ...folderProblems.map((f) => ({ from: posAt(text, f.start), to: posAt(text, Math.max(f.end, f.start + 1)), message: `${f.title}. ${f.why}`, severity: f.severity })),
+          ...pkgProblems.filter((f) => f.start !== undefined).map((f) => ({ from: posAt(text, f.start!), to: posAt(text, Math.max(f.end!, f.start! + 1)), message: `${f.title}. ${f.why}`, severity: f.severity })),
+        ];
       }),
     delay: 250,
+    tooltips: false, // our own hover card (showHoverCard)
   },
   configureMouse: vscodeMouse,
   extraKeys: {
@@ -272,11 +316,33 @@ const editor = CodeMirror($('#editor'), {
       const c = cm.getCursor();
       showLineProblems(c.line, cm.indexFromPos(c));
       if (linePop.hidden) showLineProblems(c.line);
+      // From the keyboard: straight to its first button (Fix this), Esc goes back to the code.
+      if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
     }),
     'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
+    // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
     Tab: (cm: any) => cm.execCommand('insertSoftTab'),
+    'Shift-Tab': (cm: any) => cm.execCommand('indentLess'),
   },
 } as any);
+let escThenTab = false;
+editor.on('keydown', (_cm: any, e: KeyboardEvent) => {
+  if (e.key === 'Escape') escThenTab = true;
+  else if (e.key === 'Tab' && escThenTab) {
+    // Leave the editor: focus the next (Shift: previous) control on the page.
+    (e as any).codemirrorIgnore = true;
+    e.preventDefault();
+    const wrap = editor.getWrapperElement();
+    const all = [...document.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter((x) => !wrap.contains(x) && !x.closest('[hidden], dialog:not([open])') && x.offsetParent !== null && !(x as HTMLButtonElement).disabled);
+    const after = (x: HTMLElement) => !!(wrap.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const next = e.shiftKey ? all.filter((x) => !after(x)).pop() : all.find(after);
+    next?.focus();
+    escThenTab = false;
+  }
+  else if (e.key !== 'Shift') escThenTab = false;
+});
+editor.on('blur', () => (escThenTab = false));
 
 function posAt(text: string, offset: number) {
   const line = lineOf(text, offset);
@@ -300,7 +366,7 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
   scroller.setAttribute('role', 'region');
   scroller.setAttribute('aria-label', 'Handler code');
   editor.getInputField().tabIndex = -1;
-  scroller.addEventListener('focus', (e) => {
+  scroller.addEventListener('focus', (e: FocusEvent) => {
     if (e.target === scroller) editor.focus();
   });
 }
@@ -311,6 +377,26 @@ function hinter(cm: any) {
   const cur = cm.getCursor();
   const offset = cm.indexFromPos(cur);
   const ctx = memberContextAt(text, offset);
+  // `Game.DPIHandling = |`: the values the option takes (enum values, true/false, a callback function, the usual
+  // window messages for BlockedMessages).
+  const val = !ctx ? valueContextAt(text, offset) : undefined;
+  if (val && !val.partial.includes('.')) {
+    const p = val.partial.toLowerCase();
+    const indent = (cm.getLine(cur.line).match(/^\s*/) ?? [''])[0];
+    const list = val.values.filter((v) => v.value.toLowerCase().startsWith(p)).map((v) => ({
+      text: v.value,
+      displayText: v.value,
+      render(el: HTMLElement) {
+        el.innerHTML = `<span class="hint-name">${esc(v.value.replace(/\s+/g, ' '))}</span><span class="hint-type">${esc(v.detail ?? '')}</span>`;
+      },
+      // A callback: the function on its own lines, the cursor inside it.
+      hint: v.snippet ? (c: any, data: any) => {
+        c.replaceRange(`function () {\n${indent}  \n${indent}};`, data.from, data.to);
+        c.setCursor({ line: data.from.line + 1, ch: indent.length + 2 });
+      } : undefined,
+    }));
+    return list.length ? { list, from: cm.posFromIndex(val.partialStart), to: cur } : null;
+  }
   if (!ctx) return null;
   const partial = ctx.partial.toLowerCase();
   const list = membersOf(ctx.base)
@@ -329,44 +415,192 @@ function hinter(cm: any) {
 const rank = (m?: { required?: boolean; deprecated?: string; doc?: string }) => (!m ? 1 : m.required ? 0 : m.deprecated ? 3 : m.doc ? 1 : 2);
 
 editor.on('inputRead', (cm: any, change: any) => {
-  if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0])) {
+  const afterEquals = change.text[0] === ' ' && /[\w\]]\s*=\s$/.test(cm.getLine(change.from.line).slice(0, change.from.ch + 1));
+  if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0]) || afterEquals) {
     if (!cm.state.completionActive) cm.showHint({ hint: hinter, completeSingle: false });
   }
   if (change.text[0] === '(' || change.text[0] === ',') showSignature();
 });
 editor.on('cursorActivity', () => showSignature());
+// Settings › Accessibility: read out the problems on the line the cursor moves to (once per line).
+let spokenLine = -1;
+editor.on('cursorActivity', () => {
+  if (!announceLine()) return;
+  const line = editor.getCursor().line;
+  if (line === spokenLine) return;
+  spokenLine = line;
+  const from = editor.indexFromPos({ line, ch: 0 }), to = editor.indexFromPos({ line, ch: editor.getLine(line).length });
+  const here = current.filter((d) => d.start <= to && d.end >= from);
+  if (here.length) announce(`Line ${line + 1}: ${here.map((d) => `${d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'note'}, ${d.message.split('\n')[0]}`).join('; ')}`);
+});
+
+initMessageHints(editor);
+const folderPickers = initFolderPickers(editor, () => gameFolder, () => void pickFolder());
+async function pickFolder() {
+  const f = await pickGameFolder(editor.getValue());
+  if (!f) return;
+  gameFolder = f;
+  if (tabsReady) activeT().folder = f;
+  afterFolderChange();
+  use('game-folder');
+}
+function afterFolderChange() {
+  folderPickers.refresh();
+  $('#files-game').hidden = !gameFolder;
+  pkgUI?.render();
+  (editor as any).performLint();
+}
+// "Your game on this PC" (the game's install folder, read on this device only): a section of the Files panel, since
+// it is about files too: which ones the handler's paths point at, and file pickers for the symlink options.
+function gameSection(): string {
+  return `<section class="fp-game" aria-label="Your game on this PC"><div class="fp-head">Your game on this PC</div>${gameFolder
+    ? `<div class="fp-gname"><span class="fi-badge fi-dir" aria-hidden="true">▸</span>${esc(gameFolder.name)}</div><p>Check compares the handler's paths and file names with this folder, and the symlink options get a file picker. Nothing is uploaded.</p><div class="fp-gacts"><button class="btn" type="button" data-gf="show">What's in it</button><button class="btn" type="button" data-gf="pick">Pick another</button><button class="btn" type="button" data-gf="forget">Unlink</button></div>`
+    : `<p>Link the folder your game is installed in, and Check tells you when <code>ExecutableName</code>, <code>BinariesFolder</code> or a symlink option names a file that isn't there. Only names and sizes are read, on this device.</p><div class="fp-gacts"><button class="btn" type="button" data-gf="pick">Link the game's folder…</button></div>`}</section>`;
+}
+async function onGameAction(act: string) {
+  if (act === 'pick') return void (await pickFolder());
+  if (act === 'forget') { gameFolder = null; if (tabsReady) activeT().folder = null; afterFolderChange(); announce('Unlinked the game folder.'); return; }
+  if (act === 'show' && gameFolder) showGameFolder();
+}
+function showGameFolder() {
+  const dlg = $('#gf-dialog') as HTMLDialogElement;
+  const draw = () => { $('#gf-body').innerHTML = gameFolder ? folderSummaryHtml(gameFolder, editor.getValue()) : '<p>No folder picked.</p>'; };
+  draw();
+  dlg.showModal();
+  $('#gf-body').onclick = async (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>('[data-gf]')?.dataset.gf;
+    if (act === 'forget') { gameFolder = null; if (tabsReady) activeT().folder = null; afterFolderChange(); dlg.close(); }
+    else if (act === 'pick') { dlg.close(); await pickFolder(); }
+  };
+}
+$('#gf-close').addEventListener('click', () => ($('#gf-dialog') as HTMLDialogElement).close());
 
 // Hover docs
 const tip = $('#tip');
 let tipTimer: number | undefined;
+let tipHideTimer: number | undefined;
+// The hover card: the problems under the pointer (what, why, a fix you can click) and the docs of the name there.
+// Anchored under the code it's about (above it near the bottom), so it never covers that code; it stays open while
+// the pointer moves onto it. Replaces CodeMirror's own plain-text lint tooltip (lint.tooltips: false).
+const SEV_ICON: Record<string, string> = { error: '✖', warning: '!', info: 'i', hint: '·' };
+const codeIn = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+function problemCard(list: Diagnostic[]): string {
+  return list.map((d, i) => {
+    const plain = plainFor(d);
+    const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
+    return `<div class="hc-item ${sevClass[d.severity]}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div class="hc-body">`
+      + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${hlHtml(codeIn(d.message))}</div>`
+      + (fixes.length || mode === 'dev' ? `<div class="hc-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred ? 'Fix: ' : ''}${codeIn(f.title)}</button>`).join('')}${fixes.length && i === 0 ? '<span class="hc-key" title="Fixes from the keyboard"><kbd>Ctrl</kbd><kbd>.</kbd></span>' : ''}${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : '')
+      + `</div></div>`;
+  }).join('');
+}
+function placeTip(from: { left: number; top: number; bottom: number }) {
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  const x = Math.min(Math.max(8, from.left - 12), window.innerWidth - w - 8);
+  const below = from.bottom + 6 + h <= window.innerHeight - 8 || from.top - 6 - h < 8;
+  tip.style.left = `${x}px`;
+  tip.style.top = `${below ? from.bottom + 6 : from.top - 6 - h}px`;
+}
+function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
+  if (!list.length && !doc) return void (tip.hidden = true);
+  // One box: over a problem, the problem (what, why, fixes); the name's docs fold away under it, open on a click.
+  // Over plain code, the docs. (As in JetBrains IDEs and VS Code: the problem first, the docs one step away.)
+  const name = list.length && doc ? resolveAt(text, at) : undefined;
+  tip.innerHTML = list.length
+    ? problemCard(list) + (doc ? `<details class="hc-doc"><summary>Docs${name ? ` for <code>${esc(text.slice(name.start, name.end))}</code>` : ''}</summary>${doc}</details>` : '')
+    : `<div class="hc-doc">${doc}</div>`;
+  tip.classList.toggle('has-problems', list.length > 0);
+  tip.hidden = false;
+  tip.querySelectorAll<HTMLButtonElement>('[data-hc-fix]').forEach((b) => b.addEventListener('click', () => {
+    const [di, fi] = b.dataset.hcFix!.split(':').map(Number);
+    const fix = list[di].fixes![fi];
+    tip.hidden = true;
+    fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
+      editor.operation(() => {
+        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+      }),
+    );
+    codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
+  }));
+  placeTip(editor.charCoords(editor.posFromIndex(anchorFrom), 'window'));
+}
+const problemsAt = (at: number) => current.filter((d) => d.severity !== 'hint' && d.start <= at && at <= Math.max(d.end, d.start + 1));
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
+  if (tip.contains(e.target as Node)) return;
   clearTimeout(tipTimer);
   tipTimer = window.setTimeout(() => {
-    const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
+    // Not over the "+" or while its menu is open: the menu says it already.
+    if ((e.target as HTMLElement).closest?.('.wm-add, .gf-add') || document.querySelector('.wm-menu, .gf-menu')) { tip.hidden = true; return; }
     const text = editor.getValue();
-    const r = resolveAt(text, editor.indexFromPos(pos));
-    const html = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
-    if (!html) {
-      tip.hidden = true;
-      return;
+    // A marker in the gutter: every problem on that line.
+    const marker = (e.target as HTMLElement).closest?.('.CodeMirror-lint-marker');
+    if (marker) {
+      const line = editor.lineAtHeight(e.clientY, 'window');
+      const list = lineProblems(line, mode === 'dev');
+      if (!list.length) return void (tip.hidden = true);
+      return showHoverCard(text, 0, list, '', Math.min(...list.map((d) => d.start)));
     }
-    tip.innerHTML = html;
-    tip.hidden = false;
-    const x = Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 12);
-    const y = e.clientY + 18 + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 10 : e.clientY + 18;
-    tip.style.left = `${Math.max(8, x)}px`;
-    tip.style.top = `${Math.max(8, y)}px`;
-  }, 280);
+    if ((e.target as HTMLElement).closest?.('.CodeMirror-gutters')) return void (tip.hidden = true);
+    const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
+    const at = editor.indexFromPos(pos);
+    // Past the end of the line: nothing there.
+    const end = editor.charCoords({ line: pos.line, ch: editor.getLine(pos.line).length }, 'window');
+    if (e.clientX > end.right + 4) return void (tip.hidden = true);
+    const list = problemsAt(at);
+    // A number in Game.ProtoInput.BlockedMessages: the window message and what blocking it does.
+    const msg = blockedItemAt(text, at);
+    const r = msg ? undefined : resolveAt(text, at);
+    const doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+    const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : at;
+    showHoverCard(text, at, list, doc, from);
+  }, hoverDelay(280));
 });
-editor.getWrapperElement().addEventListener('mouseleave', () => {
+const hideTipSoon = () => { clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
+editor.getWrapperElement().addEventListener('mouseleave', (e: MouseEvent) => {
   clearTimeout(tipTimer);
-  tip.hidden = true;
+  if (!tip.contains(e.relatedTarget as Node)) hideTipSoon();
+});
+editor.getWrapperElement().addEventListener('mouseenter', () => clearTimeout(tipHideTimer));
+tip.addEventListener('mouseenter', () => { clearTimeout(tipHideTimer); clearTimeout(tipTimer); });
+tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperElement().contains(e.relatedTarget as Node)) hideTipSoon(); });
+editor.on('change', () => (tip.hidden = true));
+editor.on('scroll', () => (tip.hidden = true));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
+
+// The small code editors in Form and Blocks (codefield.ts): the same suggestions, hover docs and announcements.
+setCodeFieldSupport({
+  hint: hinter,
+  say: (msg) => announce(msg),
+  hover(cm: any, e: MouseEvent, problems) {
+    if (tip.contains(e.target as Node)) return;
+    clearTimeout(tipTimer);
+    clearTimeout(tipHideTimer);
+    tipTimer = window.setTimeout(() => {
+      const text = cm.getValue();
+      const pos = cm.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
+      const at = cm.indexFromPos(pos);
+      const end = cm.charCoords({ line: pos.line, ch: cm.getLine(pos.line).length }, 'window');
+      if (e.clientX > end.right + 4) return void (tip.hidden = true);
+      const r = resolveAt(text, at);
+      const doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+      if (!doc && !problems.length) return void (tip.hidden = true);
+      tip.innerHTML = problems.map((d) => `<div class="hc-item ${sevClass[d.severity] ?? 'info'}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hc-body"><div class="hc-msg">${hlHtml(codeIn(d.message))}</div></div></div>`).join('')
+        + (doc ? `<div class="hc-doc">${doc}</div>` : '');
+      tip.classList.toggle('has-problems', problems.length > 0);
+      tip.hidden = false;
+      placeTip(cm.charCoords(cm.posFromIndex(problems.length ? problems[0].start : r ? r.start : at), 'window'));
+    }, hoverDelay(280));
+  },
+  hoverEnd() {
+    clearTimeout(tipTimer);
+    hideTipSoon();
+  },
 });
 
 function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
     case 'member':
-      return md(memberMarkdown(res.owner, res.name, res.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''));
+      return memberCard(res.owner, res.name, res.member);
     case 'enum': {
       const e = api.enums[res.name];
       return md('```\nenum Nucleus.' + res.name + '\n```\n\n' + (e.doc ?? '') + '\n\n' + Object.entries(e.values).map(([k, v]) => `\`${k}\` = ${v}`).join(', '));
@@ -429,7 +663,34 @@ function showSignature() {
 // Problems
 
 
+// Problems that aren't the linter's: the code against the picked game folder (and the package's files).
+function renderExtraProblems(text: string) {
+  const box = $('#extra-problems');
+  const list = folderProblems;
+  const pk = pkgProblems;
+  box.hidden = !list.length && !pk.length;
+  if (!list.length && !pk.length) return void (box.innerHTML = '');
+  const pkHtml = pk.length ? `<li class="xp-h" role="presentation">In the package <span class="muted">· ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'} besides handler.js</span></li>` + pk.map((f, i) => {
+    const where = f.file ? `<button class="loc" type="button" data-xopen="${esc(f.file)}"${f.line ? ` data-xline="${f.line}"` : ''}>${fileIcon(f.file)}${esc(f.file.split('/').pop()!)}${f.line ? `:${f.line}` : ''}</button>` : f.start !== undefined ? `<button class="loc" type="button" data-xjump="${f.start}">Line ${lineOf(text, f.start) + 1}</button>` : '';
+    return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b">${where} <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-pfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
+  }).join('') : '';
+  box.innerHTML = pkHtml + (!list.length ? '' : `<li class="xp-h" role="presentation">Against your game <span class="muted">· ${esc(gameFolder?.name ?? '')}</span></li>` + list.map((f, i) => {
+    const line = lineOf(text, f.start) + 1;
+    return `<li class="xp ${f.severity}"><span class="sev-ico" aria-hidden="true">${SEV_ICON[f.severity]}</span><div class="xp-b"><button class="loc" type="button" data-xjump="${f.start}">Line ${line}</button> <strong>${esc(f.title)}</strong><p class="xp-why">${esc(f.why)}</p>${f.fix ? `<div class="xp-act"><button class="fix primary" type="button" data-xfix="${i}">${esc(f.fix.title)}</button></div>` : ''}</div></li>`;
+  }).join(''));
+  box.querySelectorAll<HTMLButtonElement>('[data-xjump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.xjump))));
+  box.querySelectorAll<HTMLButtonElement>('[data-xopen]').forEach((b) => b.addEventListener('click', () => pkgUI?.openFile(b.dataset.xopen!, b.dataset.xline ? Number(b.dataset.xline) : undefined)));
+  box.querySelectorAll<HTMLButtonElement>('[data-pfix]').forEach((b) => b.addEventListener('click', () => {
+    const fx = pk[Number(b.dataset.pfix)].fix!;
+    if (fx.kind === 'move') pkgUI?.moveFile(fx.from, fx.to);
+  }));
+  box.querySelectorAll<HTMLButtonElement>('[data-xfix]').forEach((b) => b.addEventListener('click', () => {
+    const fx = list[Number(b.dataset.xfix)].fix!;
+    editor.replaceRange(fx.text, editor.posFromIndex(fx.start), editor.posFromIndex(fx.end));
+  }));
+}
 function renderProblems(text: string) {
+  renderExtraProblems(text);
   const counts = { error: 0, warning: 0, info: 0, hint: 0 } as Record<string, number>;
   for (const d of current) counts[d.severity]++;
   const simple = mode === 'simple';
@@ -448,7 +709,9 @@ function renderProblems(text: string) {
   for (const k of ['error', 'warning', 'info', 'hint']) $(`#f-${k}`).textContent = String(counts[k]);
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const tally = simple ? '' : ` <span class="muted">(${plural(counts.error, 'error')}, ${plural(counts.warning, 'warning')}, ${counts.info} info)</span>`;
-  $('#status').innerHTML = counts.error
+  $('#status').innerHTML = !editor.getValue().trim()
+    ? `<span class="pill">No code yet</span>`
+    : counts.error
     ? `<span class="pill error">Nucleus can't use this handler yet</span><span>${plural(serious, 'thing')} to fix${tally}</span>`
     : counts.warning
       ? `<span class="pill ok">Nucleus can use this handler</span><span>but ${plural(counts.warning, 'setting')} may not work as intended${tally}</span>`
@@ -456,45 +719,80 @@ function renderProblems(text: string) {
   $('#status').querySelector('#v-try')?.addEventListener('click', () => selectTab('simulate'));
   const el = $('#problems');
   if (!list.length) {
+    // Nucli: dozing while there's no code, pleased when there's nothing to fix.
+    if (!editor.getValue().trim()) {
+      el.innerHTML = `<li class="empty masc-empty">${mascot('n-sleep', { size: 72, zoom: 1.2 })}<span><strong>Waiting for code.</strong> Type or paste a handler, or <button class="link" type="button" id="go-open">open one</button> (Ctrl+K).</span></li>`;
+      el.querySelector('#go-open')?.addEventListener('click', () => showOpen());
+      return;
+    }
     el.innerHTML =
       simple || filter === 'all'
-        ? `<li class="empty">Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${
+        ? `<li class="empty masc-empty">${mascot('n-ok', { size: 72, zoom: 1.2 })}<span>Nothing to fix. <button class="link" type="button" id="go-sim">Try it</button> to see what each player gets.${
             simple ? '' : counts.hint ? ` There ${counts.hint === 1 ? 'is' : 'are'} also <button class="link" type="button" id="go-hints">${plural(counts.hint, 'hint')}</button> about outdated options.` : ''
-          }</li>`
+          }</span></li>`
         : `<li class="empty">No ${filter === 'info' ? 'info' : filter + 's'}.</li>`;
     el.querySelector('#go-sim')?.addEventListener('click', () => selectTab('simulate'));
     el.querySelector('#go-hints')?.addEventListener('click', () => setFilter('hint'));
     return;
   }
+  // Settings › General › Check: compact (one row each, open for more), comfortable, detailed (everything open).
+  const density = checkDensity();
+  el.dataset.density = density;
   el.innerHTML = list
     .map((d, i) => {
       const line = lineOf(text, d.start) + 1;
       const col = d.start - (text.lastIndexOf('\n', d.start - 1) + 1) + 1;
       const plain = plainFor(d);
       const about = d.message.match(/`([^`]+)`/)?.[1];
-      const fixes = (d.fixes ?? [])
-        .map((f, j) => `<button class="fix${f.preferred ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button" title="${esc(f.title.replace(/`/g, ''))}">${f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`)
-        .join('');
+      const ordered = (d.fixes ?? []).map((f, j) => ({ f, j })).sort((a, z) => Number(!!z.f.preferred) - Number(!!a.f.preferred));
+      const fixBtn = ({ f, j }: { f: NonNullable<Diagnostic['fixes']>[number]; j: number }, main: boolean) =>
+        `<button class="fix${main ? ' primary' : ''}" data-d="${i}" data-f="${j}" type="button" title="${esc(f.title.replace(/`/g, ''))}">${main && f.preferred ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`;
+      const key = `${d.rule}:${line}:${about ?? ''}`;
+      const open = density !== 'compact' || openProblems.has(key);
       // Advanced adds (never replaces): the column, severity, rule id and the technical message expanded.
       const extra = simple ? '' : `<span class="chip ${sevClass[d.severity]}">${d.severity}</span><span class="rule" title="${esc(RULES[d.rule].description)}">${d.rule}</span>`;
-      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}">
-        <button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
-        <div class="body"><div class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div>
-        <p class="plain-why">${esc(plain.why)}</p>
-        <div class="meta">${fixes}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
-        <details class="tech"${simple ? '' : ' open'}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></li>`;
+      const bodyId = `pb-${i}`;
+      return `<li class="problem ${sevClass[d.severity]}" data-i="${i}"><div class="pcard${open ? ' open' : ''}" data-key="${esc(key)}">
+        <div class="prow"><span class="sev-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><button class="loc" data-jump="${d.start}" type="button" title="Show this line">Line ${line}${simple ? '' : `:${col}`}</button>
+          <span class="plain-title">${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</span>
+          <span class="row-fix">${ordered[0] ? fixBtn(ordered[0], true) : ''}</span>
+          <button class="ptoggle" type="button" aria-expanded="${open}" aria-controls="${bodyId}" aria-label="More about line ${line}: ${esc(plain.title)}"></button></div>
+        <div class="body" id="${bodyId}"${open ? '' : ' hidden'}><p class="plain-why">${esc(plain.why)}</p>
+        <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
+        <details class="tech"${density === 'detailed' ? ' open' : ''}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></div></li>`;
     })
     .join('');
+  // Open or close a card: its toggle button, or a click anywhere on its row that isn't another button.
+  el.querySelectorAll<HTMLElement>('.pcard').forEach((card) => {
+    const toggle = card.querySelector<HTMLButtonElement>('.ptoggle')!, body = card.querySelector<HTMLElement>('.body')!;
+    const set = (o: boolean) => {
+      card.classList.toggle('open', o);
+      body.hidden = !o;
+      toggle.setAttribute('aria-expanded', String(o));
+      o ? openProblems.add(card.dataset.key!) : openProblems.delete(card.dataset.key!);
+    };
+    toggle.addEventListener('click', () => set(body.hidden === true));
+    card.querySelector('.prow')!.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('button')) set(body.hidden === true); });
+  });
   el.querySelectorAll<HTMLButtonElement>('.fix').forEach((b) =>
     b.addEventListener('click', () => {
       const fix = list[Number(b.dataset.d)].fixes![Number(b.dataset.f)];
-      editor.operation(() => {
-        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
-      });
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction });
+      fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
+        editor.operation(() => {
+          for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+        }),
+      );
+      codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
     }),
   );
   el.querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => b.addEventListener('click', () => jumpTo(Number(b.dataset.jump))));
+}
+const openProblems = new Set<string>();
+type Density = 'compact' | 'comfortable' | 'detailed';
+const DENSITY_KEY = 'nucleus-workbench-check-density';
+function checkDensity(): Density {
+  try { const v = localStorage.getItem(DENSITY_KEY); if (v === 'comfortable' || v === 'detailed') return v; } catch { /* private mode */ }
+  return 'compact';
 }
 
 // ---------------------------------------------------------------------------
@@ -525,8 +823,8 @@ function showLineProblems(line: number, at?: number) {
       .map((d, i) => {
         const plain = plainFor(d);
         const about = d.message.match(/`([^`]+)`/)?.[1];
-        const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes?.[0];
-        return `<div class="lp-item ${sevClass[d.severity]}"><div class="lp-title">Line ${line + 1}: ${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div><div class="lp-why">${esc(plain.why)}</div><div class="lp-actions">${fix ? `<button class="btn primary" type="button" data-lp-fix="${i}">${fix.preferred ? 'Fix this' : esc(fix.title.replace(/`/g, ''))}</button>` : ''}<button class="link" type="button" data-lp-more>More in Check</button></div></div>`;
+        const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
+        return `<div class="lp-item ${sevClass[d.severity]}"><div class="lp-title">Line ${line + 1}: ${esc(plain.title)}${about ? `: <code>${esc(about)}</code>` : ''}</div><div class="lp-why">${esc(plain.why)}</div><div class="lp-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-lp-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred && fixes.length === 1 ? 'Fix this' : esc(f.title.replace(/`/g, ''))}</button>`).join('')}<button class="link" type="button" data-lp-more>More in Check</button></div></div>`;
       })
       .join('');
   // Under the line, or above it near the bottom of the editor.
@@ -538,13 +836,15 @@ function showLineProblems(line: number, at?: number) {
   linePop.querySelector('.lp-close')!.addEventListener('click', hideLinePop);
   linePop.querySelectorAll<HTMLButtonElement>('[data-lp-fix]').forEach((b) =>
     b.addEventListener('click', () => {
-      const d = list[Number(b.dataset.lpFix)];
-      const fix = (d.fixes ?? []).find((f) => f.preferred) ?? d.fixes![0];
-      editor.operation(() => {
-        for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
-      });
+      const [di, fi] = b.dataset.lpFix!.split(':').map(Number);
+      const fix = list[di].fixes![fi];
+      fixWithNucli(editor, applyEditsToText(editor.getValue(), fix.edits), () =>
+        editor.operation(() => {
+          for (const e of [...fix.edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end));
+        }),
+      );
       hideLinePop();
-      toast(`Fixed: ${fix.title.replace(/`/g, '')}.`, { kind: 'success', action: undoAction });
+      codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
     }),
   );
   linePop.querySelectorAll('[data-lp-more]').forEach((b) =>
@@ -556,9 +856,13 @@ function showLineProblems(line: number, at?: number) {
   );
 }
 function hideLinePop() {
+  const had = linePop.contains(document.activeElement);
   linePop.hidden = true;
+  if (had) editor.focus();
 }
-editor.on('gutterClick', (_cm: any, line: number) => showLineProblems(line));
+editor.on('gutterClick', (_cm: any, line: number, gutter: string) => gutter !== 'nc-bp' && ((tip.hidden = true), showLineProblems(line)));
+linePop.addEventListener('keydown', (e: KeyboardEvent) => e.key === 'Escape' && (e.preventDefault(), hideLinePop()));
+editor.on('keydown', (_cm: any, e: KeyboardEvent) => e.key === 'Escape' && !linePop.hidden && hideLinePop());
 
 // Touch screens have no hover: the mouse events a tap fakes would open the hover docs and the
 // problem tooltips and leave them stuck. Instead, a tap on an underlined word shows its problems
@@ -633,6 +937,7 @@ $('#ps-text').addEventListener('click', () => stripStep(0));
 
 function jumpTo(offset: number) {
   if (narrow()) setView('code');
+  if (pkgUI?.active()) pkgUI.showHandler();
   const p = editor.posFromIndex(offset);
   editor.setCursor(p);
   editor.scrollIntoView(p, 80);
@@ -642,7 +947,7 @@ function jumpTo(offset: number) {
 /** F8 / Shift+F8: move through the problems shown in the list. */
 function stepProblem(dir: 1 | -1) {
   if (!shownProblems.length) {
-    toast('No problems to go to.');
+    codeNote(editor, editor.getCursor().line, 'No problems to go to.', { mood: 'info' });
     return;
   }
   selectTab('problems');
@@ -664,31 +969,60 @@ document.querySelectorAll<HTMLButtonElement>('.filter').forEach((b) => b.addEven
 // "Fix problems" shows how many it can fix (counted in the worker along with the lint).
 function setFixCount(n: number) {
   const btn = $('#fix-all') as HTMLButtonElement;
-  btn.disabled = n === 0;
-  btn.textContent = n ? `Fix ${n} problem${n === 1 ? '' : 's'} automatically` : 'Nothing to fix automatically';
+  // Nothing to fix: no button (the bar goes too unless Fix with AI is there; CSS :has).
+  btn.hidden = n === 0;
+  btn.textContent = `Fix ${n} problem${n === 1 ? '' : 's'} automatically`;
 }
 
 // ---------------------------------------------------------------------------
 // Simulate
 
-function runSim() {
+// Players to try: 1 up to the handler's Game.MaxPlayers (at least 4, at most Nucleus' 32).
+function syncPlayerChoices() {
+  const sel = $('#sim-players') as HTMLSelectElement;
+  const m = editor.getValue().match(/^\s*Game\.MaxPlayers\s*=\s*(\d+)/m);
+  const max = Math.min(32, Math.max(4, m ? Number(m[1]) : 4, Number(sel.value) || 0));
+  if (sel.options.length === max) return;
+  const v = sel.value;
+  sel.replaceChildren(...Array.from({ length: max }, (_, i) => new Option(String(i + 1), String(i + 1))));
+  sel.value = Number(v) <= max ? v : String(max);
+}
+/** Try it's choices: players, monitor, keyboard (shared with the debugger). */
+function simOptions() {
+  syncPlayerChoices();
   const players = Number(($('#sim-players') as HTMLSelectElement).value);
   const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
-  const kb = Number(($('#sim-kb') as HTMLSelectElement).value);
-  const r = simulate(editor.getValue(), { players, width, height, keyboardPlayer: kb, plugins: simPlugins() });
+  const keyboardPlayer = Number(($('#sim-kb') as HTMLSelectElement).value);
+  return { players, width, height, keyboardPlayer, plugins: simPlugins() };
+}
+function runSim() {
+  if (!$('#panel-simulate').hidden) use('try-it');
+  const o = simOptions();
+  const kb = o.keyboardPlayer;
+  const r = simulate(editor.getValue(), o);
   const out: string[] = [];
   const simple = mode === 'simple';
+  // Test all needs a handler that loads: until then the banner below says what to fix.
+  const all = $('#sim-all') as HTMLButtonElement;
+  all.disabled = !r.loaded;
+  all.title = r.loaded ? 'Every player count, input setup and monitor size' : 'Fix the problems first: the handler has to load before it can be tried';
   if (!r.loaded) {
     out.push(
-      `<div class="banner error"><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.<div class="mono small">${esc(r.loadError ?? '')}</div><div class="banner-actions">${($('#fix-all') as HTMLButtonElement).disabled ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
+      `<div class="banner error masc-banner">${mascot('n-bad', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.${r.loadError ? `<details class="small"><summary>Technical details</summary><div class="mono">${esc(r.loadError)}</div></details>` : ''}<div class="banner-actions">${($('#fix-all') as HTMLButtonElement).hidden ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
     );
   } else {
-    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'}"><strong>${esc(sessionSummary(r))}</strong></div>`);
+    // Nucli, pleased when every player starts; worried when the session ends.
+    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'} masc-banner">${mascot(r.sessionEnded ? 'n-bad' : 'n-ok', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong></div></div>`);
     if (r.inputNote) out.push(`<p class="note">${esc(r.inputNote)}</p>`);
   }
   if (r.ignored.length) {
     const uniq = groupIgnored(r.ignored);
     out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
+  }
+  // A package: what a Hub install puts where (pkgcheck.ts installMap).
+  if (packageFiles.length) {
+    const map = installMap(editor.getValue(), packageFiles);
+    out.push(`<details class="install"${simple ? '' : ' open'}><summary>What Nucleus installs <span class="count">${map.length}</span></summary><div class="install-map">${map.map((m) => `<span>${fileIcon(m.name)}${esc(m.name)}</span><span aria-hidden="true">${m.to ? '→' : '✕'}</span><span class="im-to${m.to ? '' : ' im-drop'}">${m.to ? esc(m.to) : 'dropped (top level)'}</span>`).join('')}</div></details>`);
   }
   for (const p of r.players) {
     const ownKb = p.index === kb || kb === -2; // -2: each player their own keyboard and mouse
@@ -699,15 +1033,15 @@ function runSim() {
       <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
       <dt>Starts the game with</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
       ${p.effects.length ? `<dl><dt>Changes before the game starts</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : '<p class="muted">Changes no files before the game starts.</p>'}
-      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list">${p.calls.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
+      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list hl cm-s-default">${p.calls.map((c) => `<li>${hlCode(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
     </section>`);
   }
   for (const c of r.callbacks) {
     out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.note ?? '')}<div class="mono small">${esc(c.error)}</div></div>` : ''}
-      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list">${c.calls.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`}</section>`);
+      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list hl cm-s-default">${c.calls.map((x) => `<li>${hlCode(x)}</li>`).join('')}</ul></details>`}</section>`);
   }
   if (r.options.length) {
-    out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono">${esc(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</td></tr>`).join('')}</tbody></table></details>`);
+    out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono"><code class="hl cm-s-default">${hlCode(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</code></td></tr>`).join('')}</tbody></table></details>`);
   }
   $('#sim-out').innerHTML = out.join('');
   $('#sim-out').querySelector('#sim-check')?.addEventListener('click', () => selectTab('problems'));
@@ -718,6 +1052,21 @@ function runSim() {
 }
 $('#sim-run').addEventListener('click', runSim);
 
+// Debug: step through the run (debugui.ts), in Try it.
+const debug = mountDebugger({
+  editor,
+  root: $('#dbg'),
+  panel: $('#panel-simulate'),
+  options: simOptions,
+  showTryIt: () => selectTab('simulate'),
+  showCode: () => {
+    if (viewMode !== 'code') setViewMode('code');
+  },
+  rerun: runSim,
+  used: () => use('debugger'),
+});
+$('#sim-debug').addEventListener('click', () => debug.start());
+
 // ---------------------------------------------------------------------------
 // Test all combinations: every player count (up to Game.MaxPlayers, at most 8), input setup and
 // monitor size, a few runs at a time so the page stays responsive; one cell per players × input.
@@ -726,6 +1075,7 @@ $('#sim-run').addEventListener('click', runSim);
 const MX_RES = MATRIX_RESOLUTIONS;
 let mxRun = 0;
 function testAll() {
+  use('test-all');
   document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: 'running tests' }));
   const run = ++mxRun;
   const code = editor.getValue();
@@ -754,7 +1104,9 @@ function testAll() {
         .join('')}</tr>`)
       .join('');
     const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
-    box.innerHTML = `<div class="mx-head"><strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
+    // Nucli runs the relay while it tests, then shows how it went.
+    const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc', busy: !finished });
+    box.innerHTML = `<div class="mx-head">${nuc}<strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
       ${finished ? '' : `<div class="mx-bar" role="progressbar" aria-label="Combinations tested" aria-valuemin="0" aria-valuemax="${jobs.length}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, jobs.length)) * 100)}%"></i></div>`}
       <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
       ${fails.length ? `<ul class="mx-fails">${fails.slice(0, 8).map((f) => { const [p, kb] = f.k.split('|'); return `<li>${p} player${p === '1' ? '' : 's'}, ${modes.find((m) => String(m.kb) === kb)!.label.toLowerCase()}, ${f.res.replace('x', '×')}: ${esc(f.why)}</li>`; }).join('')}${fails.length > 8 ? `<li>…and ${fails.length - 8} more</li>` : ''}</ul>` : ''}
@@ -801,17 +1153,22 @@ $('#sim-all').addEventListener('click', testAll);
 
 // Reference with nothing typed: what's in it, so it's clear what can be found there.
 const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
+  // The docs Claude wrote that no person has checked yet: handler authors can confirm or correct them (👍/👎, an issue).
+  { key: 'AI', title: 'AI-written: please check', doc: 'Docs written by AI from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
   { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
   { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
   { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
   { key: 'Context', title: 'Context', doc: 'One player\'s instance, inside Game.Play: launch arguments, folders and files to edit.', match: (p) => p.startsWith('Context.') },
   { key: 'Player', title: 'Player', doc: 'The player Game.Play runs for (also PlayerList[i]): screen, controller, nickname.', match: (p) => p.startsWith('Player.') },
   { key: 'ProtoInput', title: 'ProtoInput', doc: 'Proto Input calls at runtime, inside Game.Play and other callbacks.', match: (p) => p.startsWith('ProtoInput.') },
+  { key: 'Hub', title: 'Hub (written by the Hub)', doc: 'Lines hub.splitscreen.me writes into a handler when it is uploaded. You don\'t add or change them.', match: (p) => p.startsWith('Hub.') },
   { key: 'System', title: '.NET (System.*)', doc: 'Files, folders, paths and the environment, through .NET.', match: (p) => p.startsWith('System.') },
 ];
+let uncheckedCache: Set<string> | undefined;
+const unchecked = () => (uncheckedCache ??= new Set(allEntries(true).filter((e) => e.member.docBy === 'claude' && !e.member.docCheckedBy).map((e) => e.path)));
 const typeOf = (e: Entry) => (e.member.kind === 'method' ? 'fn' : ((e.member as { type?: string }).type ?? ''));
 function renderApiHome(el: HTMLElement) {
-  const all = allEntries();
+  const all = allEntries(true);
   const usage = USAGE.counts as Record<string, number>;
   const top = Object.entries(usage)
     .filter(([p]) => !/^Game\.(GUID|GameName|ExecutableName|Play|Hub)$/.test(p) && all.some((e) => e.path === p && e.member.kind !== 'object'))
@@ -819,8 +1176,9 @@ function renderApiHome(el: HTMLElement) {
   const enums = Object.keys(api.enums).sort();
   el.innerHTML = `<div class="api-home">
     <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
+    ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check AI-written docs <span class="count">${unchecked().size}</span></span><span class="d">AI wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
     <h3 class="api-h">Browse</h3>
-    <div class="api-groups">${API_GROUPS.map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
+    <div class="api-groups">${API_GROUPS.filter((g) => g.key !== 'AI').map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
     <h3 class="api-h">Most used in Hub handlers</h3>
     <div class="api-chips">${top.map(([p, n]) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${n} of ${USAGE.handlers} Hub handlers">${esc(p)}</button>`).join('')}</div>
     <h3 class="api-h">Nucleus values (enums)</h3>
@@ -834,9 +1192,9 @@ function renderApiHome(el: HTMLElement) {
 /** One object's members, as a compact list: click one for its docs. */
 function renderApiGroup(el: HTMLElement, key: string) {
   const g = API_GROUPS.find((x) => x.key === key)!;
-  const list = allEntries().filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
+  const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
   el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
-    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
+    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="AI-written, not from the official docs" role="img" aria-label="AI-written"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
   el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
   wireApiLinks(el);
   el.scrollTop = 0;
@@ -851,6 +1209,7 @@ function wireApiLinks(el: HTMLElement) {
 }
 
 function renderApi(q: string) {
+  if (q.trim()) use('reference-search');
   const el = $('#api-results');
   if (!q.trim()) return renderApiHome(el);
   {
@@ -865,8 +1224,8 @@ function renderApi(q: string) {
     el.innerHTML =
       head +
       (entries.length || head
-        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}</h3>${md(memberMarkdown(e.owner, e.name, e.member).replace(/\n\n\[Handler API docs\]\([^)]+\)$/, ''))}</article>`).join('')
-        : `<p class="empty">Nothing matches "${esc(q)}".</p>`);
+        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`).join('')
+        : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
   }
   wireApiLinks(el);
 }
@@ -902,10 +1261,16 @@ function renderProbes() {
       <td class="center">${ok ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td>
       <td><span class="chip ${sim === 'LOAD-FAIL' || sim === 'PLAY-FAIL' ? 'error' : 'ok'}">${jintLabel[sim]}</span> ${simOk ? '<span class="agree">✓</span>' : '<span class="disagree-mark">✗</span>'}</td></tr>`;
   });
-  $('#probes').innerHTML = `<p class="lede">Each probe isolates one engine behaviour. The <strong>Jint 2.11.58</strong> column is what happened when the testbench ran it with Nucleus' engine setup; the <strong>Linter</strong> and <strong>Try it</strong> columns are computed live in this page. The linter agrees on <strong>${agree} of ${PROBES.length}</strong> (an error exactly when Jint fails); Try it predicts the same outcome on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
+  $('#probes').innerHTML = `<div class="probe-intro">
+      <p><strong>What this is.</strong> Nucleus Co-op runs handlers with an old JavaScript engine, Jint 2.11.58. It understands less than a modern browser, and some things work differently there (<code>let</code> and <code>const</code>, arrow functions, how .NET calls like <code>Path.Combine</code> take their arguments). Each probe is a tiny handler that tests one of those things, and we ran every one in that real engine, set up the way Nucleus sets it up.</p>
+      <p><strong>Why it matters.</strong> Check and Try it are built on these results. When Check says "Nucleus can't load this", or Try it shows what a line does, a probe here is the proof. Right now Check agrees with the real engine on <strong>${agree} of ${PROBES.length}</strong> probes, and Try it on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
+      <p><strong>What you can use it for.</strong> Not sure whether Nucleus accepts some JavaScript? Find the probe for it below (or type its name in Open, Ctrl+K), open it to see the exact code, and the Jint column says what the real engine did. Missing one you need? <button class="link" type="button" id="probe-ask">Ask for a probe</button>.</p>
+    </div>
+    <details class="probe-cols"><summary>What the columns mean</summary><p class="small"><strong>Jint 2.11.58</strong>: what the real engine did (runs, loads, doesn't load, or Game.Play throws). <strong>Linter</strong>: what Check finds in it, live in this page. <strong>Agree</strong>: ✓ when Check reports an error exactly when the engine fails. <strong>Try it</strong>: what Try it predicts, with ✓ when it matches the engine.</p></details>
     <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th><th>Try it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   $('#count-probes').textContent = `${agree}/${PROBES.length}`;
   $('#count-probes').title = `Linter agrees with Jint on ${agree} of ${PROBES.length} probes; Try it on ${simAgree}`;
+  $('#probe-ask')?.addEventListener('click', () => window.open(feedbackUrl({ title: 'Probe request: ' }), '_blank', 'noopener'));
   $('#probes').querySelectorAll<HTMLButtonElement>('[data-probe]').forEach((b) =>
     b.addEventListener('click', () => openProbe(Number(b.dataset.probe))),
   );
@@ -938,13 +1303,10 @@ function renderDocHead() {
   else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
   else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
   if (packageFiles.length) {
-    const list = packageFiles.map((f) => `${f.name} (${fileSize(f.data.length)})`).join('\n');
+    const list = packageFiles.map((f) => `${f.name} (${fileSize(sizeOf(f))}${f.remote ? ', in the Hub package' : ''})`).join('\n');
     parts.push(`<button type="button" class="chip chip-btn" id="files-open" aria-haspopup="dialog" title="${esc('Saved with the handler:\n' + list)}">+ ${packageFiles.length} file${packageFiles.length === 1 ? '' : 's'}</button>`);
   }
-  if (doc.hash || canShare()) parts.push(`<button class="link" type="button" id="copy-link" title="Copy a link that opens this handler (or just the selected lines)">Copy link</button>`);
   $('#doc-meta').innerHTML = parts.join('');
-  const linkBtn = $('#doc-meta').querySelector<HTMLElement>('#copy-link');
-  linkBtn?.addEventListener('click', () => copyLink(linkBtn));
 }
 
 /**
@@ -987,12 +1349,27 @@ async function copyLink(trigger?: HTMLElement | null) {
 function setPackageFiles(files: PackageFile[]) {
   packageFiles = files;
   renderDocHead();
+  pkgUI?.render(); // the Files panel and its count, if it's open
 }
-function loadSource(src: string, meta: DocMeta) {
+function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) {
+  // One handler per tab: an example, Hub handler or link that's already open switches to its tab; anything else opens
+  // in a new tab, unless this one is empty (nothing typed in a new handler).
+  if (tabsReady) {
+    const same = meta.hash && !opts.fresh ? tabs.find((x) => (x.id === activeTab ? doc.hash : x.meta.hash) === meta.hash) : undefined;
+    if (same) {
+      if (same.id !== activeTab) switchTab(same.id);
+      // Changed since it was opened: offer the original too, in its own tab.
+      if (editor.getValue() !== loadedText) notice(`${meta.name} is already open, with your changes.`, { kind: 'info', action: { label: 'Open a fresh copy', run: () => loadSource(src, meta, { fresh: true }) } });
+      else announce(`${meta.name} is already open: switched to its tab.`);
+      return;
+    }
+    if (editor.getValue().trim()) openTab();
+  }
   clearNotice(); // it was about the handler before
   document.documentElement.classList.remove('busy'); // a Test all of the last handler no longer runs
   packageFiles = [];
   storeFiles([]);
+  pkgUI?.reset();
   editor.setValue(src);
   editor.clearHistory();
   loadedText = src;
@@ -1009,8 +1386,162 @@ function loadSource(src: string, meta: DocMeta) {
   aiBox.hidden = true;
   selectTab('problems');
   editor.focus();
+  if (tabsReady) (saveTabs(), renderTabs());
 }
 editor.on('change', () => renderDocHead());
+
+// ---------------------------------------------------------------------------
+// Open handlers: tabs above the code. Each keeps its own code (and undo history), where it came from and its
+// package's other files. The open one lives in the usual draft keys; the others in their own keys.
+interface Tab { id: string; meta: DocMeta; base: string; text: string; files: PackageFile[]; cm?: any; counts?: { e: number; w: number }; folder?: GameFolder | null }
+const TABS_KEY = 'nucleus-workbench-tabs';
+const textKey = (id: string) => `${STORE_KEY}:${id}`;
+const filesKey = (id: string) => `nucleus-workbench-files:${id}`;
+let tabs: Tab[] = [];
+let activeTab = '';
+let tabsReady = false;
+let lastClosed: { tab: Tab; index: number } | null = null;
+const newTabId = () => Math.random().toString(36).slice(2, 9);
+const activeT = () => tabs.find((x) => x.id === activeTab)!;
+const countsOf = (list: Diagnostic[]) => ({ e: list.filter((d) => d.severity === 'error').length, w: list.filter((d) => d.severity === 'warning').length });
+function saveTabs() {
+  try {
+    localStorage.setItem(TABS_KEY, JSON.stringify({ active: activeTab, tabs: tabs.map((x) => ({ id: x.id, meta: x.id === activeTab ? doc : x.meta, base: x.id === activeTab ? loadedText : x.base, counts: x.counts })) }));
+  } catch { /* storage full or off: the tabs live for this visit */ }
+}
+/** Puts the open handler's state into its tab (before switching away). */
+function stashTab() {
+  const x = activeT();
+  Object.assign(x, { meta: doc, base: loadedText, text: editor.getValue(), files: packageFiles, cm: editor.getDoc(), counts: countsOf(current), folder: gameFolder });
+  try { localStorage.setItem(textKey(x.id), x.text); } catch { /* ignore */ }
+  storeFiles(x.files, filesKey(x.id));
+}
+function switchTab(id: string) {
+  if (id === activeTab || !tabs.some((x) => x.id === id)) return;
+  stashTab();
+  activeTab = id;
+  const x = activeT();
+  doc = x.meta;
+  loadedText = x.base;
+  packageFiles = x.files;
+  storeFiles(packageFiles);
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(doc));
+    localStorage.setItem(META_KEY + '-base', loadedText);
+    localStorage.setItem(STORE_KEY, x.text);
+  } catch { /* ignore */ }
+  editor.swapDoc(x.cm ?? CodeMirror.Doc(x.text, 'javascript'));
+  x.cm = editor.getDoc();
+  gameFolder = x.folder ?? null;
+  afterFolderChange();
+  pkgUI?.reset();
+  if (doc.hash) history.replaceState(null, '', '#' + doc.hash);
+  else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  clearNotice();
+  aiBox.hidden = true;
+  (CodeMirror as any).signal(editor, 'change', editor, { origin: '+swap', from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 }, text: [''], removed: [''] });
+  (editor as any).performLint();
+  renderDocHead();
+  saveTabs();
+  renderTabs();
+  if (!$('#panel-simulate').hidden) runSim();
+  editor.focus();
+}
+/** A new, empty tab (the caller fills it, e.g. loadSource). */
+function openTab() {
+  stashTab();
+  const x: Tab = { id: newTabId(), meta: { name: 'Untitled handler', kind: 'new' }, base: '', text: '', files: [] };
+  tabs.splice(tabs.findIndex((y) => y.id === activeTab) + 1, 0, x);
+  switchTab(x.id);
+}
+function closeTab(id: string) {
+  if (tabs.length < 2) return;
+  const i = tabs.findIndex((x) => x.id === id);
+  if (id === activeTab) {
+    stashTab();
+    switchTab(tabs[i + 1]?.id ?? tabs[i - 1].id);
+  }
+  const [gone] = tabs.splice(i, 1);
+  lastClosed = { tab: gone, index: i };
+  try { localStorage.removeItem(textKey(gone.id)); localStorage.removeItem(filesKey(gone.id)); } catch { /* ignore */ }
+  saveTabs();
+  renderTabs();
+  notice(`Closed ${gone.meta.name}.`, { kind: 'info', action: { label: 'Undo', run: reopenClosed } });
+}
+function reopenClosed() {
+  if (!lastClosed) return;
+  const { tab, index } = lastClosed;
+  lastClosed = null;
+  tabs.splice(Math.min(index, tabs.length), 0, tab);
+  try { localStorage.setItem(textKey(tab.id), tab.text); } catch { /* ignore */ }
+  storeFiles(tab.files, filesKey(tab.id));
+  switchTab(tab.id);
+  clearNotice();
+}
+function renderTabs() {
+  const live = countsOf(current);
+  const allBtn = document.getElementById('tab-all');
+  if (allBtn) allBtn.hidden = tabs.length < 3;
+  requestAnimationFrame(() => document.querySelector(`#tab-${activeTab}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+  const dot = (c?: { e: number; w: number }) => (!c ? '' : c.e ? ' e' : c.w ? ' w' : ' ok');
+  const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
+  $('#htabs').innerHTML = tabs.map((x) => {
+    const on = x.id === activeTab, c = on ? live : x.counts, name = on ? doc.name : x.meta.name, files = on ? packageFiles.length : x.files.length;
+    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}${tabs.length > 1 ? '. Delete closes it' : ''}</span>${tabs.length > 1 ? `<span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span>` : ''}</button></span>`;
+  }).join('');
+}
+function initTabs() {
+  try {
+    const s = JSON.parse(localStorage.getItem(TABS_KEY) || 'null');
+    if (s?.tabs?.length) {
+      tabs = s.tabs.map((x: { id: string; meta: DocMeta; base: string; counts?: Tab['counts'] }) => ({ id: x.id, meta: x.meta, base: x.base ?? '', counts: x.counts, text: x.id === s.active ? '' : localStorage.getItem(textKey(x.id)) ?? '', files: x.id === s.active ? [] : storedFiles(filesKey(x.id)) }));
+      activeTab = tabs.some((x) => x.id === s.active) ? s.active : tabs[0].id;
+    }
+  } catch { /* ignore */ }
+  if (!tabs.length) {
+    activeTab = newTabId();
+    tabs = [{ id: activeTab, meta: doc, base: loadedText, text: '', files: [] }];
+  }
+  Object.assign(activeT(), { meta: doc, base: loadedText, files: packageFiles, cm: editor.getDoc() });
+  tabsReady = true;
+  saveTabs();
+  renderTabs();
+  const strip = $('#htabs');
+  const all = document.createElement('button');
+  all.type = 'button';
+  all.id = 'tab-all';
+  all.className = 'htab-add htab-all';
+  all.setAttribute('aria-haspopup', 'menu');
+  all.setAttribute('aria-label', 'All open handlers');
+  all.title = 'All open handlers';
+  all.textContent = '▾';
+  $('#tab-add').before(all);
+  all.addEventListener('click', () => openMenu(all, 'Open handlers', tabs.map((x) => {
+    const on = x.id === activeTab;
+    return { label: on ? doc.name : x.meta.name, checked: on, run: () => switchTab(x.id) };
+  })));
+  strip.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const close = t.closest<HTMLElement>('[data-close]');
+    if (close) return closeTab(close.dataset.close!);
+    const tab = t.closest<HTMLElement>('[data-tab-id]');
+    if (tab) switchTab(tab.dataset.tabId!);
+  });
+  strip.addEventListener('auxclick', (e) => {
+    const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-tab-id]');
+    if (e.button === 1 && tab) (e.preventDefault(), closeTab(tab.dataset.tabId!));
+  });
+  strip.addEventListener('keydown', (e) => {
+    const i = tabs.findIndex((x) => x.id === activeTab);
+    const go = (j: number) => { switchTab(tabs[(j + tabs.length) % tabs.length].id); document.getElementById(`tab-${activeTab}`)?.focus(); };
+    if (e.key === 'ArrowRight') (e.preventDefault(), go(i + 1));
+    else if (e.key === 'ArrowLeft') (e.preventDefault(), go(i - 1));
+    else if (e.key === 'Delete') (e.preventDefault(), closeTab(activeTab));
+  });
+  // The dot follows Check.
+  editor.on('change', () => { clearTimeout(tabDotTimer); tabDotTimer = window.setTimeout(() => (renderTabs(), saveTabs()), 800); });
+}
+let tabDotTimer = 0;
 
 function openExamplePackage(id: string) {
   const e = EXAMPLE_PACKAGES.find((x) => x.id === id);
@@ -1042,9 +1573,9 @@ function openFilesDialog() {
   const dest = (name: string) => `handlers\\${folder}\\${name.split('/').slice(1).join('\\')}`;
   const rows = packageFiles
     .map((f) => {
-      const text = previewOf(f.data);
+      const text = f.remote ? null : previewOf(f.data);
       const top = f.name.includes('/');
-      return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(f.data.length)}</span></summary>
+      return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(sizeOf(f))}${f.remote ? ' · in the Hub package, not downloaded here' : ''}</span></summary>
         <p class="muted small">${top ? `Installed as <code>${esc(dest(f.name))}</code>` : "At the package's top level: the Hub install keeps only handler.js there, so this file is dropped."}</p>
         ${text !== null ? `<pre class="pkg-text">${esc(text.slice(0, 20000))}${text.length > 20000 ? '\n…' : ''}</pre>` : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
     })
@@ -1054,23 +1585,51 @@ function openFilesDialog() {
   filesDialog.showModal();
 }
 document.addEventListener('click', (e) => {
-  if ((e.target as HTMLElement).closest?.('#files-open')) openFilesDialog();
+  if ((e.target as HTMLElement).closest?.('#files-open')) { if ($('#files-panel').hidden) ($('#files-toggle') as HTMLButtonElement).click(); }
 });
 $('#files-close').addEventListener('click', () => filesDialog.close());
 
+// A Hub handler's other package files (build.mjs, tools/hub-files.mjs): small ones with their content, big
+// ones as placeholders (name and size, and the Hub page with the original package).
+async function hubPackageFiles(h: HubExample): Promise<PackageFile[] | null> {
+  if (!h.files) return [];
+  if (!h.filesData) {
+    try {
+      const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.files.json`);
+      if (!r.ok) throw new Error(String(r.status));
+      h.filesData = (await r.json()).files;
+    } catch {
+      return null;
+    }
+  }
+  return h.filesData!.map((f) => (f.b64 !== undefined ? { name: f.name, data: Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0)) } : { name: f.name, data: new Uint8Array(0), remote: { size: f.size, url: h.url } }));
+}
 async function openHub(i: number) {
   const h = HUB_EXAMPLES.handlers[i];
-  if (h.source === undefined) {
+  let files: PackageFile[] | null = [];
+  if (h.source === undefined || (h.files && !h.filesData)) {
+    // On a slow connection, Nucli spins while the handler downloads.
+    const slow = setTimeout(() => notice(`Getting ${h.title}…`, { kind: 'info', mascot: 'n-spin' }), 300);
     try {
-      const r = await fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`);
-      if (!r.ok) throw new Error(String(r.status));
-      h.source = await r.text();
+      const [src, fl] = await Promise.all([
+        h.source !== undefined ? h.source : fetch(`${HUB_EXAMPLES.base ?? 'hub/'}${h.id}.js`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.text(); }),
+        hubPackageFiles(h),
+      ]);
+      h.source = src;
+      files = fl;
+      clearTimeout(slow); clearNotice();
     } catch {
+      clearTimeout(slow);
       notice(`Couldn't load ${h.title} from this site. Check your connection.`, { kind: 'error', action: { label: 'Try again', run: () => void openHub(i) } });
       return;
     }
-  }
-  loadSource(h.source, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}`, published: { version: h.version, guid: guidOf(h.source) } });
+  } else files = await hubPackageFiles(h);
+  loadSource(h.source!, { name: h.title, kind: 'hub', hubIndex: i, hash: `hub-${h.id}`, published: { version: h.version, guid: guidOf(h.source!) } });
+  // The package's other files, in Files (as an opened .nc): the handler opens either way.
+  if (files === null) return notice(`Opened ${h.title}, but its package's other files didn't load. Open it again to retry.`, { kind: 'warning' });
+  if (!files.length) return;
+  setPackageFiles(files);
+  if (!storeFiles(files)) notice(`The ${files.length} other files of the package are too big to keep after a reload: open it from the Hub list again then.`, { kind: 'info' });
 }
 function openTemplate(id: string) {
   const t = BOT_TEMPLATES.templates.find((x) => x.id === id);
@@ -1137,6 +1696,8 @@ function commandList(): OpenEntry[] {
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
     c('Try it: simulate the handler', 'Ctrl+Enter', 'run play simulate try', () => selectTab('simulate')),
     c('Test all combinations', '', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
+    c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
+    c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
     c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
     c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
@@ -1146,7 +1707,7 @@ function commandList(): OpenEntry[] {
     c('Open examples and Hub handlers', 'Ctrl+P', 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
     c('Open a file…', '', 'open upload import file zip nc', click('#file-open')),
     c('New handler…', '', 'new create template', () => newDialog.showModal()),
-    c('Copy the handler', '', 'copy clipboard code', click('#copy')),
+    c('Copy the handler', '', 'copy clipboard code', () => copyCode()),
     c('Copy a link to this handler', '', 'share link url copy', click('[data-code=link]')),
     c('Download for Nucleus (.zip)', 'Ctrl+S', 'save download zip nc package nucleus', click('[data-code=zip]')),
     c('Download the code (.js)', '', 'save download js file', click('[data-code=js]')),
@@ -1160,6 +1721,14 @@ function commandList(): OpenEntry[] {
     c('Reset panel sizes', '', 'layout resize panels reset width', () => panels.reset()),
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
+    c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
+    c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
+    c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
+    c('Move Files to the other side of the code', '', 'files panel left right side move swap', () => announce(`Files is now ${panels.flip('files')} of the code.`)),
+    c('Move Lines to the other side of the code', '', 'lines list left right side move swap', () => announce(`Lines is now ${panels.flip('lines')} of the code.`)),
+    c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
+    c("Link your game's folder (check paths against it)", '', 'game folder install directory exe path link pick', () => void pickFolder()),
+    c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => window.open(feedbackUrl(), '_blank', 'noopener')),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
@@ -1178,17 +1747,18 @@ function setThemeMode(m: 'light' | 'dark' | 'auto') {
 
 /** Format document: indentation and spacing (core/format.ts guarantees the tokens don't change). */
 function formatDocument() {
+  use('format');
   const text = editor.getValue();
   const r = formatHandler(text);
   if (!r.ok) return notice(r.reason, { kind: 'error' });
-  if (!r.changed) return toast('Already formatted.');
+  if (!r.changed) return codeNote(editor, editor.getCursor().line, 'Already formatted.');
   const cur = editor.getCursor();
   const top = editor.getScrollInfo().top;
   const d = editor.getDoc();
   d.replaceRange(r.code, d.posFromIndex(0), d.posFromIndex(text.length), '+format');
   editor.setCursor({ line: Math.min(cur.line, editor.lineCount() - 1), ch: cur.ch });
   editor.scrollTo(null, top);
-  toast('Formatted: indentation and spacing.', { kind: 'success', action: undoAction });
+  codeNote(editor, editor.getCursor().line, 'Formatted: indentation and spacing.', { action: undoAction });
 }
 
 const hubLint = new Map<number, string>();
@@ -1234,7 +1804,7 @@ function entries(): OpenEntry[] {
       mono: h.game || h.title,
       cover: h.cover,
       sub: `${h.game && !h.title.toLowerCase().startsWith(h.game.toLowerCase().slice(0, 12)) ? `${h.game} · ` : ''}by ${h.owner} · v${h.version}`,
-      meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>`,
+      meta: `${h.maxPlayers ? `<span class="m" title="Up to ${h.maxPlayers} players">${svgIcon(OI.players, 'mi')}${h.maxPlayers}<span class="sr-only"> players</span></span>` : ''}${h.multiKbm ? `<span class="m" title="Multiple keyboards and mice">${svgIcon(OI.keyboard, 'mi')}<span class="sr-only">multiple keyboards and mice</span></span>` : ''}<span class="m" title="${h.downloads.toLocaleString()} downloads">${svgIcon(OI.downloads, 'mi')}${compact.format(h.downloads)}<span class="sr-only"> downloads</span></span>${h.files ? `<span class="m" title="Its package has ${h.files} other file${h.files === 1 ? '' : 's'}: they open in Files">+ ${h.files} file${h.files === 1 ? '' : 's'}</span>` : ''}`,
       keywords: `${h.game} ${h.owner} hub${h.unverified ? ' unverified' : ''}`,
       badges: h.unverified ? '<span class="chip warning" title="The Hub hasn\'t verified this version yet">not verified</span>' : undefined,
       lint: () => hubLintBadges(i),
@@ -1291,7 +1861,7 @@ function renderOpen() {
   activeEntry = Math.min(activeEntry, Math.max(0, shown.length - 1));
   const body = $('#open-body');
   if (!shown.length) {
-    body.innerHTML = `<p class="empty">Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</p>`;
+    body.innerHTML = `<p class="empty masc-empty">${mascot('n-scan', { size: 72 })}<span>Nothing matches "${esc(q)}". Try a game name, an author, or words like "template", "mutex" or "arrow".</span></p>`;
     return;
   }
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
@@ -1426,7 +1996,7 @@ $('#new-form').addEventListener('submit', (e) => {
   const features = FEATURES.filter((f) => ($(`#feat-${f.id}`) as HTMLInputElement).checked).map((f) => f.id);
   newDialog.close();
   loadSource(renderHandler({ gameName: name, executableName: exe, steamId: steam || undefined, features }), { name: `${name}.js`, kind: 'new' });
-  toast('Created. It passes the linter; next, simulate it or adjust the options.');
+  notice('Created. It passes Check; next, try it per player or adjust the options.', { kind: 'success', mascot: 'n-ok', action: { label: 'Try it', run: () => selectTab('simulate') } });
 });
 $('#new-open').addEventListener('click', () => newDialog.showModal());
 $('#new-cancel').addEventListener('click', () => newDialog.close());
@@ -1434,16 +2004,17 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 // ---------------------------------------------------------------------------
 // Copy, toast, help, tabs, shortcuts
 
-$('#copy').addEventListener('click', async () => {
+// Copy the code (from Save or copy, or the command palette): confirmed on the button next to the code.
+async function copyCode() {
   try {
     await navigator.clipboard.writeText(editor.getValue());
-    confirmOn($('#copy'), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
+    confirmOn(shareButton(), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
     editor.focus();
     notice('The browser didn\'t let this page copy. The whole handler is selected: press Ctrl+C.', { kind: 'info' });
   }
-});
+}
 
 const devBar = initDevBar({
   build: `core ${BUILD.core} · Nucleus ${String(BUILD.nucleus ?? '?').slice(0, 7)} · Jint ${BUILD.jint ?? '?'}`,
@@ -1461,9 +2032,9 @@ $('#help-close').addEventListener('click', () => helpDialog.close());
 
 const TAB_KEY = 'nucleus-workbench-tab';
 function selectTab(id: string) {
-  document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+  document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   requestAnimationFrame(placeInk);
-  document.querySelectorAll<HTMLElement>('[role=tabpanel]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
+  document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
   if (id === 'simulate') runSim();
   if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
   if (id === 'probes' && !probesRendered) {
@@ -1477,7 +2048,7 @@ function selectTab(id: string) {
     /* ignore */
   }
 }
-document.querySelectorAll<HTMLButtonElement>('[role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
+document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
 
 const SIM_KEY = 'nucleus-workbench-sim';
 const simIds = ['sim-players', 'sim-res', 'sim-kb'];
@@ -1532,9 +2103,17 @@ const tips = initTips({
     },
     share: () => copyLink(),
   },
+  targets: {
+    lines: () => $('#lines-toggle'),
+    new: () => $('#tab-add'),
+    examples: () => $('#tab-add'),
+    tryit: () => document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'),
+    share: () => shareButton(),
+  },
 });
 $('#tips-reset').addEventListener('click', () => tips.reset());
 
+initA11y();
 const settings = initSettings({
   editor,
   hint: () => editor.showHint({ hint: hinter, completeSingle: false }),
@@ -1546,11 +2125,9 @@ const settings = initSettings({
 });
 const news = initNews();
 const panels = initPanels({ refresh: () => editor.refresh(), toast });
-$('#set-reset-sizes').addEventListener('click', () => panels.reset());
+$('#set-reset-sizes').addEventListener('click', () => (panels.reset(), confirmOn($('#set-reset-sizes'), 'Back to defaults ✓', 'Panel sizes are back to their defaults.')));
 const moreDialog = $('#more-dialog') as HTMLDialogElement;
-$('#more-open').addEventListener('click', () => {
-  moreDialog.showModal();
-});
+$('#more-open').addEventListener('click', () => moreDialog.showModal());
 $('#more-close').addEventListener('click', () => moreDialog.close());
 moreDialog.querySelectorAll<HTMLButtonElement>('[data-proxy]').forEach((b) =>
   b.addEventListener('click', () => {
@@ -1577,8 +2154,9 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   } else if (mod && e.key.toLowerCase() === 's') {
     e.preventDefault(); // instead of the browser saving the page
     const save = $('#save') as HTMLButtonElement;
-    if (save.hidden) ($('#code-menu-open') as HTMLButtonElement).click();
-    else save.click();
+    void save;
+    if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
+    else void saveAs();
   } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
     e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
     lines.toggle();
@@ -1600,28 +2178,253 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   }
 });
 
+// Help test this beta (testplan.ts: BETA). Gone at the full release.
+// The previous release at previous/ (beta only; the Pages build adds it from previous.json), to compare: the same
+// code opens there through a share link. Its storage is separate, so nothing here is touched.
+let previousOk: Promise<boolean> | null = null;
+const hasPrevious = () => (previousOk ??= (window as any).claude || !BETA || location.protocol === 'file:'
+  ? Promise.resolve(false)
+  : fetch('previous/', { method: 'HEAD' }).then((r) => r.ok, () => false));
+async function openInPrevious() {
+  let id = '';
+  try { id = await encodeShare(editor.getValue()); } catch { /* old browser: open it empty */ }
+  window.open(`previous/${id ? '#' + id : ''}`, '_blank', 'noopener');
+  use('compare-previous');
+}
+void hasPrevious().then((ok) => { $('#tg-compare').hidden = !ok; });
+$('#tg-compare-btn').addEventListener('click', () => void openInPrevious());
+const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#test-open')], {
+  // The first answers also set up the workbench (instead of Nucli's start-up questions): "I write code" turns on
+  // Advanced mode. Both can be changed in Settings.
+  answered: (p, first) => {
+    if (!first || firstRunDone()) return;
+    setMode(p.coding === 'dev' ? 'dev' : 'simple');
+    try { localStorage.setItem('nucleus-workbench-firstrun', p.coding === 'dev' ? 'developer' : 'guided'); } catch { /* ignore */ }
+    announce(p.coding === 'dev' ? 'Advanced mode is on, since you write code. Settings changes it.' : 'Guided mode, with tips. Advanced mode is in Settings.');
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Code | Form | Blocks: the options as a form (formview.ts) and the callbacks as if / do steps (blocksview.ts), both
+// two-way with the code (the code stays the one source).
+type ViewMode = 'code' | 'form' | 'blocks';
+const VIEW_KEY = 'nucleus-workbench-view';
+let viewMode: ViewMode = (() => { try { const v = localStorage.getItem(VIEW_KEY); return v === 'form' || v === 'blocks' ? v : 'code'; } catch { return 'code'; } })();
+let formView: FormView | null = null;
+let blocksView: BlocksView | null = null;
+const viewHost = (origin: string) => ({
+  getText: () => editor.getValue(),
+  applyEdits: (edits: TextEdit[]) => editor.operation(() => { for (const e of [...edits].sort((a, z) => z.start - a.start)) editor.replaceRange(e.text, editor.posFromIndex(e.start), editor.posFromIndex(e.end), origin); }),
+  jumpTo: (offset: number) => { setViewMode('code'); const pos = editor.posFromIndex(offset); editor.setCursor(pos); editor.scrollIntoView(pos, 80); editor.focus(); },
+  diagnostics: () => current,
+  diagnosticsText: () => currentText,
+  plain: plainFor,
+  density: checkDensity,
+});
+function setViewMode(m: ViewMode) {
+  viewMode = m;
+  pkgUI?.deselect();
+  try { localStorage.setItem(VIEW_KEY, m); } catch { /* ignore */ }
+  document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.viewMode === m)));
+  $('#editor').hidden = m !== 'code';
+  $('#formview').hidden = m !== 'form';
+  $('#blocksview').hidden = m !== 'blocks';
+  if (m === 'form') {
+    use('form-view');
+    formView ??= mountFormView($('#formview'), viewHost('+form'));
+    formView.refresh();
+  } else if (m === 'blocks') {
+    use('blocks-view');
+    blocksView ??= mountBlocksView($('#blocksview'), viewHost('+blocks'));
+    blocksView.refresh();
+  } else {
+    editor.refresh();
+  }
+}
+document.querySelectorAll<HTMLButtonElement>('[data-view-mode]').forEach((b) => b.addEventListener('click', () => setViewMode(b.dataset.viewMode as ViewMode)));
+editor.on('swapDoc', () => { formView?.refresh(); blocksView?.refresh(); });
+setViewMode(viewMode);
+pkgUI = initPackageUI({
+  editor,
+  getFiles: () => packageFiles,
+  setFiles: (files) => { packageFiles = files; storeFiles(files); renderDocHead(); if (tabsReady) saveTabs(); },
+  showMain: () => setViewMode(viewMode),
+  changed: () => { pkgProblems = pkgUI!.problems(); (editor as any).performLint(); },
+  extraSection: gameSection,
+  onExtra: (act) => void onGameAction(act),
+});
+
+// ---------------------------------------------------------------------------
+// Header menus, the side rail and the layout (Settings › General › Layout)
+
+const LAYOUT_KEY = 'nucleus-workbench-layout';
+type Layout = 'bar' | 'rail';
+const layout = (): Layout => { try { return localStorage.getItem(LAYOUT_KEY) === 'rail' ? 'rail' : 'bar'; } catch { return 'bar'; } };
+function setLayout(l: Layout) {
+  try { localStorage.setItem(LAYOUT_KEY, l); } catch { /* ignore */ }
+  document.documentElement.dataset.layout = l;
+  document.querySelectorAll<HTMLInputElement>('input[name="set-layout"]').forEach((r) => (r.checked = r.value === l));
+  requestAnimationFrame(() => editor.refresh());
+}
+setLayout(layout());
+document.querySelectorAll<HTMLInputElement>('input[name="set-layout"]').forEach((r) => r.addEventListener('change', () => r.checked && setLayout(r.value as Layout)));
+const homeHref = () => (document.querySelector<HTMLAnchorElement>('a.home-link')?.href ?? 'start/');
+const addItems = (): MenuItem[] => [
+  { label: 'New handler…', run: () => newDialog.showModal() },
+  { label: 'Open a file…', hint: '.js .zip .nc', run: () => fileInput.click() },
+  { label: 'Examples and Hub handlers', hint: 'Ctrl K', run: () => showOpen() },
+  ...(lastClosed ? [{ kind: 'separator' as const, label: '' }, { label: `Reopen ${lastClosed.tab.meta.name}`, run: reopenClosed }] : []),
+];
+const appItems = (): MenuItem[] => [
+  { label: 'Advanced mode', checked: mode === 'dev', run: () => ($('#advanced') as HTMLInputElement).click() },
+  { label: 'Tools in a side rail', checked: layout() === 'rail', run: () => setLayout(layout() === 'rail' ? 'bar' : 'rail') },
+  { kind: 'separator', label: '' },
+  { label: 'Settings…', hint: 'Ctrl ,', run: () => settings.open() },
+  { label: 'Keyboard shortcuts', hint: '?', run: () => helpDialog.showModal() },
+  { label: "What's new", run: () => ($('#news-open-2') as HTMLButtonElement).click() },
+  { label: 'Getting started', run: () => ($('#welcome-open') as HTMLButtonElement).click() },
+  { label: 'Send feedback…', run: () => window.open(feedbackUrl(), '_blank', 'noopener') },
+  { kind: 'separator', label: '' },
+  { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
+  ...(document.getElementById('test-open') ? [{ label: '🧪 Help test the beta', run: () => testGuide.open() }] : []),
+];
+$('#tab-add').addEventListener('click', () => openMenu($('#tab-add'), 'New or open', addItems()));
+$('#app-menu-open').addEventListener('click', () => openMenu($('#app-menu-open'), 'Menu', appItems()));
+$('#code-menu-phone').addEventListener('click', () => openMenu($('#code-menu-phone'), 'Save or share', [...saveItems(), { label: '', kind: 'separator' }, { label: 'Share…', run: openCodeDialog }]));
+$('#doc-switch').addEventListener('click', () => openMenu($('#doc-switch'), 'Open handlers', [
+  { kind: 'heading', label: 'Open handlers' },
+  ...tabs.map((x) => ({ label: x.id === activeTab ? doc.name : x.meta.name, checked: x.id === activeTab, run: () => switchTab(x.id) })),
+  ...(tabs.length > 1 ? [{ label: `Close ${doc.name}`, run: () => closeTab(activeTab) }] : []),
+  { kind: 'separator', label: '' },
+  ...addItems(),
+]));
+// The side rail: icons only (the default), or with labels. Remembered in this browser.
+{
+  const KEY = 'nucleus-workbench-rail-open';
+  const btn = $('#rail-toggle');
+  const set = (open: boolean, save = true) => {
+    document.documentElement.toggleAttribute('data-rail-open', open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Hide the labels in the sidebar' : 'Show labels in the sidebar');
+    btn.title = open ? 'Hide labels' : 'Show labels';
+    if (save) try { localStorage.setItem(KEY, open ? '1' : '0'); } catch { /* not kept */ }
+    requestAnimationFrame(() => editor.refresh());
+  };
+  let open = false;
+  try { open = localStorage.getItem(KEY) === '1'; } catch { /* default */ }
+  set(open, false);
+  btn.addEventListener('click', () => set(!document.documentElement.hasAttribute('data-rail-open')));
+}
+document.querySelectorAll<HTMLElement>('.rail [data-rail]').forEach((b) => b.addEventListener('click', (e) => {
+  const act = b.dataset.rail;
+  if (act === 'add') openMenu(b, 'New or open', addItems(), 'right');
+  else if (act === 'menu') openMenu(b, 'Menu', appItems(), 'right');
+  else if (act === 'lines') lines.toggle();
+  else if (act === 'save') { if ((e as MouseEvent).shiftKey) openMenu(b, 'Save as', saveItems(), 'right'); else void saveAs(undefined, b); }
+  else if (act === 'share') openCodeDialog();
+  else if (act === 'test') testGuide.open();
+  else return; // Home is a link
+  e.preventDefault();
+}));
+{
+  const rs = document.querySelector<HTMLElement>('.rail [data-rail=save]');
+  if (rs) {
+    rs.setAttribute('aria-label', 'Save the handler (Shift+click or right-click: Save as)');
+    rs.addEventListener('contextmenu', (e) => { e.preventDefault(); openMenu(rs, 'Save as', saveItems(), 'right'); });
+    let press = 0;
+    rs.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') press = window.setTimeout(() => { press = -1; openMenu(rs, 'Save as', saveItems(), 'right'); }, 550); });
+    rs.addEventListener('pointerup', () => clearTimeout(press));
+    rs.addEventListener('click', (e) => { if (press === -1) { e.stopImmediatePropagation(); e.preventDefault(); press = 0; } }, true);
+  }
+}
+// Ctrl+Shift+[ and ] go to the previous / next open handler; Alt+W closes the open one.
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'BracketLeft' || e.code === 'BracketRight')) {
+    e.preventDefault();
+    const i = tabs.findIndex((x) => x.id === activeTab);
+    switchTab(tabs[(i + (e.code === 'BracketRight' ? 1 : -1) + tabs.length) % tabs.length].id);
+  } else if (e.altKey && !e.ctrlKey && e.code === 'KeyW' && tabs.length > 1) {
+    e.preventDefault();
+    closeTab(activeTab);
+  }
+});
+
+// The common shortcuts, on hover or keyboard focus of the buttons they belong to (both modes).
+initKeyHints([
+  { el: document.getElementById('tab-add'), what: 'New, open a file or an example', keys: 'Ctrl K' },
+  { el: document.getElementById('app-menu-open'), what: 'Settings, Advanced mode and help', keys: 'Ctrl ,' },
+  ...[...document.querySelectorAll<HTMLElement>('.rail [data-rail]')].map((b) => ({ el: b, what: b.getAttribute('aria-label') ?? '', keys: ({ lines: 'Ctrl B', save: 'Ctrl S', add: 'Ctrl K', menu: 'Ctrl ,' } as Record<string, string>)[b.dataset.rail!] ?? '' })),
+  { el: document.getElementById('lines-toggle'), what: 'Show or hide Lines', keys: 'Ctrl B' },
+  { el: document.getElementById('code-menu-open'), what: 'Save', keys: 'Ctrl S' },
+  { el: document.getElementById('save-more'), what: 'Save as…', keys: 'Ctrl Shift S' },
+  { el: document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'), what: 'Try it', keys: 'Ctrl Enter' },
+]);
+
+{
+  const sel = $('#set-density') as HTMLSelectElement;
+  sel.value = checkDensity();
+  sel.addEventListener('change', () => {
+    try { localStorage.setItem(DENSITY_KEY, sel.value); } catch { /* private mode */ }
+    (editor as any).performLint();
+    formView?.refresh();
+  });
+}
+// Feedback (feedback.ts): votes on tips and Claude's docs, anonymous counts. A 👎 on a doc points at the issue link.
+wireVotes((kind, _id, v, el) => {
+  if (kind === 'doc' && v === 'down') el.closest('.dc-check')?.querySelector<HTMLElement>('a')?.focus();
+  announce(v ? (v === 'up' ? 'Thanks: counted as helpful.' : 'Thanks: counted as not helpful.') : 'Vote taken back.');
+});
+{
+  const box = $('#set-feedback') as HTMLInputElement, note = $('#set-feedback-note');
+  const sync = () => {
+    box.checked = feedbackOn();
+    box.disabled = !feedbackAvailable() || feedbackBlockedByBrowser();
+    note.hidden = !box.disabled;
+    note.textContent = !feedbackAvailable() ? 'Sending isn\'t switched on in this copy of the workbench yet, so nothing is sent, whatever this is set to. Your votes are kept in this browser.' : 'Off, because your browser asks sites not to track you (Do Not Track or Global Privacy Control): nothing is sent.';
+  };
+  box.addEventListener('change', () => (setFeedback(box.checked), sync()));
+  sync();
+  const totals = totalsUrl();
+  if (totals) { ($('#set-feedback-totals-link') as HTMLAnchorElement).href = totals; $('#set-feedback-totals').hidden = false; }
+}
+
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
+// Settings › Updates and backup: export and import the settings (settingsio.ts).
+$('#set-export').addEventListener('click', async () => {
+  const msg = $('#set-io-msg');
+  try {
+    if (!downloads) throw new Error('no downloads');
+    await downloads.save({ filename: 'nucleus-workbench-settings.json', data: new TextEncoder().encode(exportSettings()) });
+    msg.textContent = 'Saved nucleus-workbench-settings.json.';
+  } catch (e: any) {
+    if (e?.code === 'declined') return;
+    try { await navigator.clipboard.writeText(exportSettings()); msg.textContent = "Couldn't save a file here, so the settings were copied: paste them into a .json file."; }
+    catch { msg.textContent = "Couldn't save or copy the settings in this browser."; }
+  }
+});
+$('#set-import').addEventListener('click', () => ($('#set-import-file') as HTMLInputElement).click());
+$('#set-import-file').addEventListener('change', async () => {
+  const input = $('#set-import-file') as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  const msg = $('#set-io-msg');
+  try {
+    const n = importSettings(await file.text());
+    msg.textContent = n ? `Imported ${n} setting${n === 1 ? '' : 's'}. Reloading to apply them…` : 'Nothing to import: the file has no settings this version knows.';
+    if (n) setTimeout(() => location.reload(), 900);
+  } catch (e: any) {
+    msg.textContent = e?.message ?? "Couldn't read that file.";
+  }
+});
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 
 // ---------------------------------------------------------------------------
 // Fix with AI (artifact `sample` capability: Claude, on the viewer's own account)
 
-const AUTO_KEY = 'nucleus-workbench-ai-auto';
 const aiBox = $('#ai-box');
 const aiBtn = $('#ai-fix') as HTMLButtonElement;
-const aiAuto = $('#ai-auto') as HTMLInputElement;
-try {
-  aiAuto.checked = localStorage.getItem(AUTO_KEY) === '1';
-} catch {
-  /* ignore */
-}
-aiAuto.addEventListener('change', () => {
-  try {
-    localStorage.setItem(AUTO_KEY, aiAuto.checked ? '1' : '0');
-  } catch {
-    /* ignore */
-  }
-});
+// Fixes are applied straight away (no "Apply without review" any more): Undo and the highlighted lines replace the review.
 
 let sample: any = null;
 let aiCtl: AbortController | null = null;
@@ -1660,7 +2463,8 @@ async function runAiFix() {
   aiCtl = new AbortController();
   aiBtn.disabled = true;
   aiBox.hidden = false;
-  aiBox.innerHTML = `<div class="ai-status"><span class="spinner" aria-hidden="true"></span><span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
+  // Nucli reads the code while Claude works on it (a spinner when mascots are off).
+  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
   $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
 
   const limits = await sample.limits().catch(() => null);
@@ -1707,6 +2511,7 @@ aiBtn.addEventListener('click', runAiFix);
 
 // Fix all: the deterministic, offline fixes (the same as `nucleus lint --fix` and the extension).
 $('#fix-all').addEventListener('click', () => {
+  use('fix-all');
   const base = editor.getValue();
   const before = counts(base, lintCtx());
   const r = fixAll(base, lintCtx());
@@ -1731,7 +2536,7 @@ editor.on('change', (_cm: unknown, ch: { origin?: string }) => {
 
 function applyCode(code: string) {
   const doc = editor.getDoc();
-  doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix');
+  fixWithNucli(editor, code, () => doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix'));
 }
 
 function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }, source: 'AI' | 'Fix all' = 'AI') {
@@ -1756,52 +2561,85 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   const baseLines = base.split('\n').length;
   const bigRewrite = removed > Math.max(20, baseLines * 0.5);
   let reason = '';
-  if (edited) reason = 'You edited the handler while Claude was working, so this was not applied automatically. Accepting replaces your latest edits.';
+  if (edited) reason = 'You edited the handler while the AI was working, so this was not applied automatically. Accepting replaces your latest edits.';
   else if (introduced.length) reason = `This version adds ${introduced.length} new problem${introduced.length > 1 ? 's' : ''} (${introduced.slice(0, 2).join('; ')}${introduced.length > 2 ? '; …' : ''}), so it was not applied automatically.`;
   else if (bigRewrite) reason = `This rewrites a large part of the handler (${removed} of ${baseLines} lines removed), so it was not applied automatically.`;
   else if (!notWorse) reason = 'This version has more errors than yours, so it was not applied automatically.';
   else if (!better) reason = 'This version does not reduce the problem count, so it was not applied automatically.';
-  const auto = aiAuto.checked && !reason;
+  // Applied straight away (Undo is one click, and the changed lines light up in the code). Only an AI fix that looks
+  // risky (it adds problems, rewrites most of the file, makes it worse, or you typed meanwhile) waits for a review.
+  const risky = source === 'AI' && (edited || introduced.length > 0 || bigRewrite || !notWorse);
+  const fixedCount = source === 'Fix all' ? changes.length : 0;
+  const remaining = after.errors + after.warnings;
+  const diffTable = `<div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>`;
+  const changeList = changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
 
-  const body = (state: 'review' | 'applied') => `
-    <h3>${source === 'Fix all' ? (state === 'applied' ? 'Applied automatic fixes' : 'Automatic fixes') : state === 'applied' ? 'Applied Claude\'s fix' : "Claude's proposed fix"}</h3>
-    ${source === 'Fix all' && after.errors + after.warnings ? `<p class="muted">${after.errors + after.warnings} problem${after.errors + after.warnings === 1 ? '' : 's'} need${after.errors + after.warnings === 1 ? 's' : ''} your decision and stay${after.errors + after.warnings === 1 ? 's' : ''} listed below.</p>` : ''}
-    ${changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
-    ${delta}
-    ${reason && (aiAuto.checked || introduced.length || bigRewrite || edited) ? `<p class="note">${esc(aiAuto.checked ? reason : reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, ''))}</p>` : ''}
-    <div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>
-    <div class="ai-actions">${
-      state === 'applied'
-        ? '<button class="btn" id="ai-undo" type="button">Undo</button><button class="btn" id="ai-close" type="button">Close</button>'
-        : '<button class="btn primary" id="ai-accept" type="button">Accept</button><button class="btn" id="ai-reject" type="button">Reject</button>'
-    }</div>`;
+  const review = () => `
+    <h3>${source === 'AI' ? "AI's proposed fix" : 'Automatic fixes'}</h3>
+    ${reason ? `<p class="note">${esc(reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, '.'))} Check it before applying.</p>` : ''}
+    ${changeList}${delta}
+    <div class="ai-actions"><button class="btn primary" id="ai-accept" type="button">Apply</button><button class="btn" id="ai-reject" type="button">Discard</button></div>
+    ${diffTable}`;
+  const applied = () => `<div class="fix-done">
+    <span class="fix-ok" aria-hidden="true">✓</span>
+    <span class="fix-msg"><strong>${source === 'Fix all' ? `Fixed ${fixedCount} problem${fixedCount === 1 ? '' : 's'}` : 'Applied the AI fix'}</strong>${remaining ? ` · ${remaining} need${remaining === 1 ? 's' : ''} your decision, below` : ' · nothing left to fix'}. Changed lines are highlighted in the code.</span>
+    <button class="btn" id="ai-undo" type="button">Undo</button>
+    <button class="btn icon" id="ai-close" type="button" aria-label="Close">×</button>
+    <details class="fix-more"><summary>What changed (+${added} −${removed} lines)</summary>${changeList}${delta}${diffTable}</details></div>`;
 
   const showApplied = () => {
-    aiBox.innerHTML = body('applied');
+    aiBox.innerHTML = applied();
+    aiBox.classList.add('compact');
     boxShows = code;
+    markChanged(code, lines);
     $('#ai-undo').addEventListener('click', () => {
       if (editor.getValue() === code) {
         editor.undo();
-        aiBox.innerHTML = '<p>Undone. Your handler is back to how it was.</p>';
+        clearChanged();
+        aiBox.innerHTML = '<p class="fix-done"><span class="fix-msg">Undone. Your handler is back to how it was.</span></p>';
       } else {
-        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe. Use Ctrl+Z in the editor instead.</p>';
+        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe here. Use Ctrl+Z in the editor instead.</p>';
       }
     });
     $('#ai-close').addEventListener('click', () => (aiBox.hidden = true));
   };
-  if (auto) {
+  if (!risky) {
     applyCode(code);
     showApplied();
     return;
   }
-  aiBox.innerHTML = body('review');
+  aiBox.classList.remove('compact');
+  aiBox.innerHTML = review();
   boxShows = editor.getValue();
+  aiBox.scrollIntoView({ block: 'nearest' });
   $('#ai-accept').addEventListener('click', () => {
     applyCode(code);
     showApplied();
+    $('#ai-undo').focus(); // keep the keyboard where the result is
   });
   $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
 }
+
+// The lines a fix added or changed, highlighted in the editor until you edit the code (or 12 s).
+let changedMarks: any[] = [];
+let changedTimer = 0;
+function clearChanged() {
+  changedMarks.forEach((h) => editor.removeLineClass(h, 'background', 'line-changed'));
+  changedMarks = [];
+  clearTimeout(changedTimer);
+}
+function markChanged(code: string, diff: (DiffLine | null)[]) {
+  const go = (tries = 0) => {
+    if (editor.getValue() !== code) return tries < 40 ? void setTimeout(() => go(tries + 1), 100) : undefined; // after Nucli's edit animation
+    clearChanged();
+    for (const l of diff) if (l?.kind === '+' && l.b) changedMarks.push(editor.addLineClass(l.b - 1, 'background', 'line-changed'));
+    const first = diff.find((l) => l?.kind === '+' && l.b);
+    if (first?.b) editor.scrollIntoView({ line: first.b - 1, ch: 0 }, 80);
+    changedTimer = window.setTimeout(clearChanged, 12000);
+  };
+  go();
+}
+editor.on('change', (_cm: unknown, ch: { origin?: string }) => { if (ch.origin !== '+ai-fix' && changedMarks.length) clearChanged(); });
 
 // ---------------------------------------------------------------------------
 // Advanced mode switch
@@ -1931,38 +2769,13 @@ let downloads: any = null;
   }
   if (downloads) $('#save').hidden = false;
 })();
-const saveDialog = $('#save-dialog') as HTMLDialogElement;
 const handlerFileName = () => {
   const m = editor.getValue().match(/^Game\.GameName\s*=\s*"([^"]*)"/m);
   const name = (m?.[1] || doc.name.replace(/\.js$/i, '') || 'handler').replace(/[\\/:*?"<>|]/g, '').trim() || 'handler';
   return name;
 };
-$('#save').addEventListener('click', () => {
-  const name = handlerFileName();
-  $('#save-name').textContent = `${name}.zip`;
-  const extra = $('#save-files');
-  extra.hidden = !packageFiles.length;
-  extra.textContent = packageFiles.length ? `With the package's other ${packageFiles.length === 1 ? 'file' : `${packageFiles.length} files`}: ${packageFiles.map((f) => f.name).join(', ')}.` : '';
-  $('#save-js').textContent = `${name}.js`;
-  saveDialog.showModal();
-});
-$('#save-cancel').addEventListener('click', () => saveDialog.close());
-$('#save-go').addEventListener('click', async () => {
-  const name = handlerFileName();
-  const errorsLeft = current.filter((d) => d.severity === 'error').length;
-  try {
-    const zip = buildPackage(editor.getValue(), packageFiles);
-    await downloads.save({ filename: `${name}.zip`, data: zip });
-    waka.saved();
-    saveDialog.close();
-    (errorsLeft ? notice : toast)(errorsLeft ? `Saved ${name}.zip. It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it.` : `Saved ${name}.zip. Drag it onto "Extract handler" in Nucleus Co-op.`);
-  } catch (e: any) {
-    saveDialog.close();
-    if (e?.code === 'declined') return;
-    if (['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) $('#save').hidden = true;
-    notice("Couldn't save the file here. Use Copy instead and paste it into a .js file.", { kind: 'error' });
-  }
-});
+// "Save for Nucleus" in the header opens the same Save or copy dialog as the button next to the code.
+$('#save').addEventListener('click', () => void saveAs());
 
 // ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
@@ -2029,7 +2842,24 @@ try {
 } catch {
   /* ignore */
 }
-if (!welcomed) {
+// Something put away flies to where it now lives (a ghost of it shrinks into the link), and the link pulses, so you
+// see where to find it again. With motion off, only the pulse.
+function flyTo(from: HTMLElement, to: HTMLElement) {
+  const pulse = () => { to.classList.remove('moved-here'); void to.offsetWidth; to.classList.add('moved-here'); setTimeout(() => to.classList.remove('moved-here'), 1800); };
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  if (document.documentElement.dataset.motionUi === 'off' || !b.width || !a.width) return pulse();
+  const ghost = document.createElement('div');
+  ghost.className = 'fly-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  Object.assign(ghost.style, { left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px` });
+  document.body.append(ghost);
+  const anim = ghost.animate([
+    { transform: 'translate(0, 0) scale(1)', opacity: 1, borderRadius: '8px' },
+    { transform: `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(${b.width / a.width}, ${b.height / a.height})`, opacity: 0.2, borderRadius: '999px' },
+  ], { duration: 520, easing: 'cubic-bezier(.5, 0, .2, 1)' });
+  anim.onfinish = () => { ghost.remove(); pulse(); };
+}
+function showWelcome() {
   const w = $('#welcome');
   w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
     <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span></div>`;
@@ -2038,14 +2868,45 @@ if (!welcomed) {
   w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
   w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
   w.querySelector('[data-w=close]')!.addEventListener('click', () => {
+    flyTo(w, $('#welcome-open'));
     w.hidden = true;
+    editor.refresh();
+    announce('Closed. Getting started, at the bottom, brings it back.');
     try {
       localStorage.setItem(WELCOME_KEY, '1');
     } catch {
       /* ignore */
     }
   });
+  editor.refresh();
 }
+if (!welcomed) showWelcome();
+// What feedback forms say about the open handler: its name and where it came from, a link only to an unedited example
+// or Hub handler, never the code itself.
+setReportState(() => ({
+  handler: { name: doc.name, kind: doc.kind === 'draft' || doc.kind === 'new' ? 'own code, not included' : doc.kind, link: doc.hash && editor.getValue() === loadedText ? `${location.origin}${location.pathname}#${doc.hash}` : undefined },
+  view: viewMode,
+}));
+// The very first visit (not someone who has used the workbench before): Nucli's two questions.
+const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
+  mode: () => mode,
+  setMode,
+  layout,
+  setLayout,
+  done: (exp) => { if (exp) announce(exp === 'developer' ? 'Advanced mode is on.' : 'Guided: tips and plain words. Getting started is above the code.'); editor.focus(); },
+});
+// A new visitor: during the beta, the tester questions first (they also pick guided or Advanced); else Nucli's.
+if (!welcomed && !firstRunDone() && !location.hash) {
+  if (testGuide.needed()) testGuide.open(); else firstRun.open();
+}
+$('#fr-again').addEventListener('click', () => { ($('#settings-dialog') as HTMLDialogElement).close(); firstRun.open(); });
+$('#welcome-open').addEventListener('click', () => {
+  if (narrow()) setView('code');
+  showWelcome();
+  const w = $('#welcome');
+  w.classList.remove('welcome-in'); void w.offsetWidth; w.classList.add('welcome-in'); // unfolds where it lives
+  w.querySelector<HTMLElement>('button, a')?.focus();
+});
 
 let startTab = 'problems';
 try {
@@ -2053,6 +2914,7 @@ try {
 } catch {
   /* ignore */
 }
+initTabs();
 if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
@@ -2086,36 +2948,98 @@ document.querySelectorAll('dialog').forEach((dl) =>
   }),
 );
 
-// Copy or download, next to the code: copy, a link, and the handler as .zip (with the install
-// steps), .js or .nc.
+// Save and Share are separate: Save writes a file in the last format used (.zip for Nucleus by default; ▾ picks
+// another), Share copies a link, the code, or a Discord post. The dialog shows Share, or the install steps after
+// the first saves of a .zip.
 const codeDialog = $('#code-dialog') as HTMLDialogElement;
-$('#code-menu-open').addEventListener('click', () => {
-  codeDialog.querySelectorAll<HTMLButtonElement>('.dl').forEach((b) => (b.hidden = !downloads));
-  (codeDialog.querySelector('[data-code=link]') as HTMLButtonElement).hidden = !(doc.hash || canShare());
-  const withFiles = packageFiles.length ? ` · with ${packageFiles.length} other file${packageFiles.length === 1 ? '' : 's'}` : '';
-  codeDialog.querySelector('[data-code=zip] small')!.textContent = 'Drag it onto Extract handler in Nucleus Co-op' + withFiles;
-  codeDialog.querySelector('[data-code=nc] small')!.textContent = 'The same package with the extension Hub downloads use' + withFiles;
-  codeDialog.querySelector('[data-code=js] small')!.innerHTML = packageFiles.length ? 'The code only, without the package\'s other files' : 'For the <code>handlers</code> folder or your own editor';
+/** The Save or Share button the person can see (slim bar, side rail or phone), so confirmations show where they look. */
+const shown = (...sel: string[]) => sel.map((s) => document.querySelector<HTMLElement>(s)).find((el) => !!el?.offsetParent) ?? null;
+const saveButton = () => shown('#code-menu-open', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#code-menu-open');
+const shareButton = () => shown('#share-open', '.rail [data-rail=share]', '#code-menu-phone') ?? $('#share-open');
+type SaveKind = 'zip' | 'js' | 'nc';
+const SAVE_KEY = 'nucleus-workbench-save-format';
+const STEPS_KEY = 'nucleus-workbench-install-steps-seen';
+const saveKind = (): SaveKind => { try { const v = localStorage.getItem(SAVE_KEY); return v === 'js' || v === 'nc' ? v : 'zip'; } catch { return 'zip'; } };
+const SAVE_LABEL: Record<SaveKind, string> = { zip: 'For Nucleus Co-op (.zip)', js: 'The code only (.js)', nc: 'Package for VS Code (.nc)' };
+function syncSaveButton() {
+  const k = saveKind();
+  $('#code-menu-open').setAttribute('aria-label', `Save the handler: ${SAVE_LABEL[k]}`);
+  $('#code-menu-open').title = `Save: ${SAVE_LABEL[k]} · Ctrl+S`;
+}
+syncSaveButton();
+function openCodeDialog() {
+  $('#save-h').textContent = 'Share';
+  $('#code-main').hidden = false;
+  $('#code-done').hidden = true;
+  const len = editor.getValue().length + 10;
+  $('#code-discord-sub').textContent = len > DISCORD_LIMIT ? `Too long for one message (${len.toLocaleString()} of ${DISCORD_LIMIT.toLocaleString()} characters): select the lines that matter first` : 'The code in a code block, ready to paste';
   codeDialog.showModal();
-});
+}
+function showInstallSteps(filename: string) {
+  const errorsLeft = current.filter((d) => d.severity === 'error').length;
+  $('#save-h').textContent = 'Saved';
+  $('#code-saved').textContent = `Saved ${filename}`;
+  $('#code-warn').hidden = !errorsLeft;
+  $('#code-warn').textContent = errorsLeft ? `It still has ${errorsLeft} error${errorsLeft === 1 ? '' : 's'}, so Nucleus may not load it. Check lists them.` : '';
+  $('#code-js-name').textContent = `${handlerFileName()}.js`;
+  $('#code-main').hidden = true;
+  $('#code-done').hidden = false;
+  if (!codeDialog.open) codeDialog.showModal();
+  $('#code-close').focus();
+}
+async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveButton()) {
+  try { localStorage.setItem(SAVE_KEY, kind); } catch { /* not kept */ }
+  syncSaveButton();
+  if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
+  const filename = `${handlerFileName()}.${kind}`;
+  try {
+    const data = kind === 'js' ? new TextEncoder().encode(editor.getValue()) : buildPackage(editor.getValue(), packageFiles);
+    await downloads.save({ filename, data });
+    waka.saved();
+    use(`save-${kind}`);
+    // The install steps after the first two .zip saves; after that, they're under ▾.
+    let seen = 0;
+    try { seen = Number(localStorage.getItem(STEPS_KEY) || 0); localStorage.setItem(STEPS_KEY, String(seen + 1)); } catch { /* ignore */ }
+    if (kind === 'zip' && seen < 2) showInstallSteps(filename);
+    else confirmOn(trigger, 'Saved ✓', `Saved ${filename}.`);
+    // Files of a Hub package that weren't downloaded here can't go in it: say so, with the original.
+    const remote = kind === 'js' ? [] : packageFiles.filter((f) => f.remote);
+    if (remote.length) {
+      const url = remote[0].remote!.url;
+      notice(`Saved without ${remote.length} big file${remote.length === 1 ? '' : 's'} from the Hub package (${fileSize(remote.reduce((n, f) => n + f.remote!.size, 0))}: ${remote.slice(0, 3).map((f) => f.name.split('/').pop()).join(', ')}${remote.length > 3 ? ', …' : ''}), which aren't downloaded here. Get them from the original package on the Hub.`, { kind: 'warning', action: { label: 'Open the Hub page', run: () => window.open(url, '_blank', 'noopener') } });
+    }
+  } catch (e: any) {
+    if (e?.code === 'declined') return;
+    notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
+  }
+}
+const saveItems = (): MenuItem[] => [
+  { label: 'Save as', kind: 'heading' },
+  ...(['zip', 'js', 'nc'] as SaveKind[]).map((k) => ({ label: SAVE_LABEL[k], checked: saveKind() === k, run: () => void saveAs(k) })),
+  { label: '', kind: 'separator' as const },
+  { label: 'How to install it in Nucleus', run: () => showInstallSteps(`${handlerFileName()}.zip`) },
+];
+async function copyForDiscord(trigger: HTMLElement) {
+  const sel = editor.getSelection();
+  const text = '```js\n' + (sel || editor.getValue()).replace(/```/g, '`​``') + '\n```';
+  try {
+    await navigator.clipboard.writeText(text);
+    confirmOn(trigger, 'Copied ✓', text.length > DISCORD_LIMIT ? `Copied, but it's ${text.length.toLocaleString()} characters: Discord takes ${DISCORD_LIMIT.toLocaleString()} per message. Select fewer lines, or share a link.` : `Copied ${sel ? 'the selected lines' : 'the handler'} as a Discord code block.`);
+  } catch {
+    notice("The browser didn't let this page copy. Use Copy the code instead.", { kind: 'warning' });
+  }
+}
+$('#code-menu-open').addEventListener('click', () => void saveAs());
+$('#save-more').addEventListener('click', () => openMenu($('#save-more'), 'Save as', saveItems()));
+$('#share-open').addEventListener('click', openCodeDialog);
 $('#code-close').addEventListener('click', () => codeDialog.close());
 codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
   b.addEventListener('click', async () => {
-    codeDialog.close();
     const kind = b.dataset.code;
-    if (kind === 'copy') return ($('#copy') as HTMLButtonElement).click();
-    if (kind === 'link') return copyLink();
-    if (kind === 'zip') return ($('#save') as HTMLButtonElement).click();
-    const name = handlerFileName();
-    const text = new TextEncoder().encode(editor.getValue());
-    const filename = `${name}.${kind}`;
-    try {
-      await downloads.save({ filename, data: kind === 'js' ? text : buildPackage(editor.getValue(), packageFiles) });
-      waka.saved();
-      toast(`Saved ${filename}.`);
-    } catch (e: any) {
-      if (e?.code !== 'declined') notice("Couldn't save the file here. Use Copy the code instead.", { kind: 'error' });
-    }
+    codeDialog.close();
+    if (kind === 'copy') return copyCode();
+    if (kind === 'link') return copyLink(shareButton());
+    if (kind === 'discord') return copyForDiscord(shareButton());
   }),
 );
 initSheetDrag();
@@ -2151,7 +3075,7 @@ const waka = initWakaTime({
   machine.addEventListener('change', () => waka.set({ machine: machine.value.trim() }));
   $('#set-waka-test').addEventListener('click', async () => {
     waka.set({ key: key.value.trim(), url: url.value.trim(), machine: machine.value.trim() });
-    status.textContent = 'Sending…';
+    status.innerHTML = `${mascot('n-spin', { size: 22, busy: true })} Sending…`;
     status.textContent = await waka.test();
   });
   document.addEventListener('open-settings', sync);
@@ -2181,20 +3105,16 @@ window.addEventListener('resize', () => requestAnimationFrame(placeInk));
 requestAnimationFrame(placeInk);
 // The logo is home: the start of the Open dialog (new handler, open a file, examples). A middle click
 // or Ctrl+click still opens the workbench fresh in a new tab.
-document.querySelector<HTMLAnchorElement>('a.brand')?.addEventListener('click', (e) => {
-  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-  e.preventDefault();
-  showOpen();
-});
+// The title is the workbench's own link (a fresh load keeps the draft); "⌂ Home" under it goes to the home page.
 // "About these tools" opens the start page. The single file (a release download, the Claude artifact)
 // links to the live site's; where a start page is served next to it (the artifact, a copy of the
 // site), it opens that one, so a preview stays a preview.
 {
-  const start = document.querySelector<HTMLAnchorElement>('a.start-link');
-  if (start && /^https?:/.test(location.protocol) && /^https:/.test(start.getAttribute('href') ?? '')) {
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('a.start-link')];
+  if (links.length && /^https?:/.test(location.protocol) && /^https:/.test(links[0].getAttribute('href') ?? '')) {
     fetch('start/', { method: 'HEAD', cache: 'no-store' })
       .then((r) => {
-        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) start.href = 'start/';
+        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) links.forEach((a) => (a.href = 'start/'));
       })
       .catch(() => {});
   }

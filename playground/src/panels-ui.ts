@@ -3,7 +3,7 @@
 // to reset it, or Settings > Reset panel sizes for all of them. Arrow keys work on a focused edge.
 const KEY = 'nucleus-workbench-panels';
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
-interface Sizes { main?: number; lines?: number; sheet?: number } // main: share of the code pane (0..1); lines: px; sheet: vh
+interface Sizes { main?: number; lines?: number; files?: number; sheet?: number; filesSide?: "left" | "right"; linesSide?: "left" | "right" } // main: share of the code pane (0..1); lines: px; sheet: vh
 
 export function initPanels(opts: { refresh: () => void; toast: (s: string) => void }) {
   let sizes: Sizes = {};
@@ -17,6 +17,7 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
   };
   const main = $('#main');
   const lines = $('#lines');
+  const files = $('#files-panel');
   function apply() {
     if (sizes.main) {
       main.classList.add('sized');
@@ -28,6 +29,14 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
       main.style.removeProperty('--split-r');
     }
     lines.style.width = sizes.lines ? `${sizes.lines}px` : '';
+    files.style.width = sizes.files ? `${sizes.files}px` : '';
+    const root = document.documentElement;
+    if (sizes.filesSide === 'left') root.dataset.filesSide = 'left'; else delete root.dataset.filesSide;
+    if (sizes.linesSide === 'left') root.dataset.linesSide = 'left'; else delete root.dataset.linesSide;
+    for (const [id, v] of [['set-files-side', sizes.filesSide], ['set-lines-side', sizes.linesSide]] as const) {
+      const s = document.getElementById(id) as HTMLSelectElement | null;
+      if (s) s.value = v ?? 'right';
+    }
     lines.classList.toggle('custom-h', !!sizes.sheet);
     if (sizes.sheet) lines.style.setProperty('--sheet-h', `${sizes.sheet}vh`);
     // Screen readers announce a focusable separator's position (a percentage of the space it divides).
@@ -43,6 +52,8 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
     value('split-main', left, `code ${Math.round(left)}%, results ${Math.round(100 - left)}%`);
     const lw = sizes.lines ?? (lines.offsetWidth || 320);
     value('split-lines', Math.min(100, (lw / Math.max(1, main.clientWidth)) * 100), `Lines list ${Math.round(lw)} pixels wide`);
+    const fw = sizes.files ?? (files.offsetWidth || 260);
+    value('split-files', Math.min(100, (fw / Math.max(1, main.clientWidth)) * 100), `Files panel ${Math.round(fw)} pixels wide`);
     const sh = sizes.sheet ?? 60;
     value('split-sheet', sh, `list ${Math.round(sh)}% of the screen high`);
     opts.refresh();
@@ -95,17 +106,31 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
 
   // Lines width (its left edge)
   const splitLines = $('#split-lines');
-  drag(splitLines, false, (x) => {
-    const r = lines.getBoundingClientRect();
-    sizes.lines = Math.round(clamp(r.right - x, 220, Math.min(640, window.innerWidth * 0.5)));
-  }, () => delete sizes.lines);
-  splitLines.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault();
-    sizes.lines = Math.round(clamp((sizes.lines ?? lines.getBoundingClientRect().width) + (e.key === 'ArrowLeft' ? 24 : -24), 220, 640));
-    save();
-    apply();
-  });
+  // A side panel's width, from its inner edge (the one next to the code): Lines and Files, left or right of it.
+  function sidePanel(handle: HTMLElement, el: HTMLElement, key: 'lines' | 'files', side: () => 'left' | 'right' | undefined, min: number) {
+    drag(handle, false, (x) => {
+      const r = el.getBoundingClientRect();
+      sizes[key] = Math.round(clamp(side() === 'left' ? x - r.left : r.right - x, min, Math.min(640, window.innerWidth * 0.5)));
+    }, () => delete sizes[key]);
+    handle.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const grow = (e.key === 'ArrowLeft') === (side() !== 'left');
+      sizes[key] = Math.round(clamp((sizes[key] ?? el.getBoundingClientRect().width) + (grow ? 24 : -24), min, 640));
+      save();
+      apply();
+    });
+  }
+  sidePanel(splitLines, lines, 'lines', () => sizes.linesSide, 220);
+  sidePanel($('#split-files'), files, 'files', () => sizes.filesSide, 180);
+  for (const [id, key] of [['set-files-side', 'filesSide'], ['set-lines-side', 'linesSide']] as const) {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      const v = (e.target as HTMLSelectElement).value;
+      if (v === 'left') sizes[key] = 'left'; else delete sizes[key];
+      save();
+      apply();
+    });
+  }
 
   // Phones: the Lines sheet's height (its top edge)
   const grip = $('#split-sheet');
@@ -116,11 +141,18 @@ export function initPanels(opts: { refresh: () => void; toast: (s: string) => vo
 
   apply();
   return {
-    reset() {
-      sizes = {};
+    /** Moves Files or Lines to the other side of the code. */
+    flip(which: 'files' | 'lines') {
+      const key = which === 'files' ? 'filesSide' : 'linesSide';
+      if (sizes[key] === 'left') delete sizes[key]; else sizes[key] = 'left';
       save();
       apply();
-      opts.toast('Panel sizes are back to their defaults.');
+      return sizes[key] ?? 'right';
+    },
+    reset() {
+      sizes = { filesSide: sizes.filesSide, linesSide: sizes.linesSide }; // sizes only; the sides stay
+      save();
+      apply();
     },
   };
 }

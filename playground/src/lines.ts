@@ -30,6 +30,8 @@ export interface Line {
   default?: string;
   sig: string;
   doc: string;
+  /** The doc was written by Claude (AI), not taken from the official docs. */
+  aiDoc?: boolean;
   deprecated?: boolean;
   scope: Scope;
   /** Settable with `path = value;` */
@@ -108,6 +110,7 @@ export function allLines(): Line[] {
       default: m.default,
       sig: memberSignature(e.owner, e.name, m)[0] ?? e.path,
       doc: firstSentence(m.deprecated ? `Deprecated. ${m.deprecated}` : m.doc || ''),
+      aiDoc: m.docBy === 'claude',
       deprecated: !!m.deprecated,
       scope: CALLBACK_OWNERS.has(e.owner) ? 'callback' : BEFORE_SESSION[e.path] ? 'top' : 'any',
       assignable: !method && !m.readonly && SETTABLE_OWNERS.has(e.owner),

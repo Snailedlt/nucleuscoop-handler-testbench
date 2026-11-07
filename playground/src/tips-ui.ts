@@ -1,5 +1,6 @@
 // The tip bar under the code. One general tip at a time (Next shows another), and Clippy-style
 // tips that pop up once when the code or the cursor makes them relevant. Off with one click.
+import { voteButtons } from './feedback';
 import { CONTEXT_TIPS, GENERAL_TIPS, Tip, TipContext } from './tips';
 import { scanHandler, inCallback, Scan } from './lines';
 
@@ -23,9 +24,11 @@ interface Deps {
   editor: any;
   toast?: (s: string) => void;
   actions: Record<NonNullable<Tip['action']>['run'], () => void>;
+  /** The control each action stands for: highlighted while its tip shows, so you learn where it lives. */
+  targets?: Partial<Record<NonNullable<Tip['action']>['run'], () => HTMLElement | null>>;
 }
 
-export function initTips({ editor, actions, toast }: Deps) {
+export function initTips({ editor, actions, toast, targets }: Deps) {
   let on = get(ON_KEY) !== '0';
   const seen = new Set<string>(JSON.parse(get(SEEN_KEY) || '[]'));
   let general = Math.floor(Math.random() * GENERAL_TIPS.length);
@@ -49,6 +52,9 @@ export function initTips({ editor, actions, toast }: Deps) {
         body.append(c);
       } else body.append(document.createTextNode(part));
     });
+    $('#tip-votes').innerHTML = voteButtons('tip', tip.id, { up: 'Useful tip', down: 'Not useful' });
+    document.querySelectorAll('.tip-target').forEach((e) => e.classList.remove('tip-target'));
+    if (tip.action && on) targets?.[tip.action.run]?.()?.classList.add('tip-target');
     if (tip.action) {
       act.hidden = false;
       act.textContent = tip.action.label;
@@ -106,6 +112,7 @@ export function initTips({ editor, actions, toast }: Deps) {
     on = v;
     set(ON_KEY, v ? '1' : '0');
     bar.hidden = !v;
+    if (!v) document.querySelectorAll('.tip-target').forEach((e) => e.classList.remove('tip-target'));
     toggles.forEach((t) => {
       t.textContent = v ? 'Tips: on' : 'Tips: off';
       t.setAttribute('aria-pressed', String(v));

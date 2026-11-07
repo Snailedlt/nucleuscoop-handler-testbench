@@ -10,7 +10,9 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import * as esbuild from 'esbuild';
+import { fetchPackageFiles, slimFiles } from '../tools/hub-files.mjs';
 
 const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 // A preview build (the Claude artifact, the raw.githack test address) is served somewhere else: its
@@ -73,6 +75,10 @@ if (hubData && !fs.existsSync(path.join(hubData, 'hub', 'packages.json'))) {
   console.warn(`No mirrored handlers in ${hubData} yet (tools/hub-mirror.mjs runs in the daily Hub sync): using the snapshot of the most downloaded.`);
   hubData = null;
 }
+// Our daily index (data branch), read at most once per build.
+const INDEX_URL = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json';
+let rawIndexP = null;
+const rawIndex = () => (rawIndexP ??= fetch(INDEX_URL).then((r) => { if (!r.ok) throw new Error(`${INDEX_URL}: ${r.status}`); return r.json(); }));
 function hubFromData(dir) {
   const idx = JSON.parse(fs.readFileSync(path.join(dir, 'hub-index.json'), 'utf8'));
   const pk = JSON.parse(fs.readFileSync(path.join(dir, 'hub', 'packages.json'), 'utf8'));
@@ -94,6 +100,8 @@ function hubFromData(dir) {
       url: `${HUB}/handler/${h._id}`,
       cover: h.gameCover ?? undefined,
       ...(p.verified ? {} : { unverified: true }),
+      // The package's other files (tools/hub-mirror.mjs): hub/<id>.files.json, when it has any.
+      ...(p.files > 0 && fs.existsSync(path.join(dir, 'hub', `${h._id}.files.json`)) ? { files: p.files } : {}),
       source: fs.readFileSync(file, 'utf8'),
     });
   }
@@ -121,7 +129,7 @@ async function hubExamples() {
   // The list comes from our daily index (tools/hub-sync.mjs), not the Hub; the Hub only if it's missing.
   let listing;
   try {
-    const idx = await get('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
+    const idx = await rawIndex();
     if (Date.now() - Date.parse(idx.syncedAt) > 3 * 86400_000) throw new Error('index older than 3 days');
     listing = idx.handlers;
   } catch (e) {
@@ -196,8 +204,7 @@ const hub = await hubExamples();
 // get their ids from our daily index (no Hub request).
 if (!hubData && hub.handlers.some((h) => !h.cover)) {
   try {
-    const r = await fetch('https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json');
-    const byId = new Map((await r.json()).handlers.map((h) => [h._id, h.gameCover]));
+    const byId = new Map((await rawIndex()).handlers.map((h) => [h._id, h.gameCover]));
     for (const h of hub.handlers) h.cover ??= byId.get(h.id) ?? undefined;
   } catch {}
 }
@@ -220,6 +227,44 @@ for (const h of hubData ? [] : hub.handlers) {
 }
 const coverFile = (h) => (h.cover && fs.existsSync(path.join(coverDir, `${h.cover}.jpg`)) ? path.join(coverDir, `${h.cover}.jpg`) : null);
 const coverCount = hub.handlers.filter(coverFile).length;
+
+// The other files of each Hub handler's package (tools/hub-files.mjs: small ones with content, big ones by
+// name and size), for the Files panel. With --hub-data, hub/<id>.files.json from the mirror. The snapshot
+// downloads each package once per version (package ids from our daily index) and keeps the result in
+// .cache/hub-files/.
+const hubFiles = new Map(); // id -> { files: [...] }
+if (hubData) {
+  for (const h of hub.handlers) if (h.files) hubFiles.set(h.id, JSON.parse(fs.readFileSync(path.join(hubData, 'hub', `${h.id}.files.json`), 'utf8')));
+} else if (hub.handlers.length) {
+  const cacheDir = path.join(here, '.cache', 'hub-files');
+  fs.mkdirSync(cacheDir, { recursive: true });
+  let byId = null;
+  let downloaded = 0;
+  for (const h of hub.handlers) {
+    const file = path.join(cacheDir, `${h.id}-v${h.version}.json`);
+    if (!fs.existsSync(file)) {
+      try {
+        byId ??= new Map((await rawIndex()).handlers.map((x) => [x._id, x]));
+        const x = byId.get(h.id);
+        if (!x?.currentPackage || x.currentVersion !== h.version) continue; // the index has another version: not this one's package
+        if (downloaded) await new Promise((r) => setTimeout(r, 300)); // one at a time, gently
+        downloaded++;
+        fs.writeFileSync(file, JSON.stringify(await fetchPackageFiles(h.id, x.currentPackage, h.version)));
+      } catch (e) {
+        console.warn(`Hub files of ${h.title}: ${e.message}`);
+        continue;
+      }
+    }
+    const json = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (json.files.length) hubFiles.set(h.id, json);
+  }
+  if (downloaded) console.log(`Hub files: ${downloaded} package(s) downloaded.`);
+}
+for (const h of hub.handlers) {
+  const f = hubFiles.get(h.id);
+  if (f) h.files = f.files.length;
+  else delete h.files;
+}
 // Example packages (examples/README.md): a verified Hub handler with the other files it ships.
 const EXAMPLE_PACKAGES = [
   { id: 'nvmp', title: 'Fallout New Vegas Multiplayer, with its files', sub: 'A verified Hub handler (v21 by Talos91) whose package adds an NVMP folder with the scripts Game.Play runs.', name: 'Fallout New Vegas Multiplayer.js', hubId: 'vnPXYhWMJJ3FNuQuS' },
@@ -272,7 +317,18 @@ const bot = botTemplates();
 if (hub.rejected.length) console.log(`Hub: skipped ${hub.rejected.length} handler(s) whose current version isn't verified: ${hub.rejected.map((r) => r.title).join(', ')}`);
 
 const apiModel = JSON.parse(fs.readFileSync(path.join(coreRepo, 'data', 'nucleus-api.json'), 'utf8'));
-const build = { bench: rev(path.join(here, '..')), core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null };
+// Anonymous votes and feature counts (src/feedback.ts) go to this GoatCounter site, if one is set (the FEEDBACK_GOATCOUNTER
+// variable or secret: the site code, e.g. "nucleus-workbench", or its address https://nucleus-workbench.goatcounter.com).
+// Without it, nothing is sent anywhere.
+const feedbackSite = (() => {
+  const raw = (process.env.FEEDBACK_GOATCOUNTER ?? '').trim().toLowerCase();
+  if (!raw) return null;
+  const code = raw.replace(/^https?:\/\//, '').replace(/\.goatcounter\.com\/?.*$/, '');
+  if (/^[a-z0-9-]{2,50}$/.test(code)) return code;
+  console.warn('FEEDBACK_GOATCOUNTER is set but is not a GoatCounter site code (letters, digits, -) or https://<code>.goatcounter.com: anonymous counts stay off.');
+  return null;
+})();
+const build = { bench: rev(path.join(here, '..')), core: rev(coreRepo), nucleus: apiModel.source?.nucleus ?? null, jint: apiModel.jint ?? null, feedback: feedbackSite };
 // What's new, from ../CHANGELOG.md: dated sections ("## 2026-11-05"), newest first, in emoji groups
 // ("### ✨ New"); each bullet starts with a **short summary**, and may have a screenshot under it
 // ("  ![alt](docs/images/changelog/x-light.png)", plus x-dark.png beside it, copied to changes/ next to the page). "Unreleased" is only
@@ -287,23 +343,35 @@ function changes() {
     if (id !== 'Unreleased' && !/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(id)) continue;
     const items = [];
     let group = '';
+    const intro = [];
     for (const l of rest) {
+      if (!group && !l.startsWith('### ') && l.trim() && l.trim() !== '---') { intro.push(l.trim()); continue; }
       if (l.startsWith('### ')) group = l.slice(4).trim();
       else if (l.startsWith('- ')) {
         const m = l.match(/^- \*\*(.+?)\*\*\s*(.*)$/);
         if (m && !group.includes('🙏') && !/[.!?]$/.test(m[1])) console.warn(`CHANGELOG.md: end the bold summary with a full stop and start the details as a sentence: ${l.slice(0, 70)}`);
         items.push({ group, ...(m ? { summary: m[1].replace(/\.$/, ''), details: m[2] } : { summary: l.slice(2), details: '' }) });
       } else {
-        const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.png)\)/);
+        const img = l.match(/^\s+!\[([^\]]*)\]\(docs\/images\/changelog\/([\w.-]+\.(?:png|jpg|webp|svg|gif|mp4|webm))\)/);
         if (img && items.length) {
           // x-light.png with an x-dark.png beside it: What's new shows the one for the viewer's theme.
-          const dark = img[2].replace(/-light\.png$/, '-dark.png');
-          const hasDark = dark !== img[2] && fs.existsSync(path.join(here, '..', 'docs', 'images', 'changelog', dark));
-          (items[items.length - 1].images ??= []).push({ alt: img[1], file: img[2], ...(hasDark ? { dark } : {}) });
+          // Animations (.gif, .mp4, .webm) also need a still: the same name as .png (x-light.png beside x-light.gif),
+          // shown until they play, and instead of playing when the device asks for less motion.
+          const dir = path.join(here, '..', 'docs', 'images', 'changelog');
+          const has = (f) => fs.existsSync(path.join(dir, f));
+          const dark = img[2].replace(/-light\.(\w+)$/, '-dark.$1');
+          const im = { alt: img[1], file: img[2], ...(dark !== img[2] && has(dark) ? { dark } : {}) };
+          // An .svg with a .png still beside it is animated too (it gets Play and Pause); without one it's a plain image.
+          if (/\.(gif|mp4|webm)$/.test(img[2]) || (/\.svg$/.test(img[2]) && has(img[2].replace(/\.svg$/, '.png')))) {
+            const still = img[2].replace(/\.\w+$/, '.png'), stillDark = im.dark?.replace(/\.\w+$/, '.png');
+            if (!has(still)) throw new Error(`CHANGELOG.md: ${img[2]} needs a still frame beside it, ${still} (shown until it plays, and with reduced motion)`);
+            Object.assign(im, { still }, stillDark && has(stillDark) ? { stillDark } : {});
+          }
+          (items[items.length - 1].images ??= []).push(im);
         }
       }
     }
-    if (items.length) out.push({ id, items });
+    if (items.length) out.push({ id, items, ...(intro.length ? { intro: intro.join(' ') } : {}) });
   }
   // Each dated release gets a number (the oldest is 1), shown in What's new with a link to its notes.
   const dated = out.filter((c) => c.id !== 'Unreleased');
@@ -355,7 +423,15 @@ function pageHtml(inlineHub) {
     if (!f || (inlineHub && i >= 40)) return rest;
     return { ...rest, cover: inlineHub ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : `covers/${h.cover}.jpg` };
   };
-  const handlers = (inlineHub ? hub.handlers : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
+  // The one file carries the 40 most downloaded packages' files lists too (filesData; only small text files
+  // with content, so it stays small); the others open there without their files. The site fetches
+  // hub/<id>.files.json.
+  const inlineFiles = (h, i) => {
+    if (!hubFiles.has(h.id)) return h;
+    if (i >= 40) { const { files, ...rest } = h; return rest; }
+    return { ...h, filesData: slimFiles(hubFiles.get(h.id).files) };
+  };
+  const handlers = (inlineHub ? hub.handlers.map(inlineFiles) : hub.handlers.map(({ source, ...h }) => h)).map(withCover);
   const data = `var PROBES = ${JSON.stringify(probes)};\nvar BUILD = ${JSON.stringify(build)};\nvar HUB_EXAMPLES = ${JSON.stringify({ takenAt: hub.takenAt, handlers, base: inlineHub ? null : 'hub/', ...(hub.all ? { all: true } : {}) })};\nvar BOT_TEMPLATES = ${JSON.stringify(bot)};\nvar EXAMPLE_PACKAGES = ${JSON.stringify(EXAMPLE_PACKAGES)};\nvar CHANGES = ${JSON.stringify(CHANGES)};`
     .replace(/<\/script/gi, '<\\/script')
     // A few Hub handlers carry U+FFFD (text that was already broken when uploaded): written as the
@@ -364,7 +440,7 @@ function pageHtml(inlineHub) {
   return fs
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
-    .replace(/(<a class="link start-link" href=")[^"]*"/, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
+    .replace(/(<a class="link start-link[^"]*" href=")[^"]*"/g, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
     .replace('/*THEMES*/', () => themesCSS)
     .replace('/*CODEMIRROR_CSS*/', () => css)
@@ -424,13 +500,16 @@ fs.writeFileSync(path.join(here, 'dist', 'pages', 'icon.png'), Buffer.from(fs.re
 if (PREVIEW) fs.rmSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), { force: true });
 else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
+fs.rmSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true, force: true }); // only this build's handlers
+fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 for (const h of hub.handlers) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${h.id}.js`), h.source);
+for (const [id, f] of hubFiles) fs.writeFileSync(path.join(here, 'dist', 'pages', 'hub', `${id}.files.json`), JSON.stringify(f));
 fs.rmSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true, force: true }); // only this build's covers
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'covers'), { recursive: true });
 for (const h of hub.handlers) if (coverFile(h)) fs.copyFileSync(coverFile(h), path.join(here, 'dist', 'pages', 'covers', `${h.cover}.jpg`));
 // Screenshots in What's new, loaded only when it is opened.
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'changes'), { recursive: true });
-for (const c of CHANGES) for (const it of c.items) for (const f of (it.images ?? []).flatMap((im) => [im.file, im.dark].filter(Boolean))) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
+for (const c of CHANGES) for (const it of c.items) for (const f of (it.images ?? []).flatMap((im) => [im.file, im.dark, im.still, im.stillDark].filter(Boolean))) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'changelog', f), path.join(here, 'dist', 'pages', 'changes', f));
 // One file that works offline and anywhere (a release asset, `nucleus workbench`, a Claude artifact).
 fs.writeFileSync(path.join(here, 'dist', 'workbench-standalone.html'), standalone(html));
 // llms.txt: where AI agents find the tools (https://llmstxt.org).
@@ -453,6 +532,20 @@ try {
 } catch (e) {
   console.warn(`start page: no release info (${e.message}), linking the releases page`);
 }
+// Highlighted code for static pages: the editor's JavaScript mode, the same cm-* classes (codehl.ts does it in the page).
+const hlStatic = (() => {
+  const req = createRequire(import.meta.url);
+  const CM = req('codemirror/addon/runmode/runmode.node.js');
+  req('codemirror/mode/javascript/javascript.js');
+  return (src) => {
+    let out = '';
+    CM.runMode(src, 'javascript', (t, style) => {
+      const e = t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+      out += style ? `<span class="${style.split(' ').map((x) => `cm-${x}`).join(' ')}">${e}</span>` : e;
+    });
+    return out;
+  };
+})();
 const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 fs.writeFileSync(
   path.join(startDir, 'index.html'),
@@ -466,7 +559,24 @@ fs.writeFileSync(
     .replaceAll('__VSIX_URL__', escHtml(vsix.url))
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
-    .replaceAll('__PROBES__', String(probes.length)),
+    .replaceAll('__PROBES__', String(probes.length))
+    // Code in the text coloured like the workbench's editor (issue #12): CodeMirror's runMode at build time, the
+    // www look's code colours (AA on this page's code background, light and dark).
+    .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlStatic(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
+    .replace('</style>', `.hl .cm-keyword { color: var(--kw); } .hl .cm-string { color: var(--str); } .hl .cm-number, .hl .cm-atom { color: var(--num); } .hl .cm-property { color: var(--prop); } .hl .cm-comment { color: var(--cmt); }
+:root { --kw: #6f2db8; --str: #b0175a; --num: #0f6f6d; --prop: #0b5c8a; --cmt: #5c636c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; } }
+:root[data-theme="dark"] { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; }
+</style>`)
+    // Duo and Nucli say hello in the header (the same drawings as the workbench, src/mascots.gen.ts).
+    .replace('__MASCOTS__', (() => {
+      const gen = fs.readFileSync(path.join(here, 'src', 'mascots.gen.ts'), 'utf8');
+      const svg = JSON.parse(gen.match(/MASCOT_SVG: Record<string, string> = ([\s\S]*?);\nexport/)[1]);
+      const css = JSON.parse(gen.match(/MASCOT_CSS = (.*);/)[1]);
+      return `<style>${css} .hero-masc { float: right; display: flex; align-items: flex-end; gap: 0; margin: 0 0 8px 16px; } .hero-masc .masc { display: block; width: 132px; height: 132px; } .hero-masc .masc svg { width: 100%; height: 100%; overflow: visible; } .hero-masc .masc + .masc { width: 112px; height: 112px; margin-left: -18px; } @media (max-width: 640px) { .hero-masc { float: none; justify-content: center; margin: 0 0 4px; } .hero-masc .masc { width: 104px; height: 104px; } .hero-masc .masc + .masc { width: 88px; height: 88px; } }</style>`
+        + `<div class="hero-masc" aria-hidden="true"><span class="masc">${svg.idle}</span><span class="masc">${svg['n-idle']}</span></div>`
+        + `<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) addEventListener('DOMContentLoaded', () => document.querySelectorAll('.hero-masc svg').forEach((s) => s.pauseAnimations()));</script>`;
+    })()),
 );
 // Screenshots, each in light and dark (the page shows the viewer's theme).
 for (const [dir, names] of [
@@ -487,6 +597,11 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
     }
   };
   copy(src, dst);
+  // The download packs (the assets branch, checked out; --assets <dir>): kept off main, copied in before the fingerprint.
+  const argAssets = process.argv.indexOf('--assets');
+  const packs = argAssets > 0 ? path.join(path.resolve(process.argv[argAssets + 1]), 'mascots', 'packs') : path.join(src, 'packs');
+  if (fs.existsSync(packs)) { fs.mkdirSync(path.join(dst, 'packs'), { recursive: true }); for (const f of fs.readdirSync(packs)) if (f.endsWith('.zip')) fs.copyFileSync(path.join(packs, f), path.join(dst, 'packs', f)); }
+  else console.warn('No mascot packs (the assets branch, --assets <dir>): the Downloads buttons will lead nowhere.');
 }
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).
@@ -498,4 +613,4 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
   for (const f of files.filter((f) => !f.endsWith('build.txt')).sort()) h.update(path.relative(path.join(here, 'dist', 'pages'), f) + '\0').update(fs.readFileSync(f));
   fs.writeFileSync(path.join(here, 'dist', 'pages', 'build.txt'), h.digest('hex') + '\n');
 }
-console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} Hub handlers${hub.all ? " (all, from the data branch)" : " (verified)"} (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);
+console.log(`dist/workbench.html (${(html.length / 1024).toFixed(0)} KB), core @ ${build.core}, ${probes.length} probes, ${hub.handlers.length} Hub handlers${hub.all ? " (all, from the data branch)" : " (verified)"} (${coverCount} with covers${coversFetched ? `, ${coversFetched} downloaded` : ''}), ${hubFiles.size} with package files, ${bot.templates.length} Discord bot templates (@ ${bot.commit})`);

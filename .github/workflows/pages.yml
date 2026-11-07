@@ -44,14 +44,33 @@ jobs:
           node -e 'const u = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (!(u.handlers > 0 && u.counts)) process.exit(1)' "$RUNNER_TEMP/usage.json" && cp "$RUNNER_TEMP/usage.json" playground/src/usage.json
       - name: Every Hub handler, from our own copy (the data branch; tools/hub-mirror.mjs keeps it, no Hub requests here)
         run: git clone -q --depth 1 --branch data "https://github.com/${{ github.repository }}.git" playground/.hubdata
+      - name: The mascot download packs (the assets branch)
+        run: |
+          git clone -q --depth 1 --branch assets "https://github.com/${{ github.repository }}.git" playground/.assets || echo "No assets branch, so the mascot page's Downloads stay empty."
       - name: Build (all Hub handlers from the data branch)
-        run: node build.mjs --core ../core --hub-data .hubdata
+        run: node build.mjs --core ../core --hub-data .hubdata --assets .assets
         env:
           GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
+          FEEDBACK_GOATCOUNTER: ${{ vars.FEEDBACK_GOATCOUNTER || secrets.FEEDBACK_GOATCOUNTER }} # anonymous votes (src/feedback.ts), a variable or a secret; empty: nothing is sent
         working-directory: playground
+      - name: The previous release at /previous/, for testers to compare (playground/previous.json; none, none built)
+        run: |
+          [ -f playground/previous.json ] || { echo "No previous.json: not building a previous version."; exit 0; }
+          bench=$(node -p "require('./playground/previous.json').bench")
+          core=$(node -p "require('./playground/previous.json').core")
+          label=$(node -p "require('./playground/previous.json').label")
+          git fetch -q --depth 1 origin "$bench"
+          git worktree add -q --detach "$RUNNER_TEMP/prev" "$bench"
+          git clone -q --filter=blob:none https://github.com/Snailedlt/splitscreenme-vscode.git "$RUNNER_TEMP/prev-core"
+          git -C "$RUNNER_TEMP/prev-core" -c advice.detachedHead=false checkout -q "$core"
+          (cd "$RUNNER_TEMP/prev-core" && npm ci --silent)
+          (cd "$RUNNER_TEMP/prev/playground" && npm ci --silent && node build.mjs --core "$RUNNER_TEMP/prev-core")
+          node tools/previous-wrap.mjs "$RUNNER_TEMP/prev/playground/dist/pages/index.html" playground/dist/pages/previous/index.html "$label"
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground
+      - name: Unit tests (Hub package files)
+        run: node tools/hub-files.test.mjs
       - name: Browser smoke test (Check, Fix all, Try it, packages, themes, keyboard, accessibility)
         run: |
           npx playwright install --with-deps chromium
@@ -81,6 +100,10 @@ jobs:
     needs: build
     if: needs.build.outputs.deploy == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # the GitHub release with the update's notes
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -101,3 +124,17 @@ jobs:
           node tools/release-post.mjs "$RELEASE" --json > post.json
           node tools/announce.mjs post.json
           { echo "### 💬 Workbench update ($RELEASE)"; echo; echo '```text'; cat post.txt; echo '```'; echo; if [ -n "${{ secrets.DISCORD_WEBHOOKS != '' && 'yes' || '' }}" ]; then echo "Posted to Discord automatically (DISCORD_WEBHOOKS)."; else echo "Not posted: add a DISCORD_WEBHOOKS secret (one webhook URL per line) to post it automatically."; fi; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish the update as a GitHub release (the same notes as What's new)
+        if: needs.build.outputs.release != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ needs.build.outputs.release }}
+        run: |
+          tag=$(node tools/release-post.mjs "$RELEASE" --tag)
+          node tools/release-post.mjs "$RELEASE" --notes > notes.md
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists."
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --title "Workbench update · $RELEASE" --notes-file notes.md --latest
+            echo "Published the GitHub release $tag." >> "$GITHUB_STEP_SUMMARY"
+          fi

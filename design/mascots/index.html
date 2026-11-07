@@ -133,6 +133,9 @@ svg .fw { transition: transform .25s ease-out; }
 svg:not([data-rig]) .fw { transform-box: view-box; transform-origin: 60px 60px; }
 svg[data-rig] .fw { transition: none; }
 html.paused * { animation-play-state: paused !important; }
+/* Performance: off-screen drawings hold still, and off-screen cards aren't rendered until you scroll to them. */
+svg.offscreen, svg.offscreen * { animation-play-state: paused !important; }
+:is(.scene, .nx-card, .nx-anim, .r3-pane, .box, .svgc) { content-visibility: auto; contain-intrinsic-size: auto 320px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .blink .eye { animation: blink 4.6s infinite; }
@@ -180,13 +183,13 @@ html.paused * { animation-play-state: paused !important; }
   .s-four .chip { animation: chip 2.6s var(--spring) infinite; }
   .s-four .d-body { animation: pre4 2.6s infinite; }
   /* loading bar */
-  .s-load .walker { animation: walk 3.8s infinite; }
-  .s-load .fill { animation: fill 3.8s infinite; }
-  .s-load .done { animation: done 3.8s infinite; }
-  .s-load .d-body { animation: waddle .38s ease-in-out infinite alternate; }
-  .s-load .d-fl { animation: step .38s ease-in-out infinite alternate; }
-  .s-load .d-fr { animation: step .38s ease-in-out -.38s infinite alternate; }
-  .s-load .d-jump { animation: endhop 3.8s infinite; }
+  .s-load1 .walker { animation: walk 3.8s infinite; }
+  .s-load1 .fill { animation: fill 3.8s infinite; }
+  .s-load1 .done { animation: done 3.8s infinite; }
+  .s-load1 .d-body { animation: waddle .38s ease-in-out infinite alternate; }
+  .s-load1 .d-fl { animation: step .38s ease-in-out infinite alternate; }
+  .s-load1 .d-fr { animation: step .38s ease-in-out -.38s infinite alternate; }
+  .s-load1 .d-jump { animation: endhop 3.8s infinite; }
   /* roll spinner (BSManager's wind-up spin) */
   .s-roll .d-body { transform-origin: 60px 62px; animation: roll 1.9s infinite; }
   .s-roll .d-shadow { animation: rollshadow 1.9s infinite; }
@@ -225,10 +228,10 @@ html.paused * { animation-play-state: paused !important; }
   .s-n-spin .chase { animation: chase 1.5s cubic-bezier(.62, .06, .38, .94) infinite; animation-delay: calc(var(--i) * -.085s); }
   .s-n-spin .look { animation: eyesround 1.5s linear infinite; }
   .s-n-spin .n-core { animation: corepulse 1.5s var(--soft) infinite; }
-  .s-n-ring .arc { animation: arc 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
-  .s-n-ring .rider { animation: rider 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
-  .s-n-ring .sp { animation: spark2 3.6s infinite; }
-  .s-n-ring .n-core { animation: ringhop 3.6s infinite; }
+  .s-n-ring1 .arc { animation: arc 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
+  .s-n-ring1 .rider { animation: rider 3.6s cubic-bezier(.45, .05, .25, 1) infinite; }
+  .s-n-ring1 .sp { animation: spark2 3.6s infinite; }
+  .s-n-ring1 .n-core { animation: ringhop 3.6s infinite; }
   .s-n-calc .sym { animation: symb 2.4s ease-out infinite; animation-delay: calc(var(--i) * -.4s); }
   .s-n-calc .n-core { animation: think 2.4s var(--soft) infinite; }
   .s-n-calc .look { transform: translate(0, -2.4px); }
@@ -434,7 +437,7 @@ svg :is(.kq, .kr, .kf) { transform-box: view-box; transform-origin: 0 -13px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .v.keep { background: #1c2a44; color: #b9cdf2; } :root:not([data-theme="light"]) .v.re { background: #16301e; color: #8fe3a8; } :root:not([data-theme="light"]) .v.new { background: #2a1d4a; color: #cdb8ff; } :root:not([data-theme="light"]) .v.review { background: #3a2e10; color: #ffd27a; } :root:not([data-theme="light"]) .v.drop { background: #3a1820; color: #ffb3bd; } }
 /* Nucli's status light: green when fine, amber while working, red on a problem */
 .s-n-bad .led, .s-n-scan .led { fill: #ff434d; }
-:is(.s-n-spin, .s-n-ring, .s-n-calc, .s-n-test, .s-n-fix) .led { fill: #fca53d; }
+:is(.s-n-spin, .s-n-ring, .s-n-ring1, .s-n-calc, .s-n-test, .s-n-fix) .led { fill: #fca53d; }
 .s-n-sleep .led { fill: #7f88ee; }
 .ev { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; font-size: 13px; }
 .ev summary { cursor: pointer; color: var(--accent); font-weight: 600; }
@@ -607,6 +610,138 @@ svg .rl { transform-origin: 0 -13px; }
 .svgc img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; border-radius: 8px; }
 .svgc figcaption { font-size: 13px; margin-top: 6px; color: var(--muted); }
 .svgc a { color: var(--accent); font-size: 12px; word-break: break-all; }
+.packs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin: 10px 0 14px; }
+.pack { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.pack b { display: block; } .pack span { display: block; color: var(--muted); font-size: 14px; }
+.pack:first-child { grid-column: 1 / -1; border-color: var(--accent); }
+.dl-btn { flex: none; display: inline-flex; flex-direction: column; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--accent); color: var(--bg); font-weight: 700; text-decoration: none; }
+.dl-btn small { font-weight: 400; font-size: 11.5px; opacity: .9; }
+.dl-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.howto { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.howto summary { cursor: pointer; font-weight: 700; }
+.howto code { font-size: 12.5px; word-break: break-word; }
+/* Nucli explorations */
+.nx-sub { margin: 26px 0 4px; }
+.nx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; margin-top: 12px; }
+.nx-card, .nx-anim { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; min-width: 0; }
+.nx-card.rec { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.nx-card p, .nx-anim p { font-size: 14px; color: var(--muted); }
+.nx-h { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 2px 0 8px; }
+.nx-h b { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 17px; }
+.nx-anim .nx-h { margin: 8px 0 0; }
+.nx-tag, .nx-tier { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); color: var(--ink); }
+.nx-tag.rec, .t-def { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.t-prod { border-style: dashed; }
+.nx-big { background: var(--tile); border-radius: 12px; aspect-ratio: 16 / 10; display: grid; place-items: center; }
+.nx-big svg { width: 60%; max-width: 190px; height: auto; overflow: visible; }
+.nx-pair { grid-template-columns: 1fr 1fr; padding: 0 6%; gap: 4%; }
+.nx-pair svg { width: 100%; } .nx-pair .nx-duo { width: 82%; justify-self: center; }
+.nx-strip { display: flex; gap: 10px; align-items: flex-end; justify-content: space-around; padding: 8px 6px 4px; border-radius: 10px; margin-top: 6px; }
+.nx-strip figure { margin: 0; text-align: center; line-height: 0; } .nx-strip figcaption { font-size: 11px; line-height: 1.6; }
+.nx-light { background: #eef3fa; color: #4f5b74; } .nx-dark { background: #0b1020; outline: 1px solid #29334a; color: #a7b3cb; }
+.nx-con { font-size: 12.5px !important; } .nx-con .ok { color: var(--ink); } .nx-con .low { color: var(--ink); text-decoration: underline wavy #ff434d; }
+.nx-anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; margin-top: 12px; }
+.nx-anim .stage { background: var(--tile); border-radius: 12px; aspect-ratio: 2 / 1; display: grid; place-items: center; overflow: hidden; }
+.nx-anim .stage svg { width: 46%; height: auto; overflow: visible; font-family: system-ui, sans-serif; }
+.nx-anim .stage.wide svg { width: 96%; height: auto; }
+.nx-rec { background: var(--card); border: 1px solid var(--accent); border-radius: 16px; padding: 14px 16px; margin-top: 12px; }
+.nx-rec ol { margin: 0; padding-left: 20px; } .nx-rec li { margin: 4px 0; }
+.nx-tw { overflow-x: auto; margin-top: 12px; }
+.nx-plan { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+.nx-plan caption { text-align: left; color: var(--muted); padding-bottom: 6px; }
+.nx-plan th, .nx-plan td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+.nx-plan thead th { font-weight: 700; } .nx-plan tbody th { font-weight: 600; }
+/* Round 2 */
+.r2-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+.r2-legend i { display: inline-block; width: 18px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+.r2-k-win, .r2-win { background: color-mix(in srgb, var(--muted) 35%, transparent); }
+.r2-k-anim, .r2-anim { background: #6d70e4; }
+.r2-axis { position: relative; height: 18px; margin-left: calc(min(38%, 300px) + 10px); margin-right: 110px; font-size: 11.5px; color: var(--muted); }
+.r2-axis span { position: absolute; transform: translateX(-50%); } .r2-axis span:first-child { transform: none; }
+.r2-rows { list-style: none; margin: 0; padding: 0; }
+.r2-rows li { display: grid; grid-template-columns: min(38%, 300px) minmax(0, 1fr) 100px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.r2-lab b { display: block; font-size: 14px; } .r2-lab span { display: block; font-size: 12px; color: var(--muted); }
+.r2-track { position: relative; height: 16px; background: repeating-linear-gradient(90deg, transparent 0 calc(33.33% - 1px), var(--line) calc(33.33% - 1px) 33.33%); border-radius: 4px; }
+.r2-track i { position: absolute; top: 3px; height: 10px; border-radius: 5px; }
+.r2-track .r2-anim { top: 5px; height: 6px; }
+.r2-val { font-size: 12.5px; color: var(--muted); }
+@media (max-width: 640px) { .r2-rows li { grid-template-columns: minmax(0, 1fr); gap: 4px; } .r2-axis { margin: 0; } .r2-val { display: none; } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.r2-rules { margin-top: 14px; } .r2-rules > b { display: block; margin-bottom: 4px; }
+.r2-v .v { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); white-space: nowrap; }
+.r2-v .v.keep { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.r2-v .v.drop { text-decoration: line-through; }
+.r2-v .v.move, .r2-v .v.re { border-style: dashed; }
+.r2-v td, .r2-v th { vertical-align: top; } .r2-v { min-width: 760px; }
+.r2-wait .r2w-stage { width: 46%; aspect-ratio: 1; display: grid; place-items: center; } .r2-wait .r2w-stage svg { width: 100%; height: auto; overflow: visible; }
+.r2w-btns { margin-top: 8px; } .r2w-btns button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.r2w-msg { min-height: 1.55em; font-weight: 600; color: var(--ink) !important; }
+.r2-ctx { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 10px; margin-top: 6px; font-size: 12.5px; }
+.r2-ctx.nx-light { color: #14203a; } .r2-ctx.nx-dark { color: #eaf0fb; }
+.r2-mtoast { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; background: rgba(127, 127, 127, .14); }
+.r2-mempty { display: flex; gap: 6px; align-items: center; }
+.r2-sizes .nx-strip figure { min-width: 40px; }
+/* Round 3 */
+.bi-btn { font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: var(--rc, 8px); border: 1px solid var(--line); background: var(--btn-bg, var(--card)); color: var(--ink); cursor: pointer; }
+.bi-btn.sm { padding: 6px; }
+.bi-btn:hover { border-color: var(--accent); }
+.bi-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bi-btn.confirmed { border-color: var(--accent); color: var(--accent); }
+.bi { overflow: visible; flex: none; }
+.bi * { transform-box: fill-box; transform-origin: center; }
+.bi .t { transform-origin: 50% 100%; } .bi .w { transform-box: view-box; transform-origin: 4px 20px; } .bi .u { transform-box: view-box; transform-origin: 12px 12px; }
+.bi .o { offset-path: path('M12 2 a10 10 0 1 1 0 20 a10 10 0 1 1 0 -20'); offset-distance: 0%; offset-rotate: 0deg; }
+.r3-demo { --btn-bg: var(--card); background: var(--tile); border-radius: 14px; padding: 16px; margin-top: 12px; }
+.r3-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.r3-tools.big { gap: 8px; }
+.r3-notes { color: var(--muted); font-size: 14px; padding-left: 18px; }
+.r3-notes li { margin: 3px 0; }
+.r3-ctl { align-items: center; margin-top: 10px; } .r3-ctl label { font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.r3-ctl select { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.r3-matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 12px; margin-top: 12px; }
+.r3-pane { background: var(--bg); color: var(--ink); font-family: var(--font); border-radius: var(--rp); border: 1px solid var(--line); overflow: hidden; }
+.r3-pane[data-look="mac"] { background: linear-gradient(135deg, color-mix(in srgb, var(--bg) 70%, #7d6cff), color-mix(in srgb, var(--bg) 70%, #2aa6ff)); }
+.r3-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card); border-bottom: 1px solid var(--line); font-size: 13px; }
+.r3-bar span { margin-left: auto; color: var(--muted); }
+.r3-bar .tl { width: 11px; height: 11px; border-radius: 50%; } .tl.r { background: #ff5f57; } .tl.y { background: #febc2e; } .tl.g { background: #28c840; }
+.r3-pane .r3-tools { padding: 8px 10px 0; } .r3-pane .bi-btn { border-radius: var(--rc); }
+.r3-body { display: grid; gap: 8px; padding: 10px; }
+.r3-row, .r3-toast { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--rp); padding: 8px 10px; font-size: 13px; min-height: 64px; }
+.r3-row b { display: block; } .r3-row span:last-child, .r3-toast span { color: var(--muted); } .r3-row b { color: var(--ink); }
+.r3-toast { min-height: 0; box-shadow: 0 4px 14px rgba(0, 0, 0, .12); }
+.r3m { display: inline-block; flex: none; line-height: 0; } .r3m > svg { width: 100%; height: 100%; overflow: visible; }
+.r3-plain { color: var(--accent); flex: none; } .r3-pct { font-weight: 700; min-width: 48px; }
+.r3-plainbar { width: 56px; height: 8px; background: var(--tile); border: 1px solid var(--line); flex: none; } .r3-plainbar i { display: block; width: 60%; height: 100%; background: var(--accent); }
+[data-motion="default"] .r3m:not(.busy) svg * { animation-iteration-count: 1 !important; }
+:is([data-motion="calm"], [data-motion="still"]) .r3m svg * { animation: none !important; }
+/* Where we are, round 4, page navigation */
+.site-nav { display: flex; gap: 2px; margin: 0 0 10px; }
+.site-nav a { padding: 4px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; border: 1px solid transparent; }
+.site-nav a:hover { color: var(--ink); border-color: var(--line); }
+.site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; background: var(--card); border-color: var(--line); }
+.site-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.where-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; margin-top: 12px; }
+.where-col { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; }
+.where-col h3 { font-size: 18px; } .where-col ul { margin: 6px 0 0; padding-left: 18px; } .where-col li { margin: 5px 0; color: var(--muted); } .where-col li b { color: var(--ink); }
+.where-col:first-child { border-color: var(--accent); }
+.r4-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; margin-top: 12px; }
+.r4-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.r4-card.r4-best { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.r4-card.r4-skip { opacity: .8; }
+.r4-art { min-height: 96px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; background: var(--tile); border-radius: 12px; padding: 10px; }
+.r4-h { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 8px; }
+.r4-h b { font-family: Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 17px; }
+.r4-v { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); white-space: nowrap; }
+.r4-best .r4-v { background: var(--pick-bg); color: var(--pick); border-color: var(--pick); }
+.r4-skip .r4-v, .r4-maybe .r4-v { border-style: dashed; color: var(--muted); }
+.r4-card p { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+.r4-tabs { display: grid; gap: 4px; }
+.r4-tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px 8px 0 0; background: var(--card); border: 1px solid var(--line); border-bottom: 0; font-size: 12.5px; }
+.r4-files { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; } .r4-files i { font: 12px ui-monospace, Consolas, monospace; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); font-style: normal; }
+.r4-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 13px; } .r4-badge span { color: var(--muted); }
+.r4-mute { font-size: 40px; filter: grayscale(1); }
+.not-chosen { display: inline-block; margin-left: 8px; vertical-align: middle; font: 700 12px/1 system-ui, sans-serif; padding: 4px 9px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); }
+.moved { display: inline-block; margin-left: 8px; vertical-align: middle; font: 700 12px/1 system-ui, sans-serif; padding: 4px 9px; border-radius: 999px; background: var(--pick-bg); color: var(--pick); text-decoration: none; }
 </style>
 <style id="gen"></style>
 </head>
@@ -624,6 +759,7 @@ svg .rl { transform-origin: 0 -13px; }
 <div class="wrap">
   <div class="top">
     <div>
+      <nav class="site-nav" aria-label="Duo and Nucli pages"><a href="../index.html">Overview</a><a href="index.html" aria-current="page">Mascots</a><a href="../ui-kit/index.html">UI kit</a></nav>
       <h1>Duo and Nucli</h1>
       <p class="lead">One mascot for <strong>splitscreen.me</strong>, one for the <strong>handler tools</strong>. Both grow out of the splitscreen.me logo: Duo is its split blue window; Nucli is a quiet, helpful atom whose electrons are the players. One colour scheme each, the same in light and dark. The motion borrows BSManager's tricks: a wind-up before every move, squash and stretch, overshoot, and a pause before the spin.</p>
     </div>
@@ -668,6 +804,157 @@ svg .rl { transform-origin: 0 -13px; }
   <p class="lead">For the workbench, the VS Code extension and the CLI.</p>
   <div class="lib" id="lib-nucli"></div>
 
+<section id="where">
+  <h2 id="where-we-are">Where we are</h2>
+  <p class="lead">What's settled, what's open, and where things live now. The newest round is first below; the <a href="../ui-kit/index.html">UI kit</a> is where the chosen ideas become components.</p>
+  <div class="where-grid">
+    <div class="where-col"><h3>Settled</h3><ul>
+      <li><b>The detailed drawings stay.</b> The simpler drawings (round 2) aren't the way; a small build is only for 24 px and under.</li>
+      <li><b>Messages appear where you acted</b>, said by the mascot; a corner toast only when that place is gone.</li>
+      <li><b>Button animations</b> (copy, save, undo, redo…) live inside their buttons.</li>
+      <li><b>Loaders follow the progress</b>: the ring's electrons ride its tip; Duo pushes the bar.</li>
+      <li><b>Only the splitscreen.me and v3 looks</b> matter; Mac and alpha 8 aren't a focus.</li>
+      <li><b>A UI kit</b> to show it all, usable outside these projects; an install like shadcn's, one day.</li>
+    </ul></div>
+    <div class="where-col"><h3>Open</h3><ul>
+      <li><b>Nucli's colour.</b> Teal and gold are out; six violets in round 2. My pick: Ultraviolet (livelier) or Indigo (calmer).</li>
+      <li><b>Which directions</b> from round 1 to keep (refined, Terminal Nucli for the CLI, one Duo per player).</li>
+      <li><b>Which animations ship first.</b> My picks are marked in the UI kit.</li>
+      <li><b>Round 4's ideas</b>, just below.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="r4sec">
+  <h2 id="round-4">Explorations, round 4: more ideas</h2>
+  <p class="lead">Ideas only. Ones that reach beyond the tools themselves: the browser tab, the Hub, Discord, videos. Each with my verdict.</p>
+  <div class="r4-grid" id="r4-ideas"></div>
+</section>
+
+  <section id="r3sec" data-motion="default">
+  <h2 id="round-3">Explorations, round 3: in the buttons, in every look</h2>
+  <p class="lead">Ideas only, nothing here is in the product. Copy, save, undo and the rest get their animation inside their own button, where your eyes already are: 0.3 to 0.6 s, cut off by the next click, the electron colours as accents. Then everything in the workbench's four looks, light and dark, with the Motion setting.</p>
+
+  <h3 class="nx-sub">Animations in the buttons <a class="moved" href="../ui-kit/index.html#buttons">Now in the UI kit</a></h3>
+  <div class="r3-demo" data-motion="all" data-look="www">
+    <div class="r3-tools big" id="r3-tools" role="group" aria-label="Buttons with animated icons"></div>
+    <div class="ctl" style="margin-top:10px"><button type="button" id="r3-play">Play them all</button></div>
+  </div>
+  <ul class="r3-notes">
+    <li><b>Copy:</b> the front sheet stamps onto the back one, a check draws on the copy, the label says "Copied" for 1.6 s.</li>
+    <li><b>Save:</b> the arrow drops into the tray, which squashes as it lands.</li>
+    <li><b>Undo, redo:</b> the arrow swings back (or on) and springs; an electron flashes at its tip. 0.34 s, because undo comes in bursts: each press restarts it.</li>
+    <li><b>Format:</b> the lines snap into their indentation, one after another.</li>
+    <li><b>Fix all:</b> a flick of the wand, the spark turns, three electrons fly off.</li>
+    <li><b>Share:</b> the link's two halves click together with a ring; "Link copied".</li>
+    <li><b>Try it:</b> the play button presses in and pops; an electron runs once round it.</li>
+    <li>With less motion, Motion "Still" or "Off", or the alpha 8 look: no movement, only the state (the check, the label).</li>
+  </ul>
+
+  <h3 class="nx-sub">Every look, light and dark</h3>
+  <div class="ctl r3-ctl"><label>Motion <select id="r3-motion"><option value="all">All</option><option value="default" selected>Default</option><option value="calm">Calm</option><option value="still">Still</option><option value="off">Off</option></select></label><label class="auto"><input type="checkbox" id="r3-players"> Electrons in the look's player colours</label></div>
+  <p class="lead">The buttons in each pane work too. "Still" here shows each mascot's designed still pose; the workbench freezes the current frame instead, and the new loaders start from an empty frame, so that should change with them.</p>
+  <div class="r3-matrix" id="r3-matrix"></div>
+
+  <h3 class="nx-sub">What I see</h3>
+  <div class="nx-rec"><ol>
+    <li><b>The mascots hold up in every look</b>: their own colours don't depend on the theme, and the panels, tracks and code lines take the look's colours.</li>
+    <li><b>v3 (monochrome) is the one where they stand out most.</b> If that's too loud, the simpler drawings at lower saturation would sit better there.</li>
+    <li><b>Player colours:</b> the looks use their own (#ff6b35, #3b8bff, #ffcf3a, #3ddb86), Nucli uses the splitscreen.me button colours. Tick the box to compare: one set of player colours everywhere would be clearer. Mine: the look's, since players see them in the setup too.</li>
+    <li><b>alpha 8 and Motion "Off"</b> fall back to plain icons and text; nothing is missing.</li>
+    <li><b>"Still" should show the designed still pose</b> (no animation) instead of freezing a frame.</li>
+  </ol></div>
+</section>
+
+<section id="r2sec">
+  <h2 id="round-2">Explorations, round 2: time first, simpler drawings</h2>
+  <p class="lead">Ideas only, nothing here is in the product. An animation only works if it fits the moment it is on screen, and if you're looking there. So first how long each moment lasts in the workbench (from its code, and timings I measured with the core), then round 1 judged against that, the ones I reworked, simpler drawings, and colours again (violet only).</p>
+
+  <h3 class="nx-sub">How long each moment is on screen</h3>
+  <div class="r2-chart" id="r2-chart"></div>
+  <div class="nx-rec r2-rules"><b>What that means</b>
+    <ol>
+      <li><b>The animation takes at most a third of the moment;</b> the rest is a still pose you can read.</li>
+      <li><b>Every frame works as a still.</b> A toast closes, a run ends, a page reloads: he can be cut off at any point.</li>
+      <li><b>Never react to a keystroke.</b> React to an action (Try it, Fix, Copy) or to something that stays, 1.5 s after you stop typing.</li>
+      <li><b>Animate where the eyes already are.</b> If Nucli isn't there, the feedback goes on the button or the line, without him.</li>
+      <li><b>Loaders by wait:</b> nothing under 0.4 s (it only flashes), a spinner up to 2 s, then progress, and past 10 s also how long it has been.</li>
+    </ol>
+  </div>
+
+  <h3 class="nx-sub">Round 1, judged by time on screen</h3>
+  <div id="r2-verdict"></div>
+
+  <h3 class="nx-sub">Reworked to fit</h3>
+  <div class="nx-anims">
+    <div class="nx-anim r2-wait" id="r2-wait"><div class="stage"><div class="r2w-stage"></div></div>
+      <div class="nx-h"><b>Loader, by how long you wait</b><span class="nx-tier t-def">Default</span></div>
+      <div class="ctl r2w-btns" role="group" aria-label="Pretend to wait"><button type="button" data-ms="200" data-what="Try it" aria-pressed="false">0.2 s</button><button type="button" data-ms="1200" data-what="Getting the handler" aria-pressed="false">1.2 s</button><button type="button" data-ms="5000" data-what="Test all" aria-pressed="false">5 s</button><button type="button" data-ms="20000" data-what="AI fix" aria-pressed="false">20 s</button></div>
+      <p class="r2w-msg" role="status" aria-live="polite"></p>
+      <p>Press a wait. Under 0.4 s nothing shows; then the spinner; past 2 s the electrons count the progress (one per quarter); past 10 s he concentrates and says how long it has been.</p></div>
+    <div id="r2-anims" style="display:contents"></div>
+  </div>
+
+  <h3 class="nx-sub">Simpler drawings, the same animations <span class="not-chosen">Not chosen: the detailed drawings stay</span></h3>
+  <p class="lead">Flat fills, one shadow shape, no gloss, rim light, status light or blush, and eyes as dots with one glint. Duo drops to about half his shapes; Nucli loses fewer (his electrons and orbits are most of him), but his body and face go from 35 shapes to 14. Easier to edit, lighter to run, cleaner at 16 px. The parts keep their names, so every animation in the library runs on them as it is: the detail is in the timing, not in the layers.</p>
+  <div class="nx-grid" id="r2-simple"></div>
+  <div class="lib" id="r2-simple-anims"></div>
+
+  <h3 class="nx-sub">Colours, round 2: violet only <span class="not-chosen">Open</span></h3>
+  <p class="lead">Teal and gold are out. Six violets on the refined shape, each in a toast and the empty Check tab, light and dark.</p>
+  <div class="nx-grid" id="r2-cols"></div>
+
+  <h3 class="nx-sub">My recommendation</h3>
+  <div class="nx-rec"><ol>
+    <li><b>Simpler drawings for both</b>, small builds at 24 px and under. Keep the detail in the motion.</li>
+    <li><b>Build first:</b> the loader by wait (it replaces every spinner), startup at 0.8 s, wake-up, escalating per run.</li>
+    <li><b>Ultraviolet</b> if you want him livelier, <b>Indigo</b> if you want him calmer. Both beat today's in a toast.</li>
+    <li><b>Drop</b> undo, copy, and hover; <b>move</b> the big fix to its toast and Duo's juggling to the game launch.</li>
+  </ol></div>
+</section>
+
+<section id="nxsec"><h2 id="nucli-explore">Nucli explorations, round 1</h2>
+  <p class="lead">Ideas only: nothing here is in the product. Three directions for his look, then new animations for the workbench, with my pick at the end. Each look is shown at 48, 24 and 16 px on a light and a dark page, the sizes he has as a loader and in the status bar.</p>
+  <h3 class="nx-sub">Directions</h3>
+  <div class="nx-grid" id="nx-dirs"></div>
+  <h3 class="nx-sub">Colour: refined shape, three colours, next to Duo</h3>
+  <div class="nx-grid" id="nx-cols"></div>
+  <h3 class="nx-sub">New animations</h3>
+  <p class="lead"><b>Default</b> plays them once and keeps them short; <b>All only</b> are extras for people who turn everything on; the last two are tied to Try it and the editor. When the device asks for less motion, every card shows its still pose.</p>
+  <div class="nx-anims" id="nx-anims"></div>
+  <h3 class="nx-sub">My recommendation</h3>
+  <div class="nx-rec">
+    <ol>
+      <li><b>Keep the shape, refine it (A).</b> Same Nucli, plus a separate small build for 24 px and under. That fixes the only real problem he has today: he turns to mush as a loader.</li>
+      <li><b>Keep violet.</b> Teal makes him Duo's twin, gold hides player 1 and looks like a warning. Violet is his own and every player colour stands out on it.</li>
+      <li><b>Terminal Nucli (B) as the CLI's icon only</b>, not as the mascot.</li>
+      <li><b>Build first: startup, typing along, escalating error.</b> They are the ones you see every day, and each tells you something (ready, I'm watching, this keeps failing).</li>
+      <li><b>The rule for Default:</b> under half a second, never over the code, never in the way of a click or a key. Everything else waits for "All".</li>
+    </ol>
+    <div id="nx-plan"></div>
+  </div>
+
+  </section>
+<section id="dxsec">
+  <h2 id="duo-explore">Duo explorations, round 1</h2>
+  <p class="lead">The same exercise for Duo: ideas only, nothing here is in the product. His colour is splitscreen.me's blue, so instead of a colour swap there is a direction for one Duo per player. The animations are for the app, the Hub and the website.</p>
+  <h3 class="nx-sub">Directions</h3>
+  <div class="nx-grid" id="dx-dirs"></div>
+  <h3 class="nx-sub">New animations</h3>
+  <p class="lead">Same tiers as Nucli: <b>Default</b> plays once and stays short, <b>All only</b> are extras, the last one belongs to player setup. When the device asks for less motion, every card shows its still pose.</p>
+  <div class="nx-anims" id="dx-anims"></div>
+  <h3 class="nx-sub">My recommendation</h3>
+  <div class="nx-rec">
+    <ol>
+      <li><b>Keep Duo, add the small build (A).</b> Ball only at 24 px and under. Same fix as Nucli's, and they then behave alike as icons.</li>
+      <li><b>Player colours (C) only where one Duo means one player:</b> setup and the players bar. The brand Duo stays blue.</li>
+      <li><b>Not Screen Duo (B).</b> It is the logo with a face, and a box can't bounce, split or roll: most of his animations go.</li>
+      <li><b>Build first: splash drop-in, installed, launch failed.</b> Start, success and failure are the three moments everyone sees.</li>
+      <li><b>Same rule for Default as Nucli's:</b> under half a second, never over content, never in the way. Juggling and peeking wait for "All".</li>
+    </ol>
+  </div>
+</section>
+
   <h2>Loader experiments</h2>
   <p class="lead">Little Duos as loaders. Five tries, with my verdict on each; the winners are used below.</p>
   <div class="lib" id="lab"></div>
@@ -695,6 +982,30 @@ svg .rl { transform-origin: 0 -13px; }
     <li>Once they're picked: export the emoji (128 × 128 PNG and GIF, under 256 KB each) and a sticker sheet.</li>
     <li>Workbench: Nucli in the empty Check tab, Test all (progress ring), fixes (toast), failed loads; Duo for Hub loading and the 404 page. Off in the alpha 8 look and when the device asks for less motion.</li>
   </ol>
+
+  <h2 id="downloads">Downloads</h2>
+  <p class="lead">Everything as files to use: take it all, or just the part you need. Every pack has a README with how to use it, and the colours.</p>
+  <div class="packs"><div class="pack"><div><b>Everything</b><span>Every pack below in one file.</span></div><a class="dl-btn" href="packs/duo-and-nucli-everything.zip" download>Download <small>9.1 MB · .zip</small></a></div><div class="pack"><div><b>Duo pack</b><span>Every Duo scene: animated SVG, still SVG, PNG (512, 128) and GIF. Plus the four-player, one-colour and small 3D Duo.</span></div><a class="dl-btn" href="packs/duo.zip" download>Download <small>2.8 MB · .zip</small></a></div><div class="pack"><div><b>Nucli pack</b><span>Every Nucli scene, the same formats.</span></div><a class="dl-btn" href="packs/nucli.zip" download>Download <small>3.0 MB · .zip</small></a></div><div class="pack"><div><b>Discord emoji</b><span>128 × 128: static PNGs and animated GIFs, each under Discord's 256 KB, named like :duo_happy:.</span></div><a class="dl-btn" href="packs/discord-emoji.zip" download>Download <small>1.6 MB · .zip</small></a></div><div class="pack"><div><b>Loaders and spinners</b><span>Every loader (wave, carousel, twirl, hop-in, kaleidoscopes, walking bars…) as animated SVG, still SVG and GIF.</span></div><a class="dl-btn" href="packs/loaders.zip" download>Download <small>1.4 MB · .zip</small></a></div><div class="pack"><div><b>Avatars</b><span>512 px profile pictures of Duo and Nucli, on light and dark.</span></div><a class="dl-btn" href="packs/avatars.zip" download>Download <small>223 KB · .zip</small></a></div><div class="pack"><div><b>Web kit</b><span>An example page with the ways to put them on a website, and the files it uses.</span></div><a class="dl-btn" href="packs/web-kit.zip" download>Download <small>26 KB · .zip</small></a></div></div>
+  <details class="howto"><summary>How to use them on a website or in an app</summary>
+    <h3>On a website</h3>
+    <ul>
+      <li><b>As an image</b>, the simplest: <code>&lt;img src="duo-joy.svg" alt="Duo cheering" width="120" height="120"&gt;</code>. The SVG animates, and stands still by itself when the visitor asks for less motion.</li>
+      <li><b>A GIF needs a still</b> for reduced motion: <code>&lt;picture&gt;&lt;source srcset="duo-joy-still.svg" media="(prefers-reduced-motion: reduce)"&gt;&lt;img src="duo-joy.gif" alt="…"&gt;&lt;/picture&gt;</code>.</li>
+      <li><b>Decoration</b> next to text that says it: <code>alt=""</code>. <b>Loaders</b>: the text gets <code>role="status"</code>, the image <code>alt=""</code>; under ~32 px use the twirl or the spinner.</li>
+      <li><b>Inline</b> (to restyle with CSS): paste the file's <code>&lt;svg&gt;</code>; each carries its own <code>&lt;style&gt;</code>. Give each copy unique ids.</li>
+      <li>The <b>web kit</b>'s <code>example.html</code> shows all of these.</li>
+    </ul>
+    <h3>In an app</h3>
+    <ul>
+      <li><b>Discord</b>: Server Settings → Emoji → Upload Emoji: the PNGs as static emoji, the GIFs as animated ones. Avatars for profile pictures.</li>
+      <li><b>WinForms</b> (like Nucleus Co-op): a PictureBox with the PNG, or the GIF (it animates). <b>WPF / Avalonia</b>: the SVG through SharpVectors or Svg.Skia, or the PNGs.</li>
+      <li><b>Electron, Tauri, web views</b>: as on a website. <b>Android</b>: the still SVG as a Vector Asset, GIFs through Glide or Coil. <b>iOS / macOS</b>: PNGs or the still SVG in an asset catalog.</li>
+      <li><b>Games</b> (Unity, Godot): the 512 px PNGs as sprites; Godot imports SVG too.</li>
+      <li>Wherever the system has a "reduce motion" setting, show the still file then.</li>
+    </ul>
+    <h3>Keep them right</h3>
+    <p>Duo's stripe stays white and vertical (a cross for four players), Nucli's electrons in the player colours. Scale evenly; don't stretch, recolour the body or add outlines.</p>
+  </details>
 
   <h2 id="svg">The drawings (SVG)</h2>
   <p class="lead">Each version of the characters as a still SVG file, from the first sketches to now. Far fewer than the animations: most steps changed how they move, not how they look.</p>
@@ -725,6 +1036,13 @@ svg .rl { transform-origin: 0 -13px; }
     <details class="hist"><summary><b>14. Quality pass and impact frames</b> <span class="muted">The audit of every animation; impact frames (dropped later: they read as glitches).</span></summary><p><a href="history/14-quality-pass-impact-frames.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/14-quality-pass-impact-frames.html" title="The sheet at step 14"></iframe></details>
     <details class="hist"><summary><b>15. Loaders round 2, a setup screen</b> <span class="muted">Ball bounce, two kaleidoscopes, hop-in with a check, the first working player setup.</span></summary><p><a href="history/15-loaders-round-2-setup-screen.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/15-loaders-round-2-setup-screen.html" title="The sheet at step 15"></iframe></details>
     <details class="hist"><summary><b>16. App concept: player setup</b> <span class="muted">The setup screen in its own tab; a real controller works through the Gamepad API.</span></summary><p><a href="history/16-app-concept-player-setup.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/16-app-concept-player-setup.html" title="The sheet at step 16"></iframe></details>
+    <details class="hist"><summary><b>17. Ring relay, walking bars</b> <span class="muted">The progress ring as a relay of electrons, Duo walking along loading bars, impact frames dropped; earlier versions folded into the cards.</span></summary><p><a href="history/17-relay-walkers-earlier-versions.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/17-relay-walkers-earlier-versions.html" title="The sheet at step 17"></iframe></details>
+    <details class="hist"><summary><b>18. The seam is the split</b> <span class="muted">Duo's white stripe becomes the line he splits along; this history section is added.</span></summary><p><a href="history/18-split-seam-history-section.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/18-split-seam-history-section.html" title="The sheet at step 18"></iframe></details>
+    <details class="hist"><summary><b>19. The seam in the body, white inside</b> <span class="muted">The stripe is part of the body, and a split shows white inside; the ring's electrons hit the bar.</span></summary><p><a href="history/19-seam-in-body-white-inside.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/19-seam-in-body-white-inside.html" title="The sheet at step 19"></iframe></details>
+    <details class="hist"><summary><b>20. One stripe, a ring queue</b> <span class="muted">The four-player Duo keeps a cross stripe; the ring's electrons wait in a queue.</span></summary><p><a href="history/20-one-stripe-ring-queue.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/20-one-stripe-ring-queue.html" title="The sheet at step 20"></iframe></details>
+    <details class="hist"><summary><b>21. White is the seam</b> <span class="muted">Every piece is white underneath, so the stripe can't break up at any size; four-player eyes clear of the cross.</span></summary><p><a href="history/21-white-is-the-seam.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/21-white-is-the-seam.html" title="The sheet at step 21"></iframe></details>
+    <details class="hist"><summary><b>22. Duos in the app concept</b> <span class="muted">The player setup uses the Duos: one per player, reacting to their buttons.</span></summary><p><a href="history/22-duos-in-app-concept.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/22-duos-in-app-concept.html" title="The sheet at step 22"></iframe></details>
+    <details class="hist"><summary><b>23. Detected devices, cursors</b> <span class="muted">Detected devices and a cursor per controller in the app concept; pretend devices to try it without hardware.</span></summary><p><a href="history/23-detected-devices-cursors.html" target="_blank" rel="noopener">Open it on its own page</a></p><iframe data-src="history/23-detected-devices-cursors.html" title="The sheet at step 23"></iframe></details>
   </div>
 
 <div id="panel-app" role="tabpanel" aria-labelledby="tab-app" hidden>
@@ -913,7 +1231,7 @@ function nucli(o = {}) {
   const one = ([k, ph, ci], trail) => {
     const dur = n1(d * (1 + k * .18)), sh = o.dev ? `<g transform="rotate(${-ORB3[k]})">${devShape(DEV[ci], ACC[ci], false, m)}</g>` : eDot(ACC[ci], m);
     if (o.still) { const t = (ph * 2 + .15) * Math.PI; return `<g transform="translate(${n1(60 + 52 * Math.cos(t))} ${n1(60 + 15.5 * Math.sin(t))})">${sh}</g>`; }
-    const tr = trail && !m ? [1, 2, 3].map((q) => `<circle r="${3.6 - q * .7}" fill="${ACC[ci]}" opacity="${.34 - q * .08}"><animateMotion dur="${dur}s" begin="${n1(q * .07 - ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`).join('') : '';
+    const tr = trail && !m ? [1, 2, 3].map((q) => `<circle r="${3.6 - q * .7}" fill="${ACC[ci]}" opacity="${.34 - q * .08}"><animateMotion dur="${dur}s" begin="${n1(q * .07 - ph * dur - dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`).join('') : '';
     return `${tr}<g><animateMotion dur="${dur}s" begin="-${n1(ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/>${sh}</g>`;
   };
   const list = EL.filter((_, i) => i !== o.skip);
@@ -963,7 +1281,8 @@ const SCENES = [
   { who: 'duo', id: 'slice', name: 'Split, white inside', use: 'The same split, but you see where he was cut: white inside, like a sliced fruit. An idea to compare.', svg: () => duo({ slice: true }) },
   { who: 'duo', id: 'split', name: 'Split and snap', use: 'Pulls apart, snaps back. Loading, a second player joins.', svg: () => duo({}) },
   { who: 'duo', id: 'four', name: 'Four players', use: 'Bursts into quarters. Picking a 4-player layout.', svg: () => duo({ quad: true, expr: 'happy', after: [[22, 26, 0], [98, 26, 1], [22, 96, 2], [98, 96, 3]].map(([x, y, i]) => `<g class="chip"><circle cx="${x}" cy="${y}" r="8" fill="${ACC[i]}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 4}" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="11" text-anchor="middle" fill="#fff">${i + 1}</text></g>`).join('') }) },
-  { who: 'duo', id: 'load', name: 'Loading bar', use: 'Waddles along a bar, hops at 100 %. Downloads, installs.', svg: () => `<rect x="8" y="104" width="104" height="8" rx="4" fill="var(--track)"/><rect class="fill" x="8" y="104" width="104" height="8" rx="4" fill="url(#barG)"/><rect class="done" x="8" y="104" width="104" height="8" rx="4" fill="${C.g}" opacity="0"/><g class="walker">${small(duo({ swap: ['focus', 'happy'], noShadow: true }), -8, 49, .5)}</g>`, swap: [78, 97], dur: 3.8 },
+  { who: 'duo', id: 'load', name: 'Loading bar', use: 'Duo pushes the end of the bar. When the download stalls he leans in and strains; at 100 % he lets go, the bar turns green, a check pops and he hops. Downloads, installs.', svg: () => loadBar(), earlier: [['First', 'load1', 'Waddled along a bar that filled at an even speed, and hung over the edge at the end.']] },
+  { who: 'old', id: 'load1', name: 'Loading bar', use: 'Waddles along a bar, hops at 100 %. Downloads, installs.', svg: () => `<rect x="8" y="104" width="104" height="8" rx="4" fill="var(--track)"/><rect class="fill" x="8" y="104" width="104" height="8" rx="4" fill="url(#barG)"/><rect class="done" x="8" y="104" width="104" height="8" rx="4" fill="${C.g}" opacity="0"/><g class="walker">${small(duo({ swap: ['focus', 'happy'], noShadow: true }), -8, 49, .5)}</g>`, swap: [78, 97], dur: 3.8 },
   { who: 'duo', id: 'roll', name: 'Spinner', use: 'Curls up, winds back, spins. Waiting with no progress to show.', svg: () => duo({ expr: 'wow', arms: 'none', noFeet: true }) },
   { who: 'duo', id: 'get', name: 'Got it', use: 'Catches a falling package. A Hub download arrived.', svg: () => duo({ swap: ['wow', 'happy'], arms: 'up', inJump: pkg + star(92, 30, 1.2, C.o) + star(26, 40, .9, C.t) }), swap: [33, 90], dur: 3.4 },
   { who: 'duo', id: 'search', name: 'Searching', use: 'Sweeps a magnifier around. Search, finding games.', svg: () => duo({ expr: 'focus', arms: 'hold', mag: true }) },
@@ -974,7 +1293,8 @@ const SCENES = [
 
   { who: 'nucli', id: 'n-idle', name: 'Idle', use: 'Floats, blinks; electrons circle. Headers, the start page.', svg: () => nucli({}) },
   { who: 'nucli', id: 'n-spin', name: 'Spinner', use: 'Four electrons chase each other, eyes follow. Any short wait.', svg: () => `<circle cx="60" cy="60" r="42" fill="none" stroke="${C.orbit}" stroke-width="2" opacity=".25"/>${[0, 1, 2, 3].map((i) => `<g class="chase" style="--i:${i}"><circle cx="60" cy="18" r="${6.5 - i * .9}" fill="${ACC[i]}" stroke="#fff" stroke-width="2"/></g>`).join('')}${nucli({ expr: 'focus', noOrbits: true, noShadow: true })}` },
-  { who: 'nucli', id: 'n-ring', name: 'Progress ring', use: 'Four electrons wait in line at the top. One at a time, each sprints along the bar, hits its end and knocks the progress forward, then bounces off and rolls back to its place; each one faster. The first pushes the bar out from nothing. At 100 % they all hop with Nucli. Test all, known progress.', svg: () => ringRelay(), swap: [88, 99], dur: 5.6 },
+  { who: 'nucli', id: 'n-ring', name: 'Progress ring', use: 'The four electrons ride just behind the tip of the arc, all the way round. Each time the progress jumps they chase it: the first bumps the tip, the others crash into each other and rebound. At 100 % they have gone full circle and hop with Nucli. Test all, known progress.', svg: () => ringRide(), swap: [66, 97], dur: 5.6, earlier: [['Relay', 'n-ring1', 'Each electron sprinted to the tip, knocked it forward and rolled back to the start.']] },
+  { who: 'old', id: 'n-ring1', name: 'Progress ring', use: 'Four electrons wait in line at the top. One at a time, each sprints along the bar, hits its end and knocks the progress forward, then bounces off and rolls back to its place; each one faster. The first pushes the bar out from nothing. At 100 % they all hop with Nucli. Test all, known progress.', svg: () => ringRelay(), swap: [88, 99], dur: 5.6 },
   { who: 'nucli', id: 'n-calc', name: 'Calculating', use: 'Sums float out while it thinks. Working out layouts, counting.', svg: () => nucli({ expr: 'focus', dur: 1.6, before: ['+', '×', '=', '1', '%', '0'].map((s, i) => `<text class="sym" x="60" y="64" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="15" text-anchor="middle" fill="${ACC[i % 4]}" style="--i:${i};--x:${[-38, 36, -26, 30, -42, 14][i]}px;--y:${[-36, -40, -50, -22, -14, -54][i]}px;--r:${[-20, 15, 0, 10, -10, 5][i]}deg">${s}</text>`).join('') }) },
   { who: 'nucli', id: 'n-test', name: 'Test all', use: 'Fills a slot per player, then a hop. Running every combination.', svg: () => small(nucli({ swap: ['focus', 'happy'], dur: 2.2, noShadow: true }), 12, -2, .8) + [0, 1, 2, 3].map((i) => `<circle cx="${27 + i * 22}" cy="106" r="8" fill="none" stroke="var(--panel-line)" stroke-width="2"/><g class="sf sf${i}"><circle cx="${27 + i * 22}" cy="106" r="8" fill="${ACC[i]}"/><path d="M${23 + i * 22} 106 l3 3 l5.5 -6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`).join(''), swap: [70, 92], dur: 4 },
   { who: 'nucli', id: 'n-scan', name: 'Reading the code', use: 'A scan line runs down, stops at a problem. Check running.', svg: () => `${codePanel({ badLine: 3 })}<rect class="scan" x="48" y="31" width="64" height="10" rx="3" fill="${C.b1}" opacity=".28"/>${small(nucli({ swap: ['smile', 'wow'], dur: 3, noShadow: true }), -10, 26, .55)}<g class="badge"><circle cx="106" cy="66" r="8" fill="${C.r}" stroke="#fff" stroke-width="2"/><text x="106" y="70.5" font-family="Fredoka, system-ui, sans-serif" font-weight="700" font-size="13" text-anchor="middle" fill="#fff">!</text></g>`, swap: [54, 92], dur: 3.4 },
@@ -1000,6 +1320,20 @@ const scene = (id, label, extra = '', vb = '0 0 120 120') => {
 const still = (inner, label, size, cls = '', vb = '0 0 120 120') => `<svg class="${cls}" viewBox="${vb}" ${size ? `width="${size}" height="${size}"` : ''} role="img" aria-label="${label}" style="overflow:visible">${inner}</svg>`;
 
 // ---- page ----
+// Performance: sections further down are built when you scroll near them (about 1200 px ahead), not at load. CSS
+// their drawings generate on the way is added when they're built. Jumping to an anchor builds everything first.
+const LAZY = [];
+function lazyFill(id, make) {
+  const el = document.getElementById(id);
+  const fill = () => {
+    if (el.dataset.filled) return;
+    el.dataset.filled = '1';
+    const before = LCSS.length, html = make();
+    if (typeof html === 'string') el.innerHTML = html;
+    if (LCSS.length > before && window.addGenCSS) addGenCSS(LCSS.slice(before));
+  };
+  LAZY.push([el, fill]);
+}
 const EXPR = [['smile', 'Smile'], ['happy', 'Happy'], ['wink', 'Wink'], ['wow', 'Wow'], ['focus', 'Focus'], ['worried', 'Worried'], ['sleep', 'Sleepy']];
 document.getElementById('meet').innerHTML = `
   <div class="hero"><div class="big">${scene('joy', 'Duo jumping for joy')}</div><div>
@@ -1053,10 +1387,10 @@ const AUDIT = [
   ['Emoji', 're', 'Nucli\'s emoji are framed closer so his face reads at 22 px.'],
 ];
 const VLABEL = { keep: 'Keep', re: 'Reworked', new: 'New', review: 'Review', drop: 'Dropped' };
-document.getElementById('audit').innerHTML = AUDIT.map(([n, v, txt]) => `<div><span class="v ${v}">${VLABEL[v]}</span><b>${n}</b>${txt ? `<br>${txt}` : ''}</div>`).join('');
-const lib = (who) => SCENES.filter((s) => s.who === who).map((s) => `<div class="scene"><div class="stage">${scene(s.id)}</div><b>${s.name}</b><span>${s.use}</span></div>`).join('');
-document.getElementById('lib-duo').innerHTML = lib('duo');
-document.getElementById('lib-nucli').innerHTML = lib('nucli');
+lazyFill('audit', () => AUDIT.map(([n, v, txt]) => `<div><span class="v ${v}">${VLABEL[v]}</span><b>${n}</b>${txt ? `<br>${txt}` : ''}</div>`).join(''));
+const lib = (who) => SCENES.filter((s) => s.who === who).map((s) => `<div class="scene"><div class="stage">${scene(s.id)}</div><b>${s.name}</b><span>${s.use}</span>${s.earlier ? `<details class="ev"><summary>Earlier versions (${s.earlier.length})</summary>${s.earlier.map(([n, id, txt]) => `<div class="evi"><div class="stage">${scene(id)}</div><b>${n}</b><span>${txt}</span></div>`).join('')}</details>` : ''}</div>`).join('');
+lazyFill('lib-duo', () => lib('duo'));
+lazyFill('lib-nucli', () => lib('nucli'));
 
 
 // ---- Loader experiments: little Duos ----
@@ -1405,10 +1739,126 @@ LOADERS.carousel = (size) => `<svg viewBox="-30 -30 60 60" ${size ? `width="${si
   }
   LCSS += rows.map((r, k) => `@keyframes rr${k} { ${r.join(' ')} }`).join('') + bump.map((r, k) => `@keyframes rb${k} { ${r.join(' ')} }`).join('')
     + `@keyframes rrsp { 0%, 87% { transform: scale(0); opacity: 0; } 90% { transform: scale(1.25) rotate(30deg); opacity: 1; } 95% { transform: scale(.7) rotate(70deg); opacity: 1; } 98%, 100% { transform: scale(0); opacity: 0; } } @keyframes rrarc { ${arc.join(' ')} } @keyframes rrcore { ${core.join(' ')} }`
-    + RMQ([0, 1, 2, 3].map((k) => `.s-n-ring .rr${k} { animation: rr${k} ${cyc}s linear infinite; } .s-n-ring .rb${k} { animation: rb${k} ${cyc}s linear infinite; }`).join(' ') + ` .s-n-ring .rrarc { animation: rrarc ${cyc}s linear infinite; } .s-n-ring .n-core { animation: rrcore ${cyc}s linear infinite; } .s-n-ring .sp { animation: rrsp ${cyc}s infinite; }`)
+    + RMQ([0, 1, 2, 3].map((k) => `.s-n-ring1 .rr${k} { animation: rr${k} ${cyc}s linear infinite; } .s-n-ring1 .rb${k} { animation: rb${k} ${cyc}s linear infinite; }`).join(' ') + ` .s-n-ring1 .rrarc { animation: rrarc ${cyc}s linear infinite; } .s-n-ring1 .n-core { animation: rrcore ${cyc}s linear infinite; } .s-n-ring1 .sp { animation: rrsp ${cyc}s infinite; }`)
     + `svg :is(.rr0, .rr1, .rr2, .rr3) { transform-box: view-box; transform-origin: 60px 60px; } svg :is(.rb0, .rb1, .rb2, .rb3) { transform-box: fill-box; transform-origin: center; }`;
 }
 function ringRelay() { return `<circle cx="60" cy="60" r="44" fill="none" stroke="var(--track)" stroke-width="7"/><circle class="rrarc" cx="60" cy="60" r="44" fill="none" stroke="url(#barG)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="276.5" transform="rotate(-90 60 60)"/>${[3, 2, 1, 0].map((k) => `<g class="rr${k}"><g class="rb${k}"><circle cx="60" cy="16" r="${6 - k * .4}" fill="${ACC[k]}" stroke="#fff" stroke-width="2"/><path d="M60 12.6 V19.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></g></g>`).join('')}${nucli({ swap: ['focus', 'happy'], noOrbits: true, noShadow: true })}${star(98, 22, 1.3, C.o)}${star(20, 26, 1, C.t)}${star(102, 98, .9, C.g)}`; }
+
+// ---- Progress ring, v2: the electrons ride the progress. They sit in a line just behind the tip of the arc, all
+//      the way round. Each time the progress jumps they chase it on springs: the first one slams into the tip and
+//      bounces back, the others crash into each other (squash, rebound), then they settle. At 100 % they have gone
+//      full circle, so they end where they started: no rolling back. They hop with Nucli, the arc fades, again. ----
+{
+  const cyc = 5.6, N = 224, gap = .046, cap = .034, dt = 1 / 1200, e = .45;
+  const STEPS = [[.35, .1], [.8, .26], [1.2, .31], [1.7, .5], [2.15, .57], [2.55, .72], [3.1, .86], [3.55, 1]];
+  const ease = (u) => 1 - Math.pow(1 - Math.min(1, Math.max(0, u)), 3);
+  const head = (t) => { let p = 0; for (const [t0, v] of STEPS) { if (t < t0) break; p = p + (v - p) * ease((t - t0) / .2); } return p; };
+  const x = [0, 1, 2, 3].map((k) => -cap - k * gap), v = [0, 0, 0, 0], sq = [0, 0, 0, 0];
+  const K0 = 1400, K1 = 700, D0 = 2 * Math.sqrt(K0) * .3, D1 = 2 * Math.sqrt(K1) * .3;
+  const rows = [[], [], [], []], bump = [[], [], [], []], arc = [], core = [];
+  let next = 0, ph = 0;
+  for (let i = 0; i <= Math.round(cyc / dt); i++) {
+    const t = i * dt, P = head(t), vh = (head(t + .002) - head(t - .002)) / .004;
+    // springs: the first one toward the tip, each other one toward the one ahead
+    v[0] += (K0 * (P - cap - x[0]) - D0 * v[0]) * dt;
+    for (let k = 1; k < 4; k++) v[k] += (K1 * (x[k - 1] - gap - x[k]) - D1 * v[k]) * dt;
+    for (let k = 0; k < 4; k++) x[k] += v[k] * dt;
+    // impacts: the first against the tip, the rest against each other
+    if (x[0] > P - cap) { x[0] = P - cap; if (v[0] > vh) { sq[0] = Math.max(sq[0], Math.min(.34, (v[0] - vh) * .22)); v[0] = vh - e * (v[0] - vh); } }
+    for (let k = 1; k < 4; k++) {
+      const lim = x[k - 1] - gap * .92;
+      if (x[k] > lim) {
+        x[k] = lim;
+        const rel = v[k] - v[k - 1];
+        if (rel > 0) { const m = (v[k] + v[k - 1]) / 2; v[k] = m - e * rel / 2; v[k - 1] = m + e * rel / 2; const s = Math.min(.34, rel * .25); sq[k] = Math.max(sq[k], s); sq[k - 1] = Math.max(sq[k - 1], s * .8); }
+      }
+    }
+    for (let k = 0; k < 4; k++) sq[k] *= Math.exp(-dt / .07);
+    if (t + 1e-9 >= next * cyc / N && next <= N) {
+      const pc = (next / N * 100).toFixed(2);
+      const fade = t > cyc - .45 ? Math.max(0, (cyc - .1 - t) / .35) : 1;
+      for (let k = 0; k < 4; k++) {
+        const hv = (t - 3.95 - k * .05) / .32, out = hv > 0 && hv < 1 ? 8 * Math.sin(hv * Math.PI) : 0;
+        const s = sq[k];
+        rows[k].push(`${pc}% { transform: rotate(${(x[k] * 360).toFixed(2)}deg); }`);
+        bump[k].push(`${pc}% { transform: translateY(${(-out).toFixed(2)}px) scale(${(1 - s).toFixed(3)}, ${(1 + s * .7 + (out ? .1 * Math.sin(hv * Math.PI) : 0)).toFixed(3)}); }`);
+      }
+      const jump = STEPS.some(([t0]) => t >= t0 && t < t0 + .1);
+      arc.push(`${pc}% { stroke-dashoffset: ${(276.5 * (1 - P)).toFixed(1)}; stroke-width: ${jump ? 9 : 7}; opacity: ${fade.toFixed(2)}; }`);
+      const hc = (t - 3.95) / .36, kick = Math.max(...sq) > .12 && t < 3.8;
+      core.push(`${pc}% { transform: ${hc > 0 && hc < 1 ? `translateY(${(-7 * Math.sin(hc * Math.PI)).toFixed(2)}px)` : kick ? 'scale(1.025, .975)' : 'none'}; }`);
+      next++;
+    }
+  }
+  LCSS += rows.map((r, k) => `@keyframes rq${k} { ${r.join(' ')} }`).join('') + bump.map((r, k) => `@keyframes rqb${k} { ${r.join(' ')} }`).join('')
+    + `@keyframes rqarc { ${arc.join(' ')} } @keyframes rqcore { ${core.join(' ')} }`
+    + `@keyframes rqsp { 0%, 70% { transform: scale(0); opacity: 0; } 73% { transform: scale(1.25) rotate(30deg); opacity: 1; } 79% { transform: scale(.7) rotate(70deg); opacity: 1; } 83%, 100% { transform: scale(0); opacity: 0; } }`
+    + RMQ([0, 1, 2, 3].map((k) => `.s-n-ring .rq${k} { animation: rq${k} ${cyc}s linear infinite; } .s-n-ring .rqb${k} { animation: rqb${k} ${cyc}s linear infinite; }`).join(' ')
+      + ` .s-n-ring .rqarc { animation: rqarc ${cyc}s linear infinite; } .s-n-ring .n-core { animation: rqcore ${cyc}s linear infinite; } .s-n-ring .sp { animation: rqsp ${cyc}s infinite; }`)
+    + `svg :is(.rq0, .rq1, .rq2, .rq3) { transform-box: view-box; transform-origin: 60px 60px; } svg :is(.rqb0, .rqb1, .rqb2, .rqb3) { transform-box: fill-box; transform-origin: center; } .s-n-ring .sp { opacity: 0; }`;
+}
+// The still pose (less motion, or paused before it starts): 60 %, the electrons lined up behind the tip.
+function ringRide() {
+  const P = .6;
+  return `<circle cx="60" cy="60" r="44" fill="none" stroke="var(--track)" stroke-width="7"/><circle class="rqarc" cx="60" cy="60" r="44" fill="none" stroke="url(#barG)" stroke-width="7" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="${(276.5 * (1 - P)).toFixed(1)}" transform="rotate(-90 60 60)"/>${[3, 2, 1, 0].map((k) => `<g class="rq${k}" style="transform: rotate(${((P - .034 - k * .046) * 360).toFixed(1)}deg)"><g class="rqb${k}"><circle cx="60" cy="16" r="${6 - k * .4}" fill="${ACC[k]}" stroke="#fff" stroke-width="2"/><path d="M60 12.6 V19.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></g></g>`).join('')}${nucli({ swap: ['focus', 'happy'], noOrbits: true, noShadow: true })}${star(98, 22, 1.3, C.o)}${star(20, 26, 1, C.t)}${star(102, 98, .9, C.g)}`;
+}
+
+// ---- Loading bar, v2: Duo pushes the end of the bar. The download is uneven, like a real one: a quick start, a
+//      stall (he leans in and strains, a sweat drop, his feet scramble), a steady stretch, a short stall, the last
+//      bit. He lets go just before the end; the bar turns green, a check pops at its end and he hops. Every frame is
+//      a still you can read; the still pose is the bar at 60 %. ----
+{
+  const cyc = 5.6, N = 224, sc = .46, x0 = 18.5, L = 83, XMAX = 84;
+  const KP = [[0, .06], [.35, .06], [1.15, .4], [1.95, .43], [2.95, .8], [3.25, .82], [3.65, 1]];
+  const P = (t) => { if (t <= 0) return KP[0][1]; for (let i = 1; i < KP.length; i++) if (t <= KP[i][0]) { const [t0, p0] = KP[i - 1], [t1, p1] = KP[i], u = (t - t0) / (t1 - t0); return p0 + (p1 - p0) * (u * u * (3 - 2 * u)); } return 1; };
+  const S = { w: [], b: [], l: [], r: [], f: [], d: [], c: [], s: [], fa: [], fb: [], k: [] };
+  let ph = 0, prev = null;
+  for (let s = 0; s <= N; s++) {
+    const t = s / N * cyc, pc = (s / N * 100).toFixed(2), p = P(t), vel = (P(t + .03) - P(t - .03)) / .06;
+    const x = Math.min(x0 + L * p + 4.5 - 10, XMAX);
+    if (prev !== null) ph += Math.abs(x - prev) * .6;
+    const stall = t > .4 && t < 3.6 && vel < .1;
+    if (stall) ph += cyc / N * 24;
+    prev = x;
+    const fade = t < .3 ? t / .3 : t > cyc - .4 ? Math.max(0, (cyc - .05 - t) / .35) : 1;
+    let rot = 0, y = 0, sy = 1, lf = 0, rf = 0;
+    if (t < 3.6) {
+      rot = stall ? 13 + 1.6 * Math.sin(t * 42) : 6 + 3 * Math.sin(ph);
+      y = stall ? 0 : -Math.abs(Math.sin(ph)) * 1.5;
+      sy = stall ? 1 - .05 * Math.abs(Math.sin(t * 17)) : 1 + .03 * Math.cos(2 * ph);
+      lf = -2.2 * Math.max(0, Math.sin(ph)); rf = -2.2 * Math.max(0, -Math.sin(ph));
+    } else {
+      rot = 6 * Math.max(0, 1 - (t - 3.6) / .15);
+      const h = (t - 3.85) / .42, h2 = (t - 4.38) / .26;
+      if (h > 0 && h < 1) { y = -16 * Math.sin(h * Math.PI); sy = 1 + .1 * Math.sin(h * Math.PI); }
+      else if (h >= 1 && h2 < 0) sy = .86;
+      else if (h2 > 0 && h2 < 1) y = -5 * Math.sin(h2 * Math.PI);
+    }
+    const done = t >= 3.65 ? fade : 0, ck = t < 3.68 ? 0 : t < 3.78 ? 1.3 * (t - 3.68) / .1 : t < 3.9 ? 1.3 - .3 * (t - 3.78) / .12 : 1;
+    S.w.push(`${pc}% { transform: translate(${x.toFixed(2)}px, ${y.toFixed(2)}px); opacity: ${fade.toFixed(2)}; }`);
+    S.b.push(`${pc}% { transform: rotate(${rot.toFixed(2)}deg) scale(${(1 / Math.sqrt(sy)).toFixed(3)}, ${sy.toFixed(3)}); }`);
+    S.l.push(`${pc}% { transform: translateY(${(lf / sc).toFixed(2)}px); }`); S.r.push(`${pc}% { transform: translateY(${(rf / sc).toFixed(2)}px); }`);
+    S.f.push(`${pc}% { stroke-dashoffset: ${(L * (1 - p)).toFixed(2)}; opacity: ${fade.toFixed(2)}; }`);
+    S.d.push(`${pc}% { opacity: ${done.toFixed(2)}; }`);
+    S.c.push(`${pc}% { transform: scale(${ck.toFixed(3)}); opacity: ${(ck ? fade : 0).toFixed(2)}; }`);
+    S.s.push(`${pc}% { opacity: ${stall ? 1 : 0}; transform: translateY(${stall ? (((t * 1.4) % 1) * 7).toFixed(2) : 0}px); }`);
+    S.fa.push(`${pc}% { opacity: ${t < 3.7 ? 1 : 0}; }`); S.fb.push(`${pc}% { opacity: ${t < 3.7 ? 0 : 1}; }`);
+    S.k.push(`${pc}% { transform: translate(${t < 3.7 ? 2.6 : 0}px, ${t < 3.7 ? .4 : 0}px); }`);
+  }
+  const sel = { w: '.ld-w', b: '.ld-b', l: '.d-fl', r: '.d-fr', f: '.ld-fill', d: '.ld-done', c: '.ld-chk', s: '.ld-sw', fa: '.fa', fb: '.fb', k: '.look' };
+  LCSS += Object.entries(S).map(([k, fr]) => `@keyframes ld2${k} { ${fr.join(' ')} }`).join('')
+    + RMQ(Object.entries(sel).map(([k, q]) => `.s-load ${q} { animation: ld2${k} ${cyc}s linear infinite; }`).join(' '))
+    + `.s-load .ld-b { transform-box: fill-box; transform-origin: 50% 100%; } .s-load .ld-chk { transform-box: fill-box; transform-origin: center; opacity: 0; } .s-load .ld-sw { opacity: 0; }
+.s-load .ld-w { transform: translate(${(x0 + L * .6 + 4.5 - 10).toFixed(2)}px, 0); } .s-load .ld-b { transform: rotate(6deg); } .s-load .look { transform: translate(2.6px, .4px); }`;
+}
+function loadBar() {
+  const sc = .46, L = 83;
+  const line = (cls, stroke, extra = '') => `<line class="${cls}" x1="18.5" y1="100.5" x2="101.5" y2="100.5" stroke="${stroke}" stroke-width="9" stroke-linecap="round"${extra}/>`;
+  const g = 'ldg' + (++uid);
+  return `<defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="14" y1="0" x2="106" y2="0"><stop offset="0" stop-color="#4ec1fc"/><stop offset="1" stop-color="#1c7bff"/></linearGradient></defs>` + line('ld-track', 'var(--track)') + line('ld-fill', `url(#${g})`, ` stroke-dasharray="${L} 200" stroke-dashoffset="${(L * .4).toFixed(1)}"`) + line('ld-done', C.g, ' opacity="0"')
+    + `<g class="ld-chk"><circle cx="106" cy="100.5" r="8" fill="${C.g}" stroke="#fff" stroke-width="2"/><path d="M102.2 100.7 l2.7 2.7 l4.9 -5.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>`
+    + `<g class="ld-w"><g class="ld-b"><g transform="translate(${(-60 * sc).toFixed(2)} ${(96 - 103.6 * sc).toFixed(2)}) scale(${sc})">${duo({ swap: ['focus', 'happy'], arms: 'hold', noShadow: true })}</g></g><path class="ld-sw" d="M-12 58 C-10 61 -9 62.5 -9 64 A3 3 0 0 1 -15 64 C-15 62.5 -14 61 -12 58 Z" fill="#7cc8ff" stroke="#fff" stroke-width="1"/></g>`;
+}
 
 // ---- Loading bars where Duo walks: he faces where he's going and walks a bit faster than the bar the whole way,
 //      gets to the end first, turns round and taps his toe waiting for the line to arrive (a glance back, a sigh);
@@ -1481,7 +1931,7 @@ const EARLIER = {
   ballbounce: [['Ping-pong', () => LOADERS.pong(), 'One Duo rolling wall to wall; read as a ball, hid his face.']],
 };
 const earlier = (id) => EARLIER[id] ? `<details class="ev"><summary>Earlier versions (${EARLIER[id].length})</summary>${EARLIER[id].map(([n, f, txt]) => `<div class="evi"><div class="stage${id === 'wave' || id === 'hopin' || id === 'ballbounce' || id === 'walktop' || id === 'walkin' ? ' wide' : ''}">${f()}</div><b>${n}</b><span>${txt}</span></div>`).join('')}</details>` : '';
-document.getElementById('lab').innerHTML = LAB.map(([id, name, txt, yes, verdict]) => `<div class="scene"><div class="stage${id === 'wave' || id === 'hopin' || id === 'pong' || id === 'ballbounce' ? ' wide' : ''}">${id === 'wave' ? LOADERS.wave(170, 5, .8) : id === 'carousel' ? LOADERS.carousel(120) : id === 'twirl' ? LOADERS.twirl(70) : id === 'kaleido' ? LOADERS.kaleido(100) : id === 'nkaleido' ? LOADERS.nkaleido(110) : id === 'walktop' || id === 'walkin' ? LOADERS[id](240) : LOADERS[id]()}</div><b>${name}</b><span>${txt}</span><div><span class="lab-v ${yes ? 'yes' : 'no'}">${yes ? 'Picked' : 'Dropped'}</span> <span>${yes ? verdict.replace('For: ', '') : 'It reads as a ball, not as Duo.'}</span></div>${earlier(id)}</div>`).join('');
+lazyFill('lab', () => LAB.map(([id, name, txt, yes, verdict]) => `<div class="scene"><div class="stage${id === 'wave' || id === 'hopin' || id === 'pong' || id === 'ballbounce' ? ' wide' : ''}">${id === 'wave' ? LOADERS.wave(170, 5, .8) : id === 'carousel' ? LOADERS.carousel(120) : id === 'twirl' ? LOADERS.twirl(70) : id === 'kaleido' ? LOADERS.kaleido(100) : id === 'nkaleido' ? LOADERS.nkaleido(110) : id === 'walktop' || id === 'walkin' ? LOADERS[id](240) : LOADERS[id]()}</div><b>${name}</b><span>${txt}</span><div><span class="lab-v ${yes ? 'yes' : 'no'}">${yes ? 'Picked' : 'Dropped'}</span> <span>${yes ? verdict.replace('For: ', '') : 'It reads as a ball, not as Duo.'}</span></div>${earlier(id)}</div>`).join(''));
 
 
 // In the product
@@ -1489,7 +1939,7 @@ function wideBarOld() { return `<svg class="s-load blink" viewBox="0 0 320 64" r
 const wideBar = LOADERS.walktop(320) + '<div style="height:10px"></div>' + LOADERS.walkin(320);
 const indet = `<svg viewBox="0 0 320 20" role="img" aria-label="Electrons running along a bar"><rect x="8" y="7" width="304" height="6" rx="3" fill="var(--track)"/>${[0, 1, 2, 3].map((i) => `<circle class="run" cx="10" cy="10" r="5" fill="${ACC[i]}" stroke="#fff" stroke-width="1.5" style="--i:${i}"/>`).join('')}</svg>`;
 const sizesOf = (id, label) => [16, 24, 32, 48].map((s) => `<figure>${scene(id, `${label} ${s} pixels`, `width="${s}" height="${s}"`)}<figcaption>${s}</figcaption></figure>`).join('');
-document.getElementById('ui').innerHTML = `
+lazyFill('ui', () => `
   <div class="box wide"><h3>Loading bar · download, install</h3><b style="display:block;margin-bottom:6px">Downloading the Left 4 Dead 2 handler…</b>${wideBar}</div>
   <div class="box"><h3>Spinners · Duo twirl (16, 24), carousel (32, 48); Nucli</h3><div class="row">${[16, 24].map((s) => `<figure>${LOADERS.twirl(s)}<figcaption>${s}</figcaption></figure>`).join('')}${[32, 48].map((s) => `<figure>${LOADERS.carousel(s)}<figcaption>${s}</figcaption></figure>`).join('')}</div><div class="row" style="margin-top:10px">${sizesOf('n-spin', 'Nucli spinner')}</div></div>
   <div class="box"><h3>Busy buttons</h3><div class="row"><span class="fbtn">${scene('n-spin', 'Busy', 'width="18" height="18"')}Testing…</span><span class="fbtn ghost">${LOADERS.twirl(18)}Getting handlers…</span></div></div>
@@ -1501,7 +1951,7 @@ document.getElementById('ui').innerHTML = `
   <div class="box"><h3>Empty state · Check tab</h3><div class="state">${scene('n-sleep', 'Nucli dozing', 'width="96" height="96"')}<div><b>Nothing to check yet</b><span class="muted">Open a handler, or start a new one, and I'll read it.</span></div></div></div>
   <div class="box"><h3>Error · Hub unreachable</h3><div class="state">${scene('oops', 'Duo, oops', 'width="96" height="96"')}<div><b>Couldn't reach the Hub</b><span class="muted">Check your connection.</span><div style="margin-top:8px"><span class="fbtn ghost">Try again</span></div></div></div></div>
   <div class="box"><h3>Search · Open dialog</h3><div class="state">${scene('search', 'Duo searching', 'width="96" height="96"')}<div><b>Searching 600 handlers…</b><span class="muted">"Borderlands"</span></div></div></div>
-  <div class="box"><h3>Success · installed</h3><div class="state">${scene('joy', 'Duo, woohoo', 'width="96" height="96"')}<div><b>Ready to play!</b><span class="muted">Left 4 Dead 2 is set up for 4 players.</span></div></div></div>`;
+  <div class="box"><h3>Success · installed</h3><div class="state">${scene('joy', 'Duo, woohoo', 'width="96" height="96"')}<div><b>Ready to play!</b><span class="muted">Left 4 Dead 2 is set up for 4 players.</span></div></div></div>`);
 
 // Discord emoji
 const SIGN = {
@@ -1531,18 +1981,649 @@ function emojiBlock(who) {
     <div class="reacts"><span class="rx me">${S(1)} 14</span><span class="rx">${A(0)} 6</span><span class="rx">${S(4)} 2</span><span class="rx">${S(6)} 1</span></div></div>`;
   return `<h3 style="margin-top:22px">${who === 'duo' ? 'Duo' : 'Nucli'}</h3><div class="emo"><div class="emo-set"><h4>Static</h4><div class="emo-grid">${st}</div><h4 style="margin-top:10px">Animated</h4><div class="emo-grid">${an}</div></div><div style="display:grid;gap:8px">${chat('dark')}${chat('light')}</div></div>`;
 }
-document.getElementById('emoji').innerHTML = emojiBlock('duo') + emojiBlock('nucli') + '<p class="note">Once picked, I export them as files Discord takes: 128 × 128 PNG for the static ones, GIF for the animated ones, each under 256 KB.</p>';
+lazyFill('emoji', () => emojiBlock('duo') + emojiBlock('nucli') + '<p class="note">Once picked, I export them as files Discord takes: 128 × 128 PNG for the static ones, GIF for the animated ones, each under 256 KB.</p>');
 
 const sz = (inner, monoInner, name) => `<div class="box"><h3>${name}</h3><div class="sizes">${[64, 32, 24, 16].map((s) => `<figure>${still(inner(), `${name} ${s} pixels`, s)}<figcaption>${s}</figcaption></figure>`).join('')}${[32, 16].map((s) => `<figure class="mono">${still(monoInner(), `${name}, one colour, ${s} pixels`, s)}<figcaption>${s}, one colour</figcaption></figure>`).join('')}</div></div>`;
-document.getElementById('sizes').innerHTML = sz(() => duo({ noShadow: true }), () => duo({ mono: true }), 'Duo') + sz(() => nucli({ still: true, noShadow: true }), () => nucli({ mono: true, still: true }), 'Nucli');
+lazyFill('sizes', () => sz(() => duo({ noShadow: true }), () => duo({ mono: true }), 'Duo') + sz(() => nucli({ still: true, noShadow: true }), () => nucli({ mono: true, still: true }), 'Nucli'));
 
-document.getElementById('gen').textContent = genCSS() + LCSS;
+// ---- Nucli explorations: ideas only, nothing here is in the product ----
+// nx() draws a Nucli variant: a palette, orbit weight, eye size, electron size, trails, and a small build for 16–24 px.
+const NX = {
+  violet: { name: 'Violet (today)', grad: ['#c9ceff', '#7f88ee', '#4f55c8'], shell: '#3c3fa8', ring: '#7f88ee' },
+  flat: { name: 'Violet, flatter', grad: ['#aab2ff', '#858ef0', '#5d64d8'], shell: '#3c3fa8', ring: '#6f78e6' },
+  teal: { name: 'Teal', grad: ['#b8f1ec', '#3fbcb6', '#17868f'], shell: '#0f5c66', ring: '#35a8ae' },
+  gold: { name: 'Soft gold', grad: ['#ffefc0', '#f4c14e', '#cc8d12'], shell: '#7e5304', ring: '#d6a238' },
+};
+const NX_EL = [[0, 0, 0], [1, .34, 1], [2, .67, 2], [0, .5, 3]];
+function nx(o = {}) {
+  const p = { ...NX.violet, ...(o.pal || {}) }, id = 'nx' + (++uid), w = o.ow || 1, er = o.er || 1, d = o.dur || 4.6, sm = !!o.small;
+  const els = (o.el || NX_EL).slice(0, o.n ?? 4);
+  const defs = `<defs><radialGradient id="${id}g" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="${p.grad[0]}"/><stop offset=".45" stop-color="${p.grad[1]}"/><stop offset="1" stop-color="${p.grad[2]}"/></radialGradient><clipPath id="${id}c"><rect x="-20" y="60" width="160" height="80"/></clipPath>${o.term ? `<filter id="${id}f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` : ''}</defs>`;
+  const half = (which) => `<path class="xo-${which}" d="${which === 'back' ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="${p.ring}" stroke-width="${n1(1.2 * w)}" opacity="${which === 'back' ? (sm ? .45 : .3) : (sm ? .8 : .55)}" stroke-linecap="round"/>`;
+  const dot = (ci) => `<circle r="${n1(5.2 * er)}" fill="${ACC[ci]}" stroke="#fff" stroke-width="${n1((sm ? 1.2 : 1.7) * er)}"/>`;
+  const one = ([k, ph, ci], i) => {
+    const dur = n1(d * (1 + k * .18)), inner = `<g class="xe xe${i}">${dot(ci)}</g>`;
+    if (o.still) { const t = (ph * 2 + .15) * Math.PI; return `<g transform="translate(${n1(60 + 52 * Math.cos(t))} ${n1(60 + 15.5 * Math.sin(t))})">${inner}</g>`; }
+    const km = o.km ? ` keyPoints="${o.km[0]}" keyTimes="${o.km[1]}" calcMode="linear"` : '';
+    const begin = o.km ? '0' : `-${n1(ph * dur)}`;
+    const tr = o.trails && !o.km ? [1, 2, 3].map((q) => `<circle class="xe xe${i}" r="${3.6 - q * .7}" fill="${ACC[ci]}" opacity="${.34 - q * .08}"><animateMotion dur="${dur}s" begin="${n1(q * .07 - ph * dur - dur)}s" repeatCount="indefinite" path="${ORBIT}"/></circle>`).join('') : '';
+    return `${tr}<g><animateMotion dur="${o.km ? o.kd : dur}s" begin="${begin}s" repeatCount="indefinite" path="${ORBIT}"${km}/>${inner}</g>`;
+  };
+  const orbs = o.term ? [0] : ORB3.map((_, k) => k);
+  const orb = (k, inner) => `<g class="orb orb${k} xo${k}" style="--a:${o.term ? 0 : ORB3[k]}deg">${inner}</g>`;
+  const back = `<g class="n-orbits">${orbs.map((k) => orb(k, half('back') + els.map((e, i) => e[0] === k ? one(e, i) : '').join(''))).join('')}</g>`;
+  const front = `<g class="n-orbits">${orbs.map((k) => orb(k, half('front') + `<g clip-path="url(#${id}c)">${els.map((e, i) => e[0] === k ? one(e, i) : '').join('')}</g>`)).join('')}</g>`;
+  let core, face;
+  if (o.term) {
+    // Terminal Nucli: a dark rounded square, a glowing monospace face, { } for orbits.
+    const g = '#a6f7c4';
+    core = `<rect x="38" y="38" width="44" height="44" rx="12" fill="#1b1e3a" stroke="#5c62d6" stroke-width="${sm ? 3 : 2}"/>${sm ? '' : '<rect x="42" y="41.5" width="36" height="7" rx="3.5" fill="#fff" opacity=".07"/><circle class="led" cx="75" cy="45" r="2" fill="#55d137"/>'}`;
+    face = `<g filter="url(#${id}f)"><g class="track"><g class="look look-l"><rect class="eye" x="${sm ? 47 : 48.5}" y="${sm ? 51 : 52}" width="${sm ? 8 : 6}" height="${sm ? 11 : 9}" rx="1.6" fill="${g}"/></g></g><g class="track"><g class="look look-r"><rect class="eye" x="${sm ? 65 : 65.5}" y="${sm ? 51 : 52}" width="${sm ? 8 : 6}" height="${sm ? 11 : 9}" rx="1.6" fill="${g}"/></g></g><rect class="tcur" x="${sm ? 55 : 56}" y="${sm ? 67 : 67.5}" width="${sm ? 10 : 8}" height="${sm ? 4 : 2.8}" fill="${g}"/></g>`;
+    const br = (x, ch, a) => `<text x="${x}" y="${sm ? 77 : 76}" text-anchor="${a}" font-family="ui-monospace, Consolas, monospace" font-size="${sm ? 50 : 44}" font-weight="700" fill="${p.ring}">${ch}</text>`;
+    o = { ...o, before: (o.before || '') + br(sm ? 22 : 24, '{', 'middle') + br(sm ? 98 : 96, '}', 'middle') };
+  } else {
+    core = `<circle cx="60" cy="60" r="22" fill="url(#${id}g)" stroke="${p.shell}" stroke-width="${sm ? 2.8 : 2}"/>${sm ? '' : `<path d="M78 49 A22 22 0 0 1 47 78 A26 26 0 0 0 78 49 Z" fill="${p.shell}" opacity=".2"/><path d="M42 50.5 A20 20 0 0 0 44 70" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".45"/>`}<ellipse cx="51" cy="46" rx="6" ry="3.4" fill="#fff" opacity="${sm ? .4 : .7}" transform="rotate(-32 51 46)"/>${sm ? '' : `<circle class="led" cx="74.5" cy="44.5" r="2.3" fill="#55d137" stroke="${p.shell}" stroke-width="1"/>`}`;
+    const fs = o.faces || [o.expr || 'smile'];
+    face = `<g transform="translate(60 61) scale(${o.eye || 1}) translate(-60 -61)"><g class="fw">${fs.map((ex, i) => `<g class="xf xf${i}"${i ? ' opacity="0"' : ''}>${nFace(ex)}</g>`).join('')}</g></g>`;
+  }
+  const shadow = o.noShadow ? '' : '<ellipse cx="60" cy="106" rx="16" ry="2.6" fill="#0b1a33" opacity=".12"/>';
+  return `${defs}${o.before || ''}${shadow}<g class="n-float">${back}<g class="n-core">${core}${face}${o.inCore || ''}</g>${front}${o.inFloat || ''}</g>${o.after || ''}`;
+}
+
+// Contrast (WCAG): a mascot is a graphic, so its body needs 3:1 against the page.
+const nxLum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const nxCR = (a, b) => { const [x, y] = [nxLum(a), nxLum(b)].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+const NX_TILES = { light: "#eef3fa", dark: "#0b1020" };
+const nxCon = (cols) => ['light', 'dark'].map((t) => { const r = Math.max(...cols.map((c) => nxCR(c, NX_TILES[t]))); return `<span class="${r >= 3 ? 'ok' : 'low'}">${t} ${r.toFixed(1)}:1${r >= 3 ? '' : ' (low)'}</span>`; }).join(' ');
+
+const nxStill = (inner, label, s) => still(inner, label, s);
+const nxStrips = (mk, extra = () => '') => ['light', 'dark'].map((t) => `<div class="nx-strip nx-${t}">${[48, 24, 16].map((s) => `<figure>${nxStill(mk(s), `${s} pixels on ${t}`, s)}<figcaption>${s}</figcaption></figure>`).join('')}${extra(t)}</div>`).join('');
+
+const NX_A = (s) => s <= 24 ? nx({ pal: NX.flat, still: true, small: true, ow: 3.4, eye: 1.32, er: 1.45, noShadow: true }) : nx({ pal: NX.flat, still: true, ow: 1.8, eye: 1.14, er: 1.15, noShadow: true });
+const NX_B = (s) => nx({ term: true, still: true, small: s <= 24, el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]], er: s <= 24 ? 1.35 : 1, noShadow: true, pal: { ring: '#7f88ee' } });
+const NX_DIRS = [
+  { name: 'Today', tag: '', big: () => nucli({}), small: () => nucli({ still: true, noShadow: true }), con: ['#7f88ee', '#3c3fa8'],
+    note: 'Lovely at 48 px and up. At 24 and 16 the orbits fade out, the eyes merge into one smudge and the trails turn to noise.' },
+  { name: 'A · Refined', tag: 'My pick', rec: true, big: () => nx({ pal: NX.flat, trails: true, ow: 1.8, eye: 1.14, er: 1.15 }), small: NX_A, con: ['#858ef0', '#3c3fa8'],
+    note: 'Same Nucli. Big: slightly heavier orbits and eyes, a flatter gradient. At 24 px and under, a separate small build: orbits 3× thicker, eyes a third larger, solid electrons, no trails, no shine or status light.' },
+  { name: 'B · Terminal Nucli', tag: 'Bold', big: () => nx({ term: true, el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]], pal: { ring: '#7f88ee' }, dur: 5.2 }), small: NX_B, con: ['#1b1e3a', '#5c62d6'],
+    note: 'Says "code" instantly, and the { } read at 16 px. But it is a different character: colder, more logo than friend, and the dark square vanishes on dark themes. A good icon for the CLI, not a mascot.' },
+];
+const nxDirs = () => NX_DIRS.map((v) => `<div class="nx-card${v.rec ? ' rec' : ''}"><div class="nx-h"><b>${v.name}</b>${v.tag ? `<span class="nx-tag${v.rec ? ' rec' : ''}">${v.tag}</span>` : ''}</div>
+  <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli, ${v.name}">${v.big()}</svg></div>
+  ${nxStrips(v.small)}<p class="nx-con">Body against the page: ${nxCon(v.con)}</p><p>${v.note}</p></div>`).join('');
+
+const NX_COLS = [
+  { pal: NX.flat, rec: true, note: 'His own colour: between splitscreen.me blue and Nucleus Co-op red. Every player colour stands out on it.' },
+  { pal: NX.teal, note: 'Friendly, but next to Duo they read as one family of blue balls. The teal electron (player 3) disappears into him.' },
+  { pal: NX.gold, note: 'Warm and readable, but the orange electron (player 1) blends in, and gold says "warning" next to the yellow lint markers.' },
+];
+const nxCols = () => NX_COLS.map((c) => `<div class="nx-card${c.rec ? ' rec' : ''}"><div class="nx-h"><b>${c.pal.name === 'Violet, flatter' ? 'Violet (today, refined)' : c.pal.name}</b>${c.rec ? '<span class="nx-tag rec">Keep</span>' : ''}</div>
+  <div class="nx-big nx-pair"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli in ${c.pal.name}">${nx({ pal: c.pal, trails: true, ow: 1.8, eye: 1.14, er: 1.15 })}</svg><svg class="blink nx-duo" viewBox="0 0 120 120" role="img" aria-label="Duo, for comparison">${duo({})}</svg></div>
+  ${nxStrips((s) => s <= 24 ? nx({ pal: c.pal, still: true, small: true, ow: 3.4, eye: 1.32, er: 1.45, noShadow: true }) : nx({ pal: c.pal, still: true, ow: 1.8, eye: 1.14, er: 1.15, noShadow: true }))}
+  <p class="nx-con">Body against the page: ${nxCon([c.pal.grad[1], c.pal.shell])}</p><p>${c.note}</p></div>`).join('');
+
+// ---- the new animations ----
+const NX_PANEL = (lines, o = {}) => `<rect x="124" y="16" width="108" height="88" rx="9" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/>${lines.map((w, i) => `<rect class="xl xl${i}" x="134" y="${28 + i * 13}" width="${w}" height="5" rx="2.5" fill="var(--code)"/>`).join('')}${o.extra || ''}`;
+const squig = (x, y, w, cls) => `<path class="${cls}" d="M${x} ${y} ${Array.from({ length: Math.round(w / 4) }, () => 'q1 -2 2 0 t2 0').join(' ')}" fill="none" stroke="${C.r}" stroke-width="1.5"/>`;
+const flyer = (path, kp, kt, op, ci, dur) => `<g opacity="0"><animateMotion dur="${dur}s" repeatCount="indefinite" path="${path}" keyPoints="${kp}" keyTimes="${kt}" calcMode="linear"/><animate attributeName="opacity" dur="${dur}s" repeatCount="indefinite" values="${op}" keyTimes="${kt}"/><circle r="5.2" fill="${ACC[ci]}" stroke="#fff" stroke-width="1.7"/></g>`;
+// Steps in a timeline: on/off per step; pops in with a spring, pops out with a shrink.
+const nxSteps = (name, on, cyc, sel, pop = true) => {
+  const n = on.length, st = 100 / n, fr = [];
+  const S = (v, sc) => pop ? `opacity: ${v}; transform: scale(${sc});` : `opacity: ${v};`;
+  on.forEach((v, i) => {
+    const p = +(i * st).toFixed(2), prev = on[(i - 1 + n) % n];
+    if (v && !prev) fr.push(`${p}% { ${S(0, 0)} }`, `${(p + 3).toFixed(2)}% { ${S(1, 1.35)} }`, `${(p + 6).toFixed(2)}% { ${S(1, 1)} }`);
+    else if (!v && prev) fr.push(`${p}% { ${S(1, 1)} }`, `${(p + 3).toFixed(2)}% { ${S(0, 0)} }`);
+    else fr.push(`${p}% { ${S(v ? 1 : 0, v ? 1 : 0)} }`);
+  });
+  fr.push(`100% { ${S(on[0] ? 1 : 0, on[0] ? 1 : 0)} }`);
+  return `@keyframes ${name} { ${fr.join(' ')} } ` + RMQ(`${sel} { animation: ${name} ${cyc}s infinite; }`);
+};
+const PCOUNT = [1, 2, 3, 4, 4, 3, 2, 1];
+const NX_ANIMS = [
+  { id: 'x-start', tier: 'def', name: 'Startup assembly', vb: '0 0 120 120',
+    what: 'The nucleus pops in, the orbits draw themselves, the four electrons fly in from the corners, then he opens his eyes and the status light comes on. Once per session, about 1 s.',
+    svg: () => nx({ trails: false, faces: ['smile'] }),
+    css: `.s-x-start .n-core { transform-origin: 60px 60px; }
+@keyframes xs-core { 0%, 4% { transform: scale(0); } 16% { transform: scale(1.1); } 24%, 100% { transform: scale(1); } }
+@keyframes xs-orb { 0%, 14% { stroke-dashoffset: 116; } 40%, 100% { stroke-dashoffset: 0; } }
+@keyframes xs-e { 0%, 26% { transform: translate(var(--dx), var(--dy)) scale(.4); opacity: 0; } 30% { opacity: 1; } 48%, 100% { transform: none; opacity: 1; } }
+@keyframes xs-eye { 0%, 50% { transform: scaleY(.08); } 56%, 100% { transform: scaleY(1); } }
+@keyframes xs-led { 0%, 58% { opacity: 0; } 62% { opacity: 1; } 66% { opacity: .3; } 70%, 100% { opacity: 1; } }
+.s-x-start .xe0 { --dx: 40px; --dy: -50px; } .s-x-start .xe1 { --dx: -50px; --dy: -50px; } .s-x-start .xe2 { --dx: -50px; --dy: 50px; } .s-x-start .xe3 { --dx: 50px; --dy: 50px; }
+.s-x-start [class^="xo-"] { stroke-dasharray: 116; }`
+      + RMQ(`.s-x-start .n-core { animation: xs-core 3.6s var(--spring) infinite; } .s-x-start [class^="xo-"] { animation: xs-orb 3.6s ease-out infinite; } .s-x-start .xe { animation: xs-e 3.6s cubic-bezier(.2, .7, .3, 1) infinite; } .s-x-start .eye { animation: xs-eye 3.6s infinite; } .s-x-start .led { animation: xs-led 3.6s infinite; }`) },
+  { id: 'x-type', tier: 'def', name: 'Typing along', vb: '0 0 240 120',
+    what: 'His eyes follow the cursor while you type. One electron leaves its orbit and sits in the gutter of the line you are on, bobbing with each key: taking notes. Nothing over the text.',
+    svg: () => nx({ n: 3, faces: ['smile'] }) + NX_PANEL([62, 44, 72, 0]) + `<rect class="xt-line" x="134" y="67" width="66" height="5" rx="2.5" fill="var(--code)"/><rect class="xt-car" x="133" y="65" width="2" height="9" fill="var(--ink)"/><g class="xt-pen"><circle cx="128" cy="69.5" r="3.6" fill="${ACC[3]}" stroke="#fff" stroke-width="1.3"/></g>`,
+    css: `.s-x-type .xt-line { transform-box: fill-box; transform-origin: left center; } .s-x-type .xt-car { transform: translateX(67px); } .s-x-type .xt-pen { transform-box: fill-box; transform-origin: center; }
+@keyframes xt-line { 0%, 12% { transform: scaleX(0); } 64%, 100% { transform: scaleX(1); } }
+@keyframes xt-car { 0%, 12% { transform: translateX(0); } 64%, 100% { transform: translateX(67px); } }
+@keyframes xt-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes xt-look { 0%, 10% { transform: translate(1px, 0); } 16% { transform: translate(2.2px, 1.4px); } 64% { transform: translate(3.4px, 1.6px); } 72%, 100% { transform: translate(1px, 0); } }
+@keyframes xt-pen { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.2px); } }`
+      + RMQ(`.s-x-type .xt-line { animation: xt-line 4.4s steps(11, end) infinite; } .s-x-type .xt-car { animation: xt-car 4.4s steps(11, end) infinite, xt-blink .9s step-end infinite; } .s-x-type .look { animation: xt-look 4.4s var(--soft) infinite; } .s-x-type .xt-pen { animation: xt-pen .2s ease-in-out infinite; }`) },
+  { id: 'x-err', tier: 'def', name: 'Escalating error', vb: '0 0 240 120',
+    what: 'First error: a tiny flinch. Second: a bigger flinch and a worried face. Third in a row: a facepalm (an electron slides over his eyes). Each reaction under half a second; he never covers the code.',
+    svg: () => nx({ n: 3, faces: ['smile', 'worried', 'sleep'], inCore: `<ellipse class="xr-palm" cx="60" cy="56" rx="15" ry="6.5" fill="${ACC[0]}" stroke="#fff" stroke-width="1.8"/>` }) + NX_PANEL([62, 48, 72, 40, 56]) + squig(134, 36, 62, 'xr-s xr-s0') + squig(134, 49, 48, 'xr-s xr-s1') + squig(134, 62, 72, 'xr-s xr-s2')
+      + [0, 1, 2].map((i) => `<text class="xr-n xr-n${i}" x="226" y="${38 + i * 13}" text-anchor="end" font-size="9" font-weight="700" fill="${C.r}">${i + 1}</text>`).join(''),
+    css: `.s-x-err .xr-palm { opacity: 0; transform-box: view-box; transform-origin: 60px 56px; } .s-x-err .n-core { transform-origin: 60px 82px; }
+@keyframes xr-core { 0%, 6% { transform: none; } 7.5% { transform: translateX(-2px); } 10%, 36% { transform: none; } 37.5% { transform: translate(-5px, 1px) rotate(-4deg); } 41% { transform: translateX(1px); } 44%, 66% { transform: none; } 70%, 92% { transform: rotate(7deg) translateY(2px); } 96%, 100% { transform: none; } }
+@keyframes xr-f0 { 0%, 36% { opacity: 1; } 37%, 96% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes xr-f1 { 0%, 36% { opacity: 0; } 37%, 66% { opacity: 1; } 67%, 100% { opacity: 0; } }
+@keyframes xr-f2 { 0%, 66% { opacity: 0; } 67%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xr-palm { 0%, 66% { opacity: 0; transform: translate(26px, 14px) scale(.4); } 70% { opacity: 1; transform: none; } 92% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; transform: translate(26px, 14px) scale(.4); } }
+@keyframes xr-s0 { 0%, 5% { opacity: 0; } 6%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xr-s1 { 0%, 35% { opacity: 0; } 36%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xr-s2 { 0%, 65% { opacity: 0; } 66%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }`
+      + RMQ(`.s-x-err .n-core { animation: xr-core 6s infinite; } .s-x-err .xf0 { animation: xr-f0 6s infinite; } .s-x-err .xf1 { animation: xr-f1 6s infinite; } .s-x-err .xf2 { animation: xr-f2 6s infinite; } .s-x-err .xr-palm { animation: xr-palm 6s var(--spring) infinite; } .s-x-err :is(.xr-s0, .xr-n0) { animation: xr-s0 6s infinite; } .s-x-err :is(.xr-s1, .xr-n1) { animation: xr-s1 6s infinite; } .s-x-err :is(.xr-s2, .xr-n2) { animation: xr-s2 6s infinite; }`) },
+  { id: 'x-undo', tier: 'all', name: 'Undo', vb: '0 0 120 120',
+    what: 'Ctrl+Z: the electrons run backwards for a moment, then carry on. Rewinding, literally.',
+    svg: () => nx({ n: 3, km: ['0;.55;.38;1', '0;.42;.62;1'], kd: 4.4 }) + `<g class="xu-chip"><rect x="34" y="4" width="52" height="17" rx="8.5" fill="var(--card)" stroke="var(--line)"/><text x="60" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">↶ Undo</text></g>`,
+    css: `.s-x-undo .xu-chip { opacity: 0; transform-box: fill-box; transform-origin: center; }
+@keyframes xu-chip { 0%, 40% { opacity: 0; transform: scale(.7); } 44% { opacity: 1; transform: scale(1.08); } 47%, 62% { opacity: 1; transform: none; } 68%, 100% { opacity: 0; } }
+@keyframes xu-look { 0%, 42% { transform: none; } 46%, 62% { transform: translate(-2.6px, 0); } 66%, 100% { transform: none; } }`
+      + RMQ(`.s-x-undo .xu-chip { animation: xu-chip 4.4s infinite; } .s-x-undo .look { animation: xu-look 4.4s infinite; }`) },
+  { id: 'x-copy', tier: 'all', name: 'Copy and save', vb: '0 0 240 120',
+    what: 'An electron flies to the button you pressed, taps it and flies back. The button shows the result as usual; Nucli only adds the delivery.',
+    svg: () => nx({ n: 3 }) + flyer('M110 56 Q150 4 170 58', '0;0;1;1;0;0', '0;.16;.4;.56;.82;1', '0;1;1;1;1;0', 3, 4) + `<g class="xc-btn"><rect x="146" y="48" width="76" height="26" rx="13" fill="var(--pick-bg)" stroke="var(--pick)" stroke-width="1.4"/><text class="xc-a" x="184" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pick)">Copy</text><text class="xc-b" x="184" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pick)" opacity="0">Copied ✓</text></g>`,
+    css: `.s-x-copy .xc-btn { transform-box: fill-box; transform-origin: center; }
+@keyframes xc-btn { 0%, 39% { transform: none; } 42% { transform: scale(.93); } 47%, 100% { transform: none; } }
+@keyframes xc-a { 0%, 41% { opacity: 1; } 42%, 92% { opacity: 0; } 94%, 100% { opacity: 1; } }
+@keyframes xc-b { 0%, 41% { opacity: 0; } 42%, 92% { opacity: 1; } 94%, 100% { opacity: 0; } }`
+      + RMQ(`.s-x-copy .xc-btn { animation: xc-btn 4s infinite; } .s-x-copy .xc-a { animation: xc-a 4s infinite; } .s-x-copy .xc-b { animation: xc-b 4s infinite; }`) },
+  { id: 'x-yawn', tier: 'all', name: 'Long idle: yawn, then doze', vb: '0 0 120 120',
+    what: 'After a few quiet minutes he yawns, sinks a little and dozes off. The first key or click wakes him.',
+    svg: () => nx({ faces: ['smile', 'wow', 'sleep'] }) + zzz(86, 34),
+    css: `.s-x-yawn .zz { opacity: 0; transform-box: fill-box; }
+@keyframes xy-f0 { 0%, 30% { opacity: 1; } 31%, 96% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes xy-f1 { 0%, 30% { opacity: 0; } 31%, 44% { opacity: 1; } 45%, 100% { opacity: 0; } }
+@keyframes xy-f2 { 0%, 44% { opacity: 0; } 45%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes xy-core { 0%, 30% { transform: none; } 36%, 42% { transform: scale(1.05, 1.08); } 50%, 94% { transform: translateY(4px) rotate(-5deg); } 100% { transform: none; } }
+@keyframes xy-z { 0%, 52% { opacity: 0; transform: none; } 62% { opacity: 1; } 92% { opacity: .8; transform: translate(6px, -10px); } 96%, 100% { opacity: 0; } }`
+      + RMQ(`.s-x-yawn .xf0 { animation: xy-f0 8s infinite; } .s-x-yawn .xf1 { animation: xy-f1 8s infinite; } .s-x-yawn .xf2 { animation: xy-f2 8s infinite; } .s-x-yawn .n-core { animation: xy-core 8s var(--soft) infinite; } .s-x-yawn .zz { animation: xy-z 8s infinite; animation-delay: calc(var(--i) * .5s); }`) },
+  { id: 'x-fix', tier: 'all', name: 'Big fix: one orbit', vb: '0 0 240 120',
+    what: 'After a fix that clears many problems, the lines turn green in a wave, the three orbits swing into one and all four electrons do a lap together.',
+    svg: () => nx({ faces: ['smile', 'excited'], el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]] }) + NX_PANEL([62, 48, 72, 40, 56]) + [0, 1, 2, 3, 4].map((i) => `<rect class="xg xg${i}" x="134" y="${28 + i * 13}" width="${[62, 48, 72, 40, 56][i]}" height="5" rx="2.5" fill="${C.g}"/>`).join(''),
+    css: `.s-x-fix .xg { opacity: 0; } .s-x-fix .orb0 { --a: 0deg; }
+@keyframes xf-orb1 { 0%, 40% { transform: rotate(60deg); } 52%, 86% { transform: rotate(0deg); } 96%, 100% { transform: rotate(60deg); } }
+@keyframes xf-orb2 { 0%, 40% { transform: rotate(120deg); } 52%, 86% { transform: rotate(0deg); } 96%, 100% { transform: rotate(120deg); } }
+@keyframes xf-g { 0% { opacity: 0; } 6%, 90% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes xf-f0 { 0%, 44% { opacity: 1; } 45%, 90% { opacity: 0; } 91%, 100% { opacity: 1; } }
+@keyframes xf-f1 { 0%, 44% { opacity: 0; } 45%, 90% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes xf-hop { 0%, 44% { transform: none; } 48% { transform: translateY(-6px); } 52%, 100% { transform: none; } }`
+      + RMQ(`.s-x-fix .orb1 { animation: xf-orb1 6s cubic-bezier(.5, 0, .3, 1) infinite; } .s-x-fix .orb2 { animation: xf-orb2 6s cubic-bezier(.5, 0, .3, 1) infinite; } .s-x-fix .xg { animation: xf-g 6s infinite; } ${[0, 1, 2, 3, 4].map((i) => `.s-x-fix .xg${i} { animation-delay: ${(i * .32).toFixed(2)}s; }`).join(' ')} .s-x-fix .xf0 { animation: xf-f0 6s infinite; } .s-x-fix .xf1 { animation: xf-f1 6s infinite; } .s-x-fix .n-core { animation: xf-hop 6s var(--spring) infinite; }`) },
+  { id: 'x-players', tier: 'prod', name: 'Try it: player count', vb: '0 0 120 120',
+    what: 'Add a player in Try it and an electron pops out of the nucleus; remove one and it is swallowed. Nucli always shows how many players the simulation runs.',
+    svg: () => nx({}) + PCOUNT.map((n, i) => PCOUNT.indexOf(n) === i ? `<text class="xp-t xp-t${n}" x="60" y="117" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)"${n > 1 ? ' opacity="0"' : ''}>${n} player${n > 1 ? 's' : ''}</text>` : '').join(''),
+    css: [1, 2, 3].map((k) => nxSteps(`xp-e${k}`, PCOUNT.map((n) => n > k), 8, `.s-x-players .xe${k}`)).join('\n') + '\n' + [1, 2, 3, 4].map((n) => nxSteps(`xp-t${n}`, PCOUNT.map((c) => c === n), 8, `.s-x-players .xp-t${n}`, false)).join('\n') + '\n.s-x-players .xe { transform-box: fill-box; transform-origin: center; }' },
+  { id: 'x-hover', tier: 'prod', name: 'Hover a name', vb: '0 0 240 120',
+    what: 'Point at a Game or Context name and he tilts toward it, while an electron hops to that line\'s gutter: "this one". The tooltip is unchanged.',
+    svg: () => nx({ n: 3 }) + NX_PANEL([30, 0, 48, 36]) + `<rect x="134" y="41" width="22" height="5" rx="2.5" fill="var(--code)"/><rect class="xh-tok" x="158" y="39" width="46" height="9" rx="3" fill="var(--pick-bg)" stroke="var(--pick)" stroke-width="1" opacity="0"/><rect x="160" y="41" width="42" height="5" rx="2.5" fill="var(--pick)"/>`
+      + flyer('M110 56 Q122 14 128 43.5', '0;0;1;1;0;0', '0;.22;.34;.74;.86;1', '0;1;1;1;1;0', 3, 5) + `<path class="xh-cur" d="M0 0 L0 13 L3.6 9.6 L6.4 15.4 L8.6 14.4 L5.8 8.8 L10.4 8.4 Z" fill="var(--ink)" stroke="var(--card)" stroke-width="1"/>`,
+    css: `.s-x-hover .xh-cur { transform: translate(214px, 96px); } .s-x-hover .n-core { transform-origin: 60px 82px; }
+@keyframes xh-cur { 0%, 6% { transform: translate(214px, 96px); } 20%, 76% { transform: translate(178px, 44px); } 92%, 100% { transform: translate(214px, 96px); } }
+@keyframes xh-tok { 0%, 19% { opacity: 0; } 22%, 76% { opacity: 1; } 79%, 100% { opacity: 0; } }
+@keyframes xh-core { 0%, 20% { transform: none; } 27%, 76% { transform: rotate(7deg); } 84%, 100% { transform: none; } }
+@keyframes xh-look { 0%, 20% { transform: none; } 25%, 76% { transform: translate(3px, -1.4px); } 82%, 100% { transform: none; } }`
+      + RMQ(`.s-x-hover .xh-cur { animation: xh-cur 5s var(--soft) infinite; } .s-x-hover .xh-tok { animation: xh-tok 5s infinite; } .s-x-hover .n-core { animation: xh-core 5s var(--spring) infinite; } .s-x-hover .look { animation: xh-look 5s infinite; }`) },
+];
+const NX_TIER = { def: 'Default', all: 'All only', prod: 'In Try it and the editor' };
+const nxAnims = () => NX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id}${a.id === 'x-start' ? '' : ' blink'}" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${NX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
+// Where each would go in Settings → Theme → Motion (playground/src/motion.ts). Calm and Still keep the expressions, without movement.
+const NX_PLAN = [
+  ['Startup assembly', 'Plays', 'Once', 'Pose', 'Pose', '—'],
+  ['Typing along', 'Plays', 'Eyes only', 'Pose', 'Pose', '—'],
+  ['Escalating error', 'Plays', 'Plays', 'Face only', 'Face only', '—'],
+  ['Try it: player count', 'Plays', 'Plays', 'Count only', 'Count only', '—'],
+  ['Undo, copy and save, yawn, big fix, hover', 'Plays', '—', '—', '—', '—'],
+];
+const nxPlan = () => `<div class="nx-tw"><table class="nx-plan"><caption>Which preset plays what. When the device asks for less motion, everything is at most "Still".</caption><thead><tr><th scope="col">Animation</th>${['All', 'Default', 'Calm', 'Still', 'Off'].map((h) => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${NX_PLAN.map(([n, ...c]) => `<tr><th scope="row">${n}</th>${c.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+lazyFill('nx-dirs', () => nxDirs());
+lazyFill('nx-cols', () => nxCols());
+lazyFill('nx-anims', () => nxAnims());
+lazyFill('nx-plan', () => nxPlan());
+LCSS += NX_ANIMS.map((a) => a.css).join('\n') + RMQ('.nx-card svg .tcur, .nx-anim svg .tcur { animation: xt-blink 1.1s step-end infinite; }');
+
+// ---- Duo explorations: ideas only, nothing here is in the product ----
+const DX_SMALL = () => `<g transform="translate(60 62) scale(1.42) translate(-60 -62)">${duo({ arms: 'none', noFeet: true, noShadow: true })}</g>`;
+// Screen Duo: the split window of the splitscreen.me logo, with a face and feet.
+const screenDuo = (sm) => `<rect x="${sm ? 18 : 26}" y="${sm ? 22 : 30}" width="${sm ? 84 : 68}" height="${sm ? 76 : 62}" rx="${sm ? 16 : 14}" fill="url(#duoG)"/>${sm ? '' : '<rect x="30" y="34" width="60" height="7" rx="3.5" fill="#fff" opacity=".28"/>'}<rect x="${sm ? 57.5 : 58.5}" y="${sm ? 22 : 30}" width="${sm ? 5 : 3}" height="${sm ? 76 : 62}" fill="#fff"/>
+  ${eyeOf(sm ? 41 : 46, sm ? 56 : 58, sm ? 1.35 : 1, 'smile', C.ink, '#fff', 'l')}${eyeOf(sm ? 79 : 74, sm ? 56 : 58, sm ? 1.35 : 1, 'smile', C.ink, '#fff', 'r')}${sm ? '' : `${mouthOf(60, 72, 1, "smile", C.ink)}<ellipse cx="46" cy="98" rx="8.6" ry="4.6" fill="#1858c4"/><ellipse cx="74" cy="98" rx="8.6" ry="4.6" fill="#1858c4"/>`}`;
+// Player-coloured Duos: the blue turned to each player's colour.
+const DX_HUE = [[177, 1.1], [142, 1.2], [-25, 1], [-112, 1]];
+const tinted = (i, inner) => `<g style="filter: hue-rotate(${DX_HUE[i][0]}deg) saturate(${DX_HUE[i][1]})">${inner}</g>`;
+const dxFour = (sm) => [[30, 30], [90, 30], [30, 90], [90, 90]].map(([x, y], i) => tinted(i, small(sm ? duo({ arms: 'none', noFeet: true, noShadow: true }) : duo({ noShadow: true, expr: i === 1 ? 'happy' : 'smile' }), x - 60 * .5, y - 62 * .5, .5))).join('');
+const DX_DIRS = [
+  { name: 'Today', big: () => duo({}), small: () => duo({ noShadow: true }), con: ['#1c7bff'],
+    note: 'Reads well down to 24 px. At 16 the arms and feet take up a third of the box, so the ball and the stripe shrink to a dot.' },
+  { name: 'A · Refined', tag: 'My pick', rec: true, big: () => duo({}), small: (s) => s <= 24 ? DX_SMALL() : duo({ noShadow: true }), con: ['#1c7bff'],
+    note: 'No change at full size. At 24 px and under, a small build: just the ball, no arms or feet, 40 % bigger in the same box. The stripe and the eyes stay readable at 16.' },
+  { name: 'B · Screen Duo', tag: 'Bold', big: () => screenDuo(false), small: (s) => screenDuo(s <= 24), con: ['#1c7bff'],
+    note: 'The logo\'s split window, alive. Instantly "splitscreen", and crisp at 16. But it is the logo with a face: a ball bounces, splits and rolls; a box cannot, and half the animation library goes.' },
+  { name: 'C · One Duo per player', tag: 'For player UI', big: () => dxFour(false), small: (s) => s <= 24 ? tinted(0, DX_SMALL()) : dxFour(false), con: ['#1c7bff', '#fca53d'],
+    note: 'Not a new look: Duo takes the player\'s colour wherever one Duo stands for one player (setup, the players bar). The brand Duo stays blue everywhere else.' },
+];
+const dxDirs = () => DX_DIRS.map((v) => `<div class="nx-card${v.rec ? ' rec' : ''}"><div class="nx-h"><b>${v.name}</b>${v.tag ? `<span class="nx-tag${v.rec ? ' rec' : ''}">${v.tag}</span>` : ''}</div>
+  <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Duo, ${v.name}">${v.big()}</svg></div>
+  ${nxStrips(v.small)}<p class="nx-con">Body against the page: ${nxCon(v.con)}</p><p>${v.note}</p></div>`).join('');
+
+const DX_ANIMS = [
+  { id: 'y-drop', tier: 'def', name: 'Splash: drop in', vb: '0 0 120 120',
+    what: 'When the app opens, Duo drops in, squashes on landing, bounces once and settles with a blink. Once per start, under a second.',
+    svg: () => duo({}),
+    css: `.s-y-drop .d-shadow { transform-origin: 60px 105px; }
+@keyframes yd-jump { 0% { transform: translateY(-110px); animation-timing-function: cubic-bezier(.5, 0, 1, .6); } 20% { transform: none; animation-timing-function: ease-out; } 32% { transform: translateY(-14px); animation-timing-function: ease-in; } 42%, 100% { transform: none; } }
+@keyframes yd-body { 0%, 19% { transform: scale(.92, 1.1); } 22% { transform: scale(1.2, .78); } 28% { transform: scale(.96, 1.05); } 42% { transform: scale(1.08, .92); } 48%, 100% { transform: none; } }
+@keyframes yd-sh { 0% { transform: scale(.2); } 20%, 100% { transform: none; } }`
+      + RMQ(`.s-y-drop .d-jump { animation: yd-jump 3.6s infinite; } .s-y-drop .d-body { animation: yd-body 3.6s infinite; } .s-y-drop .d-shadow { animation: yd-sh 3.6s infinite; }`) },
+  { id: 'y-catch', tier: 'def', name: 'Installed: he catches it', vb: '0 0 120 120',
+    what: 'A handler from the Hub finishes installing: the package drops, Duo catches it overhead with a little squash and beams. Replaces the plain check mark, not the message.',
+    svg: () => duo({ arms: 'up', swap: ['smile', 'happy'], inJump: pkg + star(18, 30, 1, C.o) + star(100, 24, .8, C.t) }),
+    css: `.s-y-catch .box { transform: translateY(2px); } .s-y-catch .sp { opacity: 0; }
+@keyframes yc-box { 0% { transform: translateY(-60px); opacity: 0; } 8% { opacity: 1; } 30% { transform: translateY(2px); } 34% { transform: translateY(6px); } 40%, 100% { transform: translateY(2px); } }
+@keyframes yc-body { 0%, 29% { transform: none; } 34% { transform: scale(1.1, .88); } 42%, 100% { transform: none; } }
+@keyframes yc-fa { 0%, 34% { opacity: 1; } 36%, 92% { opacity: 0; } 95%, 100% { opacity: 1; } }
+@keyframes yc-fb { 0%, 34% { opacity: 0; } 36%, 92% { opacity: 1; } 95%, 100% { opacity: 0; } }
+@keyframes yc-sp { 0%, 36% { opacity: 0; transform: scale(0); } 42% { opacity: 1; transform: scale(1.3); } 50%, 80% { opacity: 1; transform: none; } 88%, 100% { opacity: 0; } }`
+      + RMQ(`.s-y-catch .box { animation: yc-box 4s infinite; } .s-y-catch .d-body { animation: yc-body 4s infinite; } .s-y-catch .fa { animation: yc-fa 4s infinite; } .s-y-catch .fb { animation: yc-fb 4s infinite; } .s-y-catch .sp { animation: yc-sp 4s infinite; }`) },
+  { id: 'y-fail', tier: 'def', name: 'Launch failed, escalating', vb: '0 0 120 120',
+    what: 'First failed launch: a shrug. Second: the oops crack. Third in a row: he holds up a "?" sign, the moment to show the help link. Each under half a second.',
+    svg: () => duo({ swap: ['smile', 'worried'], after: `<g class="yf-sign"><rect x="84" y="14" width="26" height="24" rx="5" fill="var(--card)" stroke="${C.ink}" stroke-width="2"/><text x="97" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="${C.r}">?</text><path d="M97 38 V52" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/></g>` }),
+    css: `.s-y-fail .yf-sign { opacity: 0; transform-box: fill-box; transform-origin: bottom center; }
+@keyframes yf-jump { 0%, 6% { transform: none; } 9% { transform: translateY(-5px); } 13%, 100% { transform: none; } }
+@keyframes yf-hl { 0%, 36% { transform: none; } 39% { transform: translate(-5px, 2px) rotate(-7deg); } 48% { transform: translate(-3px, 1px) rotate(-4deg); } 56%, 100% { transform: none; } }
+@keyframes yf-hr { 0%, 36% { transform: none; } 39% { transform: translate(5px, -1px) rotate(6deg); } 48% { transform: translate(3px, 0) rotate(3deg); } 56%, 100% { transform: none; } }
+@keyframes yf-fa { 0%, 6% { opacity: 1; } 7%, 94% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes yf-fb { 0%, 6% { opacity: 0; } 7%, 94% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes yf-sign { 0%, 66% { opacity: 0; transform: scale(.3) rotate(-20deg); } 71% { opacity: 1; transform: scale(1.1); } 75%, 92% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes yf-arm { 0%, 66% { transform: none; } 71%, 92% { transform: rotate(-110deg); } 96%, 100% { transform: none; } }`
+      + RMQ(`.s-y-fail .d-jump { animation: yf-jump 6s infinite; } .s-y-fail .d-hl { animation: yf-hl 6s infinite; } .s-y-fail .d-hr { animation: yf-hr 6s infinite; } .s-y-fail .fa { animation: yf-fa 6s infinite; } .s-y-fail .fb { animation: yf-fb 6s infinite; } .s-y-fail .yf-sign { animation: yf-sign 6s var(--spring) infinite; } .s-y-fail .d-arm-r { animation: yf-arm 6s var(--spring) infinite; }`) },
+  { id: 'y-juggle', tier: 'all', name: 'Idle: juggling players', vb: '0 0 120 120',
+    what: 'Left alone on the start screen, he juggles four balls in the player colours. Stops the moment you move the mouse or press a button.',
+    svg: () => duo({ expr: 'happy', arms: 'up' }) + ACC.map((c, i) => `<circle r="5" fill="${c}" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.4s" begin="-${(i * .6).toFixed(1)}s" repeatCount="indefinite" path="M30 26 Q46 -18 90 26 Q60 12 30 26" calcMode="spline" keyTimes="0;1" keySplines=".3 0 .7 1"/></circle>`).join(''),
+    css: `@keyframes yj-look { 0%, 100% { transform: translate(-2px, -2px); } 50% { transform: translate(2px, -2px); } }` + RMQ(`.s-y-juggle .look { animation: yj-look 1.2s var(--soft) infinite; }`) },
+  { id: 'y-peek', tier: 'all', name: 'Hover a game: he peeks', vb: '0 0 240 120',
+    what: 'Point at a game in the list and Duo peeks out from behind its card, tilting his head. Only in the game list, and never over the title.',
+    svg: () => `<g transform="translate(14 0)"><g class="yp-duo">${duo({ noShadow: true })}</g></g><rect x="120" y="10" width="104" height="100" rx="12" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/><rect x="128" y="18" width="88" height="56" rx="7" fill="url(#barG)" opacity=".8"/><rect x="128" y="82" width="62" height="6" rx="3" fill="var(--code)"/><rect x="128" y="94" width="40" height="5" rx="2.5" fill="var(--code)"/><path class="xh-cur" d="M0 0 L0 13 L3.6 9.6 L6.4 15.4 L8.6 14.4 L5.8 8.8 L10.4 8.4 Z" fill="var(--ink)" stroke="var(--card)" stroke-width="1"/>`,
+    css: `.s-y-peek .yp-duo { transform-box: view-box; transform-origin: 60px 96px; transform: translateX(34px) rotate(-10deg); } .s-y-peek .xh-cur { transform: translate(180px, 52px); }
+@keyframes yp-duo { 0%, 18% { transform: translateX(70px); } 30% { transform: translateX(30px) rotate(-12deg); } 36%, 74% { transform: translateX(34px) rotate(-10deg); } 86%, 100% { transform: translateX(70px); } }
+@keyframes yp-cur { 0%, 6% { transform: translate(226px, 112px); } 18%, 80% { transform: translate(180px, 52px); } 94%, 100% { transform: translate(226px, 112px); } }`
+      + RMQ(`.s-y-peek .yp-duo { animation: yp-duo 5s var(--spring) infinite; } .s-y-peek .xh-cur { animation: yp-cur 5s var(--soft) infinite; }`) },
+  { id: 'y-layout', tier: 'prod', name: 'Pick a layout: he splits into it', vb: '0 0 240 120',
+    what: 'Choosing "2 players, side by side" in setup: Duo splits and each half lands on its screen as a small Duo in the player\'s colour. Shows what the layout means before you start.',
+    svg: () => `<g class="yl-big">${duo({})}</g><rect x="128" y="18" width="104" height="66" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><path d="M180 18 V84" stroke="var(--ink)" stroke-width="2"/><path d="M170 84 L166 98 H194 L190 84" fill="var(--panel-line)"/>`
+      + [[154, 0], [206, 1]].map(([x, i]) => `<g class="yl-m yl-m${i}">${tinted(i, small(duo({ noShadow: true, expr: 'happy' }), x - 60 * .42, 52 - 62 * .42, .42))}</g>`).join(''),
+    css: `.s-y-layout .yl-m { transform-box: fill-box; transform-origin: center bottom; }
+@keyframes yl-hl { 0%, 20% { transform: none; } 28%, 40% { transform: translateX(-7px) rotate(-8deg); } 48%, 100% { transform: none; } }
+@keyframes yl-hr { 0%, 20% { transform: none; } 28%, 40% { transform: translateX(7px) rotate(8deg); } 48%, 100% { transform: none; } }
+@keyframes yl-m { 0%, 30% { opacity: 0; transform: translateY(-14px) scale(.4); } 38% { opacity: 1; transform: scale(1.15, .85); } 44%, 90% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }`
+      + RMQ(`.s-y-layout .d-hl { animation: yl-hl 5s var(--spring) infinite; } .s-y-layout .d-hr { animation: yl-hr 5s var(--spring) infinite; } .s-y-layout .yl-m { animation: yl-m 5s var(--spring) infinite; } .s-y-layout .yl-m1 { animation-delay: .12s; }`) },
+];
+const DX_TIER = { def: 'Default', all: 'All only', prod: 'In player setup' };
+lazyFill('dx-dirs', () => dxDirs());
+lazyFill('dx-anims', () => DX_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${DX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join(''));
+LCSS += DX_ANIMS.map((a) => a.css).join('\n');
+
+// ---- Round 2: time first ----
+// How long each moment is on screen, from the workbench's code (toast.ts, fixfx.ts, app.ts) and timings measured
+// with the core (the NVMP example, 173 lines, in Node). "est." are estimates.
+const R2_WIN = [
+  { m: 'An error appears while you type', src: 'lint runs ~8 ms after each key (measured)', win: [.12, .4], a: 0, look: 'Eyes on the code' },
+  { m: '"Copied ✓" on the button', src: 'confirmOn: 1.6 s', win: [1.6, 1.6], a: .3, look: 'Eyes on the button' },
+  { m: 'Nucli fixes lines', src: 'fixfx: 420 ms a line, up to 5', win: [.7, 2.6], a: 2.6, look: 'Eyes on the code' },
+  { m: 'Test all', src: '40 runs in 0.16 s (measured); big handlers, 8 players: est. up to 5 s', win: [.16, 5], a: 0, look: 'Waiting' },
+  { m: 'Hub: "Getting …"', src: 'shown only after 0.3 s; est. up to 3 s', win: [.3, 3], a: 0, look: 'Waiting' },
+  { m: 'A toast', src: 'toast.ts: 3.5 s + 25 ms a letter, errors 8 s', win: [3.5, 8], a: 1.2, look: 'A glance' },
+  { m: 'Start: the workbench opens', src: 'est.: you read for a few seconds before typing', win: [1, 5], a: .8, look: 'A glance' },
+  { m: 'AI fix', src: 'est.: a model call, 5 to 60 s', win: [5, 60], a: 4, look: 'Waiting' },
+  { m: 'Try it result, Check tab empty', src: 'stays until the next run or edit', win: [10, 120], a: 1, look: 'Side vision' },
+  { m: 'Duo: a game launches in Nucleus', src: 'est.: instances start one by one, 10 to 60 s', win: [10, 60], a: 4, look: 'Waiting' },
+];
+const R2_MIN = .1, R2_MAX = 120;
+const r2x = (s) => (Math.log10(s / R2_MIN) / Math.log10(R2_MAX / R2_MIN)) * 100;
+const r2fmt = (s) => s < 1 ? `${Math.round(s * 1000)} ms` : `${+s.toFixed(1)} s`;
+const r2Chart = () => `<div class="r2-legend" aria-hidden="true"><span><i class="r2-k-win"></i>On screen</span><span><i class="r2-k-anim"></i>The animation I'd give it (loops repeat inside)</span></div>
+  <div class="r2-axis" aria-hidden="true">${[.1, 1, 10, 60].map((t) => `<span style="left:${r2x(t).toFixed(1)}%">${r2fmt(t)}</span>`).join('')}</div>
+  <ul class="r2-rows">${R2_WIN.map((r) => {
+    const l = r2x(Math.max(R2_MIN, r.win[0])), w = Math.max(1.2, r2x(r.win[1]) - l);
+    const txt = `${r.win[0] === r.win[1] ? r2fmt(r.win[0]) : `${r2fmt(r.win[0])} to ${r2fmt(r.win[1])}`} on screen; ${r.a ? `animation ${r2fmt(r.a)}` : 'no animation'}. ${r.look}.`;
+    return `<li><div class="r2-lab"><b>${r.m}</b><span>${r.src}</span></div><div class="r2-track" title="${txt}"><i class="r2-win" style="left:${l.toFixed(1)}%;width:${w.toFixed(1)}%"></i>${r.a ? `<i class="r2-anim" style="left:${l.toFixed(1)}%;width:${Math.max(.8, r2x(r.a) - r2x(R2_MIN)).toFixed(1) === '0' ? .8 : Math.min(w, Math.max(.8, r2x(Math.max(R2_MIN, r.win[0]) + r.a) - l)).toFixed(1)}%"></i>` : ''}<span class="sr-only">${txt}</span></div><div class="r2-val">${r.look}</div></li>`;
+  }).join('')}</ul>`;
+
+const R2_VERDICT = [
+  ['Startup assembly', 'Header, Check tab', '1 to 5 s, a glance', 'keep', 'Keep, shorter', 'At most 0.8 s, after the editor works, and once a day: people reload the workbench a lot.'],
+  ['Typing along', 'Check tab: "Nothing to fix"', 'As long as you type, in side vision', 're', 'Eyes only', 'Movement in side vision pulls your eyes. The eyes can follow the line you\'re on (3 px at most); the note-taking electron, bobbing at every key, goes.'],
+  ['Escalating error', 'Try it result', 'Until the next run', 're', 'Per run, not per key', 'Lint runs 8 ms after each key, so errors come and go while you type. Count failed Try it runs (or an error still there 1.5 s after you stop), never keystrokes.'],
+  ['Undo', 'None near the editor', 'About 0.25 s, in bursts', 'drop', 'Drop', 'Ctrl+Z comes in bursts, and no Nucli is in view of the code to rewind.'],
+  ['Copy and save', 'The button', '"Copied ✓" for 1.6 s', 'drop', 'Drop', 'The flight needs about 0.7 s from a Nucli that isn\'t next to the button. The label already says it, where you look.'],
+  ['Yawn, then doze', 'Check tab, empty', 'Happens while nobody watches', 're', 'Wake-up instead', 'Show him already asleep. Animate waking up (0.6 s) on your first key: that is the part people see.'],
+  ['Big fix: one orbit', 'During the fix', '0.7 to 2.6 s, eyes on the code', 'move', 'Move to the toast', 'During the fix you watch the lines. The orbit lap goes in the toast after it: 1.2 s, then a still pose for the rest of its 3.5 to 8 s.'],
+  ['Try it: player count', 'Next to the player picker', 'You just clicked it', 'keep', 'Keep', 'Under 0.4 s, right where you look.'],
+  ['Hover a name', 'None near the code', 'A tooltip, within 0.3 s', 'drop', 'Drop', 'Nucli isn\'t near the code, and you hover dozens of times a minute.'],
+];
+const R2_DUO = [
+  ['Splash: drop in', 'App start', 'The app takes a few seconds to open', 'keep', 'Keep', 'Under a second, while it loads anyway.'],
+  ['Installed: he catches it', 'Install toast', '3.5 to 8 s, a glance', 'keep', 'Keep', '1.2 s, then he holds the box.'],
+  ['Launch failed, escalating', 'Error dialog', 'Until you close it', 'keep', 'Keep', 'Count failed launches of the same game, not failed instances.'],
+  ['Juggling', 'Start screen, idle', 'Nobody watching', 'move', 'Move to the launch wait', 'Starting a game takes 10 to 60 s, the longest wait in the app: one ball per instance that has started.'],
+  ['Peek on hover', 'Game list', 'Hover', 'drop', 'Drop', 'Same as Nucli\'s hover: too often, too fast.'],
+  ['Pick a layout', 'Player setup', 'You just picked it', 'keep', 'Keep', 'It explains the choice.'],
+];
+const R2_V = { keep: 'Keep', re: 'Rework', drop: 'Drop', move: 'Move' };
+const r2Table = (rows, cap) => `<div class="nx-tw"><table class="nx-plan r2-v"><caption>${cap}</caption><thead><tr><th scope="col">Animation</th><th scope="col">Where he'd be</th><th scope="col">Time on screen</th><th scope="col">Verdict</th><th scope="col">Why</th></tr></thead><tbody>${rows.map(([n, w, t, v, vl, why]) => `<tr><th scope="row">${n}</th><td>${w}</td><td>${t}</td><td><span class="v ${v}">${vl}</span></td><td>${why}</td></tr>`).join('')}</tbody></table></div>`;
+
+// Reworked to fit.
+const R2_ANIMS = [
+  { id: 'x-err', tier: 'def', name: 'Escalating, per run', vb: '0 0 240 120',
+    what: 'Counted per failed Try it run. 1st: a small flinch. 2nd: worried. 3rd in a row: the facepalm, and an "Explain" link appears. The result stays on screen, so the pose holds.',
+    svg: () => nx({ n: 3, faces: ['smile', 'worried', 'sleep'], inCore: `<ellipse class="xr-palm" cx="60" cy="56" rx="15" ry="6.5" fill="${ACC[0]}" stroke="#fff" stroke-width="1.8"/>` })
+      + `<rect x="124" y="16" width="108" height="88" rx="9" fill="var(--panel)" stroke="var(--panel-line)" stroke-width="1.6"/>`
+      + ['Run 1: failed', 'Run 2: failed', 'Run 3: failed'].map((t, i) => `<g class="xr-n${i}"><circle cx="138" cy="${36 + i * 18}" r="5" fill="${C.r}"/><path d="M135.8 ${33.8 + i * 18} l4.4 4.4 M140.2 ${33.8 + i * 18} l-4.4 4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><text x="148" y="${39.5 + i * 18}" font-size="10" fill="var(--ink)">${t}</text></g>`).join('')
+      + `<text class="xr-n2" x="148" y="92" font-size="10" font-weight="700" fill="var(--accent)" text-decoration="underline">Explain this</text>` },
+  { id: 'r2-wake', tier: 'def', name: 'Wake-up', vb: '0 0 240 120',
+    what: 'He dozes in the empty Check tab (a still pose). Your first key wakes him: a little start, eyes open, a look at the code. 0.6 s, the one moment you actually see.',
+    svg: () => nx({ faces: ['sleep', 'wow', 'smile'] }) + zzz(84, 36) + NX_PANEL([0]).replace('class="xl xl0"', 'class="xl xl0 rw-line"').replace('width="0"', 'width="58"') + `<rect class="rw-car" x="133" y="26" width="2" height="9" fill="var(--ink)"/>`,
+    css: `.s-r2-wake .rw-line { transform-box: fill-box; transform-origin: left center; } .s-r2-wake .xf0 { opacity: 0; } .s-r2-wake .xf2 { opacity: 1; } .s-r2-wake .rw-car { transform: translateX(59px); } .s-r2-wake .zz { opacity: 0; transform-box: fill-box; }
+@keyframes rw-f0 { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes rw-f1 { 0%, 49% { opacity: 0; } 50%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@keyframes rw-f2 { 0%, 55% { opacity: 0; } 56%, 100% { opacity: 1; } }
+@keyframes rw-core { 0%, 49% { transform: translateY(4px) rotate(-5deg); } 52% { transform: translateY(-5px); } 58%, 100% { transform: rotate(5deg); } }
+@keyframes rw-orb { 0%, 49% { opacity: .35; } 56%, 100% { opacity: 1; } }
+@keyframes rw-z { 0%, 4% { opacity: 0; transform: none; } 14% { opacity: 1; } 44% { opacity: .8; transform: translate(6px, -10px); } 48%, 100% { opacity: 0; } }
+@keyframes rw-line { 0%, 50% { transform: scaleX(0); } 90%, 100% { transform: scaleX(1); } }
+@keyframes rw-car { 0%, 50% { transform: translateX(0); } 90%, 100% { transform: translateX(59px); } }`
+      + RMQ(`.s-r2-wake .xf0 { animation: rw-f0 6s infinite; } .s-r2-wake .xf1 { animation: rw-f1 6s infinite; } .s-r2-wake .xf2 { animation: rw-f2 6s infinite; } .s-r2-wake .n-core { animation: rw-core 6s var(--spring) infinite; } .s-r2-wake .n-orbits { animation: rw-orb 6s infinite; } .s-r2-wake .zz { animation: rw-z 6s infinite; animation-delay: calc(var(--i) * .45s); } .s-r2-wake .rw-line { animation: rw-line 6s steps(9, end) infinite; } .s-r2-wake .rw-car { animation: rw-car 6s steps(9, end) infinite; }`) },
+  { id: 'r2-toast', tier: 'all', name: 'Big fix, in the toast', vb: '0 0 240 120',
+    what: 'After a fix that clears many problems: the toast\'s Nucli does his one-orbit lap in the first 1.2 s, then holds the pose while you read. The line under the toast is its time left.',
+    svg: () => `<g class="r2t"><rect x="14" y="32" width="212" height="54" rx="12" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>${small(nx({ faces: ['smile', 'excited'], el: [[0, 0, 0], [0, .25, 1], [0, .5, 2], [0, .75, 3]], noShadow: true }), 16, 31, .47)}<text x="76" y="56" font-size="12" font-weight="700" fill="var(--ink)">Fixed 12 problems</text><text x="76" y="72" font-size="10" fill="var(--muted)">Ready for Nucleus</text><rect class="r2t-life" x="26" y="80" width="188" height="2.5" rx="1.25" fill="var(--accent)"/></g>`,
+    css: `.s-r2-toast .r2t-life { transform-box: fill-box; transform-origin: left center; } .s-r2-toast .xf0 { opacity: 0; } .s-r2-toast .xf1 { opacity: 1; } .s-r2-toast .orb0 { --a: 0deg; } .s-r2-toast .orb1, .s-r2-toast .orb2 { transform: rotate(0deg); }
+@keyframes r2t { 0% { transform: translateY(70px); opacity: 0; } 4%, 66% { transform: none; opacity: 1; } 70%, 100% { transform: translateY(70px); opacity: 0; } }
+@keyframes r2t-life { 0%, 4% { transform: scaleX(1); } 66%, 100% { transform: scaleX(0); } }
+@keyframes r2t-o1 { 0%, 4% { transform: rotate(60deg); } 14%, 100% { transform: rotate(0deg); } }
+@keyframes r2t-o2 { 0%, 4% { transform: rotate(120deg); } 14%, 100% { transform: rotate(0deg); } }
+@keyframes r2t-f0 { 0%, 12% { opacity: 1; } 13%, 100% { opacity: 0; } }
+@keyframes r2t-f1 { 0%, 12% { opacity: 0; } 13%, 100% { opacity: 1; } }
+@keyframes r2t-hop { 0%, 12% { transform: none; } 15% { transform: translateY(-6px); } 19%, 100% { transform: none; } }`
+      + RMQ(`.s-r2-toast .r2t { animation: r2t 7s var(--soft) infinite; } .s-r2-toast .r2t-life { animation: r2t-life 7s linear infinite; } .s-r2-toast .orb1 { animation: r2t-o1 7s cubic-bezier(.5, 0, .3, 1) infinite; } .s-r2-toast .orb2 { animation: r2t-o2 7s cubic-bezier(.5, 0, .3, 1) infinite; } .s-r2-toast .xf0 { animation: r2t-f0 7s infinite; } .s-r2-toast .xf1 { animation: r2t-f1 7s infinite; } .s-r2-toast .n-core { animation: r2t-hop 7s var(--spring) infinite; }`) },
+  { id: 'r2-launch', tier: 'def', name: 'Duo: the game launch wait', vb: '0 0 120 120',
+    what: 'Juggling, moved to where there is time: while Nucleus starts the instances, one ball per instance that has started. A wait of 10 to 60 s you can read at a glance.',
+    svg: () => duo({ expr: 'happy', arms: 'up' }) + ACC.map((c, i) => `<g class="dj dj${i}"><circle r="5" fill="${c}" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.4s" begin="-${(i * .6).toFixed(1)}s" repeatCount="indefinite" path="M30 26 Q46 -18 90 26 Q60 12 30 26"/></circle></g>`).join('')
+      + [1, 2, 3, 4].map((n) => `<text class="dj-t dj-t${n}" x="60" y="117" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--ink)"${n < 4 ? ' opacity="0"' : ''}>${n < 4 ? `Starting player ${n + 1} of 4` : '4 of 4 started'}</text>`).join(''),
+    css: [1, 2, 3].map((k) => nxSteps(`dj${k}`, [1, 1, 2, 2, 3, 3, 4, 4].map((n) => n > k), 8, `.s-r2-launch .dj${k}`, false)).join('\n') + '\n' + [1, 2, 3, 4].map((n) => nxSteps(`dj-t${n}`, [1, 1, 2, 2, 3, 3, 4, 4].map((c) => c === n), 8, `.s-r2-launch .dj-t${n}`, false)).join('\n') },
+];
+const r2Anims = () => R2_ANIMS.map((a) => `<div class="nx-anim"><div class="stage${a.vb === '0 0 240 120' ? ' wide' : ''}"><svg class="s-${a.id} blink" viewBox="${a.vb}" role="img" aria-label="${a.name}: ${a.what.replace(/"/g, '&quot;')}">${a.svg()}</svg></div><div class="nx-h"><b>${a.name}</b><span class="nx-tier t-${a.tier}">${NX_TIER[a.tier]}</span></div><p>${a.what}</p></div>`).join('');
+
+// Colours, round 2: all in the violet family (round 1's teal and gold are out), on the refined shape, in context.
+const R2_PALS = [
+  { name: 'Today', grad: ['#c9ceff', '#7f88ee', '#4f55c8'], shell: '#3c3fa8', ring: '#7f88ee', note: 'The baseline.' },
+  { name: 'Indigo', grad: ['#b9bdff', '#6d70e4', '#3b38ad'], shell: '#29257f', ring: '#6d70e4', note: 'A step deeper: holds up better on white and in a 34 px toast. Still calm.' },
+  { name: 'Ultraviolet', grad: ['#dccaff', '#9160ff', '#5b2fd6'], shell: '#3d1aa8', ring: '#9a74ff', note: 'More saturated, so he pops on dark themes. Livelier than "quiet technician".', rec: true },
+  { name: 'Violet, rose core', grad: ['#ffd3ea', '#a77cf0', '#5a4ed0'], shell: '#40339c', ring: '#a084f0', note: 'A warm centre: a hint of Nucleus Co-op red inside. Friendlier, a little sweeter.' },
+  { name: 'Lavender', grad: ['#efedff', '#bcb2f7', '#8d80e6'], shell: '#5e50c4', ring: '#a89cf0', note: 'Soft and gentle, but pale on light themes: he needs his outline to be seen.' },
+  { name: 'Slate violet', grad: ['#dcdcf0', '#9092c6', '#5b5e98'], shell: '#3d4074', ring: '#8d90c4', note: 'Muted, grown-up, the most "tool". Risks looking disabled next to coloured buttons.' },
+];
+const r2Ctx = (p, t) => `<div class="r2-ctx nx-${t}"><div class="r2-mtoast">${still(nx({ pal: p, still: true, small: true, ow: 3.4, eye: 1.32, er: 1.45, noShadow: true }), '', 26)}<span>Fixed 12 problems</span></div><div class="r2-mempty">${still(nx({ pal: p, still: true, ow: 1.8, eye: 1.14, er: 1.15, noShadow: true }), '', 56)}<span>Nothing to fix.</span></div></div>`;
+const r2Cols = () => R2_PALS.map((p) => `<div class="nx-card${p.rec ? ' rec' : ''}"><div class="nx-h"><b>${p.name}</b>${p.rec ? '<span class="nx-tag rec">My pick</span>' : ''}</div>
+  <div class="nx-big"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="Nucli in ${p.name}">${nx({ pal: p, trails: true, ow: 1.8, eye: 1.14, er: 1.15 })}</svg></div>
+  ${r2Ctx(p, 'light')}${r2Ctx(p, 'dark')}<p class="nx-con">Body against the page: ${nxCon([p.grad[1], p.shell])}</p><p>${p.note}</p></div>`).join('');
+
+lazyFill('r2-chart', () => r2Chart());
+lazyFill('r2-verdict', () => r2Table(R2_VERDICT, 'Nucli: round 1\'s animations against their time on screen.') + r2Table(R2_DUO, 'Duo: the same check.'));
+lazyFill('r2-anims', () => r2Anims());
+lazyFill('r2-cols', () => r2Cols());
+LCSS += R2_ANIMS.map((a) => a.css || '').join('\n');
+
+// The loader, by how long you wait: nothing, a spinner, progress, then progress with the time so far.
+(() => {
+  const box = document.getElementById('r2-wait'), stage = box.querySelector('.r2w-stage'), msg = box.querySelector('.r2w-msg');
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let timers = [];
+  const show = (svg, text) => {
+    stage.innerHTML = svg; msg.textContent = text;
+    if (RM || document.documentElement.classList.contains('paused')) stage.querySelectorAll('svg').forEach((s) => { try { s.pauseAnimations(); } catch {} });
+  };
+  const at = (ms, f) => timers.push(setTimeout(f, ms));
+  box.querySelectorAll('button[data-ms]').forEach((b) => b.addEventListener('click', () => {
+    timers.forEach(clearTimeout); timers = [];
+    box.querySelectorAll('button[data-ms]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    const total = +b.dataset.ms, what = b.dataset.what, t0 = performance.now();
+    show('', '');
+    const sec = () => ((performance.now() - t0) / 1000).toFixed(0);
+    if (total > 400) at(400, () => show(scene('n-spin', 'Nucli, working'), `${what}…`));
+    if (total > 2000) at(2000, () => {
+      const tick = () => {
+        if (performance.now() - t0 >= total) return;
+        const p = Math.min(1, (performance.now() - t0) / total), k = Math.max(1, Math.ceil(p * 4));
+        const long = total > 10000 && performance.now() - t0 > 10000;
+        const txt = total > 10000 ? `${what}: ${long ? `still going, ${sec()} s so far` : `${Math.round(p * 100)} %`}` : `${what}: ${Math.round(p * 40)} of 40 runs`;
+        if (stage.dataset.k === `${k}${long}`) msg.textContent = txt;
+        else {
+          stage.dataset.k = `${k}${long}`;
+          show(`<svg viewBox="0 0 120 120" role="img" aria-label="Nucli, ${k} of 4 electrons: ${Math.round(p * 100)} percent">${nx({ n: k, faces: [long ? 'focus' : 'smile'] })}</svg>`, txt);
+        }
+        if (p < 1) at(total > 10000 ? 1000 : 250, tick);
+      };
+      tick();
+    });
+    at(total, () => { delete stage.dataset.k; show(scene('n-ok', 'Nucli, done'), `Done in ${total < 1000 ? total + ' ms' : total / 1000 + ' s'}.${total <= 400 ? ' No loader at all: it would only have flashed.' : ''}`); });
+  }));
+})();
+
+// ---- Simpler drawings, same animations ----
+// Flat fills, one shadow shape, no gloss, rim light, status light or blush. Same class names as duo() and nucli()
+// (.d-jump, .d-body, .d-hl, .d-arm-r, .n-float, .n-core, .orb, .look, .eye), so every existing animation runs on them.
+const sEye = (x, y, s, side, ink, sm, ex = 'smile') => {
+  if (ex === 'happy' || ex === 'sleep') return eyeOf(x, y, s, ex, ink, null, side);
+  return `<g class="track"><g class="look look-${side}"><g class="eye"><circle cx="${x}" cy="${y}" r="${n1(5.4 * s)}" fill="${ink}"/>${sm ? '' : `<circle cx="${n1(x + 1.7 * s)}" cy="${n1(y - 1.8 * s)}" r="${n1(1.6 * s)}" fill="#fff"/>`}</g></g></g>`;
+};
+function ns(o = {}) {
+  const p = { fill: '#858ef0', shade: '#5c62d6', line: '#3c3fa8', ring: '#7f88ee', ...(o.pal || {}) };
+  const sm = !!o.small, id = 'ns' + (++uid), ink = C.ink, d = 4.6, er = sm ? 1.45 : 1.1;
+  const half = (which) => `<path d="${which === 'back' ? 'M112 60 A52 15.5 0 0 0 8 60' : 'M8 60 A52 15.5 0 0 0 112 60'}" fill="none" stroke="${p.ring}" stroke-width="${sm ? 3.4 : 1.6}" opacity="${which === 'back' ? .35 : .7}" stroke-linecap="round"/>`;
+  const one = ([k, ph, ci]) => {
+    const dot = `<circle r="${n1(5.2 * er)}" fill="${ACC[ci]}" stroke="#fff" stroke-width="${sm ? 1.6 : 1.6}"/>`;
+    if (o.still) { const t = (ph * 2 + .15) * Math.PI; return `<g transform="translate(${n1(60 + 52 * Math.cos(t))} ${n1(60 + 15.5 * Math.sin(t))})">${dot}</g>`; }
+    const dur = n1(d * (1 + k * .18));
+    return `<g><animateMotion dur="${dur}s" begin="-${n1(ph * dur)}s" repeatCount="indefinite" path="${ORBIT}"/>${dot}</g>`;
+  };
+  const orb = (k, inner) => `<g class="orb" style="--a:${ORB3[k]}deg">${inner}</g>`;
+  const els = (k) => NX_EL.filter((e) => e[0] === k).map(one).join('');
+  const back = `<g class="n-orbits">${ORB3.map((_, k) => orb(k, half('back') + els(k))).join('')}</g>`;
+  const front = `<g class="n-orbits"><clipPath id="${id}"><rect x="-20" y="60" width="160" height="80"/></clipPath>${ORB3.map((_, k) => orb(k, half('front') + `<g clip-path="url(#${id})">${els(k)}</g>`)).join('')}</g>`;
+  const ex = o.expr || 'smile', s = sm ? .95 : .72;
+  const core = `<circle cx="60" cy="60" r="22" fill="${p.fill}" stroke="${p.line}" stroke-width="${sm ? 2.8 : 2}"/>${sm ? '' : `<path d="M80.5 52 A22 22 0 0 1 52 80.5 A25 25 0 0 0 80.5 52 Z" fill="${p.shade}" opacity=".55"/>`}`;
+  const face = `<g class="fw">${sEye(sm ? 51.5 : 53, sm ? 57 : 57, s, 'l', ink, sm, ex)}${sEye(sm ? 68.5 : 67, sm ? 57 : 57, s, 'r', ink, sm, ex)}${sm ? '' : mouthOf(60, 66, .58, ex === 'happy' ? 'happy' : ex === 'smile' ? 'smile' : ex, ink)}</g>`;
+  const shadow = o.noShadow ? '' : '<ellipse cx="60" cy="106" rx="16" ry="2.6" fill="#0b1a33" opacity=".12"/>';
+  return `${shadow}<g class="n-float">${back}<g class="n-core">${core}${face}</g>${front}</g>${o.after || ''}`;
+}
+function ds(o = {}) {
+  const sm = !!o.small, id = 'ds' + (++uid), ink = C.ink, B = '#2b8bff', A = '#1f6fe6';
+  const pose = { down: ['', ''], up: ['rotate(140 30 66)', 'rotate(-140 90 66)'], wave: ['', ''] }[o.arms || 'down'];
+  const armL = sm ? '' : `<g class="d-arm-l"><g transform="${pose[0]}"><ellipse cx="27" cy="76" rx="5.8" ry="10.5" transform="rotate(18 27 76)" fill="${A}"/></g></g>`;
+  const armR = sm ? '' : `<g class="d-arm-r"><g transform="${pose[1]}"><ellipse cx="93" cy="76" rx="5.8" ry="10.5" transform="rotate(-18 93 76)" fill="${A}"/></g></g>`;
+  const ex = o.expr || 'smile', s = sm ? 1.3 : 1;
+  // Each half: white underneath, blue 1.5 short of the cut, so the stripe belongs to both halves when they split.
+  const halfL = `<path d="M60 28 A34 34 0 0 0 60 96 Z" fill="#fff"/><path d="M58.5 28.03 A34 34 0 0 0 58.5 95.97 Z" fill="${B}"/>${sm ? '' : '<ellipse cx="44" cy="40" rx="8" ry="4" fill="#fff" opacity=".35" transform="rotate(-38 44 40)"/>'}`;
+  const halfR = `<path d="M60 28 A34 34 0 0 1 60 96 Z" fill="#fff"/><path d="M61.5 28.03 A34 34 0 0 1 61.5 95.97 Z" fill="${B}"/>`;
+  const mouth = sm ? '' : mouthOf(60, 69, 1, ex, ink);
+  const clip = `<clipPath id="${id}l"><rect x="0" y="0" width="60" height="120"/></clipPath><clipPath id="${id}r"><rect x="60" y="0" width="60" height="120"/></clipPath>`;
+  const body = `<g class="d-hl">${armL}${halfL}${sEye(sm ? 45 : 47, sm ? 60 : 58, s, 'l', ink, sm, ex)}<g clip-path="url(#${id}l)">${mouth}</g></g><g class="d-hr">${armR}${halfR}${sEye(sm ? 75 : 73, sm ? 60 : 58, s, 'r', ink, sm, ex)}<g clip-path="url(#${id}r)">${mouth}</g></g>`;
+  const feet = sm ? '' : `<g class="d-feet"><ellipse class="d-fl" cx="48" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/><ellipse class="d-fr" cx="72" cy="99" rx="8.6" ry="4.6" fill="#1858c4"/></g>`;
+  const shadow = o.noShadow || sm ? '' : '<ellipse class="d-shadow" cx="60" cy="105" rx="24" ry="3.4" fill="#0b1a33" opacity=".15"/>';
+  const inner = `<defs>${clip}</defs>${shadow}<g class="d-jump">${feet}<g class="d-body">${body}</g></g>${o.after || ''}`;
+  return sm ? `<g transform="translate(60 62) scale(1.4) translate(-60 -62)">${inner}</g>` : inner;
+}
+// How much is drawn: elements in the SVG (fewer = easier to edit, less to render, less to blur at 16 px).
+const svgCount = (inner) => new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${inner}</svg>`, 'image/svg+xml').getElementsByTagName('*').length - 1;
+const SIMPLE = [
+  { name: 'Nucli', before: () => nucli({ still: true, noShadow: true }), after: () => ns({ still: true, noShadow: true }), big: [() => nucli({}), () => ns({})], small: (s) => ns({ still: true, small: s <= 24, noShadow: true }), oldSmall: () => nucli({ still: true, noShadow: true }) },
+  { name: 'Duo', before: () => duo({ noShadow: true }), after: () => ds({ noShadow: true }), big: [() => duo({}), () => ds({})], small: (s) => ds({ small: s <= 24, noShadow: true }), oldSmall: () => duo({ noShadow: true }) },
+];
+const simpleCards = () => SIMPLE.map((m) => {
+  const a = svgCount(m.before()), b = svgCount(m.after());
+  return `<div class="nx-card"><div class="nx-h"><b>${m.name}: today and simpler</b><span class="nx-tag rec">${a} → ${b} shapes</span></div>
+  <div class="nx-big nx-pair"><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="${m.name} today">${m.big[0]()}</svg><svg class="blink" viewBox="0 0 120 120" role="img" aria-label="${m.name}, simpler">${m.big[1]()}</svg></div>
+  <div class="r2-sizes">${['light', 'dark'].map((t) => `<div class="nx-strip nx-${t}">${[24, 16].map((s) => `<figure>${still(m.oldSmall(), `${m.name} today, ${s} pixels on ${t}`, s)}<figcaption>today ${s}</figcaption></figure><figure>${still(m.small(s), `${m.name} simpler, ${s} pixels on ${t}`, s)}<figcaption>simpler ${s}</figcaption></figure>`).join('')}</div>`).join('')}</div></div>`;
+}).join('');
+const SIMPLE_ANIMS = [
+  ['n-idle', 'Nucli · Idle', () => ns({})], ['n-hula', 'Nucli · Hula hoop', () => ns({ expr: 'happy' })],
+  ['hello', 'Duo · Hello!', () => ds({ expr: 'happy', arms: 'wave' })], ['joy', 'Duo · Woohoo', () => ds({ expr: 'happy', after: confetti() })],
+];
+lazyFill('r2-simple', () => simpleCards());
+lazyFill('r2-simple-anims', () => SIMPLE_ANIMS.map(([id, name, svg]) => `<div class="scene"><div class="stage"><svg class="s-${id} blink" viewBox="0 0 120 120" role="img" aria-label="${name}, simpler drawing">${svg()}</svg></div><b>${name}</b><span>Same animation as in the library, on the simpler drawing.</span></div>`).join(''));
+
+// Performance: the generators sample every few milliseconds. Drop keyframes that a straight line between their
+// neighbours already gives (same declarations, numbers within 0.4 %), so the CSS is a fraction of the size.
+function slimKeyframes(css) {
+  return css.replace(/@keyframes ([\w-]+) \{ ((?:[\d.]+% \{[^{}]*\} ?)+)\}/g, (all, name, body) => {
+    const fr = [...body.matchAll(/([\d.]+)% \{([^{}]*)\}/g)].map((m) => ({ p: +m[1], d: m[2].trim() }));
+    if (fr.length < 4) return all;
+    const shape = (d) => d.replace(/-?\d*\.?\d+/g, '#'), nums = (d) => (d.match(/-?\d*\.?\d+/g) || []).map(Number);
+    const keep = [fr[0]];
+    for (let i = 1; i < fr.length - 1; i++) {
+      const a = keep[keep.length - 1], b = fr[i], c = fr[i + 1];
+      if (shape(a.d) === shape(b.d) && shape(b.d) === shape(c.d)) {
+        const na = nums(a.d), nb = nums(b.d), nc = nums(c.d), u = (b.p - a.p) / ((c.p - a.p) || 1);
+        if (nb.every((v, k) => Math.abs(na[k] + (nc[k] - na[k]) * u - v) <= Math.max(.004 * Math.abs(v), .02))) continue;
+      }
+      keep.push(b);
+    }
+    keep.push(fr[fr.length - 1]);
+    return `@keyframes ${name} { ${keep.map((f) => `${f.p}% { ${f.d} }`).join(' ')} }`;
+  });
+}
+// ---- Round 4: more ideas (cards with a small picture and my verdict) ----
+lazyFill('r4-ideas', () => {
+  const pic = (inner, label) => still(inner, label, 96);
+  const tab = (face, txt) => `<span class="r4-tab">${still(nucli({ still: true, noShadow: true, expr: face }), '', 16)}<span>${txt}</span></span>`;
+  const IDEAS = [
+    ['best', 'Status in the tab\'s icon', 'The page icon is a tiny Nucli: his electrons spin while Test all runs, he\'s pleased when it passes and worried when it fails. You see the result from another tab, without switching back.', `<span class="r4-tabs">${tab('focus', 'Test all · 26 / 40')}${tab('happy', 'All 4 players start')}${tab('worried', '2 problems')}</span>`],
+    ['best', 'Animations as files', 'Export every scene as Lottie, GIF and SVG from the code that draws it, so streamers, video makers, the Discord and fan sites can use the real animations, not screenshots.', '<span class="r4-files"><i>nucli-happy.json</i><i>duo-joy.gif</i><i>duo-wave.svg</i></span>'],
+    ['best', 'Illustrated errors', 'The five most common failures (the game\'s .exe not found, a wrong path, an instance that crashes, no controller, input that isn\'t split) each get a small scene and the fix, in the docs and in the tools.', pic(duo({ expr: 'worried', arms: 'hold', after: '<g transform="translate(86 74)"><rect x="-10" y="-8" width="20" height="16" rx="2" fill="#fca53d" stroke="#d27f22" stroke-width="1.6"/><text x="0" y="4" text-anchor="middle" font-size="10" font-weight="700" fill="#1f2c46">?</text></g>' }), 'Duo holding an empty box')],
+    ['good', 'Milestones', 'The first handler that passes Test all, the first Hub upload: Duo and Nucli high-five, once per person, ever. A reason to remember the moment, never a nag.', pic(duo({ expr: 'happy', arms: 'up' }), 'Duo cheering') + pic(nucli({ expr: 'excited' }), 'Nucli excited')],
+    ['good', 'Author badges', 'On the Hub, a Nucli badge next to handler authors: one electron per verified handler, up to four, then a ring. Earned, small, and it says who to thank.', `<span class="r4-badge">${still(nucli({ still: true, noShadow: true }), 'Nucli badge', 40)}<b>Talos91</b><span>4 verified</span></span>`],
+    ['good', 'Seasonal touches', 'A scarf in winter, a party hat on splitscreen.me\'s birthday. For the Discord, the site and the emoji; never in the tools.', pic(duo({ expr: 'happy', after: '<path d="M30 84 Q60 98 90 84 L90 91 Q60 105 30 91 Z" fill="#ff434d"/><path d="M76 92 l6 16 l7 -2 l-4 -15 Z" fill="#e2333d"/><path d="M38 87 l0 6 M48 90 l0 6 M58 92 l0 6 M68 91 l0 6 M78 89 l0 6" stroke="#fff" stroke-width="2" opacity=".7"/>' }), 'Duo in a scarf')],
+    ['maybe', 'A first-visit tour', 'Duo points at three things on your first visit: open a handler, Check, Try it. Skippable, and never again. Only if people get lost; good empty states may be enough.', pic(duo({ expr: 'happy', arms: 'wave' }), 'Duo waving')],
+    ['maybe', 'Sunglasses in the dark', 'Switch to dark mode and Duo puts on sunglasses, once. Fun, cheap, and maybe one joke too many.', pic(duo({ expr: 'smile', after: '<g fill="#1f2c46"><rect x="37" y="52" width="20" height="12" rx="5"/><rect x="63" y="52" width="20" height="12" rx="5"/><path d="M57 56 h6" stroke="#1f2c46" stroke-width="2.4"/></g><path d="M41 55 l6 0" stroke="#fff" stroke-width="1.6" opacity=".6"/>' }), 'Duo with sunglasses')],
+    ['skip', 'Sounds', 'Soft pops when a player joins or leaves. Most people work with sound off or music on; off by default at best.', '<span class="r4-mute" aria-hidden="true">🔇</span>'],
+  ];
+  const V = { best: '★ My pick', good: 'Good', maybe: 'Maybe', skip: 'Skip' };
+  return IDEAS.map(([v, name, txt, art]) => `<div class="r4-card r4-${v}"><div class="r4-art">${art}</div><div class="r4-h"><b>${name}</b><span class="r4-v">${V[v]}</span></div><p>${txt}</p></div>`).join('');
+});
+
+document.getElementById('gen').textContent = slimKeyframes(genCSS() + LCSS);
+window.addGenCSS = (css) => { const s = document.createElement('style'); s.textContent = slimKeyframes(css); document.head.append(s); };
+// ---- Round 3: animations in the buttons; every look, light and dark, and the Motion settings ----
+// Button icons: 24 × 24, drawn with currentColor so they take each look's colours. Each plays where you clicked,
+// in 0.3 to 0.6 s, and can be cut off by the next click. With less motion (or Motion "Still"), only the state changes.
+const BI = {
+  copy: { label: 'Copy', done: 'Copied', svg: `<rect class="b" x="9" y="9" width="11" height="11" rx="2"/><rect class="f" x="4" y="4" width="11" height="11" rx="2" fill="var(--btn-bg)"/><path class="k" d="M11.6 14.6 l2 2 l4 -4.3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>` },
+  save: { label: 'Save', done: 'Saved', svg: `<path class="t" d="M4 15 v4 h16 v-4"/><g class="a"><path d="M12 3 v11"/><path d="M7.5 9.5 L12 14 L16.5 9.5"/></g>` },
+  undo: { label: 'Undo', svg: `<g class="u"><path d="M9 14 L4 9 L9 4"/><path d="M4 9 h10 a6 6 0 0 1 0 12 h-3"/><circle class="e" cx="4" cy="9" r="2" fill="${ACC[0]}" stroke="none" opacity="0"/></g>` },
+  redo: { label: 'Redo', svg: `<g class="u"><path d="M15 14 L20 9 L15 4"/><path d="M20 9 h-10 a6 6 0 0 0 0 12 h3"/><circle class="e" cx="20" cy="9" r="2" fill="${ACC[2]}" stroke="none" opacity="0"/></g>` },
+  format: { label: 'Format', svg: `<path class="l1" d="M4 6 h13"/><path class="l2" d="M8 12 h12"/><path class="l3" d="M8 18 h8"/>` },
+  fix: { label: 'Fix all', svg: `<g class="w"><path d="M4 20 L14 10"/><path d="M12.5 11.5 l2 2" stroke-width="3"/></g><path class="s" d="M17 3.5 l1 2.5 l2.5 1 l-2.5 1 l-1 2.5 l-1 -2.5 l-2.5 -1 l2.5 -1 z" fill="currentColor" stroke-width="1"/>${[0, 1, 2].map((i) => `<circle class="d d${i}" cx="17" cy="7" r="1.3" fill="${ACC[i + 1]}" stroke="none" opacity="0"/>`).join('')}` },
+  share: { label: 'Share', done: 'Link copied', svg: `<circle class="r" cx="12" cy="12" r="5" stroke-width="1.4" opacity="0"/><path class="h1" d="M10 14 a4 4 0 0 1 0 -5.6 l2 -2 a4 4 0 0 1 5.6 5.6 l-1 1"/><path class="h2" d="M14 10 a4 4 0 0 1 0 5.6 l-2 2 a4 4 0 0 1 -5.6 -5.6 l1 -1"/>` },
+  run: { label: 'Try it', svg: `<path class="p" d="M8.5 5.5 v13 l10 -6.5 z" fill="currentColor" stroke-linejoin="round"/><circle class="o" r="2" fill="${ACC[3]}" stroke="none" opacity="0"/>` },
+};
+const SPRING = 'cubic-bezier(.34, 1.56, .64, 1)';
+const BI_PLAY = {
+  copy: (q) => { q('.f').animate([{ transform: 'none' }, { transform: 'translate(5px, 5px)', offset: .4 }, { transform: 'translate(-1.5px, -1.5px)', offset: .75 }, { transform: 'none' }], { duration: 380, easing: 'ease-in-out' });
+    q('.k').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0, offset: .12 }, { strokeDashoffset: 0, offset: .9 }, { strokeDashoffset: 0, opacity: 0 }], { duration: 1900, delay: 260, easing: 'ease-out' }); },
+  save: (q) => { q('.a').animate([{ transform: 'none' }, { transform: 'translateY(4.5px)', offset: .35, easing: 'ease-out' }, { transform: 'translateY(-1.5px)', offset: .65 }, { transform: 'none' }], { duration: 380, easing: 'ease-in' });
+    q('.t').animate([{ transform: 'none' }, { transform: 'none', offset: .3 }, { transform: 'scale(1.14, .7)', offset: .42 }, { transform: 'scale(.96, 1.08)', offset: .65 }, { transform: 'none' }], { duration: 420 }); },
+  undo: (q) => { q('.u').animate([{ transform: 'none' }, { transform: 'rotate(-38deg)', offset: .4 }, { transform: 'rotate(7deg)', offset: .72 }, { transform: 'none' }], { duration: 340, easing: 'ease-out' });
+    q('.e').animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1.3)', offset: .4 }, { opacity: 0, transform: 'scale(0)' }], { duration: 340 }); },
+  format: (q) => ['.l1', '.l2', '.l3'].forEach((s, i) => q(s).animate([{ transform: `translateX(${[4, -5, 3][i]}px)`, opacity: .5 }, { transform: 'none', opacity: 1 }], { duration: 360, delay: i * 55, easing: SPRING, fill: 'backwards' })),
+  fix: (q) => { q('.w').animate([{ transform: 'none' }, { transform: 'rotate(-20deg)', offset: .35 }, { transform: 'rotate(4deg)', offset: .7 }, { transform: 'none' }], { duration: 360, easing: 'ease-out' });
+    q('.s').animate([{ transform: 'scale(1)' }, { transform: 'scale(.4)', offset: .3 }, { transform: 'scale(1.4) rotate(90deg)', offset: .6 }, { transform: 'scale(1) rotate(90deg)' }], { duration: 420, easing: 'ease-out' });
+    [[-6, -2], [5, -5], [4, 5]].forEach(([x, y], i) => q('.d' + i).animate([{ opacity: 0, transform: 'none' }, { opacity: 1, transform: 'none', offset: .45 }, { opacity: 0, transform: `translate(${x}px, ${y}px) scale(.4)` }], { duration: 520, easing: 'ease-out' })); },
+  share: (q) => { q('.h1').animate([{ transform: 'translate(-3px, 3px)' }, { transform: 'translate(.7px, -.7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' });
+    q('.h2').animate([{ transform: 'translate(3px, -3px)' }, { transform: 'translate(-.7px, .7px)', offset: .6 }, { transform: 'none' }], { duration: 320, easing: 'ease-in' });
+    q('.r').animate([{ opacity: 0, transform: 'scale(.3)' }, { opacity: .9, transform: 'scale(.6)', offset: .01 }, { opacity: 0, transform: 'scale(1.8)' }], { duration: 380, delay: 190, easing: 'ease-out' }); },
+  run: (q) => { q('.p').animate([{ transform: 'none' }, { transform: 'scale(.8)', offset: .25 }, { transform: 'scale(1.12)', offset: .55 }, { transform: 'none' }], { duration: 380, easing: 'ease-out' });
+    q('.o').animate([{ offsetDistance: '0%', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .85 }, { offsetDistance: '100%', opacity: 0 }], { duration: 620, delay: 120, easing: 'cubic-bezier(.4, 0, .3, 1)' }); },
+};
+BI_PLAY.redo = (q) => { q('.u').animate([{ transform: 'none' }, { transform: 'rotate(38deg)', offset: .4 }, { transform: 'rotate(-7deg)', offset: .72 }, { transform: 'none' }], { duration: 340, easing: 'ease-out' });
+  q('.e').animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1.3)', offset: .4 }, { opacity: 0, transform: 'scale(0)' }], { duration: 340 }); };
+const biBtn = (k, small) => `<button type="button" class="bi-btn${small ? ' sm' : ''}" data-bi="${k}"${small ? ` aria-label="${BI[k].label}"` : ''}><svg class="bi bi-${k}" viewBox="0 0 24 24" width="${small ? 18 : 20}" height="${small ? 18 : 20}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${BI[k].svg}</svg>${small ? '' : `<span>${BI[k].label}</span>`}</button>`;
+// Plays on click. Motion comes from the closest [data-motion] (Round 3's setting) and the device's preference.
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest?.('.bi-btn'); if (!b) return;
+  const k = b.dataset.bi, svg = b.querySelector('svg'), q = (s) => svg.querySelector(s);
+  svg.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  const m = b.closest('[data-motion]')?.dataset.motion || 'default';
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches || m === 'still' || m === 'off' || document.documentElement.classList.contains('paused') || b.closest('[data-look="alpha8"]');
+  if (!still) BI_PLAY[k](q);
+  else if (k === 'copy') q('.k').animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 0 }], { duration: 1600 });
+  const span = b.querySelector('span');
+  if (BI[k].done) {
+    clearTimeout(b._t);
+    if (span) span.textContent = BI[k].done; else b.setAttribute('aria-label', BI[k].done);
+    b.classList.add('confirmed');
+    b._t = setTimeout(() => { if (span) span.textContent = BI[k].label; else b.setAttribute('aria-label', BI[k].label); b.classList.remove('confirmed'); }, 1600);
+  }
+});
+
+// The workbench's looks (playground/src/themes.json), light and dark.
+const R3_LOOKS = [
+  ['www', 'splitscreen.me', { light: ['#f5f6f7', '#ffffff', '#ebedf0', '#dadde1', '#1c1e21', '#5c636c', '#0c76a5', '#ffffff'], dark: ['#1b1b1d', '#242526', '#2e3033', '#444950', '#e3e3e3', '#b0b4ba', '#30bbf8', '#06131c'] }, ['12px', '8px'], 'system-ui, sans-serif'],
+  ['v3', 'v3.splitscreen.me', { light: ['#eceef2', '#ffffff', '#f3f4f7', '#dde1e8', '#0b0d12', '#4f5767', '#0b0d12', '#ffffff'], dark: ['#000000', '#14171e', '#1b1f28', '#2c3240', '#f3f4f6', '#a3abba', '#f3f4f6', '#07080a'] }, ['14px', '8px'], '"Archivo", system-ui, sans-serif'],
+  ['mac', 'Mac style', { light: ['#d9dce6', '#ffffff', '#f5f5f7', 'rgba(0, 0, 0, .11)', '#1d1d1f', '#6e6e73', '#0a66d8', '#ffffff'], dark: ['#15161c', '#1f1f21', '#2c2c2e', 'rgba(255, 255, 255, .11)', '#f5f5f7', '#a1a1a6', '#0a72dc', '#ffffff'] }, ['12px', '6px'], '-apple-system, "SF Pro Text", system-ui, sans-serif'],
+  ['alpha8', 'Nucleus Co-op alpha 8', { light: ['#e1e1e1', '#f5f5f5', '#dcdcdc', '#8c8c8c', '#000000', '#454545', '#323232', '#ffffff'], dark: ['#323232', '#282828', '#3c3c3c', '#5a5a5a', '#ffffff', '#c8c8c8', '#ffffff', '#1e1e1e'] }, ['0px', '0px'], '"Segoe UI", Tahoma, sans-serif'],
+];
+const THEME_PLAYERS = ['#ff6b35', '#3b8bff', '#ffcf3a', '#3ddb86'];
+const r3Vars = ([bg, surface, s2, line, fg, muted, accent, accentFg], [rp, rc], font) => `--bg:${bg};--card:${surface};--panel:${surface};--tile:${s2};--btn-bg:${s2};--line:${line};--panel-line:${line};--track:${line};--ink:${fg};--muted:${muted};--accent:${accent};--accent-fg:${accentFg};--pick:${accent};--pick-bg:color-mix(in srgb, ${accent} 14%, ${surface});--code:color-mix(in srgb, ${fg} 28%, transparent);--rp:${rp};--rc:${rc};--font:${font};color-scheme:${bg === '#000000' || parseInt(bg.slice(1, 3), 16) < 128 ? 'dark' : 'light'}`;
+const R3_FALLBACK = { ok: '<svg class="r3-plain" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 12.5 l3 3 l6 -6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' };
+const r3Pane = (look, mode, players) => {
+  const [id, name, cols, radii, font] = look;
+  const recol = (svg) => players ? ACC.reduce((s, c, i) => s.split(c).join(THEME_PLAYERS[i]), svg) : svg;
+  const m = (sid, size, busy, label) => `<span class="r3m${busy ? ' busy' : ''}" style="width:${size}px;height:${size}px">${recol(scene(sid, label, `width="${size}" height="${size}"`))}</span>`;
+  const plain = id === 'alpha8' || document.getElementById('r3-motion').value === 'off';
+  return `<div class="r3-pane" data-look="${id}" style="${r3Vars(cols[mode], radii, font)}"><div class="r3-bar">${id === 'mac' ? '<i class="tl r"></i><i class="tl y"></i><i class="tl g"></i>' : ''}<b>${name}</b><span>${mode}</span></div>
+    <div class="r3-tools">${['copy', 'save', 'undo', 'redo', 'format', 'fix', 'share', 'run'].map((k) => biBtn(k, true)).join('')}</div>
+    <div class="r3-body">
+      <div class="r3-row">${plain ? R3_FALLBACK.ok : m('n-ok', 48, false, 'Nucli, pleased')}<span><b>Nothing to fix.</b> Try it next.</span></div>
+      <div class="r3-row">${plain ? '<span class="r3-pct">26 / 40</span>' : m('n-ring', 48, true, 'Test all progress')}<span><b>Test all</b> 26 of 40 runs</span></div>
+      <div class="r3-row">${plain ? '<span class="r3-plainbar"><i></i></span>' : m('load', 56, true, 'Downloading')}<span><b>Getting Borderlands 2…</b> 60 %</span></div>
+      <div class="r3-toast">${plain ? R3_FALLBACK.ok : m('n-ok', 30, false, '')}<span>Fixed 12 problems</span></div>
+    </div></div>`;
+};
+const r3Render = () => {
+  const box = document.getElementById('r3-matrix'), players = document.getElementById('r3-players').checked;
+  box.innerHTML = R3_LOOKS.flatMap((l) => ['light', 'dark'].map((md) => r3Pane(l, md, players))).join('');
+  r3Motion();
+};
+// Motion presets, as in playground/src/motion.ts: All loops; Default plays once (loaders keep going); Calm keeps the
+// interface's motion but still mascots; Still: nothing moves; Off: no mascots. "Still" here shows the designed still
+// pose (animation: none), not a frozen frame: a frozen loader can stop on an empty frame.
+const r3Motion = () => {
+  const sec = document.getElementById('r3sec'), m = document.getElementById('r3-motion').value;
+  sec.dataset.motion = m;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  sec.querySelectorAll('.r3m > svg').forEach((svg) => {
+    try {
+      clearTimeout(svg._once);
+      if (RM || m === 'still' || m === 'calm' || m === 'off' || document.documentElement.classList.contains('paused')) { svg.pauseAnimations(); svg.setCurrentTime(0); }
+      else { svg.unpauseAnimations(); svg.setCurrentTime(0); if (m === 'default' && !svg.parentElement.classList.contains('busy')) svg._once = setTimeout(() => svg.pauseAnimations(), 5000); }
+    } catch {}
+  });
+  sec.querySelectorAll('.r3m > svg').forEach((svg) => svg.getAnimations({ subtree: true }).forEach((a) => { a.cancel(); a.play(); }));
+};
+document.getElementById('r3-tools').innerHTML = Object.keys(BI).map((k) => biBtn(k, false)).join('');
+document.getElementById('r3-motion').addEventListener('change', r3Render);
+document.getElementById('r3-players').addEventListener('change', r3Render);
+lazyFill('r3-matrix', () => { r3Render(); });
+document.getElementById('r3-play').addEventListener('click', () => document.querySelectorAll('#r3-tools .bi-btn').forEach((b, i) => setTimeout(() => b.click(), i * 260)));
+
 
 // Pause (CSS and the SMIL orbits), reduced motion, theme
 const pause = document.getElementById('pause');
 const setPaused = (on) => {
   document.documentElement.classList.toggle('paused', on);
-  document.querySelectorAll('svg').forEach((s) => { try { on ? s.pauseAnimations() : s.unpauseAnimations(); } catch {} });
+  document.querySelectorAll('svg').forEach((s) => { try { on || s.classList.contains('offscreen') ? s.pauseAnimations() : s.unpauseAnimations(); } catch {} });
   pause.textContent = on ? 'Play animations' : 'Pause animations';
   pause.setAttribute('aria-pressed', String(on));
 };
@@ -1577,6 +2658,27 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
     });
   };
   addEventListener('pointermove', (e) => { px = e.clientX; py = e.clientY; if (!queued) { queued = true; requestAnimationFrame(upd); } }, { passive: true });
+})();
+// Performance: only what's on screen moves. Each top-level SVG is paused (CSS and SMIL) while it's off screen,
+// including everything in a hidden tab; new ones are watched as they're added.
+(() => {
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    const s = e.target; s.classList.toggle('offscreen', !e.isIntersecting);
+    try { if (document.documentElement.classList.contains('paused') || !e.isIntersecting) s.pauseAnimations(); else s.unpauseAnimations(); } catch {}
+  }), { rootMargin: '120px' });
+  const watch = (root) => root.querySelectorAll?.('svg').forEach((s) => { if (!s.ownerSVGElement && !s._seen) { s._seen = 1; io.observe(s); } });
+  watch(document);
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType !== 1) return; if (n.tagName === 'svg' && !n.ownerSVGElement) watch(n.parentNode); else watch(n); }))).observe(document.body, { childList: true, subtree: true });
+})();
+(() => {
+  const fillAll = () => LAZY.forEach(([, f]) => f());
+  if (location.hash && location.hash !== '#app') fillAll();
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return; io.unobserve(e.target); LAZY.find(([el]) => el === e.target)?.[1](); }), { rootMargin: '1200px 0px' });
+  // Measure every section in one layout pass, then build the near ones (measuring between builds would force a layout each time).
+  const near = LAZY.map(([el]) => el.getBoundingClientRect().top < innerHeight + 1200);
+  LAZY.forEach(([el, f], i) => (near[i] ? f() : io.observe(el)));
+  document.addEventListener('click', (e) => { const a = e.target.closest('a[href^="#"]'); if (a && a.getAttribute('href').length > 1 && a.getAttribute('href') !== '#app') fillAll(); }, true);
+  addEventListener('hashchange', fillAll);
 })();
 </script>
 <script>
@@ -2289,6 +3391,8 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
     let dt = Math.min(.033, (t - last) / 1000);
     last = t;
     if (paused() || RM) dt = 0;
+    // Nothing on screen to move: skip the physics (the page stays light while you read elsewhere).
+    if (stage.classList.contains('offscreen') && (hosted || nst.classList.contains('offscreen'))) dt = 0;
     if (performance.now() < stopUntil) dt = 0; // hit stop: hold the impact pose
     if (twos.checked && dt > 0) { acc += dt; if (acc < 1 / 12) { requestAnimationFrame(frame); return; } dt = Math.min(.1, acc); acc = 0; }
     if (dt > 0 || RM) {
@@ -2732,6 +3836,7 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
     if (curLayer.innerHTML !== html) curLayer.innerHTML = html;
   }
   function pollPads() {
+    if (app.closest('[hidden]') || !app.offsetParent) { requestAnimationFrame(pollPads); return; } // the app concept isn't showing
     const pads = navigator.getGamepads ? [...navigator.getGamepads()] : [];
     pads.forEach((gp) => {
       if (!gp) return;
@@ -2776,18 +3881,20 @@ tb.addEventListener('click', () => { mode = order[(order.indexOf(mode) + 1) % 3]
 })();
 </script>
 <script>
-document.querySelectorAll('.hist').forEach((d) => d.addEventListener('toggle', () => { const f = d.querySelector('iframe'); if (d.open && !f.src) f.src = f.dataset.src; }));
+document.querySelectorAll('.hist').forEach((d) => d.addEventListener('toggle', () => { const f = d.querySelector('iframe'); if (f && d.open && !f.src) f.src = f.dataset.src; }));
 </script>
 <script>
 // The SVG links: a plain download on a normal site; inside the claude.ai viewer, its downloads feature.
 (() => {
   let dl = null;
   if (window.claude && window.claude.use) window.claude.use('downloads').then((d) => (dl = d)).catch(() => {});
+  // The claude.ai viewer can't serve .zip files: there the packs come from GitHub (the assets branch).
+  if (window.claude) document.querySelectorAll('.pack a[download]').forEach((a) => { a.href = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench/raw/assets/mascots/' + a.getAttribute('href'); a.removeAttribute('download'); a.target = '_blank'; a.rel = 'noopener'; });
   document.addEventListener('click', async (e) => {
-    const a = e.target.closest && e.target.closest('.svgc a[download]');
+    const a = e.target.closest && e.target.closest('.svgc a[download], .pack a[download]');
     if (!a || !dl) return;
     e.preventDefault();
-    try { await dl.save({ filename: a.getAttribute('href').split('/').pop(), data: await (await fetch(a.href)).text() }); } catch {}
+    try { await dl.save({ filename: a.getAttribute('href').split('/').pop(), data: await (await fetch(a.href)).blob() }); } catch {}
   });
 })();
 </script>

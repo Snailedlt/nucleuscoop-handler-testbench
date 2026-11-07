@@ -1,3 +1,5 @@
+import { PRESETS, presetOf, savedMotion, setMotion, type MascotMotion, type Preset } from './motion';
+import { confirmOn } from './toast';
 // Workbench settings (the gear in the header): theme, editor, tips, the Lines column, and the
 // niche ones (Advanced mode, the dev bar) under Advanced. Also the phone helpers it controls:
 // the symbol bar above the on-screen keyboard.
@@ -206,7 +208,19 @@ export function initSettings(d: Deps) {
   $('#set-wrap').addEventListener('change', (e) => ((ed.wrap = (e.target as HTMLInputElement).checked), save(), applyEditor()));
   $('#set-keybar').addEventListener('change', (e) => ((ed.keybar = (e.target as HTMLInputElement).checked), save(), placeKeybar()));
   $('#set-tips').addEventListener('change', (e) => d.tips.set((e.target as HTMLInputElement).checked));
-  $('#set-heads').addEventListener('click', () => (d.tips.set(true), d.tips.reset(), sync(), d.toast('Heads-ups will show again.')));
+  $('#set-heads').addEventListener('click', () => (d.tips.set(true), d.tips.reset(), sync(), confirmOn($('#set-heads'), 'Heads-ups will show again ✓', 'Heads-ups will show again.')));
+  // Motion: a preset, and the switches it sets; changing a switch makes it "Custom".
+  const mv = { preset: $('#set-motion') as HTMLSelectElement, ui: $('#set-motion-ui') as HTMLInputElement, masc: $('#set-motion-masc') as HTMLSelectElement, edit: $('#set-motion-edit') as HTMLInputElement, news: $('#set-motion-news') as HTMLInputElement };
+  const showMotion = () => {
+    const m = savedMotion();
+    mv.preset.value = presetOf(m);
+    mv.ui.checked = m.ui; mv.masc.value = m.mascots; mv.edit.checked = m.editFx; mv.news.checked = m.newsAuto;
+    $('#set-motion-note').textContent = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Your device asks for less motion, so nothing here moves more than Still.' : '';
+  };
+  mv.preset.addEventListener('change', () => { setMotion({ ...PRESETS[mv.preset.value as Preset] }); showMotion(); });
+  const fromSwitches = () => { setMotion({ ui: mv.ui.checked, mascots: mv.masc.value as MascotMotion, editFx: mv.edit.checked, newsAuto: mv.news.checked }); showMotion(); };
+  [mv.ui, mv.masc, mv.edit, mv.news].forEach((x) => x.addEventListener('change', fromSwitches));
+  showMotion();
   $('#set-lines').addEventListener('change', (e) => d.lines.set((e.target as HTMLInputElement).checked));
   $('#set-advanced').addEventListener('change', (e) => {
     d.advanced.checked = (e.target as HTMLInputElement).checked;
@@ -214,7 +228,7 @@ export function initSettings(d: Deps) {
   });
   $('#set-devbar').addEventListener('change', () => d.devBar.toggle());
   $('#settings-close').addEventListener('click', () => dlg.close());
-  // Tabs: General, Editor, Lines, Help, Advanced. The last one used opens next time.
+  // A vertical list of sections, in groups. The last one used opens next time.
   const TAB_KEY = 'nucleus-workbench-settings-tab';
   const tabs = [...dlg.querySelectorAll<HTMLButtonElement>('[role=tab]')];
   const selectTab = (id: string, focus = false) => {
@@ -232,7 +246,7 @@ export function initSettings(d: Deps) {
   tabs.forEach((t, i) => {
     t.addEventListener('click', () => selectTab(t.dataset.st!));
     t.addEventListener('keydown', (e) => {
-      const k = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      const k = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
       if (e.key === 'Home' || e.key === 'End') {
         e.preventDefault();
         selectTab(tabs[e.key === 'Home' ? 0 : tabs.length - 1].dataset.st!, true);
@@ -242,9 +256,36 @@ export function initSettings(d: Deps) {
       }
     });
   });
+  // Search: shows every section's matching settings at once, with the section names above them.
+  const q = $('#set-q') as HTMLInputElement;
+  const none = $('#set-none');
+  const filter = () => {
+    const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    dlg.classList.toggle('searching', words.length > 0);
+    let any = false;
+    for (const panel of dlg.querySelectorAll<HTMLElement>('.set-panel')) {
+      let hit = false;
+      const label = (panel.dataset.label ?? '').toLowerCase();
+      for (const s of panel.querySelectorAll<HTMLElement>('.set-sec')) {
+        const text = label + ' ' + (s.textContent ?? '').toLowerCase();
+        const ok = words.every((w) => text.includes(w));
+        s.classList.toggle('no-match', !ok);
+        hit ||= ok;
+      }
+      panel.classList.toggle('no-match', !hit);
+      any ||= hit;
+    }
+    none.hidden = !words.length || any;
+  };
+  q.addEventListener('input', filter);
+  q.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && q.value) { e.preventDefault(); e.stopPropagation(); q.value = ''; filter(); }
+  });
+  for (const t of tabs) t.addEventListener('click', () => { if (q.value) { q.value = ''; filter(); } });
   const open = (tab?: string) => {
     sync();
-    selectTab(tab ?? get(TAB_KEY) ?? 'general');
+    const want = tab ?? get(TAB_KEY) ?? 'theme';
+    selectTab(tabs.some((x) => x.dataset.st === want) ? want : 'theme');
     if (!dlg.open) dlg.showModal();
   };
   $('#settings-open').addEventListener('click', () => open());
@@ -281,9 +322,9 @@ export function initSettings(d: Deps) {
   const extra: [string, string, () => void][] = [
     ['Suggest', 'Suggest names', () => d.hint()],
     ['Lines', 'Show the list of names', () => d.lines.show()],
-    // The header (with the copy/download button) steps aside while typing: reach it from here, with
-    // the selection kept, so a link to the selected lines is one tap away.
-    ['Copy…', 'Copy or download the handler, or a link to the selected lines', () => ($('#code-menu-open') as HTMLButtonElement).click()],
+    // The header steps aside while typing: Share from here keeps the selection, so a link to the selected lines
+    // is one tap away.
+    ['Share…', 'Share: a link (to the selected lines, if any), the code, or a Discord post', () => ($('#share-open') as HTMLButtonElement).click()],
     ['↶', 'Undo', () => d.editor.undo()],
     ['↷', 'Redo', () => d.editor.redo()],
   ];

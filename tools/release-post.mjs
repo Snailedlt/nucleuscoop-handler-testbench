@@ -1,8 +1,9 @@
 // The Discord post for a workbench update, from CHANGELOG.md (the newest dated section, or the one
 // named): a heading, up to three highlights (the bold summaries), the link and the thanks. The same
 // shape as the extension's (splitscreenme-vscode scripts/release-notes.mjs --discord).
-//   node tools/release-post.mjs [<section id, e.g. "2026-11-05 23:00">] [--json]
-// --json prints the webhook payload (a rich embed) instead of the text.
+//   node tools/release-post.mjs [<section id, e.g. "2026-11-05 23:00">] [--json | --notes | --tag]
+// --json prints the webhook payload (a rich embed) instead of the text; --notes the whole section as GitHub
+// release notes (images as absolute links); --tag the release tag (workbench-2026-11-05, workbench-2026-11-05-2300).
 // pages.yml runs it after a deploy whose newest section the live site didn't have yet.
 import fs from 'node:fs';
 
@@ -19,6 +20,8 @@ if (!part) {
   process.exit(1);
 }
 const body = part.split('\n').slice(1).join('\n');
+// A release can open with an intro ("**The biggest update yet.** …"): its bold first sentence becomes the post's headline.
+const headline = body.split(/^### /m)[0].match(/\*\*([^*]+?)\.?\*\*/)?.[1];
 const [changes, thanksPart = ''] = body.split(/^### 🙏.*$/m);
 const items = changes
   .split('\n')
@@ -28,6 +31,18 @@ const thanks = thanksPart
   .split('\n')
   .map((l) => l.match(/^- \*\*(.+?)\*\*/)?.[1]?.replace(/^\[([^\]]+)\]\([^)]+\)$/, '$1'))
   .filter(Boolean);
+const id = part.split('\n')[0].trim();
+if (process.argv.includes('--tag')) {
+  console.log(`workbench-${id.replace(/[ :]/g, (c) => (c === ' ' ? '-' : ''))}`);
+  process.exit(0);
+}
+if (process.argv.includes('--notes')) {
+  // The section as it is in CHANGELOG.md, with its images pointing at the repository, and links to try it.
+  const RAW = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/main/';
+  const notes = body.trim().replace(/\]\((docs\/[^)\s]+)\)/g, (_, path) => `](${RAW}${path})`);
+  console.log(`${notes}\n\n---\n\n**Try it:** [open the workbench](${SITE}) · [What's new](${SITE}#whats-new) · [what it is](${SITE}start/)`);
+  process.exit(0);
+}
 if (process.argv.includes('--json')) {
   // A rich embed, so the workbench's posts look different from the extension's
   // (splitscreenme-vscode scripts/release-notes.mjs --discord --json): its own name, icon, colour.
@@ -45,7 +60,7 @@ if (process.argv.includes('--json')) {
       embeds: [
         {
           author: { name: 'Browser workbench', url: SITE, icon_url: `${SITE}icon.png` },
-          title: '🌐 The Nucleus Handler Workbench is updated',
+          title: headline ? `🌐 ${headline}` : '🌐 The Nucleus Handler Workbench is updated',
           url: `${SITE}#whats-new`,
           description,
           color: 0x3ba55c, // green: the extension's posts are VS Code blue
@@ -58,7 +73,7 @@ if (process.argv.includes('--json')) {
   process.exit(0);
 }
 const more = items.length > 3 ? ` and ${items.length - 3} more` : '';
-const lines = ['**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
+const lines = [headline ? `**${headline}** 🧰` : '**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
 if (more) lines.push(`…${more}: the link opens What's new with all of them`);
 lines.push('', `<${SITE}#whats-new>`);
 if (thanks.length) lines.push(`Thanks ${thanks.join(', ')} 🙏`);

@@ -69,7 +69,7 @@ python3 -I tools/fetch_verified.py --limit 150        # or: --id <handlerId>
 ./test-probes.sh
 ```
 
-**Hub index** (`.github/workflows/hub-sync.yml`, daily): the only place that reads hub.splitscreen.me's handler list. `tools/hub-sync.mjs` writes `hub-index.json` to the `data` branch (<https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json>), and the workbench build, the weekly check and the extension's CLI, MCP server and Browse the Hub read that instead of the Hub API (which stays the fallback). Handler packages come from the Hub's storage, once per version.
+**Hub index** (`.github/workflows/hub-sync.yml`, daily): the only place that reads hub.splitscreen.me's handler list. `tools/hub-sync.mjs` writes `hub-index.json` to the `data` branch (<https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/data/hub-index.json>), and the workbench build, the weekly check and the extension's CLI, MCP server and Browse the Hub read that instead of the Hub API (which stays the fallback). Handler packages come from the Hub's storage, once per version. The same run mirrors every handler for the workbench (`tools/hub-mirror.mjs`): `hub/<id>.js`, `hub/packages.json`, the covers, and each package's other files (`hub/<id>.files.json` from `tools/hub-files.mjs`: small files with content, big ones by name and size; `HUB_MIRROR_PKG_MAX` package downloads a run, default 60), so Hub handlers open in the workbench with their whole package listed.
 
 **Lines column usage counts** (`playground/src/usage.json`): how many Hub handlers use each API name, shown in the workbench's Lines column. Regenerate from handlers you already downloaded (`nucleus hub fetch`, one folder per handler) with `node tools/usage-counts.mjs <dir>`; only the counts are saved. Last taken from all 600 Hub handlers.
 
@@ -98,7 +98,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - a per-player `Game.Play` simulation;
 - the probes, shown next to the linter's verdict;
 - **Engine templates**: the same files the SplitScreen.Me Discord bot sends with `/create`. They are read at build time from [splitscreenme-discordbot](https://github.com/SplitScreen-Me/splitscreenme-discordbot)'s `src/handler_templates`, using a cached shallow clone in `.cache/`. Pass `--bot <path>` to use a local checkout, or `--refresh-bot` to re-clone;
-- **Hub examples**: the most-downloaded handlers whose current version is verified, snapshotted from the hub API at build time (`--hub <n>`, default 40; `--refresh-hub` to re-fetch). A published artifact can't reach other sites when you view it, so they are embedded. Each one's source is that verified package's own `jsContent`;
+- **Hub examples**: the most-downloaded handlers whose current version is verified, snapshotted from the hub API at build time (`--hub <n>`, default 40; `--refresh-hub` to re-fetch). A published artifact can't reach other sites when you view it, so they are embedded. Each one's source is that verified package's own `jsContent`, and its package's other files are downloaded once per version (cached in `.cache/hub-files/`) for the Files panel;
 - **Fix all problems**: the extension's deterministic, offline fixes, with a diff to review or **Apply automatically**;
 - **Fix with AI**, only when the page runs inside a Claude viewer.
 
@@ -124,7 +124,7 @@ In Advanced mode everything is keyboard-driven:
 
 **Theme and dev bar.** The page uses splitscreen.me's theme (brand blue, system fonts, light and dark). A dev bar, like lonnsinnplassering's, sets the colour mode and checks the WCAG contrast of the theme's text colours. Open it with Ctrl+Alt+D (remembered), a `#dev` link (this page load only), or "Show or hide the dev bar" under Examples… (Ctrl K).
 
-**Share links.** **Copy link** puts the handler, compressed, into the link (`#share-…`), so anyone with the link sees the same code; with text selected it shares just the selection, which keeps links short enough for a Discord message (2,000 characters; whole handlers are usually longer).
+**Share links.** **Share › Copy a link** puts the handler, compressed, into the link (`#share-…`), so anyone with the link sees the same code; with text selected it shares just the selection, which keeps links short enough for a Discord message (2,000 characters; whole handlers are usually longer).
 
 Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly. The page also remembers your draft, the active tab and the simulation settings in your browser.
 
