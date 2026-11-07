@@ -4,16 +4,16 @@
 // Pure functions: no DOM, so they can be tested and reused.
 import { sizeOf, type PackageFile } from './package';
 
-export type FileKind = 'js' | 'ini' | 'cfg' | 'json' | 'xml' | 'txt' | 'bat' | 'toml' | 'yaml' | 'dll' | 'exe' | 'img' | 'bin';
+export type FileKind = 'js' | 'ini' | 'cfg' | 'json' | 'xml' | 'txt' | 'bat' | 'ps1' | 'toml' | 'yaml' | 'dll' | 'exe' | 'img' | 'bin';
 const EXT: Record<string, FileKind> = {
-  js: 'js', ini: 'ini', cfg: 'cfg', conf: 'cfg', json: 'json', xml: 'xml', txt: 'txt', md: 'txt', log: 'txt', bat: 'bat', cmd: 'bat', ps1: 'bat',
+  js: 'js', ini: 'ini', cfg: 'cfg', conf: 'cfg', json: 'json', xml: 'xml', txt: 'txt', md: 'txt', log: 'txt', bat: 'bat', cmd: 'bat', ps1: 'ps1', psm1: 'ps1',
   toml: 'toml', yaml: 'yaml', yml: 'yaml', dll: 'dll', asi: 'dll', exe: 'exe', png: 'img', jpg: 'img', jpeg: 'img', gif: 'img', webp: 'img', ico: 'img', bmp: 'img',
 };
 export const kindOf = (name: string): FileKind => EXT[name.split('.').pop()!.toLowerCase()] ?? 'bin';
 /** A short label for the file icon (shown as text, not only colour). */
-export const BADGE: Record<FileKind, string> = { js: 'JS', ini: 'INI', cfg: 'CFG', json: '{ }', xml: 'XML', txt: 'TXT', bat: 'BAT', toml: 'TML', yaml: 'YML', dll: 'DLL', exe: 'EXE', img: 'IMG', bin: 'BIN' };
+export const BADGE: Record<FileKind, string> = { js: 'JS', ini: 'INI', cfg: 'CFG', json: '{ }', xml: 'XML', txt: 'TXT', bat: 'BAT', ps1: 'PS', toml: 'TML', yaml: 'YML', dll: 'DLL', exe: 'EXE', img: 'IMG', bin: 'BIN' };
 /** CodeMirror mode for editable files. */
-export const MODE: Partial<Record<FileKind, unknown>> = { js: 'javascript', ini: 'properties', cfg: 'properties', json: { name: 'javascript', json: true }, xml: 'xml', toml: 'toml', yaml: 'yaml', txt: null, bat: null };
+export const MODE: Partial<Record<FileKind, unknown>> = { js: 'javascript', ini: 'properties', cfg: 'properties', json: { name: 'javascript', json: true }, xml: 'xml', toml: 'toml', yaml: 'yaml', txt: null, bat: 'nucleus-batch', ps1: 'powershell' };
 
 /** The text of a file, or null for binary (or too big to edit here). UTF-8, or UTF-16 with a BOM. */
 export function textOf(data: Uint8Array): { text: string; enc: 'utf8' | 'utf8bom' | 'utf16le' | 'utf16be' } | null {

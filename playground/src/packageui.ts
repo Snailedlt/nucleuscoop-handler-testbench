@@ -6,6 +6,29 @@ import 'codemirror/mode/properties/properties';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/toml/toml';
 import 'codemirror/mode/yaml/yaml';
+import 'codemirror/mode/powershell/powershell';
+// Batch files (.bat, .cmd): rem / :: comments, :labels, %VARS% and %~dp0, "strings", @echo and the common commands.
+CodeMirror.defineMode('nucleus-batch', () => ({
+  startState: () => ({}),
+  token: (stream: any) => {
+    if (stream.sol()) {
+      stream.eatSpace();
+      if (stream.match(/^(rem\b|::)/i)) { stream.skipToEnd(); return 'comment'; }
+      if (stream.match(/^:[\w.-]+/)) return 'def';
+      if (stream.match('@')) return 'meta';
+    }
+    if (stream.eatSpace()) return null;
+    if (stream.match(/^%~?[\w]*%?|^![\w]+!/)) return 'variable-2';
+    if (stream.match(/^"(?:[^"]|"")*"?/)) return 'string';
+    if (stream.match(/^(echo|off|on|set|setlocal|endlocal|if|else|not|exist|errorlevel|defined|for|in|do|goto|call|exit|start|cd|pushd|popd|copy|xcopy|move|del|mkdir|md|rmdir|rd|timeout|pause|shift|choice|powershell|cmd|taskkill|reg)\b/i)) return 'keyword';
+    if (stream.match(/^-\w+|^\/\w+/)) return 'attribute';
+    if (stream.match(/^\d+\b/)) return 'number';
+    if (stream.match(/^[&|<>()=]+/)) return 'operator';
+    stream.next();
+    return null;
+  },
+  lineComment: 'rem',
+}));
 import type { PackageFile } from './package';
 import { fileSize, sizeOf } from './package';
 import { BADGE, bytesOf, checkFileText, checkPackage, gameFolderName, installPath, kindOf, MODE, textOf, type PkgProblem } from './pkgcheck';

@@ -508,6 +508,9 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
 .cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
 .cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--code-muted, var(--muted)); }
+/* Tokens other file types use (batch, PowerShell, ini, xml, yaml): mapped onto the same code colours. */
+.cm-s-default .cm-builtin, .cm-s-default .cm-tag { color: var(--kw); } .cm-s-default .cm-attribute, .cm-s-default .cm-qualifier { color: var(--prop); }
+.cm-s-default .cm-meta, .cm-s-default .cm-header, .cm-s-default .cm-bracket { color: var(--code-muted, var(--muted)); } .cm-s-default .cm-variable-3, .cm-s-default .cm-type { color: var(--num); }
 /* Squiggles under the exact code a problem is about: VS Code's own 6x3 wave (Monaco's SVG), used as a mask so it
    takes each theme's colour. Tips get a dotted line. */
 .CodeMirror-lint-mark { background: none; position: relative; }
@@ -1823,7 +1826,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 
 /* ---- Packages: the Files panel, the file tabs, file icons, the second editor ---- */
 .fi-badge { display: inline-grid; place-items: center; min-width: 22px; height: 16px; padding: 0 3px; border-radius: 4px; font: 700 9px/1 var(--font-mono); color: #fff; background: #64748b; flex: none; letter-spacing: -.2px; margin-right: 5px; }
-.fi-js { background: #e0b100; color: #1b1f2a; } .fi-ini, .fi-cfg { background: #57657a; } .fi-json { background: #0f766e; } .fi-xml, .fi-toml, .fi-yaml { background: #9a3412; } .fi-txt { background: #6b7280; } .fi-bat { background: #166534; } .fi-dll { background: #6d28d9; } .fi-exe { background: #b91c1c; } .fi-img { background: #be185d; } .fi-bin { background: #475569; }
+.fi-js { background: #e0b100; color: #1b1f2a; } .fi-ini, .fi-cfg { background: #57657a; } .fi-json { background: #0f766e; } .fi-xml, .fi-toml, .fi-yaml { background: #9a3412; } .fi-txt { background: #6b7280; } .fi-bat { background: #166534; } .fi-ps1 { background: #1e3a8a; } .fi-dll { background: #6d28d9; } .fi-exe { background: #b91c1c; } .fi-img { background: #be185d; } .fi-bin { background: #475569; }
 .fi-dir { background: none; color: var(--muted); font-size: 12px; min-width: 14px; }
 .files-toggle { display: inline-flex; align-items: center; }
 .files-toggle[aria-pressed="true"] { background: var(--surface-2); }
@@ -1836,7 +1839,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .fs-tab .fs-x:hover { background: var(--surface-2); color: var(--fg); }
 #file-editor { flex: 1; min-width: 0; position: relative; }
 #file-editor[hidden], #file-card[hidden] { display: none; }
-#file-editor .CodeMirror { height: 100%; }
+#file-editor .CodeMirror { height: 100%; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--code-fg, var(--fg)); }
 #file-card { flex: 1; min-width: 0; padding: 18px; overflow: auto; background: var(--surface); }
 #file-card h2 { margin: 0 0 6px; display: flex; align-items: center; gap: 6px; font-size: 13.5px; }
 #file-card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; margin: 10px 0; } #file-card dt { color: var(--muted); } #file-card dd { margin: 0; overflow-wrap: anywhere; }
