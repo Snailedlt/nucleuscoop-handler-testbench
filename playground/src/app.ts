@@ -1434,7 +1434,9 @@ function exportText(): string {
   if (out !== text) {
     let told = false;
     try { told = localStorage.getItem('nucleus-workbench-credit-told') === '1'; localStorage.setItem('nucleus-workbench-credit-told', '1'); } catch { /* ignore */ }
-    if (!told) notice('Added a few comment lines at the top: made with the workbench (with a link), and what was checked, simulated and done with AI here. Turn this off in Settings › Feedback and privacy.', { kind: 'info', action: { label: 'Settings', run: () => settings.open('feedback') } });
+    // The switch is an Advanced-mode setting: outside it, say so and open the tab with Advanced mode.
+    const adv = mode === 'dev';
+    if (!told) notice(`Added a few comment lines at the top: made with the workbench (with a link), and what was checked, simulated and done with AI here. ${adv ? 'Turn this off in Settings › Feedback and privacy.' : 'In Advanced mode, Settings › Feedback and privacy can turn this off.'}`, { kind: 'info', action: { label: 'Settings', run: () => settings.open(adv ? 'feedback' : 'advanced') } });
   }
   return out;
 }

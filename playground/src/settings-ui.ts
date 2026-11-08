@@ -259,6 +259,9 @@ export function initSettings(d: Deps) {
   // Search: shows every section's matching settings at once, with the section names above them.
   const q = $('#set-q') as HTMLInputElement;
   const none = $('#set-none');
+  // Settings for experienced users (.dev-only) aren't searched outside Advanced mode, as they aren't shown (a switched-on WakaTime is).
+  const modeHidden = (el: Element) => document.documentElement.dataset.mode !== 'dev' && el.classList.contains('dev-only') && !el.querySelector('#set-waka:checked');
+  const shownText = (el: Element): string => (modeHidden(el) ? '' : [...el.childNodes].map((n) => (n.nodeType === 1 ? shownText(n as Element) : n.textContent ?? '')).join(''));
   const filter = () => {
     const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
     dlg.classList.toggle('searching', words.length > 0);
@@ -267,7 +270,7 @@ export function initSettings(d: Deps) {
       let hit = false;
       const label = (panel.dataset.label ?? '').toLowerCase();
       for (const s of panel.querySelectorAll<HTMLElement>('.set-sec')) {
-        const text = label + ' ' + (s.textContent ?? '').toLowerCase();
+        const text = label + ' ' + shownText(s).toLowerCase();
         const ok = words.every((w) => text.includes(w));
         s.classList.toggle('no-match', !ok);
         hit ||= ok;
@@ -278,6 +281,7 @@ export function initSettings(d: Deps) {
     none.hidden = !words.length || any;
   };
   q.addEventListener('input', filter);
+  d.advanced.addEventListener('change', () => { if (q.value) filter(); });
   q.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && q.value) { e.preventDefault(); e.stopPropagation(); q.value = ''; filter(); }
   });

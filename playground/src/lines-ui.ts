@@ -490,8 +490,12 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
       return lab;
     };
     SETTINGS.filter((s) => !s.advanced).forEach((s) => panel.append(row(s)));
+    // Only in Advanced mode: the list's finer controls (their values stay as they are).
     const adv = document.createElement('details');
-    adv.append(text('summary', '', 'More list settings'));
+    adv.className = 'dev-only';
+    const sum = text('summary', '', 'More list settings');
+    sum.append(text('span', 'chip adv-tag', 'Advanced'));
+    adv.append(sum);
     SETTINGS.filter((s) => s.advanced).forEach((s) => adv.append(row(s)));
     panel.append(adv);
     const reset = document.createElement('button');

@@ -1209,6 +1209,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 #help-dialog .keys td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
 /* --- Advanced mode off (simple-only shown) / on (dev-only shown) --- */
 :root[data-mode=simple] .dev-only, :root[data-mode=dev] .simple-only { display: none !important; }
+/* Settings for experienced users only show in Advanced mode (their values stay as they are). WakaTime, once on, stays in view so it can be turned off. */
+:root[data-mode=simple] #settings-dialog .set-sec.dev-only:has(#set-waka:checked) { display: flex !important; }
+.adv-tag { margin-left: 6px; padding: 0 6px; font-size: 10.5px; font-weight: 600; vertical-align: 1px; }
 .mode { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
 .mode button { border: 0; background: var(--surface); padding: 6px 10px; cursor: pointer; }
 .mode button[aria-pressed=true] { background: var(--fg); color: var(--bg); font-weight: 600; }
@@ -2263,7 +2266,7 @@ footer .made-by { margin-left: auto; }
     <div class="set-sec"><h3>Privacy</h3>
       <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Anonymous usage counts (GoatCounter)<small>Simple tallies that show us what's useful: which features get used, your 👍/👎 on tips and docs, screen size, language, and which site linked here. No cookies, no IDs, nothing that tells you apart from anyone else, and never your code or handler names. <b>Off:</b> nothing is sent at all.<br><span class="fb-open">Everything counted is public: <span id="set-feedback-totals" hidden>the <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">same numbers we see</a>, and </span>the <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/blob/main/playground/src/feedback.ts" target="_blank" rel="noopener">code that sends them</a> is open source.</span></small></span></label>
       <p class="muted small" id="set-feedback-note" hidden></p></div>
-    <div class="set-sec"><h3>Credit lines</h3>
+    <div class="set-sec dev-only"><h3>Credit lines<span class="chip adv-tag">Advanced</span></h3>
       <label class="set-check"><input type="checkbox" id="set-credit"> <span>Add credit lines when saving<small>A handler made or changed here gets a few comment lines at the top when you save or copy it: made with the workbench (with a link), and what was and wasn't done here: checked, simulated with Try it, changed by Fix with AI. Helps people who support you see which tools were used. A handler you only opened and saved stays as it was.</small></span></label></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general" data-label="Updates and backup" hidden>
@@ -2301,8 +2304,8 @@ footer .made-by { margin-left: auto; }
 
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-advanced"> <span>Advanced mode<small>Rule ids, filters, suggestions, recorded calls and engine probes</small></span></label>
-      <label class="set-check"><input type="checkbox" id="set-devbar"> <span>Developer bar<small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
-    <div class="set-sec"><h3>WakaTime</h3>
+      <label class="set-check dev-only"><input type="checkbox" id="set-devbar"> <span>Developer bar<span class="chip adv-tag">Advanced</span><small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
+    <div class="set-sec dev-only"><h3>WakaTime<span class="chip adv-tag">Advanced</span></h3>
       <label class="set-check"><input type="checkbox" id="set-waka"> <span>Track my time in WakaTime<small>Like WakaTime's VS Code plugin: sends the handler's name, the game's name, the time, what you're doing (writing, testing, reading docs), line numbers and how many lines you changed. Never the code. Your API key stays in this browser.</small></span></label>
       <div class="set-fields" id="set-waka-fields">
         <label class="set-field">API key <input type="text" id="set-waka-key" class="secret" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" placeholder="waka_…"></label>
