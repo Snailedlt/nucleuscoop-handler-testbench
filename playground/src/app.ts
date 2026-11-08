@@ -1,3 +1,4 @@
+import { initKeySettings } from './kbsettings';
 import { openFind, findStep } from './findwidget';
 import { hasCredit, withCredit, withoutCredit } from './credit';
 import { definitionAt } from '@core/definition';
@@ -13,7 +14,8 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
-import { foldRange, isMac as isMacKeys, keysByPosition, lineCommentFold, selectReferences, tabKey, vscodeKeys, vscodeMouse } from './keys';
+import { codeHandlers, fixedCodeKeys, foldRange, keysByPosition, lineCommentFold, selectReferences, vscodeMouse } from './keys';
+import { ACTIONS, appActionFor, codeKeyMap, keyLabel, labelOf, binding, onBindingsChange, type Group } from './keybindings';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, membersOf, ownerLabel, Resolved } from '@core/api';
@@ -323,33 +325,27 @@ const editor = CodeMirror($('#editor'), {
     tooltips: false, // our own hover card (showHoverCard)
   },
   configureMouse: vscodeMouse,
-  extraKeys: {
-    // Ctrl+.: the problems (and fixes) at the cursor, else on its line.
-    ...vscodeKeys((cm: any) => {
-      const c = cm.getCursor();
-      showLineProblems(c.line, cm.indexFromPos(c));
-      if (linePop.hidden) showLineProblems(c.line);
-      // From the keyboard: straight to its first button (Fix this), Esc goes back to the code.
-      if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
-    }),
-    'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
-    F12: () => goToDefinition(),
-    // As in VS Code: Ctrl+G go to line (the palette with ":"), Ctrl+F / Ctrl+H find and replace, F3 through the matches.
-    'Ctrl-G': () => showOpen('line'),
-    [isMacKeys ? 'Cmd-F' : 'Ctrl-F']: (cm: any) => openFind(cm),
-    [isMacKeys ? 'Cmd-Alt-F' : 'Ctrl-H']: (cm: any) => openFind(cm, true),
-    F3: (cm: any) => findStep(cm, 1),
-    'Shift-F3': (cm: any) => findStep(cm, -1),
-    // Ctrl+Enter: a new line below (VS Code); Try it is Ctrl+F5.
-    [isMacKeys ? 'Cmd-Enter' : 'Ctrl-Enter']: 'insertLineAfter',
-    // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
-    Tab: tabKey,
-    'Shift-Tab': 'indentLess',
-    // Rename (F2) and Find all references (Shift+F12): the handler's own variable or function, every use selected.
-    F2: () => renameSymbol(),
-    'Shift-F12': () => renameSymbol(true),
-  },
+  // Keys: keybindings.ts (VS Code's, changeable in Settings › Keyboard shortcuts), set just below.
 } as any);
+// The code editor's keys from keybindings.ts; again whenever they're changed in Settings.
+const editorHandlers: Record<string, (cm: any) => void> = {
+  ...codeHandlers,
+  // The problems (and fixes) at the cursor, else on its line; from the keyboard straight to its first button.
+  quickFix: (cm: any) => {
+    const c = cm.getCursor();
+    showLineProblems(c.line, cm.indexFromPos(c));
+    if (linePop.hidden) showLineProblems(c.line);
+    if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
+  },
+  suggest: (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
+  goToLine: () => showOpen('line'),
+  definition: () => goToDefinition(),
+  rename: () => renameSymbol(),
+  references: () => renameSymbol(true),
+};
+const applyKeys = () => editor.setOption('extraKeys', codeKeyMap(editorHandlers, fixedCodeKeys));
+applyKeys();
+onBindingsChange(() => (applyKeys(), renderHelpKeys()));
 keysByPosition(editor);
 let escThenTab = false;
 editor.on('keydown', (_cm: any, e: KeyboardEvent) => {
@@ -592,7 +588,6 @@ tip.addEventListener('mouseenter', () => { clearTimeout(tipHideTimer); clearTime
 tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperElement().contains(e.relatedTarget as Node)) hideTipSoon(); });
 editor.on('change', () => (tip.hidden = true));
 editor.on('scroll', () => (tip.hidden = true));
-let testChord = 0;
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
 
 // The small code editors in Form and Blocks (codefield.ts): the same suggestions, hover docs and announcements.
@@ -1786,30 +1781,30 @@ const click = (sel: string) => () => ($(sel) as HTMLElement).click();
 function commandList(): OpenEntry[] {
   const c = (title: string, keys: string, keywords: string, run: () => void, sub?: string): OpenEntry => ({ group: 'Actions', title, keys, keywords, run, sub, icon: OI.command });
   const list: OpenEntry[] = [
-    c('Format document', 'Shift+Alt+F', 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
+    c('Format document', labelOf('format'), 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
-    c('Try it: simulate the handler', 'Ctrl+F5', 'run play simulate try', () => selectTab('simulate')),
-    c('Go to line', 'Ctrl+G', 'go to line number jump column', () => setTimeout(() => showOpen('line'), 0)),
-    c('Find', 'Ctrl+F', 'find search', () => openFind(editor)),
-    c('Find and replace', 'Ctrl+H', 'replace find search', () => openFind(editor, true)),
-    c('Test all combinations', 'Ctrl+; A', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
+    c('Try it: simulate the handler', labelOf('tryIt'), 'run play simulate try', () => selectTab('simulate')),
+    c('Go to line', labelOf('goToLine'), 'go to line number jump column', () => setTimeout(() => showOpen('line'), 0)),
+    c('Find', labelOf('find'), 'find search', () => openFind(editor)),
+    c('Find and replace', labelOf('replace'), 'replace find search', () => openFind(editor, true)),
+    c('Test all combinations', labelOf('testAll'), 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
     c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
     c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
-    c('Fold the block at the cursor', 'Ctrl+Shift+[', 'fold collapse hide block function region', () => (editor.focus(), editor.execCommand('fold'))),
-    c('Unfold the block at the cursor', 'Ctrl+Shift+]', 'unfold expand show block', () => (editor.focus(), editor.execCommand('unfold'))),
-    c('Fold all', 'Ctrl+K Ctrl+0', 'fold all collapse everything', () => (editor.focus(), editor.execCommand('foldAll'))),
-    c('Unfold all', 'Ctrl+K Ctrl+J', 'unfold all expand everything', () => (editor.focus(), editor.execCommand('unfoldAll'))),
-    c('Rename symbol', 'F2', 'rename variable function refactor all uses', () => renameSymbol(), 'Every use of the variable or function at the cursor selected: type the new name'),
-    c('Find all references', 'Shift+F12', 'references uses usages find all occurrences', () => renameSymbol(true)),
-    c('Select all occurrences', 'Ctrl+Shift+L', 'select all occurrences multi cursor', () => (editor.focus(), editor.execCommand('selectAllOccurrences'))),
-    c('Go to definition', 'F12', 'definition declaration where defined jump go to function variable', () => goToDefinition(), 'Where the function or variable under the cursor is declared, or the option set'),
-    c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
-    c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
+    c('Fold the block at the cursor', labelOf('fold'), 'fold collapse hide block function region', () => (editor.focus(), editor.execCommand('fold'))),
+    c('Unfold the block at the cursor', labelOf('unfold'), 'unfold expand show block', () => (editor.focus(), editor.execCommand('unfold'))),
+    c('Fold all', labelOf('foldAll'), 'fold all collapse everything', () => (editor.focus(), editor.execCommand('foldAll'))),
+    c('Unfold all', labelOf('unfoldAll'), 'unfold all expand everything', () => (editor.focus(), editor.execCommand('unfoldAll'))),
+    c('Rename symbol', labelOf('rename'), 'rename variable function refactor all uses', () => renameSymbol(), 'Every use of the variable or function at the cursor selected: type the new name'),
+    c('Find all references', labelOf('references'), 'references uses usages find all occurrences', () => renameSymbol(true)),
+    c('Select all occurrences', labelOf('selectAll'), 'select all occurrences multi cursor', () => (editor.focus(), editor.execCommand('selectAllOccurrences'))),
+    c('Go to definition', labelOf('definition'), 'definition declaration where defined jump go to function variable', () => goToDefinition(), 'Where the function or variable under the cursor is declared, or the option set'),
+    c('Go to the next problem', labelOf('nextProblem'), 'next problem error warning', () => stepProblem(1)),
+    c('Go to the previous problem', labelOf('prevProblem'), 'previous problem error warning', () => stepProblem(-1)),
     c('Go to line…', 'Ctrl+G', 'line jump goto', () => { editor.focus(); editor.execCommand('jumpToLine'); }),
     c('Show or hide Lines', 'Ctrl+B', 'lines list names insert sidebar', () => lines.toggle(), 'Every option, Context member and enum, click to insert'),
     c('Search the handler API', '', 'api docs reference search', () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); }),
-    c('Open examples and Hub handlers', 'Ctrl+P', 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
+    c('Open examples and Hub handlers', labelOf('open'), 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
     c('Open a file…', '', 'open upload import file zip nc', click('#file-open')),
     c('New handler…', '', 'new create template', () => newDialog.showModal()),
     c('Copy the handler', '', 'copy clipboard code', () => copyCode()),
@@ -1819,7 +1814,8 @@ function commandList(): OpenEntry[] {
     c('Theme: light', '', 'theme light colour color appearance', () => setThemeMode('light')),
     c('Theme: dark', '', 'theme dark colour color appearance', () => setThemeMode('dark')),
     c('Theme: follow the system', '', 'theme auto system colour color appearance', () => setThemeMode('auto')),
-    c('Settings', 'Ctrl+,', 'settings preferences options font size wrap', () => settings.open()),
+    c('Keyboard shortcuts: see and change them', '', 'keyboard shortcuts keybindings keys rebind remap change hotkeys', () => settings.open('keys')),
+    c('Settings', labelOf('settings'), 'settings preferences options font size wrap', () => settings.open()),
     c('Theme: pick a look or code colours', '', 'theme look style colours colors code syntax mac alpha v3 custom', () => settings.open('theme')),
     c('Turn Advanced mode on or off', '', 'advanced mode rule details probes', click('#advanced')),
     c('Turn tips on or off', '', 'tips hints help', () => tips.toggle()),
@@ -2259,59 +2255,59 @@ moreDialog.querySelectorAll<HTMLButtonElement>('[data-proxy]').forEach((b) =>
 
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   const mod = e.ctrlKey || e.metaKey;
-  // In the code Ctrl+Shift+L selects every occurrence (as in VS Code); elsewhere it shows or hides Lines.
-  if (mod && e.shiftKey && e.code === 'KeyL' && !(e.target as HTMLElement | null)?.closest?.('.CodeMirror')) {
-    e.preventDefault();
-    lines.toggle();
-    return;
-  }
-  // As in VS Code: Ctrl+Shift+P and F1 open the command palette (">"), Ctrl+P (and Ctrl+K outside the code) the
-  // examples and Hub handlers. Pressed again, the same key closes it.
-  const commands = (mod && e.shiftKey && e.key.toLowerCase() === 'p') || e.key === 'F1';
-  // In the code, Ctrl+K starts VS Code's two-key shortcuts (Ctrl+K Ctrl+0 folds all…), so there it's Ctrl+P.
   const inCode = !!(e.target as HTMLElement | null)?.closest?.('.CodeMirror');
-  if (commands || (mod && !e.shiftKey && ((e.key.toLowerCase() === 'k' && !inCode) || e.key.toLowerCase() === 'p'))) {
-    e.preventDefault();
-    const inCommands = ($('#open-q') as HTMLInputElement).value.trimStart().startsWith('>');
-    if (openDialog.open && inCommands === commands) openDialog.close();
-    else showOpen(commands ? 'commands' : 'open');
-  } else if (mod && e.key.toLowerCase() === 's') {
-    e.preventDefault(); // instead of the browser saving the page
-    const save = $('#save') as HTMLButtonElement;
-    void save;
-    if (e.altKey) void saveToNucleus();
-    else if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
-    else void saveAs();
-  } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
-    e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
-    lines.toggle();
-  } else if (mod && e.key === ',') {
-    e.preventDefault();
-    settings.open();
-  } else if (mod && !e.shiftKey && e.key === 'F5') {
-    // VS Code's Run Without Debugging (F5 debugs): Try it.
-    e.preventDefault();
-    selectTab('simulate');
-  } else if (mod && !e.shiftKey && e.code === 'Semicolon') {
-    // VS Code's test keys start with Ctrl+; (the key right of L, whatever it shows): then A runs all tests.
-    e.preventDefault();
-    testChord = Date.now();
-  } else if (testChord && Date.now() - testChord < 2000 && e.code === 'KeyA') {
-    e.preventDefault();
-    testChord = 0;
-    selectTab('simulate');
-    click('#sim-all')();
-  } else if (e.altKey && e.shiftKey && e.code === 'KeyF') {
-    e.preventDefault(); // VS Code: Format Document
-    formatDocument();
-  } else if (e.key === 'F8') {
-    e.preventDefault();
-    stepProblem(e.shiftKey ? -1 : 1);
-  } else if (e.key === '?' && !(e.target as HTMLElement).closest('.CodeMirror, input, textarea, select')) {
-    e.preventDefault();
-    helpDialog.showModal();
-  }
+  // Changing a shortcut in Settings: the keys go to the recorder, not here.
+  if ((e.target as HTMLElement | null)?.closest?.('.kb-recorder')) return;
+  // Kept beside the changeable ones: F1 for the palette; outside the code, Ctrl+K opens and Ctrl+Shift+L shows Lines
+  // (in the code those start VS Code's two-key shortcuts and select every match); ? lists the shortcuts.
+  if (e.key === 'F1') return void (e.preventDefault(), togglePalette(true));
+  if (!inCode && mod && !e.shiftKey && !e.altKey && e.code === 'KeyK') return void (e.preventDefault(), togglePalette(false));
+  if (!inCode && mod && e.shiftKey && e.code === 'KeyL') return void (e.preventDefault(), lines.toggle());
+  if (e.key === '?' && !(e.target as HTMLElement).closest('.CodeMirror, input, textarea, select')) return void (e.preventDefault(), helpDialog.showModal());
+  // The workbench's shortcuts (keybindings.ts), whatever they're set to.
+  const id = appActionFor(e);
+  if (!id) return;
+  e.preventDefault();
+  if (id === 'pending') return;
+  const run: Record<string, () => void> = {
+    palette: () => togglePalette(true),
+    open: () => togglePalette(false),
+    tryIt: () => selectTab('simulate'),
+    testAll: () => (selectTab('simulate'), click('#sim-all')()),
+    save: () => void saveAs(),
+    saveAs: () => openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below'),
+    saveNucleus: () => void saveToNucleus(),
+    lines: () => lines.toggle(),
+    settings: () => settings.open(),
+    format: () => formatDocument(),
+    nextProblem: () => stepProblem(1),
+    prevProblem: () => stepProblem(-1),
+  };
+  run[id]?.();
 });
+/** The shortcut list (?): from keybindings.ts, so it shows the keys as they're set now. */
+function renderHelpKeys() {
+  const body = document.querySelector('#help-dialog table.keys tbody');
+  if (!body) return;
+  const kbd = (k: string) => k.split(' · ').map((alt) => alt.split(' ').map((step) => step.split('+').map((x) => `<kbd>${esc(x)}</kbd>`).join(' ')).join(' then ')).join(' · ');
+  const groups: Group[] = ['Workbench', 'Problems', 'Find and navigate', 'Editing', 'Debugger'];
+  body.innerHTML = groups
+    .map((g) => `<tr class="kh"><th colspan="2">${g}</th></tr>` + ACTIONS.filter((a) => a.group === g).map((a) => {
+      const k = a.where === 'fixed' ? a.keys : keyLabel(binding(a.id));
+      return `<tr><td>${k ? kbd(k) : '<span class="muted">none</span>'}</td><td>${esc(a.label)}</td></tr>`;
+    }).join(''))
+    .join('');
+}
+renderHelpKeys();
+initKeySettings($('#sp-keys'));
+$('#help-rebind').addEventListener('click', () => (helpDialog.close(), settings.open('keys')));
+
+/** The command palette (">") or Open; pressed again, the same key closes it. */
+function togglePalette(commands: boolean) {
+  const inCommands = ($('#open-q') as HTMLInputElement).value.trimStart().startsWith('>');
+  if (openDialog.open && inCommands === commands) openDialog.close();
+  else showOpen(commands ? 'commands' : 'open');
+}
 
 // Help test this beta (testplan.ts: BETA). Gone at the full release.
 // The previous release at previous/ (beta only; the Pages build adds it from previous.json), to compare: the same

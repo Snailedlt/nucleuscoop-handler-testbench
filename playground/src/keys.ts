@@ -89,49 +89,28 @@ export const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 /** "Ctrl" or "⌘", for labels. */
 export const MOD_LABEL = isMac ? '⌘' : 'Ctrl';
 
-export function vscodeKeys(quickFix: (cm: any) => void): Record<string, any> {
-  const M = isMac ? 'Cmd' : 'Ctrl';
-  // normalizeKeyMap puts the modifiers in CodeMirror's order (Ctrl-Shift-K is matched as Shift-Ctrl-K).
-  return (CodeMirror as any).normalizeKeyMap({
-    [`${M}-/`]: 'toggleCommentIndented', // toggle line comment
-    'Alt-Up': 'swapLineUp', // move line up / down
-    'Alt-Down': 'swapLineDown',
-    'Shift-Alt-Down': 'duplicateLine', // copy line down (the cursor goes with the copy)
-    'Shift-Alt-Up': (cm: any) => (cm.execCommand('duplicateLine'), cm.execCommand('goLineUp')), // copy line up
-    [`${M}-Shift-K`]: 'deleteLine',
-    [`${M}-D`]: 'selectNextOccurrence', // add the next match to the selection
-    [`${M}-L`]: 'selectLine',
-    [`${M}-Shift-Enter`]: 'insertLineBefore',
-    [`${M}-]`]: 'indentMore',
-    [`${M}-[`]: 'indentLess',
-    [`${M}-F`]: (cm: any) => openFind(cm),
-    F3: (cm: any) => findStep(cm, 1),
-    'Shift-F3': (cm: any) => findStep(cm, -1),
-    [isMac ? 'Cmd-Alt-F' : 'Ctrl-H']: (cm: any) => openFind(cm, true),
-    'Ctrl-G': 'jumpToLine', // Ctrl on a Mac too, as in VS Code
-    [`${M}-Alt-Up`]: 'addCursorToPrevLine',
-    [`${M}-Alt-Down`]: 'addCursorToNextLine',
-    [`${M}-U`]: 'undoSelection', // undo the last cursor move
-    [`${M}-.`]: quickFix, // the problems (and fixes) on this line
-    // Folding, as in VS Code: fold / unfold the block at the cursor, fold all / unfold all (Ctrl+K then Ctrl+0 / J).
-    [isMac ? 'Cmd-Alt-[' : 'Ctrl-Shift-[']: foldEnclosing,
-    [isMac ? 'Cmd-Alt-]' : 'Ctrl-Shift-]']: 'unfold',
-    [`${M}-K ${M}-0`]: 'foldAll',
-    [`${M}-K ${M}-J`]: 'unfoldAll',
-    [`${M}-K ${M}-L`]: 'toggleFold',
-    [`${M}-K ${M}-C`]: (cm: any) => cm.lineComment(cm.getCursor('from'), cm.getCursor('to')), // add line comment
-    [`${M}-K ${M}-U`]: (cm: any) => cm.uncomment(cm.getCursor('from'), cm.getCursor('to')), // remove line comment
-    'Shift-Alt-A': toggleBlockComment,
-    [`${M}-Shift-\\`]: goToBracket,
-    [`${M}-Shift-L`]: selectAllOccurrences,
-    'Shift-Alt-I': cursorsAtLineEnds,
-    [isMac ? 'Ctrl-PageUp' : 'Ctrl-Up']: scrollBy(-1), // scroll without moving the cursor
-    [isMac ? 'Ctrl-PageDown' : 'Ctrl-Down']: scrollBy(1),
-    Tab: tabKey,
-    'Shift-Tab': 'indentLess', // outdent the line(s), with or without a selection
-    Esc: 'singleSelectionTop', // back to one cursor
-  });
-}
+/** The editor actions that need more than a CodeMirror command (keybindings.ts lists them all, with their keys). */
+export const codeHandlers: Record<string, (cm: any) => void> = {
+  fold: (cm) => foldEnclosing(cm),
+  addComment: (cm) => cm.lineComment(cm.getCursor('from'), cm.getCursor('to')),
+  removeComment: (cm) => cm.uncomment(cm.getCursor('from'), cm.getCursor('to')),
+  blockComment: (cm) => toggleBlockComment(cm),
+  matchBracket: (cm) => goToBracket(cm),
+  cursorsEnds: (cm) => cursorsAtLineEnds(cm),
+  scrollUp: (cm) => scrollBy(-1)(cm),
+  scrollDown: (cm) => scrollBy(1)(cm),
+  copyUp: (cm) => (cm.execCommand('duplicateLine'), cm.execCommand('goLineUp')),
+  find: (cm) => openFind(cm),
+  replace: (cm) => openFind(cm, true),
+  findNext: (cm) => findStep(cm, 1),
+  findPrev: (cm) => findStep(cm, -1),
+};
+/** Keys that stay as they are: Tab indents (a selection: its lines), Shift+Tab outdents, Esc back to one cursor. */
+export const fixedCodeKeys: Record<string, any> = {
+  Tab: (cm: any) => tabKey(cm),
+  'Shift-Tab': 'indentLess',
+  Esc: 'singleSelectionTop',
+};
 
 /** Alt+click adds a cursor, as in VS Code (CodeMirror's own default is Ctrl+click). */
 export const vscodeMouse = (_cm: any, _repeat: string, ev: MouseEvent) => ({ addNew: ev.altKey });

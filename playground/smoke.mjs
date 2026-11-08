@@ -198,6 +198,19 @@ for (const theme of ['light', 'dark']) {
     e.getInputField().dispatchEvent(ev);
   });
   check((await cmVal()) === '// var a = 1;\n', `${theme}: shortcuts with punctuation work by key position on other keyboard layouts`);
+  // Rebinding: Settings › Keyboard shortcuts, press the new keys, Enter; it works in the code at once; Reset puts it back.
+  await p.keyboard.press('Control+Comma');
+  await p.click('#st-keys');
+  await p.fill('#sp-keys .kb-q', 'comment or');
+  await p.click('#sp-keys [data-kb-change="comment"]');
+  await p.keyboard.press('Control+Shift+Digit7');
+  await p.keyboard.press('Enter');
+  await p.keyboard.press('Escape');
+  await cmSet('var a = 1;\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
+  await p.keyboard.press('Control+Shift+Digit7');
+  check((await cmVal()) === '// var a = 1;\n', `${theme}: a changed shortcut works in the code`);
+  check((await p.evaluate(() => localStorage.getItem('nucleus-workbench-keys'))) === '{"comment":"Ctrl+Shift+7"}', `${theme}: changed shortcuts are kept (and exported with the settings)`);
+  await p.evaluate(() => localStorage.removeItem('nucleus-workbench-keys'));
   // Dialogs
   // Open: the arrow keys move through tiles, chips and rows.
   await p.keyboard.press('Control+p'); // in the code Ctrl+K starts VS Code's two-key shortcuts
