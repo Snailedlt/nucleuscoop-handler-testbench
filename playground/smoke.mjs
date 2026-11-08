@@ -405,7 +405,7 @@ for (const theme of ['light', 'dark']) {
   await s.p.waitForTimeout(1500);
   const shots = await s.p.$$eval('figure img', (l) => l.map((i) => [i.currentSrc.split('/').pop(), i.naturalWidth]));
   check(shots.length > 0 && shots.every(([f, w]) => f.endsWith(`-${theme}.png`) && w > 0), `${theme}: start page screenshots load in the ${theme} theme`);
-  check((await s.p.getAttribute('.ctas a.btn.primary', 'href')) === '../', `${theme}: the start page links to its own workbench`);
+  check((await s.p.getAttribute('.ctas a.btn.primary', 'href')) .replace(/\?ref=[\w.-]+$/, '') === '../', `${theme}: the start page links to its own workbench`);
   await axe(s.p, `${theme}, start page`);
   check(!s.errors.length, `${theme}: start page has no page errors`);
   await s.ctx.close();
