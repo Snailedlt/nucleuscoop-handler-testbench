@@ -38,7 +38,11 @@ export const feedbackAvailable = () => !!BUILD.feedback;
 /** The public dashboard with the totals (GoatCounter's, made public by the maintainer). */
 export const totalsUrl = () => (BUILD.feedback ? `https://${BUILD.feedback}.goatcounter.com/` : null);
 export const feedbackBlockedByBrowser = browserSaysNo;
-export function setFeedback(on: boolean) { set(OFF_KEY, on ? null : '1'); }
+/** Switched on or off in Settings › Feedback and privacy (on also undoes #toggle-goatcounter). */
+export function setFeedback(on: boolean) {
+  set(OFF_KEY, on ? null : '1');
+  if (on) set(SKIP_KEY, null);
+}
 
 // Where this visit came from: read once, when the page opens (later navigation in the page loses it).
 const VISIT_KEY = 'nucleus-workbench-visit';
