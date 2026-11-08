@@ -717,6 +717,19 @@ a { color: var(--accent); }
 .wm-menu button small { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
 .wm-menu .wm-n { justify-self: end; color: var(--muted); font-size: 12px; }
 .wm-menu-f { margin: 4px 8px 6px; font-size: 12px; }
+.CodeMirror .vp-chip { margin: 0 2px; padding: 0 5px; height: 1.35em; line-height: 1.2; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); color: var(--accent); font: inherit; font-size: .85em; cursor: pointer; vertical-align: baseline; }
+.CodeMirror .vp-chip.bad { color: var(--warn, #b45309); border-color: currentColor; }
+.CodeMirror .vp-chip:hover, .CodeMirror .vp-chip:focus-visible { border-color: var(--accent); }
+.vp-menu { width: min(340px, calc(100vw - 16px)); }
+.vp-menu button { grid-template-columns: auto 1fr auto; }
+.vp-menu button[aria-checked="true"] { background: var(--surface-2); }
+.vp-doc, .vp-wrong { margin: 0 8px 6px; font-size: 12.5px; line-height: 1.4; }
+.vp-wrong { color: var(--fg); padding: 6px 8px; border-left: 3px solid var(--warn, #b45309); background: var(--surface-2); border-radius: 6px; }
+.vp-num { display: flex; align-items: center; gap: 8px; padding: 4px 8px 8px; }
+.vp-num button { display: inline-flex; width: 44px; height: 40px; justify-content: center; align-items: center; font-size: 20px; border: 1px solid var(--line); }
+.vp-num output { min-width: 4ch; text-align: center; font: 600 16px var(--font-mono); }
+.vp-menu.vp-sheet { left: 0; right: 0; bottom: 0; top: auto; width: 100%; max-height: 55vh; border-radius: 16px 16px 0 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+.vp-menu.vp-sheet button { min-height: 44px; }
 /* A note under the line it's about (src/codenote.ts) */
 .code-note { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 4px 6px 4px 8px; width: max-content; max-width: calc(100% - 16px); font: 13px/1.4 var(--font, system-ui), sans-serif; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid #55d137; border-radius: 8px; box-shadow: var(--sh-1, 0 2px 8px rgba(0,0,0,.12)); }
 .code-note.info { border-left-color: var(--accent); }

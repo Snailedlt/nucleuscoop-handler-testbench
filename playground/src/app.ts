@@ -33,6 +33,7 @@ import { mascot, mascotsOn } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
 import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
+import { initValuePicker } from './valuepick';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
 import { mountFormView, type FormView } from './formview';
@@ -435,6 +436,7 @@ editor.on('cursorActivity', () => {
 });
 
 initMessageHints(editor);
+initValuePicker(editor);
 const folderPickers = initFolderPickers(editor, () => gameFolder, () => void pickFolder());
 async function pickFolder() {
   const f = await pickGameFolder(editor.getValue());

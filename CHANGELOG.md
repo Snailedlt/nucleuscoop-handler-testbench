@@ -12,6 +12,18 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## Unreleased
+
+### ✨ New
+
+- **Pick a value instead of typing it.** Put the cursor on a value like the `false` in `Game.SymlinkGame = false;` and a small ▾ appears after it (Alt+↓ from the keyboard): it lists what the option takes, true or false, its choices, or − and + for numbers. A value of the wrong kind, like `"true"` in quotes, says so and offers the right one. Suggested by messenils.
+
+### 🙏 Thanks
+
+- **messenils** for the idea of picking values like in the old game editors.
+
+---
+
 ## 2026-11-07 21:41
 
 ### 🛠️ Improved

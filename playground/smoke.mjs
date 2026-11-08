@@ -273,6 +273,15 @@ for (const theme of ['light', 'dark']) {
   await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'bar'));
   await p.reload();
   await p.waitForTimeout(800);
+  // The value picker: a ▾ only when the cursor is on a pickable value; picking one changes the code.
+  await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.setValue('Game.GameName = "Demo";\nGame.SymlinkGame = false;\n'); cm.focus(); cm.setCursor({ line: 0, ch: 2 }); });
+  await p.waitForTimeout(200);
+  check((await p.locator('.vp-chip').count()) === 0, `${theme}: no value picker away from a value`);
+  await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setCursor({ line: 1, ch: 21 }));
+  await p.waitForTimeout(200);
+  await p.locator('.vp-chip').click();
+  await p.locator('.vp-menu button', { hasText: 'true' }).click();
+  check(await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getLine(1)) === 'Game.SymlinkGame = true;', `${theme}: the value picker changes the value`);
   // Form: one line per option, more on request, fixes work, and back to Code.
   await p.goto(BASE + '#example-mistakes');
   await p.waitForTimeout(800);
