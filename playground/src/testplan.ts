@@ -46,7 +46,7 @@ export const EFFORT: Record<1 | 2 | 3, { label: string; how: string }> = {
  *  both: much needed and quick first. Unlisted items count as need 2, effort 2. */
 const PRIORITY: Record<string, { need: 1 | 2 | 3; effort: 1 | 2 | 3 }> = {
   'first-handler': { need: 3, effort: 3 }, messages: { need: 3, effort: 1 }, phone: { need: 2, effort: 1 }, tips: { need: 1, effort: 1 },
-  'own-handlers': { need: 3, effort: 2 }, 'claude-docs': { need: 3, effort: 1 }, 'window-messages': { need: 2, effort: 2 },
+  'own-handlers': { need: 3, effort: 2 }, 'claude-docs': { need: 3, effort: 1 }, 'window-messages': { need: 2, effort: 2 }, 'value-picker': { need: 2, effort: 1 },
   keyboard: { need: 1, effort: 1 }, 'try-it': { need: 3, effort: 3 }, vscode: { need: 2, effort: 2 }, autocomplete: { need: 2, effort: 2 },
   reference: { need: 2, effort: 1 }, lines: { need: 1, effort: 1 }, tabs: { need: 2, effort: 1 }, layout: { need: 1, effort: 1 },
   'game-folder': { need: 2, effort: 2 }, form: { need: 3, effort: 1 }, packages: { need: 3, effort: 3 }, a11y: { need: 1, effort: 1 },
@@ -61,6 +61,7 @@ export const TEST_PLAN: TestItem[] = [
   { id: 'first-handler', areas: ['uiux'], kinds: ['task', 'nucleus'], title: 'Make your first handler', steps: 'New handler… → fill in a game you own → fix what Check finds → Try it → Save (Ctrl+S) → install it in Nucleus Co-op.', look: 'Could you finish without asking anyone? Which step was unclear? Did the game start in Nucleus?' },
   { id: 'messages', areas: ['uiux'], kinds: ['explore'], title: 'Do the messages make sense?', steps: 'Open "Handler with common mistakes" (Ctrl+K). Read each problem in Check and on hover, without opening Technical details.', look: 'Any word or sentence you didn\'t understand, or a fix you were afraid to press.' },
   { id: 'phone', areas: ['uiux'], kinds: ['phone', 'explore'], title: 'Write and fix on a phone', steps: 'Open the workbench on your phone. Type a few lines, tap an underlined word, use Lines, run Try it.', look: 'Anything too small to tap, hidden behind the keyboard, or cut off.' },
+  { id: 'value-picker', areas: ['uiux'], kinds: ['explore', 'phone'], title: 'Pick a value instead of typing it', steps: 'Put the cursor on (or tap) a value such as the false in Game.SymlinkGame = false; then tap the ▾ after it (Alt+↓ from the keyboard). Try a true/false, a number and a value in quotes.', look: 'Did you find the ▾? Did the list make clear what you can write there? Anything in the way while you just type?' },
   { id: 'tips', areas: ['uiux'], kinds: ['explore'], title: 'Tips under the code', steps: 'Leave tips on while you work. Vote 👍 or 👎 on the ones you see.', look: 'Tips that came at the wrong moment, repeated, or pointed at the wrong thing.' },
 
   // --- Developers: precision, speed and the edge cases

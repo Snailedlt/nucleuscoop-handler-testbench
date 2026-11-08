@@ -3,14 +3,8 @@
 // them back unchanged, with the explicit folder entries Nucleus' installer needs.
 import { zipStore } from './zipstore';
 
-export interface PackageFile {
-  name: string; // path inside the package, with /
-  data: Uint8Array;
-  /** A file of a Hub package that isn't downloaded here (too big): data is empty; size and the handler's Hub page. */
-  remote?: { size: number; url: string };
-}
-/** The file's size, for a placeholder its size in the Hub package. */
-export const sizeOf = (f: PackageFile) => (f.remote ? f.remote.size : f.data.length);
+export { sizeOf, type PackageFile } from '@core/pkgcheck';
+import type { PackageFile } from '@core/pkgcheck';
 export interface Package {
   handler: string;
   handlerName: string;

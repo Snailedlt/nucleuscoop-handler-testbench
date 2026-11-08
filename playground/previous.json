@@ -1,6 +1,6 @@
 {
   "about": "The release testers can compare with, served at /previous/ (pages.yml builds it; tools/previous-wrap.mjs). Update at each release to the commits that were live; delete this file at the full release to stop building it.",
-  "label": "2026-11-06",
-  "bench": "65da9eb450f25be0c89245b34d5aaf0263d2a654",
-  "core": "e428c9f2c518d1f3e9ad9baf2e6a6545e969492f"
+  "label": "2026-11-07 21:41",
+  "bench": "9fa007d7d95de6159478a4bf46d4389d023f3749",
+  "core": "70b4a544e712dffc6845eac256652f8caaaf4efa"
 }

@@ -18,9 +18,12 @@ import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
+import { AiError, currentRunner } from './aiproviders';
+import { initAiSettings } from './aisettings';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
+import { canSaveIntoFolder, rememberedName, saveIntoNucleus } from './nucleussave';
 import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
@@ -33,6 +36,7 @@ import { mascot, mascotsOn } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
 import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
+import { initValuePicker } from './valuepick';
 import { memberCard } from './doccard';
 import { initKeyHints } from './keyhints';
 import { mountFormView, type FormView } from './formview';
@@ -435,6 +439,7 @@ editor.on('cursorActivity', () => {
 });
 
 initMessageHints(editor);
+initValuePicker(editor);
 const folderPickers = initFolderPickers(editor, () => gameFolder, () => void pickFolder());
 async function pickFolder() {
   const f = await pickGameFolder(editor.getValue());
@@ -1727,6 +1732,7 @@ function commandList(): OpenEntry[] {
     c('Move Files to the other side of the code', '', 'files panel left right side move swap', () => announce(`Files is now ${panels.flip('files')} of the code.`)),
     c('Move Lines to the other side of the code', '', 'lines list left right side move swap', () => announce(`Lines is now ${panels.flip('lines')} of the code.`)),
     c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
+    c('Save into Nucleus Co-op (its handlers folder)', 'Ctrl+Alt+S', 'save install nucleus handlers folder copy into', () => void saveToNucleus()),
     c("Link your game's folder (check paths against it)", '', 'game folder install directory exe path link pick', () => void pickFolder()),
     c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => openReport(feedbackUrl())),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
@@ -2155,7 +2161,8 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     e.preventDefault(); // instead of the browser saving the page
     const save = $('#save') as HTMLButtonElement;
     void save;
-    if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
+    if (e.altKey) void saveToNucleus();
+    else if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
     else void saveAs();
   } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
     e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
@@ -2434,12 +2441,16 @@ let aiCtl: AbortController | null = null;
   } catch {
     sample = null;
   }
-  // Fix with AI only exists inside a Claude artifact viewer.
-  if (sample) {
-    aiBtn.hidden = false;
-    ($('#ai-note') as HTMLInputElement).hidden = false;
-  }
+  refreshAi();
 })();
+/** Fix with AI shows when a provider is set up (Settings › AI): Claude on claude.ai, an API key, or a local model. */
+function refreshAi() {
+  const on = !!currentRunner(sample).runner;
+  aiBtn.hidden = !on;
+  ($('#ai-note') as HTMLInputElement).hidden = !on;
+}
+document.addEventListener('ai-settings-changed', refreshAi);
+initAiSettings(() => sample);
 
 const AI_ERRORS: Record<string, string> = {
   rate_limited: 'Too many requests right now. Try again in a minute.',
@@ -2457,38 +2468,45 @@ function aiStatus(text: string) {
 }
 
 async function runAiFix() {
-  if (!sample) return;
+  const { runner, reason } = currentRunner(sample);
+  if (!runner) {
+    if (reason && reason !== 'off') notice(reason, { kind: 'info', action: { label: 'Open Settings › AI', run: () => settings.open('ai') } });
+    return;
+  }
+  const who = runner.label;
   const base = editor.getValue();
   const before = counts(base, lintCtx());
   aiCtl = new AbortController();
   aiBtn.disabled = true;
   aiBox.hidden = false;
-  // Nucli reads the code while Claude works on it (a spinner when mascots are off).
-  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
+  // Nucli reads the code while the AI works on it (a spinner when mascots are off).
+  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking ${esc(who)}…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
   $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
 
-  const limits = await sample.limits().catch(() => null);
+  // On claude.ai the page's Claude may not take tools; every API provider does.
+  const limits = runner.label === 'Claude' && sample ? await sample.limits().catch(() => null) : { tools: true };
   const tools = limits?.tools
     ? pageTools().map((t) => ({
         ...t,
         execute: (input: { [k: string]: unknown }) => {
-          aiStatus(t.name === 'lint_handler' ? 'Claude is checking its fix with the linter…' : `Claude is looking up ${String(input.query ?? '').slice(0, 40)}…`);
+          aiStatus(t.name === 'lint_handler' ? `${who} is checking its fix with the linter…` : `${who} is looking up ${String(input.query ?? '').slice(0, 40)}…`);
           return t.execute(input);
         },
       }))
     : undefined;
   try {
-    const r: any = await sample.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
+    const r: any = await runner.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
       signal: aiCtl.signal,
-      ...(tools ? { tools } : { cache: false }),
-      onText: () => aiStatus('Claude is writing the fix…'),
+      tools,
+      onText: () => aiStatus(`${who} is writing the fix…`),
     });
+    use('ai-fix');
     const code = typeof r?.code === 'string' ? r.code.replace(/\r\n/g, '\n') : '';
     const changes = Array.isArray(r?.changes) ? r.changes.map(String).slice(0, 20) : [];
     if (!code.trim()) {
-      aiBox.innerHTML = `<p>Claude's answer had no handler code. Try again.</p>`;
+      aiBox.innerHTML = `<p>The answer had no handler code. Try again.</p>`;
     } else if (code === base) {
-      aiBox.innerHTML = `<p>Claude found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
+      aiBox.innerHTML = `<p>${esc(who)} found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
     } else {
       showProposal(base, code, changes, before);
     }
@@ -2496,11 +2514,11 @@ async function runAiFix() {
     if (e?.code === 'cancelled') {
       aiBox.hidden = true;
     } else if (AI_UNAVAILABLE.has(e?.code)) {
-      aiBtn.hidden = true;
-      ($('#ai-note') as HTMLInputElement).hidden = true;
-      aiBox.innerHTML = `<p>Claude isn't available on this page for your account, so Fix with AI is turned off. Fix all problems still works.</p>`;
+      aiBox.innerHTML = `<p>Claude isn't available on this page for your account. Pick another provider in Settings › AI; Fix all problems still works.</p>`;
+    } else if (e instanceof AiError) {
+      aiBox.innerHTML = `<p>${esc(e.message)}</p>`;
     } else {
-      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? 'Something went wrong reaching Claude. Try again.')}</p>`;
+      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? `Something went wrong reaching ${who}. Try again.`)}</p>`;
     }
   } finally {
     aiBtn.disabled = false;
@@ -3013,10 +3031,37 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
     notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
   }
 }
+// Save into Nucleus: straight into its handlers folder (Chrome, Edge); elsewhere the .zip, to drop onto Nucleus.
+let nucleusFolderName: string | undefined;
+void rememberedName().then((n) => (nucleusFolderName = n));
+async function saveToNucleus(pick = false, trigger: HTMLElement = saveButton()) {
+  if (!canSaveIntoFolder()) {
+    await saveAs('zip', trigger);
+    notice("This browser can't save into a folder: drag the .zip onto Nucleus Co-op's window to install it. (Chrome and Edge can save straight into Nucleus' handlers folder.)", { kind: 'info' });
+    return;
+  }
+  const r = await saveIntoNucleus(editor.getValue(), packageFiles, pick);
+  if (r.ok) {
+    nucleusFolderName = r.folder;
+    waka.saved();
+    use('save-nucleus');
+    confirmOn(trigger, 'Saved ✓', `Saved into ${r.folder}: ${r.js}${r.files ? ` and ${r.files} file${r.files === 1 ? '' : 's'} in its folder` : ''}.${r.skipped ? ` ${r.skipped} file${r.skipped === 1 ? '' : 's'} left out (at the package's top level, or not downloaded from the Hub).` : ''}`);
+  } else if (r.reason === 'not-nucleus') {
+    notice("That folder has no handlers folder. Pick Nucleus Co-op's folder (the one with NucleusCoop.exe and handlers), or its handlers folder.", { kind: 'warning', action: { label: 'Pick again', run: () => void saveToNucleus(true, trigger) } });
+  } else if (r.reason === 'denied') {
+    // The browser refused folder access here (e.g. a page inside a frame): the .zip, as in Firefox and Safari.
+    await saveAs('zip', trigger);
+    notice("The browser didn't allow saving into a folder here: drag the .zip onto Nucleus Co-op's window to install it.", { kind: 'info' });
+  } else if (r.reason !== 'cancelled') {
+    notice(`Couldn't save into the folder${r.message ? ` (${r.message})` : ''}. Save the .zip instead and drag it onto Nucleus Co-op.`, { kind: 'error' });
+  }
+}
 const saveItems = (): MenuItem[] => [
   { label: 'Save as', kind: 'heading' },
   ...(['zip', 'js', 'nc'] as SaveKind[]).map((k) => ({ label: SAVE_LABEL[k], checked: saveKind() === k, run: () => void saveAs(k) })),
   { label: '', kind: 'separator' as const },
+  { label: nucleusFolderName ? `Into Nucleus Co-op (${nucleusFolderName})` : 'Into Nucleus Co-op…', run: () => void saveToNucleus() },
+  ...(nucleusFolderName ? [{ label: 'Into another Nucleus Co-op folder…', run: () => void saveToNucleus(true) }] : []),
   { label: 'How to install it in Nucleus', run: () => showInstallSteps(`${handlerFileName()}.zip`) },
 ];
 async function copyForDiscord(trigger: HTMLElement) {

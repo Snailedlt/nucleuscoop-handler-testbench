@@ -12,6 +12,25 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## 2026-11-08
+
+### ✨ New
+
+- **Fix with AI, with the AI you choose.** Settings › AI: Claude on claude.ai as before, the Anthropic API or OpenAI with your own key, or any OpenAI-compatible service: OpenRouter, Google Gemini, or a free model on your own PC with Ollama or LM Studio. Keys stay in your browser and go only to that provider; the code is sent only when you press Fix with AI.
+- **Save straight into Nucleus Co-op.** Ctrl+Alt+S (or Save ▾ › Into Nucleus Co-op) writes the handler and its files into Nucleus' handlers folder, laid out the way a Hub install does it. Pick the folder once and it's remembered. Chrome and Edge only; Firefox and Safari save the .zip, which you drag onto Nucleus' window.
+- **Pick a value instead of typing it.** Put the cursor on a value like the `false` in `Game.SymlinkGame = false;` and a small ▾ appears after it (Alt+↓ from the keyboard): it lists what the option takes, true or false, its choices, or − and + for numbers. A value of the wrong kind, like `"true"` in quotes, says so and offers the right one. Suggested by messenils.
+
+### 🛠️ Improved
+
+- **Every Hub handler, not just 600.** The Hub's handler list stops at the 600 with the most stars; the daily sync now also reads the rest the way the Hub's own website does, so Open (Ctrl+K), the checks and the counts see all of them (about 900).
+- **Fewer false alarms on package files.** Keys set twice in an INI file are fine now (Unreal Engine games list values that way), and a file the handler uses but the package doesn't have is only flagged when it looks like a typo, since many handlers download or create files when they run. The same checks now run in VS Code too.
+
+### 🙏 Thanks
+
+- **messenils** for the idea of picking values like in the old game editors.
+
+---
+
 ## 2026-11-07 21:41
 
 ### 🛠️ Improved

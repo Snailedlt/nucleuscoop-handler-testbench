@@ -2,6 +2,21 @@
 
 Guidance for AI coding agents working on this repository: the browser workbench (`playground/`, deployed to GitHub Pages) and the Jint testbench (`src/`, `probes/`). The linter, Try it and the API model come from [splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode) (`src/core`); its AGENTS.md has the facts about Nucleus they rely on.
 
+## Who it's for: a tool for every level
+
+**Priorities, in order:** 1. a great tool for experienced developers and handler authors (correct checks, speed, keyboard, the core features); 2. easy to understand and use for newcomers, without getting in the way of 1.
+
+The tools serve experienced developers, handler authors, Nucleus Co-op experts and complete newcomers alike. Welcome beginners without making the work slower or more cluttered for anyone else. (The model is Warcraft 3's editor: clickable, choices from lists, one-button testing, and a way into real code.)
+
+- **One code underneath.** Every view (Code, Form, Blocks, pickers) edits the real handler code, so nobody is locked into a beginner mode and people move up a tier by looking at the code.
+- **Two ways to work.** Code is for people who write code. Form and Blocks belong together as the visual editor: plain-language names next to (or instead of) the API names, tips and docs right where each option is, values picked from lists. Each can be shown or hidden; most developers never open the visual editor, and most newcomers end up in Code.
+- **Help on request, not on screen.** Markers, hints, plain-language labels and pickers show on hover, tap or a key (Ctrl+Space, Alt+Enter), never permanently in the code.
+- **Keyboard first for experienced users.** Everything is reachable from the keyboard and the command palette; no wizard is ever required.
+- **The first-run choice only sets defaults.** "Guide me" turns on the visual editor, tips and guided help; "I write code" starts compact. Every part can be switched in Settings.
+- **The tool teaches.** Our community is small and won't write many guides, so the explanations live in the tool: plain-language docs on every option, "why" in every problem, examples from real Hub handlers, help that starts from the symptom ("my game pauses when it loses focus").
+- **Desktop first.** Over 90% of people write handlers on a desktop or laptop: design and test for that (mouse, keyboard, a wide screen). Phones are supported but not tailored: nothing broken, cut off or untappable, checked by the smoke test's phone checks. No phone-only features, no phone layouts driving a design, no manual phone testing or phone screenshots for every change.
+- **The check for every new feature:** does it add anything on screen for someone who didn't ask for it? If so, put it behind a hover, tap or key, or a setting.
+
 ## Commands
 
 ```bash

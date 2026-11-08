@@ -39,7 +39,8 @@ if (process.argv.includes('--tag')) {
 if (process.argv.includes('--notes')) {
   // The section as it is in CHANGELOG.md, with its images pointing at the repository, and links to try it.
   const RAW = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/main/';
-  const notes = body.trim().replace(/\]\((docs\/[^)\s]+)\)/g, (_, path) => `](${RAW}${path})`);
+  // The section ends with the `---` that separates releases in CHANGELOG.md: drop it, the links add their own.
+  const notes = body.trim().replace(/(\n+---)+$/, '').replace(/\]\((docs\/[^)\s]+)\)/g, (_, path) => `](${RAW}${path})`);
   console.log(`${notes}\n\n---\n\n**Try it:** [open the workbench](${SITE}) · [What's new](${SITE}#whats-new) · [what it is](${SITE}start/)`);
   process.exit(0);
 }

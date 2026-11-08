@@ -416,7 +416,7 @@ for (const h of hub.handlers) {
 function pageHtml(inlineHub) {
   // Covers: files next to the page, or inside it for the one-file workbench.
   // The one file keeps the 40 most downloaded covers inside it (the rest show their initials), so
-  // all 600 handlers don't double its size.
+  // all the Hub handlers (about 900) don't double its size.
   const withCover = (h, i) => {
     const f = coverFile(h);
     const { cover, ...rest } = h;

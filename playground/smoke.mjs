@@ -265,7 +265,7 @@ for (const theme of ['light', 'dark']) {
   // The side rail's Save: right-click offers the formats, like the arrow beside Save in the slim bar.
   await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'rail'));
   await p.reload();
-  await p.waitForTimeout(900);
+  await p.waitForSelector('.rail [data-rail=save]', { state: 'visible', timeout: 10000 });
   await p.click('.rail [data-rail=save]', { button: 'right' });
   await p.waitForTimeout(200);
   check(/For Nucleus Co-op \(\.zip\)/.test(await p.innerText('body')), `${theme}: right-click on the rail's Save offers Save as`);
@@ -273,6 +273,15 @@ for (const theme of ['light', 'dark']) {
   await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'bar'));
   await p.reload();
   await p.waitForTimeout(800);
+  // The value picker: a ▾ only when the cursor is on a pickable value; picking one changes the code.
+  await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.setValue('Game.GameName = "Demo";\nGame.SymlinkGame = false;\n'); cm.focus(); cm.setCursor({ line: 0, ch: 2 }); });
+  await p.waitForTimeout(200);
+  check((await p.locator('.vp-chip').count()) === 0, `${theme}: no value picker away from a value`);
+  await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.setCursor({ line: 1, ch: 21 }));
+  await p.waitForTimeout(200);
+  await p.locator('.vp-chip').click();
+  await p.locator('.vp-menu button', { hasText: 'true' }).click();
+  check(await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getLine(1)) === 'Game.SymlinkGame = true;', `${theme}: the value picker changes the value`);
   // Form: one line per option, more on request, fixes work, and back to Code.
   await p.goto(BASE + '#example-mistakes');
   await p.waitForTimeout(800);
@@ -280,7 +289,8 @@ for (const theme of ['light', 'dark']) {
   const fresh = p.locator('button', { hasText: 'Open a fresh copy' });
   if (await fresh.count()) { await fresh.first().click(); await p.waitForTimeout(800); }
   await p.click('[data-view-mode=form]');
-  await p.waitForTimeout(500);
+  await p.waitForSelector('#formview .fv-row', { timeout: 10000 }).catch(() => {});
+  await p.waitForTimeout(300);
   const fvRows = await p.$$('#formview .fv-row');
   const openRows = await p.$$('#formview .fv-more:not([hidden])');
   check(fvRows.length >= 6 && openRows.length === 0, `${theme}: Form shows one line per option, details closed (${fvRows.length} rows)`);

@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": { "@core/*": ["../core/src/core/*"], "acorn": ["../core/node_modules/acorn"] }
+  }
+}
