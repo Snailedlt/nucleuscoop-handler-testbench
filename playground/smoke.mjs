@@ -289,7 +289,8 @@ for (const theme of ['light', 'dark']) {
   const fresh = p.locator('button', { hasText: 'Open a fresh copy' });
   if (await fresh.count()) { await fresh.first().click(); await p.waitForTimeout(800); }
   await p.click('[data-view-mode=form]');
-  await p.waitForTimeout(500);
+  await p.waitForSelector('#formview .fv-row', { timeout: 10000 }).catch(() => {});
+  await p.waitForTimeout(300);
   const fvRows = await p.$$('#formview .fv-row');
   const openRows = await p.$$('#formview .fv-more:not([hidden])');
   check(fvRows.length >= 6 && openRows.length === 0, `${theme}: Form shows one line per option, details closed (${fvRows.length} rows)`);
