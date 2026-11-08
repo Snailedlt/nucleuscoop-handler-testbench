@@ -173,6 +173,31 @@ for (const theme of ['light', 'dark']) {
   await p.keyboard.press('F2');
   await p.keyboard.type('run');
   check((await cmVal()) === 'function run() {}\nrun();\n', `${theme}: F2 renames every use`);
+  // Find and replace (Ctrl+F, Ctrl+H, Ctrl+Alt+Enter), go to line (Ctrl+G), as in VS Code.
+  await cmSet('var foo = 1;\nvar bar = foo;\n', { line: 0, ch: 5 }, { line: 0, ch: 5 });
+  await p.keyboard.press('Control+f');
+  await p.waitForTimeout(200);
+  check((await p.textContent('.find-widget .fw-count')) === '1 of 2', `${theme}: Ctrl+F finds the word at the cursor, with a count`);
+  await p.keyboard.press('Control+h');
+  await p.keyboard.type('qux');
+  await p.keyboard.press('Control+Alt+Enter');
+  check((await cmVal()) === 'var qux = 1;\nvar bar = qux;\n', `${theme}: Ctrl+H, Ctrl+Alt+Enter replaces all`);
+  await p.keyboard.press('Escape');
+  await p.keyboard.press('Control+g');
+  await p.waitForTimeout(300);
+  await p.keyboard.type('2:5');
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(200);
+  check((await p.evaluate(() => JSON.stringify(document.querySelector('.CodeMirror').CodeMirror.getCursor()))).startsWith('{"line":1,"ch":4'), `${theme}: Ctrl+G 2:5 goes to line 2, column 5`);
+  // A German keyboard: Ctrl + the key where a US keyboard has "/" (it prints "-") toggles a comment.
+  await cmSet('var a = 1;\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
+  await p.evaluate(() => {
+    const e = document.querySelector('.CodeMirror').CodeMirror;
+    const ev = new KeyboardEvent('keydown', { key: '-', code: 'Slash', ctrlKey: true, bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'keyCode', { get: () => 189 });
+    e.getInputField().dispatchEvent(ev);
+  });
+  check((await cmVal()) === '// var a = 1;\n', `${theme}: shortcuts with punctuation work by key position on other keyboard layouts`);
   // Dialogs
   // Open: the arrow keys move through tiles, chips and rows.
   await p.keyboard.press('Control+p'); // in the code Ctrl+K starts VS Code's two-key shortcuts

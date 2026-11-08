@@ -1,6 +1,7 @@
 // VS Code's editing shortcuts in the code editor, so handler authors don't have to relearn them.
 // The commands come from CodeMirror's addons and its Sublime keymap file (only its commands are
 // used, on VS Code's keys). Cmd replaces Ctrl on a Mac, as in VS Code.
+import { findStep, openFind } from './findwidget';
 import { referencesAt } from '@core/definition';
 import CodeMirror from 'codemirror';
 import 'codemirror/addon/comment/comment';
@@ -103,10 +104,10 @@ export function vscodeKeys(quickFix: (cm: any) => void): Record<string, any> {
     [`${M}-Shift-Enter`]: 'insertLineBefore',
     [`${M}-]`]: 'indentMore',
     [`${M}-[`]: 'indentLess',
-    [`${M}-F`]: 'findPersistent',
-    F3: 'findPersistentNext',
-    'Shift-F3': 'findPersistentPrev',
-    [isMac ? 'Cmd-Alt-F' : 'Ctrl-H']: 'replace',
+    [`${M}-F`]: (cm: any) => openFind(cm),
+    F3: (cm: any) => findStep(cm, 1),
+    'Shift-F3': (cm: any) => findStep(cm, -1),
+    [isMac ? 'Cmd-Alt-F' : 'Ctrl-H']: (cm: any) => openFind(cm, true),
     'Ctrl-G': 'jumpToLine', // Ctrl on a Mac too, as in VS Code
     [`${M}-Alt-Up`]: 'addCursorToPrevLine',
     [`${M}-Alt-Down`]: 'addCursorToNextLine',
@@ -134,3 +135,33 @@ export function vscodeKeys(quickFix: (cm: any) => void): Record<string, any> {
 
 /** Alt+click adds a cursor, as in VS Code (CodeMirror's own default is Ctrl+click). */
 export const vscodeMouse = (_cm: any, _repeat: string, ev: MouseEvent) => ({ addNew: ev.altKey });
+
+// Shortcuts with punctuation on any keyboard layout, as VS Code does it: by the key's position on a US keyboard.
+// On German, Spanish, Portuguese, Nordic, French… keyboards [ ] / \ ; ' sit elsewhere or need AltGr, so
+// Ctrl+Shift+[ or Ctrl+/ can't be pressed as labelled. Here the key in that spot works (on German, Ctrl+Shift+Ü
+// folds, Ctrl+- toggles a comment). Letters and digits keep going by what's printed on them (Ctrl+Z is the key
+// marked Z), and AltGr keeps typing [ ] { } @ \ as usual.
+const US_KEYCODE: Record<string, number> = {
+  Semicolon: 186, Equal: 187, Comma: 188, Minus: 189, Period: 190, Slash: 191, Backquote: 192,
+  BracketLeft: 219, Backslash: 220, BracketRight: 221, Quote: 222,
+};
+export function keysByPosition(cm: any) {
+  cm.on('keydown', (_cm: any, e: KeyboardEvent & { __byPosition?: boolean }) => {
+    if (e.__byPosition || !(e.ctrlKey || e.metaKey || e.altKey)) return;
+    if (e.getModifierState?.('AltGraph')) return; // typing a character with AltGr
+    const us = US_KEYCODE[e.code];
+    if (!us || us === e.keyCode) return; // not punctuation, or already where a US keyboard has it
+    let handled = false;
+    const fake = {
+      type: 'keydown', keyCode: us, which: us, code: e.code, key: e.key,
+      ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey, metaKey: e.metaKey,
+      __byPosition: true, defaultPrevented: false,
+      preventDefault() { handled = true; this.defaultPrevented = true; e.preventDefault(); },
+      stopPropagation() { e.stopPropagation(); },
+      getModifierState: (k: string) => e.getModifierState?.(k) ?? false,
+    };
+    cm.triggerOnKeyDown(fake);
+    // Bound in the US position: done. Otherwise the key does what its own label says, as usual.
+    if (handled) (e as any).codemirrorIgnore = true;
+  });
+}

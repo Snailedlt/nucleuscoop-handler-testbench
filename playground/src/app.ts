@@ -1,3 +1,4 @@
+import { openFind, findStep } from './findwidget';
 import { hasCredit, withCredit, withoutCredit } from './credit';
 import { definitionAt } from '@core/definition';
 import { JS_RULES } from '@core/jsrules';
@@ -12,7 +13,7 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
-import { foldRange, lineCommentFold, selectReferences, tabKey, vscodeKeys, vscodeMouse } from './keys';
+import { foldRange, isMac as isMacKeys, keysByPosition, lineCommentFold, selectReferences, tabKey, vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, membersOf, ownerLabel, Resolved } from '@core/api';
@@ -333,6 +334,14 @@ const editor = CodeMirror($('#editor'), {
     }),
     'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
     F12: () => goToDefinition(),
+    // As in VS Code: Ctrl+G go to line (the palette with ":"), Ctrl+F / Ctrl+H find and replace, F3 through the matches.
+    'Ctrl-G': () => showOpen('line'),
+    [isMacKeys ? 'Cmd-F' : 'Ctrl-F']: (cm: any) => openFind(cm),
+    [isMacKeys ? 'Cmd-Alt-F' : 'Ctrl-H']: (cm: any) => openFind(cm, true),
+    F3: (cm: any) => findStep(cm, 1),
+    'Shift-F3': (cm: any) => findStep(cm, -1),
+    // Ctrl+Enter: a new line below (VS Code); Try it is Ctrl+F5.
+    [isMacKeys ? 'Cmd-Enter' : 'Ctrl-Enter']: 'insertLineAfter',
     // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
     Tab: tabKey,
     'Shift-Tab': 'indentLess',
@@ -341,6 +350,7 @@ const editor = CodeMirror($('#editor'), {
     'Shift-F12': () => renameSymbol(true),
   },
 } as any);
+keysByPosition(editor);
 let escThenTab = false;
 editor.on('keydown', (_cm: any, e: KeyboardEvent) => {
   if (e.key === 'Escape') escThenTab = true;
@@ -582,6 +592,7 @@ tip.addEventListener('mouseenter', () => { clearTimeout(tipHideTimer); clearTime
 tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperElement().contains(e.relatedTarget as Node)) hideTipSoon(); });
 editor.on('change', () => (tip.hidden = true));
 editor.on('scroll', () => (tip.hidden = true));
+let testChord = 0;
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
 
 // The small code editors in Form and Blocks (codefield.ts): the same suggestions, hover docs and announcements.
@@ -1777,8 +1788,11 @@ function commandList(): OpenEntry[] {
   const list: OpenEntry[] = [
     c('Format document', 'Shift+Alt+F', 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
-    c('Try it: simulate the handler', 'Ctrl+Enter', 'run play simulate try', () => selectTab('simulate')),
-    c('Test all combinations', '', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
+    c('Try it: simulate the handler', 'Ctrl+F5', 'run play simulate try', () => selectTab('simulate')),
+    c('Go to line', 'Ctrl+G', 'go to line number jump column', () => setTimeout(() => showOpen('line'), 0)),
+    c('Find', 'Ctrl+F', 'find search', () => openFind(editor)),
+    c('Find and replace', 'Ctrl+H', 'replace find search', () => openFind(editor, true)),
+    c('Test all combinations', 'Ctrl+; A', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
     c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
     c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
@@ -1927,11 +1941,26 @@ function renderOpen() {
   const raw = ($('#open-q') as HTMLInputElement).value;
   // ">" first: commands only, as in VS Code's Ctrl+Shift+P.
   const commandMode = raw.trimStart().startsWith('>');
-  const q = (commandMode ? raw.trimStart().slice(1) : raw).trim().toLowerCase();
-  const all = commandMode ? commandList() : entries();
+  // ":" first: go to a line (and column), as in VS Code's Ctrl+G.
+  if (raw.trimStart().startsWith(':')) {
+    const [ln, col] = raw.trimStart().slice(1).split(/[:,]/).map((x) => Number(x.trim()));
+    const lines = editor.lineCount();
+    const ok = Number.isFinite(ln) && ln >= 1;
+    const line = Math.min(lines, Math.max(1, ln || 1));
+    ($('#open-q') as HTMLInputElement).placeholder = '';
+    shownEntries = ok
+      ? [{ group: 'Go to', title: `Go to line ${line}${col ? `, column ${col}` : ''}`, sub: `The code has ${lines} lines`, icon: OI.command, run: () => { const ch = Math.max(0, (col || 1) - 1); editor.setCursor({ line: line - 1, ch }); editor.scrollIntoView({ line: line - 1, ch }, 120); editor.focus(); } } as OpenEntry]
+      : [];
+    activeEntry = 0;
+    $('#open-body').innerHTML = ok ? '' : `<p class="empty">Type a line number between 1 and ${lines} (or line:column).</p>`;
+    if (!ok) return;
+  }
+  const lineMode = raw.trimStart().startsWith(':');
+  const q = lineMode ? '' : (commandMode ? raw.trimStart().slice(1) : raw).trim().toLowerCase();
+  const all = lineMode ? shownEntries : commandMode ? commandList() : entries();
   ($('#open-q') as HTMLInputElement).placeholder = commandMode ? 'Type a command: format, fix, try it, theme…' : 'Search examples, Hub handlers, engine probes and actions (> for commands)';
   let shown: OpenEntry[];
-  if (commandMode && !q) shown = all;
+  if (lineMode || (commandMode && !q)) shown = all;
   else if (q) {
     const words = q.split(/\s+/);
     shown = all
@@ -2041,8 +2070,8 @@ function moveVertical(dir: 1 | -1) {
   row.sort((a, b) => Math.abs(a.b.left + a.b.width / 2 - cx) - Math.abs(b.b.left + b.b.width / 2 - cx));
   setActive(row[0].i);
 }
-function showOpen(mode: 'open' | 'commands' = 'open') {
-  ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : '';
+function showOpen(mode: 'open' | 'commands' | 'line' = 'open') {
+  ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : mode === 'line' ? ':' : '';
   activeEntry = 0;
   renderOpen();
   // The first rows arrive one after another, only as the dialog opens (not while typing).
@@ -2259,9 +2288,19 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
   } else if (mod && e.key === ',') {
     e.preventDefault();
     settings.open();
-  } else if (mod && !e.shiftKey && e.key === 'Enter') {
+  } else if (mod && !e.shiftKey && e.key === 'F5') {
+    // VS Code's Run Without Debugging (F5 debugs): Try it.
     e.preventDefault();
     selectTab('simulate');
+  } else if (mod && !e.shiftKey && e.code === 'Semicolon') {
+    // VS Code's test keys start with Ctrl+; (the key right of L, whatever it shows): then A runs all tests.
+    e.preventDefault();
+    testChord = Date.now();
+  } else if (testChord && Date.now() - testChord < 2000 && e.code === 'KeyA') {
+    e.preventDefault();
+    testChord = 0;
+    selectTab('simulate');
+    click('#sim-all')();
   } else if (e.altKey && e.shiftKey && e.code === 'KeyF') {
     e.preventDefault(); // VS Code: Format Document
     formatDocument();
