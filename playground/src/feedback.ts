@@ -1,7 +1,8 @@
 // Anonymous feedback: 👍/👎 on tips and on the docs Claude wrote, and how often a few features are used, so we
 // can tell what helps and what doesn't. Private by design:
 // - only counts are sent, each a short path such as "vote/tip/f-swipe/up" or "use/try-it": no code, no handler
-//   names, no cookies, no IDs, nothing that tells one person from another;
+//   names, no cookies, no IDs, nothing that tells one person from another; with each, the screen size (as
+//   GoatCounter's own script sends it, so we know which screens to design for) and the browser's language;
 // - they go to a GoatCounter site (cookie-less, no personal data stored) only when the build names one
 //   (BUILD.feedback); otherwise nothing leaves the browser;
 // - off when the browser asks not to be tracked (Do Not Track, Global Privacy Control), and switchable in
@@ -27,7 +28,9 @@ export function setFeedback(on: boolean) { set(OFF_KEY, on ? null : '1'); }
 function send(path: string) {
   if (!feedbackOn()) return;
   // GoatCounter's count endpoint; an event (e=true), so it isn't counted as a page view. No referrer, no title.
-  const url = `https://${BUILD.feedback}.goatcounter.com/count?p=${encodeURIComponent('/' + path)}&e=true&rnd=${Math.random().toString(36).slice(2)}`;
+  // s: the screen size, as GoatCounter's own script sends it (width,height,pixel ratio), for its Sizes chart.
+  const size = `${screen.width},${screen.height},${window.devicePixelRatio || 1}`;
+  const url = `https://${BUILD.feedback}.goatcounter.com/count?p=${encodeURIComponent('/' + path)}&e=true&s=${encodeURIComponent(size)}&rnd=${Math.random().toString(36).slice(2)}`;
   try { navigator.sendBeacon ? navigator.sendBeacon(url) : fetch(url, { mode: 'no-cors', keepalive: true }); } catch { /* ignore */ }
 }
 
