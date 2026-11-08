@@ -151,7 +151,7 @@ function build(cm: any): State {
     else if (b.dataset.act === 'close') close(cm);
     else if (b.dataset.act === 'one') replaceOne(cm, st);
     else if (b.dataset.act === 'all') replaceAll(cm, st);
-    else if (b.classList.contains('fw-toggle')) setReplace(st, st.replaceRow.hidden);
+    else if (b.classList.contains('fw-toggle')) setReplace(st, !!st.replaceRow.hidden);
   });
   st.find.addEventListener('input', () => search(cm, st, st.matches[st.current]?.from ?? cm.getCursor('from')));
   const keys = (e: KeyboardEvent) => {
