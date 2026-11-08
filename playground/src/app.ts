@@ -21,6 +21,7 @@ import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
+import { canSaveIntoFolder, rememberedName, saveIntoNucleus } from './nucleussave';
 import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
@@ -1729,6 +1730,7 @@ function commandList(): OpenEntry[] {
     c('Move Files to the other side of the code', '', 'files panel left right side move swap', () => announce(`Files is now ${panels.flip('files')} of the code.`)),
     c('Move Lines to the other side of the code', '', 'lines list left right side move swap', () => announce(`Lines is now ${panels.flip('lines')} of the code.`)),
     c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
+    c('Save into Nucleus Co-op (its handlers folder)', 'Ctrl+Alt+S', 'save install nucleus handlers folder copy into', () => void saveToNucleus()),
     c("Link your game's folder (check paths against it)", '', 'game folder install directory exe path link pick', () => void pickFolder()),
     c('Send feedback or report a problem', '', 'feedback bug report issue github wrong problem', () => openReport(feedbackUrl())),
     c('About these tools (start page)', '', 'start page about install vscode extension download home site', () => ((document.querySelector('a.start-link') as HTMLAnchorElement).click())),
@@ -2157,7 +2159,8 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     e.preventDefault(); // instead of the browser saving the page
     const save = $('#save') as HTMLButtonElement;
     void save;
-    if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
+    if (e.altKey) void saveToNucleus();
+    else if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
     else void saveAs();
   } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
     e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
@@ -3015,10 +3018,37 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
     notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
   }
 }
+// Save into Nucleus: straight into its handlers folder (Chrome, Edge); elsewhere the .zip, to drop onto Nucleus.
+let nucleusFolderName: string | undefined;
+void rememberedName().then((n) => (nucleusFolderName = n));
+async function saveToNucleus(pick = false, trigger: HTMLElement = saveButton()) {
+  if (!canSaveIntoFolder()) {
+    await saveAs('zip', trigger);
+    notice("This browser can't save into a folder: drag the .zip onto Nucleus Co-op's window to install it. (Chrome and Edge can save straight into Nucleus' handlers folder.)", { kind: 'info' });
+    return;
+  }
+  const r = await saveIntoNucleus(editor.getValue(), packageFiles, pick);
+  if (r.ok) {
+    nucleusFolderName = r.folder;
+    waka.saved();
+    use('save-nucleus');
+    confirmOn(trigger, 'Saved ✓', `Saved into ${r.folder}: ${r.js}${r.files ? ` and ${r.files} file${r.files === 1 ? '' : 's'} in its folder` : ''}.${r.skipped ? ` ${r.skipped} file${r.skipped === 1 ? '' : 's'} left out (at the package's top level, or not downloaded from the Hub).` : ''}`);
+  } else if (r.reason === 'not-nucleus') {
+    notice("That folder has no handlers folder. Pick Nucleus Co-op's folder (the one with NucleusCoop.exe and handlers), or its handlers folder.", { kind: 'warning', action: { label: 'Pick again', run: () => void saveToNucleus(true, trigger) } });
+  } else if (r.reason === 'denied') {
+    // The browser refused folder access here (e.g. a page inside a frame): the .zip, as in Firefox and Safari.
+    await saveAs('zip', trigger);
+    notice("The browser didn't allow saving into a folder here: drag the .zip onto Nucleus Co-op's window to install it.", { kind: 'info' });
+  } else if (r.reason !== 'cancelled') {
+    notice(`Couldn't save into the folder${r.message ? ` (${r.message})` : ''}. Save the .zip instead and drag it onto Nucleus Co-op.`, { kind: 'error' });
+  }
+}
 const saveItems = (): MenuItem[] => [
   { label: 'Save as', kind: 'heading' },
   ...(['zip', 'js', 'nc'] as SaveKind[]).map((k) => ({ label: SAVE_LABEL[k], checked: saveKind() === k, run: () => void saveAs(k) })),
   { label: '', kind: 'separator' as const },
+  { label: nucleusFolderName ? `Into Nucleus Co-op (${nucleusFolderName})` : 'Into Nucleus Co-op…', run: () => void saveToNucleus() },
+  ...(nucleusFolderName ? [{ label: 'Into another Nucleus Co-op folder…', run: () => void saveToNucleus(true) }] : []),
   { label: 'How to install it in Nucleus', run: () => showInstallSteps(`${handlerFileName()}.zip`) },
 ];
 async function copyForDiscord(trigger: HTMLElement) {
