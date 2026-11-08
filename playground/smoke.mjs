@@ -265,7 +265,7 @@ for (const theme of ['light', 'dark']) {
   // The side rail's Save: right-click offers the formats, like the arrow beside Save in the slim bar.
   await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'rail'));
   await p.reload();
-  await p.waitForTimeout(900);
+  await p.waitForSelector('.rail [data-rail=save]', { state: 'visible', timeout: 10000 });
   await p.click('.rail [data-rail=save]', { button: 'right' });
   await p.waitForTimeout(200);
   check(/For Nucleus Co-op \(\.zip\)/.test(await p.innerText('body')), `${theme}: right-click on the rail's Save offers Save as`);
