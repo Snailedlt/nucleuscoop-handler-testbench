@@ -18,6 +18,10 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 - **Pick a value instead of typing it.** Put the cursor on a value like the `false` in `Game.SymlinkGame = false;` and a small ▾ appears after it (Alt+↓ from the keyboard): it lists what the option takes, true or false, its choices, or − and + for numbers. A value of the wrong kind, like `"true"` in quotes, says so and offers the right one. Suggested by messenils.
 
+### 🛠️ Improved
+
+- **Fewer false alarms on package files.** Keys set twice in an INI file are fine now (Unreal Engine games list values that way), and a file the handler uses but the package doesn't have is only flagged when it looks like a typo, since many handlers download or create files when they run. The same checks now run in VS Code too.
+
 ### 🙏 Thanks
 
 - **messenils** for the idea of picking values like in the old game editors.
