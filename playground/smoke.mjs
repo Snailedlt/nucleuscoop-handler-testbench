@@ -163,6 +163,16 @@ for (const theme of ['light', 'dark']) {
   await p.keyboard.press('Control+k');
   await p.keyboard.press('Control+j');
   check((await folds()) === 0, `${theme}: Ctrl+K Ctrl+J unfolds it`);
+  // Coding keys as in VS Code: Tab indents a selection (doesn't replace it); F2 selects every use to rename.
+  const cmSet = (v, a, h) => p.evaluate(([v, a, h]) => { const e = document.querySelector('.CodeMirror').CodeMirror; e.setValue(v); e.setSelection(a, h); e.focus(); }, [v, a, h]);
+  const cmVal = () => p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue());
+  await cmSet('var a = 1;\nvar b = 2;\n', { line: 0, ch: 0 }, { line: 1, ch: 3 });
+  await p.keyboard.press('Tab');
+  check((await cmVal()) === '  var a = 1;\n  var b = 2;\n', `${theme}: Tab indents the selected lines`);
+  await cmSet('function go() {}\ngo();\n', { line: 1, ch: 1 }, { line: 1, ch: 1 });
+  await p.keyboard.press('F2');
+  await p.keyboard.type('run');
+  check((await cmVal()) === 'function run() {}\nrun();\n', `${theme}: F2 renames every use`);
   // Dialogs
   // Open: the arrow keys move through tiles, chips and rows.
   await p.keyboard.press('Control+p'); // in the code Ctrl+K starts VS Code's two-key shortcuts

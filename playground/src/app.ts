@@ -12,7 +12,7 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
-import { foldRange, lineCommentFold, vscodeKeys, vscodeMouse } from './keys';
+import { foldRange, lineCommentFold, selectReferences, tabKey, vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, membersOf, ownerLabel, Resolved } from '@core/api';
@@ -334,8 +334,11 @@ const editor = CodeMirror($('#editor'), {
     'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
     F12: () => goToDefinition(),
     // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
-    Tab: (cm: any) => cm.execCommand('insertSoftTab'),
-    'Shift-Tab': (cm: any) => cm.execCommand('indentLess'),
+    Tab: tabKey,
+    'Shift-Tab': 'indentLess',
+    // Rename (F2) and Find all references (Shift+F12): the handler's own variable or function, every use selected.
+    F2: () => renameSymbol(),
+    'Shift-F12': () => renameSymbol(true),
   },
 } as any);
 let escThenTab = false;
@@ -959,6 +962,14 @@ function jumpTo(offset: number) {
 }
 
 /** F8 / Shift+F8: move through the problems shown in the list. */
+function renameSymbol(justFind = false) {
+  const at = editor.getCursor();
+  const n = selectReferences(editor);
+  if (!n) codeNote(editor, at.line, 'Not a variable or function of this handler. (Nucleus\'s own names can\'t be renamed.)', { mood: 'info' });
+  else codeNote(editor, at.line, justFind ? `${n} use${n === 1 ? '' : 's'}, all selected.` : `${n} use${n === 1 ? '' : 's'} selected: type the new name, Esc when done.`, { mood: 'info' });
+  editor.focus();
+}
+
 /** F12: the handler's own function or variable, `Game.X` where it's set, `Context.Options["key"]` its AddOption. */
 function goToDefinition() {
   const text = editor.getValue();
@@ -1775,6 +1786,9 @@ function commandList(): OpenEntry[] {
     c('Unfold the block at the cursor', 'Ctrl+Shift+]', 'unfold expand show block', () => (editor.focus(), editor.execCommand('unfold'))),
     c('Fold all', 'Ctrl+K Ctrl+0', 'fold all collapse everything', () => (editor.focus(), editor.execCommand('foldAll'))),
     c('Unfold all', 'Ctrl+K Ctrl+J', 'unfold all expand everything', () => (editor.focus(), editor.execCommand('unfoldAll'))),
+    c('Rename symbol', 'F2', 'rename variable function refactor all uses', () => renameSymbol(), 'Every use of the variable or function at the cursor selected: type the new name'),
+    c('Find all references', 'Shift+F12', 'references uses usages find all occurrences', () => renameSymbol(true)),
+    c('Select all occurrences', 'Ctrl+Shift+L', 'select all occurrences multi cursor', () => (editor.focus(), editor.execCommand('selectAllOccurrences'))),
     c('Go to definition', 'F12', 'definition declaration where defined jump go to function variable', () => goToDefinition(), 'Where the function or variable under the cursor is declared, or the option set'),
     c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
     c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
@@ -2216,7 +2230,8 @@ moreDialog.querySelectorAll<HTMLButtonElement>('[data-proxy]').forEach((b) =>
 
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   const mod = e.ctrlKey || e.metaKey;
-  if (mod && e.shiftKey && e.code === 'KeyL') {
+  // In the code Ctrl+Shift+L selects every occurrence (as in VS Code); elsewhere it shows or hides Lines.
+  if (mod && e.shiftKey && e.code === 'KeyL' && !(e.target as HTMLElement | null)?.closest?.('.CodeMirror')) {
     e.preventDefault();
     lines.toggle();
     return;

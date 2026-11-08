@@ -1,6 +1,7 @@
 // VS Code's editing shortcuts in the code editor, so handler authors don't have to relearn them.
 // The commands come from CodeMirror's addons and its Sublime keymap file (only its commands are
 // used, on VS Code's keys). Cmd replaces Ctrl on a Mac, as in VS Code.
+import { referencesAt } from '@core/definition';
 import CodeMirror from 'codemirror';
 import 'codemirror/addon/comment/comment';
 import 'codemirror/addon/dialog/dialog';
@@ -32,6 +33,53 @@ export function foldEnclosing(cm: any) {
     }
   }
 }
+/** Tab as in VS Code: a selection is indented (never replaced), otherwise spaces to the next tab stop. */
+export const tabKey = (cm: any) => (cm.somethingSelected() ? cm.execCommand('indentMore') : cm.execCommand('insertSoftTab'));
+
+/** Ctrl+Shift+\: to the matching bracket. */
+function goToBracket(cm: any) {
+  const m = cm.findMatchingBracket?.(cm.getCursor()) ?? cm.findMatchingBracket?.(CodeMirror.Pos(cm.getCursor().line, cm.getCursor().ch - 1));
+  if (m?.match && m.to) cm.setCursor(m.to);
+}
+/** Shift+Alt+A: block comment on or off. */
+function toggleBlockComment(cm: any) {
+  const from = cm.getCursor('from'), to = cm.getCursor('to');
+  if (!cm.uncomment(from, to, { fullLines: false })) cm.blockComment(from, to, { fullLines: false });
+}
+/** Ctrl+Shift+L: every occurrence of the selection (or the word at the cursor) selected. */
+function selectAllOccurrences(cm: any) {
+  let q = cm.getSelection();
+  if (!q) {
+    const w = cm.findWordAt(cm.getCursor());
+    q = cm.getRange(w.anchor, w.head);
+  }
+  if (!q) return;
+  const ranges: any[] = [];
+  const c = cm.getSearchCursor(q, CodeMirror.Pos(cm.firstLine(), 0));
+  while (c.findNext()) ranges.push({ anchor: c.from(), head: c.to() });
+  if (ranges.length) cm.setSelections(ranges, Math.max(0, ranges.findIndex((r) => CodeMirror.cmpPos(r.from ?? r.anchor, cm.getCursor('from')) >= 0)));
+}
+(CodeMirror as any).commands.selectAllOccurrences = selectAllOccurrences;
+/** Shift+Alt+I: a cursor at the end of each selected line. */
+function cursorsAtLineEnds(cm: any) {
+  const ranges: any[] = [];
+  for (const r of cm.listSelections()) {
+    const a = Math.min(r.anchor.line, r.head.line), b = Math.max(r.anchor.line, r.head.line);
+    for (let l = a; l <= b; l++) ranges.push({ anchor: CodeMirror.Pos(l, cm.getLine(l).length), head: CodeMirror.Pos(l, cm.getLine(l).length) });
+  }
+  cm.setSelections(ranges);
+}
+const scrollBy = (lines: number) => (cm: any) => cm.scrollTo(null, cm.getScrollInfo().top + lines * cm.defaultTextHeight());
+/** F2 (rename) and Shift+F12 (references): every use of the variable or function at the cursor, selected; typing renames them all. */
+export function selectReferences(cm: any): number {
+  const text = cm.getValue();
+  const refs = referencesAt(text, cm.indexFromPos(cm.getCursor()));
+  if (!refs.length) return 0;
+  const at = cm.indexFromPos(cm.getCursor());
+  cm.setSelections(refs.map((r) => ({ anchor: cm.posFromIndex(r.start), head: cm.posFromIndex(r.end) })), Math.max(0, refs.findIndex((r) => r.start <= at && at <= r.end)));
+  return refs.length;
+}
+
 /** What can fold: { } and [ ] blocks, /* *\/ comments, runs of // comments. */
 export const foldRange = (CodeMirror as any).fold.combine((CodeMirror as any).fold.brace, (CodeMirror as any).fold.comment, lineCommentFold);
 import 'codemirror/keymap/sublime';
@@ -70,6 +118,16 @@ export function vscodeKeys(quickFix: (cm: any) => void): Record<string, any> {
     [`${M}-K ${M}-0`]: 'foldAll',
     [`${M}-K ${M}-J`]: 'unfoldAll',
     [`${M}-K ${M}-L`]: 'toggleFold',
+    [`${M}-K ${M}-C`]: (cm: any) => cm.lineComment(cm.getCursor('from'), cm.getCursor('to')), // add line comment
+    [`${M}-K ${M}-U`]: (cm: any) => cm.uncomment(cm.getCursor('from'), cm.getCursor('to')), // remove line comment
+    'Shift-Alt-A': toggleBlockComment,
+    [`${M}-Shift-\\`]: goToBracket,
+    [`${M}-Shift-L`]: selectAllOccurrences,
+    'Shift-Alt-I': cursorsAtLineEnds,
+    [isMac ? 'Ctrl-PageUp' : 'Ctrl-Up']: scrollBy(-1), // scroll without moving the cursor
+    [isMac ? 'Ctrl-PageDown' : 'Ctrl-Down']: scrollBy(1),
+    Tab: tabKey,
+    'Shift-Tab': 'indentLess', // outdent the line(s), with or without a selection
     Esc: 'singleSelectionTop', // back to one cursor
   });
 }

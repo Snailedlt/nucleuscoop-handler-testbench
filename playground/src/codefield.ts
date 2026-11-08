@@ -6,6 +6,7 @@
 // gets focus, so pages with many steps stay fast. The host reads `value`, gets `oninput`/`onblur`, and finds the field
 // from any of its elements with `codeFieldOf` (the element that has focus carries the host's id and data attribute).
 import CodeMirror from 'codemirror';
+import { tabKey } from './keys';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
@@ -169,7 +170,7 @@ export class CodeField {
       'Shift-Alt-F': () => this.format(),
     };
     if (multi) {
-      keys.Tab = (cm: any) => (cm.somethingSelected() ? cm.execCommand('indentMore') : cm.execCommand('insertSoftTab'));
+      keys.Tab = tabKey;
       keys['Shift-Tab'] = (cm: any) => cm.execCommand('indentLess');
     } else {
       // One line: Enter keeps its meaning (nothing to add), Tab moves on as in any field.
