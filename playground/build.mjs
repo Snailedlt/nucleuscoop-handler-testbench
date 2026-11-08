@@ -601,6 +601,16 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
     }
   };
   copy(src, dst);
+  // The rest of the Duo and Nucli site: the UI kit at /ui-kit/ and the overview at /duo-nucli/ (design/index.html,
+  // design/ui-kit). The pages link to each other as they sit in design/; served here, the overview moves into its own
+  // folder (the site's root is the workbench), so the links to it, and from it, are pointed there.
+  copy(path.join(here, '..', 'design', 'ui-kit'), path.join(here, 'dist', 'pages', 'ui-kit'));
+  fs.mkdirSync(path.join(here, 'dist', 'pages', 'duo-nucli'), { recursive: true });
+  fs.copyFileSync(path.join(here, '..', 'design', 'index.html'), path.join(here, 'dist', 'pages', 'duo-nucli', 'index.html'));
+  const overview = path.join(here, 'dist', 'pages', 'duo-nucli', 'index.html');
+  fs.writeFileSync(overview, fs.readFileSync(overview, 'utf8').replace(/<head>/i, '<head>\n<meta name="robots" content="noindex">').replace(/(href|src)="(mascots|ui-kit)\//g, '$1="../$2/'));
+  for (const f of [path.join(dst, 'index.html'), path.join(here, 'dist', 'pages', 'ui-kit', 'index.html')])
+    fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/href="\.\.\/index\.html"/g, 'href="../duo-nucli/index.html"'));
   // The download packs (the assets branch, checked out; --assets <dir>): kept off main, copied in before the fingerprint.
   const argAssets = process.argv.indexOf('--assets');
   const packs = argAssets > 0 ? path.join(path.resolve(process.argv[argAssets + 1]), 'mascots', 'packs') : path.join(src, 'packs');
