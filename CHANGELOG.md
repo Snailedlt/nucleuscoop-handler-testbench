@@ -16,6 +16,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Credit lines on handlers made here.** A handler made or changed in the workbench gets a few comment lines at the top when you save or copy it: made with the workbench (with a link), and plainly what was and wasn't done here (checked, simulated with Try it on this version, changed by Fix with AI), so people helping you see which tools were used. A handler you only opened and saved stays as it was; opened again, the lines are folded away. Off in Settings › Feedback and privacy.
+- **Fold code blocks, as in VS Code.** Arrows next to the line numbers (on hover) fold functions, `if` blocks, lists and runs of comments; Ctrl+Shift+[ / ] folds or unfolds the block around the cursor, Ctrl+K Ctrl+0 folds all, Ctrl+K Ctrl+J unfolds all. In the code, Ctrl+K now starts these two-key shortcuts; Open is Ctrl+P (Ctrl+K still opens it elsewhere).
 - **Go to definition (F12).** On a function or variable of the handler, F12 jumps to where it's declared; on `Game.Play` (or any option) to where it's set; on `Context.Options["key"]` to its `Game.AddOption`. Also in the command palette.
 - **Common JavaScript mistakes caught.** Check now includes ESLint's rules for real bugs: `=` where `==` was meant, a backslash that disappears from a Windows path (`"C:\Games"`), the same key twice, code that never runs, a line that does nothing, and more, each explained in plain words.
 

@@ -1,3 +1,4 @@
+import { hasCredit, withCredit, withoutCredit } from './credit';
 import { definitionAt } from '@core/definition';
 import { JS_RULES } from '@core/jsrules';
 import { applyTheme, initDevBar } from './devbar';
@@ -11,7 +12,7 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
-import { vscodeKeys, vscodeMouse } from './keys';
+import { foldRange, lineCommentFold, vscodeKeys, vscodeMouse } from './keys';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, membersOf, ownerLabel, Resolved } from '@core/api';
@@ -286,7 +287,10 @@ const editor = CodeMirror($('#editor'), {
   tabSize: 2,
   matchBrackets: true,
   autoCloseBrackets: true,
-  gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers'],
+  gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+  // Folding, as in VS Code: arrows next to the line numbers (shown on hover), the keys in keys.ts.
+  foldGutter: { rangeFinder: foldRange, minFoldSize: 1 },
+  foldOptions: { rangeFinder: foldRange, widget: '⋯', minFoldSize: 1 },
   // Touch screens edit through the page's own text selection, which only reaches lines that are
   // drawn: draw them all (handlers are small), so the phone's Select all, copy and delete see every line.
   viewportMargin: window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 ? Infinity : 10,
@@ -731,7 +735,7 @@ function renderProblems(text: string) {
   if (!list.length) {
     // Nucli: dozing while there's no code, pleased when there's nothing to fix.
     if (!editor.getValue().trim()) {
-      el.innerHTML = `<li class="empty masc-empty">${mascot('n-sleep', { size: 72, zoom: 1.2 })}<span><strong>Waiting for code.</strong> Type or paste a handler, or <button class="link" type="button" id="go-open">open one</button> (Ctrl+K).</span></li>`;
+      el.innerHTML = `<li class="empty masc-empty">${mascot('n-sleep', { size: 72, zoom: 1.2 })}<span><strong>Waiting for code.</strong> Type or paste a handler, or <button class="link" type="button" id="go-open">open one</button> (Ctrl+P).</span></li>`;
       el.querySelector('#go-open')?.addEventListener('click', () => showOpen());
       return;
     }
@@ -1024,6 +1028,11 @@ function runSim() {
   const o = simOptions();
   const kb = o.keyboardPlayer;
   const r = simulate(editor.getValue(), o);
+  // Seen in Try it: the credit lines can say this version was simulated.
+  if (!$('#panel-simulate').hidden) {
+    doc.tried = { of: versionOf(withoutCredit(editor.getValue())), players: o.players, loaded: r.loaded && !r.loadError };
+    saveDocMeta();
+  }
   const out: string[] = [];
   const simple = mode === 'simple';
   // Test all needs a handler that loads: until then the banner below says what to fix.
@@ -1288,7 +1297,7 @@ function renderProbes() {
   $('#probes').innerHTML = `<div class="probe-intro">
       <p><strong>What this is.</strong> Nucleus Co-op runs handlers with an old JavaScript engine, Jint 2.11.58. It understands less than a modern browser, and some things work differently there (<code>let</code> and <code>const</code>, arrow functions, how .NET calls like <code>Path.Combine</code> take their arguments). Each probe is a tiny handler that tests one of those things, and we ran every one in that real engine, set up the way Nucleus sets it up.</p>
       <p><strong>Why it matters.</strong> Check and Try it are built on these results. When Check says "Nucleus can't load this", or Try it shows what a line does, a probe here is the proof. Right now Check agrees with the real engine on <strong>${agree} of ${PROBES.length}</strong> probes, and Try it on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
-      <p><strong>What you can use it for.</strong> Not sure whether Nucleus accepts some JavaScript? Find the probe for it below (or type its name in Open, Ctrl+K), open it to see the exact code, and the Jint column says what the real engine did. Missing one you need? <button class="link" type="button" id="probe-ask">Ask for a probe</button>.</p>
+      <p><strong>What you can use it for.</strong> Not sure whether Nucleus accepts some JavaScript? Find the probe for it below (or type its name in Open, Ctrl+P), open it to see the exact code, and the Jint column says what the real engine did. Missing one you need? <button class="link" type="button" id="probe-ask">Ask for a probe</button>.</p>
     </div>
     <details class="probe-cols"><summary>What the columns mean</summary><p class="small"><strong>Jint 2.11.58</strong>: what the real engine did (runs, loads, doesn't load, or Game.Play throws). <strong>Linter</strong>: what Check finds in it, live in this page. <strong>Agree</strong>: ✓ when Check reports an error exactly when the engine fails. <strong>Try it</strong>: what Try it predicts, with ✓ when it matches the engine.</p></details>
     <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th><th>Try it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
@@ -1305,7 +1314,17 @@ $('#count-probes').textContent = String(PROBES.length); // becomes "agree/total"
 // ---------------------------------------------------------------------------
 // Documents: what's in the editor, where it came from, shareable #links
 
-interface DocMeta { name: string; kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new'; hash?: string; hubIndex?: number; /** The Hub version's GUID, for guid-changed. */ published?: { version?: number; guid?: string } }
+interface DocMeta {
+  name: string;
+  kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new';
+  hash?: string;
+  hubIndex?: number;
+  /** The Hub version's GUID, for guid-changed. */
+  published?: { version?: number; guid?: string };
+  /** For the credit lines (credit.ts): Fix with AI changes kept, and the last Try it (of which version). */
+  ai?: { direct: number; reviewed: number };
+  tried?: { of: string; players: number; loaded: boolean };
+}
 const META_KEY = 'nucleus-workbench-doc';
 let doc: DocMeta = { name: 'Untitled handler', kind: 'draft' };
 let loadedText = editor.getValue();
@@ -1375,6 +1394,34 @@ function setPackageFiles(files: PackageFile[]) {
   renderDocHead();
   pkgUI?.render(); // the Files panel and its count, if it's open
 }
+/** A handler saved from here starts with the credit lines: folded away when it's opened again. */
+function foldCredit() {
+  if (hasCredit(editor.getValue())) editor.foldCode(CodeMirror.Pos(0, 0), { rangeFinder: lineCommentFold, widget: '⋯ made with the workbench' });
+}
+const saveDocMeta = () => { try { localStorage.setItem(META_KEY, JSON.stringify(doc)); } catch { /* not kept */ } };
+/** A short fingerprint of a version (credit lines: was Try it run on this one?). */
+function versionOf(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return `${text.length}:${(h >>> 0).toString(36)}`;
+}
+const CREDIT_OFF = 'nucleus-workbench-credit-off';
+const creditOn = () => { try { return localStorage.getItem(CREDIT_OFF) !== '1'; } catch { return true; } };
+/** The handler as it leaves the workbench: with the credit lines when it was made or changed here (credit.ts). */
+function exportText(): string {
+  const text = editor.getValue();
+  const base = withoutCredit(text);
+  const c = counts(base, lintCtx());
+  const tried = doc.tried && doc.tried.of === versionOf(base) ? { players: doc.tried.players, loaded: doc.tried.loaded } : undefined;
+  const out = withCredit(text, { errors: c.errors, warnings: c.warnings, tried, ai: doc.ai ?? { direct: 0, reviewed: 0 } }, { created: doc.kind === 'new', edited: base !== withoutCredit(loadedText), on: creditOn() });
+  if (out !== text) {
+    let told = false;
+    try { told = localStorage.getItem('nucleus-workbench-credit-told') === '1'; localStorage.setItem('nucleus-workbench-credit-told', '1'); } catch { /* ignore */ }
+    if (!told) notice('Added a few comment lines at the top: made with the workbench (with a link), and what was checked, simulated and done with AI here. Turn this off in Settings › Feedback and privacy.', { kind: 'info', action: { label: 'Settings', run: () => settings.open('feedback') } });
+  }
+  return out;
+}
+
 function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) {
   // One handler per tab: an example, Hub handler or link that's already open switches to its tab; anything else opens
   // in a new tab, unless this one is empty (nothing typed in a new handler).
@@ -1396,6 +1443,7 @@ function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) 
   pkgUI?.reset();
   editor.setValue(src);
   editor.clearHistory();
+  foldCredit();
   loadedText = src;
   doc = meta;
   try {
@@ -1723,6 +1771,10 @@ function commandList(): OpenEntry[] {
     c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
     c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
+    c('Fold the block at the cursor', 'Ctrl+Shift+[', 'fold collapse hide block function region', () => (editor.focus(), editor.execCommand('fold'))),
+    c('Unfold the block at the cursor', 'Ctrl+Shift+]', 'unfold expand show block', () => (editor.focus(), editor.execCommand('unfold'))),
+    c('Fold all', 'Ctrl+K Ctrl+0', 'fold all collapse everything', () => (editor.focus(), editor.execCommand('foldAll'))),
+    c('Unfold all', 'Ctrl+K Ctrl+J', 'unfold all expand everything', () => (editor.focus(), editor.execCommand('unfoldAll'))),
     c('Go to definition', 'F12', 'definition declaration where defined jump go to function variable', () => goToDefinition(), 'Where the function or variable under the cursor is declared, or the option set'),
     c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
     c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
@@ -2033,7 +2085,7 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 // Copy the code (from Save or copy, or the command palette): confirmed on the button next to the code.
 async function copyCode() {
   try {
-    await navigator.clipboard.writeText(editor.getValue());
+    await navigator.clipboard.writeText(exportText());
     confirmOn(shareButton(), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
@@ -2169,10 +2221,12 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
     lines.toggle();
     return;
   }
-  // As in VS Code: Ctrl+Shift+P and F1 open the command palette (">"), Ctrl+P (and Ctrl+K here) the
+  // As in VS Code: Ctrl+Shift+P and F1 open the command palette (">"), Ctrl+P (and Ctrl+K outside the code) the
   // examples and Hub handlers. Pressed again, the same key closes it.
   const commands = (mod && e.shiftKey && e.key.toLowerCase() === 'p') || e.key === 'F1';
-  if (commands || (mod && !e.shiftKey && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'p'))) {
+  // In the code, Ctrl+K starts VS Code's two-key shortcuts (Ctrl+K Ctrl+0 folds all…), so there it's Ctrl+P.
+  const inCode = !!(e.target as HTMLElement | null)?.closest?.('.CodeMirror');
+  if (commands || (mod && !e.shiftKey && ((e.key.toLowerCase() === 'k' && !inCode) || e.key.toLowerCase() === 'p'))) {
     e.preventDefault();
     const inCommands = ($('#open-q') as HTMLInputElement).value.trimStart().startsWith('>');
     if (openDialog.open && inCommands === commands) openDialog.close();
@@ -2416,6 +2470,12 @@ wireVotes((kind, _id, v, el) => {
   if (totals) { ($('#set-feedback-totals-link') as HTMLAnchorElement).href = totals; $('#set-feedback-totals').hidden = false; }
 }
 
+{
+  const box = $('#set-credit') as HTMLInputElement;
+  box.checked = creditOn();
+  box.addEventListener('change', () => { try { box.checked ? localStorage.removeItem(CREDIT_OFF) : localStorage.setItem(CREDIT_OFF, '1'); } catch { /* not kept */ } });
+}
+
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
 // Settings › Updates and backup: export and import the settings (settingsio.ts).
 $('#set-export').addEventListener('click', async () => {
@@ -2626,7 +2686,7 @@ function showProposal(base: string, code: string, changes: string[], before: { e
     <button class="btn icon" id="ai-close" type="button" aria-label="Close">×</button>
     <details class="fix-more"><summary>What changed (+${added} −${removed} lines)</summary>${changeList}${delta}${diffTable}</details></div>`;
 
-  const showApplied = () => {
+  const showApplied = (how: 'direct' | 'reviewed') => {
     aiBox.innerHTML = applied();
     aiBox.classList.add('compact');
     boxShows = code;
@@ -2635,6 +2695,7 @@ function showProposal(base: string, code: string, changes: string[], before: { e
       if (editor.getValue() === code) {
         editor.undo();
         clearChanged();
+        countAi(how, -1);
         aiBox.innerHTML = '<p class="fix-done"><span class="fix-msg">Undone. Your handler is back to how it was.</span></p>';
       } else {
         aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe here. Use Ctrl+Z in the editor instead.</p>';
@@ -2642,9 +2703,17 @@ function showProposal(base: string, code: string, changes: string[], before: { e
     });
     $('#ai-close').addEventListener('click', () => (aiBox.hidden = true));
   };
+  // Fix with AI changes kept, for the credit lines (credit.ts); Undo takes one back.
+  const countAi = (kind: 'direct' | 'reviewed', d: number) => {
+    if (source !== 'AI') return;
+    doc.ai = doc.ai ?? { direct: 0, reviewed: 0 };
+    doc.ai[kind] = Math.max(0, doc.ai[kind] + d);
+    saveDocMeta();
+  };
   if (!risky) {
     applyCode(code);
-    showApplied();
+    countAi('direct', 1);
+    showApplied('direct');
     return;
   }
   aiBox.classList.remove('compact');
@@ -2653,7 +2722,8 @@ function showProposal(base: string, code: string, changes: string[], before: { e
   aiBox.scrollIntoView({ block: 'nearest' });
   $('#ai-accept').addEventListener('click', () => {
     applyCode(code);
-    showApplied();
+    countAi('reviewed', 1);
+    showApplied('reviewed');
     $('#ai-undo').focus(); // keep the keyboard where the result is
   });
   $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
@@ -3032,7 +3102,8 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
   if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
   const filename = `${handlerFileName()}.${kind}`;
   try {
-    const data = kind === 'js' ? new TextEncoder().encode(editor.getValue()) : buildPackage(editor.getValue(), packageFiles);
+    const text = exportText();
+    const data = kind === 'js' ? new TextEncoder().encode(text) : buildPackage(text, packageFiles);
     await downloads.save({ filename, data });
     waka.saved();
     use(`save-${kind}`);
@@ -3061,7 +3132,7 @@ async function saveToNucleus(pick = false, trigger: HTMLElement = saveButton()) 
     notice("This browser can't save into a folder: drag the .zip onto Nucleus Co-op's window to install it. (Chrome and Edge can save straight into Nucleus' handlers folder.)", { kind: 'info' });
     return;
   }
-  const r = await saveIntoNucleus(editor.getValue(), packageFiles, pick);
+  const r = await saveIntoNucleus(exportText(), packageFiles, pick);
   if (r.ok) {
     nucleusFolderName = r.folder;
     waka.saved();

@@ -154,9 +154,18 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(400);
   check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) === 'Game.GUID = "A";\nGame.GameName = "A";\nGame.ExecutableName = "a.exe";\nGame.Play = function () {\n    Context.StartArguments = "-w";\n};\n', `${theme}: Shift+Alt+F formats the code`);
   check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
+  // Folding, as in VS Code: Ctrl+K Ctrl+0 folds all, Ctrl+K Ctrl+J unfolds all.
+  const folds = () => p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getAllMarks().filter((m) => m.__isFold).length);
+  await p.click('.CodeMirror-code');
+  await p.keyboard.press('Control+k');
+  await p.keyboard.press('Control+0');
+  check((await folds()) > 0, `${theme}: Ctrl+K Ctrl+0 folds the code`);
+  await p.keyboard.press('Control+k');
+  await p.keyboard.press('Control+j');
+  check((await folds()) === 0, `${theme}: Ctrl+K Ctrl+J unfolds it`);
   // Dialogs
   // Open: the arrow keys move through tiles, chips and rows.
-  await p.keyboard.press('Control+k');
+  await p.keyboard.press('Control+p'); // in the code Ctrl+K starts VS Code's two-key shortcuts
   await p.waitForTimeout(300);
   await p.focus('#open-q');
   const kinds = [];

@@ -400,7 +400,7 @@ const result = await esbuild.build({
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
-const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css'), cm('addon/dialog/dialog.css')].join('\n');
+const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css'), cm('addon/dialog/dialog.css'), cm('addon/fold/foldgutter.css')].join('\n');
 
 // The looks (src/themes.json) as CSS, by the same code that applies a custom theme in the page.
 const themeMod = await esbuild.build({ entryPoints: [path.join(here, 'src', 'themekit.ts')], bundle: true, format: 'esm', platform: 'node', write: false, logLevel: 'warning' });

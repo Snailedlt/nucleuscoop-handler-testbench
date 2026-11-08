@@ -501,6 +501,15 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #editor .CodeMirror { position: absolute; inset: 0; height: auto; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--code-fg, var(--fg)); }
 .CodeMirror-gutters { background: var(--code-gutter, var(--surface-2)); border-right: 1px solid var(--code-line, var(--line)); }
 .CodeMirror-linenumber { color: var(--code-muted, var(--muted)); }
+/* Folding, as in VS Code: the arrows show while the pointer is over the code; a folded block's arrow and ⋯ stay. */
+.CodeMirror-foldgutter { width: 14px; }
+.CodeMirror-foldgutter-open, .CodeMirror-foldgutter-folded { color: var(--code-muted, var(--muted)); cursor: pointer; font-size: 12px; line-height: inherit; text-align: center; }
+.CodeMirror .CodeMirror-foldgutter-open::after { content: '\2304'; }
+.CodeMirror .CodeMirror-foldgutter-folded::after { content: '\203A'; }
+.CodeMirror-foldgutter-open { opacity: 0; transition: opacity .15s; }
+.CodeMirror:hover .CodeMirror-foldgutter-open, .CodeMirror-focused .CodeMirror-foldgutter-open:hover { opacity: 1; }
+.CodeMirror-foldmarker { color: var(--code-muted, var(--muted)); background: color-mix(in srgb, var(--code-muted, var(--muted)) 18%, transparent); border-radius: 4px; padding: 0 5px; margin: 0 3px; font-family: inherit; text-shadow: none; cursor: pointer; }
+@media (pointer: coarse) { .CodeMirror-foldgutter-open { opacity: .6; } }
 .CodeMirror-cursor { border-left-color: var(--code-fg, var(--fg)); }
 .CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 600; }
@@ -929,7 +938,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .toast-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .toast-action:focus-visible, .toast-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (prefers-reduced-motion: reduce) { #toasts, .toast, .toast-inner { transition: none; } }
-/* The Open dialog (Ctrl+K) and command palette (Ctrl+Shift+P): a palette at a fixed spot near the top,
+/* The Open dialog (Ctrl+P) and command palette (Ctrl+Shift+P): a palette at a fixed spot near the top,
    so it doesn't jump while the results change. Soft rows instead of an outline on every card. */
 #open-dialog { width: min(1120px, calc(100vw - 24px)); height: min(86vh, 960px); max-height: none; margin: 6vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.15); }
 #open-dialog[open] { display: flex; }
@@ -2218,6 +2227,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="set-panel" role="tabpanel" id="sp-feedback" aria-labelledby="st-feedback" data-label="Feedback and privacy" hidden>
     <div class="set-sec"><h3>Feedback</h3>
       <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Share my votes and feature use, anonymously<small><b>On:</b> your 👍/👎 on tips and docs, and which features you used (each counted once per visit), are added to the project's anonymous counts, so we see what helps. <b>Off:</b> nothing leaves your browser; your votes still show here, only to you. With them go your screen size, browser language and the site you came from (just the site, e.g. discord.com), so we know what to design for and where people find the workbench. Either way: no code, no names, no cookies.</small></span></label>
+      <label class="set-check"><input type="checkbox" id="set-credit"> <span>Add credit lines when saving<small>A handler made or changed here gets a few comment lines at the top when you save or copy it: made with the workbench (with a link), and what was and wasn't done here: checked, simulated with Try it, changed by Fix with AI. Helps people who support you see which tools were used. A handler you only opened and saved stays as it was.</small></span></label>
       <p class="small" id="set-feedback-totals" hidden>The totals are public, for anyone to see: <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">see the votes and feature use</a>.</p>
       <p class="muted small" id="set-feedback-note" hidden></p></div>
   </div>

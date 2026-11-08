@@ -1,10 +1,10 @@
 # Nucleus handler testbench
 
-> **Beta, testers wanted.** Intro, screenshots and a 5-minute install: **https://snailedlt.github.io/nucleuscoop-handler-testbench/start/?ref=readme-md**
+> **Beta, testers wanted.** Intro, screenshots and a 5-minute install: **https://snailedlt.github.io/nucleuscoop-handler-testbench/start/?ref=workbench-readme-md**
 
 Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) game handlers outside Nucleus, on Linux or macOS with Mono, using **the same JavaScript engine version Nucleus ships (Jint 2.11.58), set up the same way**. Use it to check that a handler loads and that its `Game.Play` logic runs for each player, without Windows, the game or controllers.
 
-**Browser workbench: https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=readme-md** (from `playground/`): check a handler, fix it, and see what Nucleus sets up for each player, in the browser. Nothing to install.
+**Browser workbench: https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=workbench-readme-md** (from `playground/`): check a handler, fix it, and see what Nucleus sets up for each player, in the browser. Nothing to install.
 
 <p>
   <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/check-dark.png"><img src="docs/images/check-light.png" width="49%" alt="Check: Skyrim Together Reborn, a verified Hub handler, with its five ProtoController5 to 9 lines flagged and explained"></picture>
@@ -90,7 +90,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 
 ## Workbench (browser GUI)
 
-`playground/` builds a single self-contained page for testing by hand. It's published at **https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=readme-md** (`.github/workflows/pages.yml`: on every push and daily, against splitscreenme-vscode's `main`; one-time setup: Settings > Pages > Source: GitHub Actions). It has:
+`playground/` builds a single self-contained page for testing by hand. It's published at **https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=workbench-readme-md** (`.github/workflows/pages.yml`: on every push and daily, against splitscreenme-vscode's `main`; one-time setup: Settings > Pages > Source: GitHub Actions). It has:
 
 - an editor with live lint squiggles, quick fixes, completion, hover docs and signature help;
 - API search;
