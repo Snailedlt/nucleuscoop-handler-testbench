@@ -52,7 +52,7 @@ import { exportSettings, importSettings } from './settingsio';
 import { BETA } from './testplan';
 import { feedbackUrl, openReport, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
-import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
+import { countVisit, feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
@@ -2397,6 +2397,7 @@ initKeyHints([
   });
 }
 // Feedback (feedback.ts): votes on tips and Claude's docs, anonymous counts. A 👎 on a doc points at the issue link.
+countVisit(); // one anonymous "visit" count, with the site and ?ref= it came from (when sharing counts is on)
 wireVotes((kind, _id, v, el) => {
   if (kind === 'doc' && v === 'down') el.closest('.dc-check')?.querySelector<HTMLElement>('a')?.focus();
   announce(v ? (v === 'up' ? 'Thanks: counted as helpful.' : 'Thanks: counted as not helpful.') : 'Vote taken back.');

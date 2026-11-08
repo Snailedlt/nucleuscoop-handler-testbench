@@ -8,6 +8,8 @@
 import fs from 'node:fs';
 
 const SITE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
+// Links people follow carry where they were posted, for the anonymous counts' Campaigns (feedback.ts).
+const via = (where, path = '') => `${SITE}${path.split('#')[0]}?ref=${where}${path.includes('#') ? `#${path.split('#')[1]}` : ''}`;
 const text = fs.readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 const parts = text.split(/^## /m).slice(1);
 const wanted = process.argv.slice(2).find((a) => !a.startsWith('--'));
@@ -41,7 +43,7 @@ if (process.argv.includes('--notes')) {
   const RAW = 'https://raw.githubusercontent.com/Snailedlt/nucleuscoop-handler-testbench/main/';
   // The section ends with the `---` that separates releases in CHANGELOG.md: drop it, the links add their own.
   const notes = body.trim().replace(/(\n+---)+$/, '').replace(/\]\((docs\/[^)\s]+)\)/g, (_, path) => `](${RAW}${path})`);
-  console.log(`${notes}\n\n---\n\n**Try it:** [open the workbench](${SITE}) · [What's new](${SITE}#whats-new) · [what it is](${SITE}start/)`);
+  console.log(`${notes}\n\n---\n\n**Try it:** [open the workbench](${via('github-release')}) · [What's new](${via('github-release', '#whats-new')}) · [what it is](${via('github-release', 'start/')})`);
   process.exit(0);
 }
 if (process.argv.includes('--json')) {
@@ -52,7 +54,7 @@ if (process.argv.includes('--json')) {
     ...shown.map((s) => `• ${s}`),
     ...(items.length > shown.length ? [`…and ${items.length - shown.length} more in What's new`] : []),
     '',
-    `[Open What's new](${SITE}#whats-new) · [Open the workbench](${SITE}) · [Intro](${SITE}start/)`,
+    `[Open What's new](${via('discord', '#whats-new')}) · [Open the workbench](${via('discord')}) · [Intro](${via('discord', 'start/')})`,
   ].join('\n');
   console.log(
     JSON.stringify({
@@ -62,7 +64,7 @@ if (process.argv.includes('--json')) {
         {
           author: { name: 'Browser workbench', url: SITE, icon_url: `${SITE}icon.png` },
           title: headline ? `🌐 ${headline}` : '🌐 The Nucleus Handler Workbench is updated',
-          url: `${SITE}#whats-new`,
+          url: via('discord', '#whats-new'),
           description,
           color: 0x3ba55c, // green: the extension's posts are VS Code blue
           ...(thanks.length ? { fields: [{ name: 'Thanks', value: `${thanks.join(', ')} 🙏` }] } : {}),
@@ -76,6 +78,6 @@ if (process.argv.includes('--json')) {
 const more = items.length > 3 ? ` and ${items.length - 3} more` : '';
 const lines = [headline ? `**${headline}** 🧰` : '**The workbench is updated** 🧰', ...items.slice(0, 3).map((s) => `• ${s}`)];
 if (more) lines.push(`…${more}: the link opens What's new with all of them`);
-lines.push('', `<${SITE}#whats-new>`);
+lines.push('', `<${via('discord', '#whats-new')}>`);
 if (thanks.length) lines.push(`Thanks ${thanks.join(', ')} 🙏`);
 console.log(lines.join('\n'));

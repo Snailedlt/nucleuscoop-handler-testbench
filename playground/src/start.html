@@ -108,7 +108,7 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
   <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
   <p class="lede">A VS Code extension and a browser workbench that check your handler the way Nucleus runs it, explain every option as you type, and show what each player gets, without starting Nucleus or the game.</p>
   <div class="ctas">
-    <a class="btn primary" href="../">Try it in the browser</a>
+    <a class="btn primary" href="../?ref=start">Try it in the browser</a>
     <a class="btn" href="#install">Get the VS Code extension</a>
     <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Send feedback</a>
   </div>
@@ -157,7 +157,7 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
     <div class="card"><h3>1. Install</h3>
       <ol><li>Download <a id="vsix" href="__VSIX_URL__"><strong id="vsix-name">__VSIX_NAME__</strong></a> (<span id="vsix-tag">__VSIX_TAG__</span>, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
         <li>In VS Code: <kbd>Ctrl+Shift+P</kbd> → <strong>Extensions: Install from VSIX…</strong> → pick the file.</li></ol>
-      <p class="small">Or skip installing: <a href="../">open the workbench</a>.</p></div>
+      <p class="small">Or skip installing: <a href="../?ref=start">open the workbench</a>.</p></div>
     <div class="card"><h3>2. Open a handler you know</h3>
       <p>Open your handlers folder and pick one that works in Nucleus. Read the warnings and hover over options.</p>
       <p>Press <strong>▷</strong> in the editor's top-right corner (<strong>Nucleus: Try It</strong>) to see each player's setup.</p></div>
@@ -221,5 +221,12 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
     .catch(function () {});
 })();
 </script>
+<script>/* The workbench links carry where this visit came from (the ?ref= tag of the link followed, else the site),
+   for the workbench's anonymous counts; nothing is sent from this page. */
+try {
+  var q = new URLSearchParams(location.search), ref = q.get('ref') || q.get('utm_source');
+  if (!ref && document.referrer) { var h = new URL(document.referrer).host; if (h && h !== location.host) ref = h; }
+  if (ref && /^[\w.-]{1,40}$/.test(ref)) document.querySelectorAll('a[href="../?ref=start"]').forEach(function (a) { a.href = '../?ref=' + encodeURIComponent(ref); });
+} catch (e) {}</script>
 </body>
 </html>
