@@ -7,8 +7,8 @@
 //   followed (our own posts and READMEs add one: `?ref=discord`), so we see where people find the workbench;
 // - they go to a GoatCounter site (cookie-less, no personal data stored) only when the build names one
 //   (BUILD.feedback); otherwise nothing leaves the browser;
-// - off when the browser asks not to be tracked (Do Not Track, Global Privacy Control), and switchable in
-//   Settings › General;
+// - off when the browser asks not to be tracked (Do Not Track, Global Privacy Control), switchable in
+//   Settings › General, and off in a browser opened once with #toggle-goatcounter (GoatCounter's own switch);
 // - each feature is counted at most once per visit.
 // Your own votes are kept in this browser, so the buttons show what you picked.
 declare const BUILD: { feedback?: string | null };
@@ -19,8 +19,21 @@ const get = (k: string) => { try { return localStorage.getItem(k); } catch { ret
 const set = (k: string, v: string | null) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* private mode */ } };
 
 const browserSaysNo = () => navigator.doNotTrack === '1' || (navigator as any).globalPrivacyControl === true;
+// GoatCounter's own way to leave out the maintainer's browsers: open the page with #toggle-goatcounter at the end
+// of the address (once per browser, and per site address) and it's never counted there again; the same again turns
+// it back on. Kept in localStorage as GoatCounter's script keeps it (skipgc).
+const SKIP_KEY = 'skipgc';
+try {
+  if (location.hash === '#toggle-goatcounter') {
+    const skip = get(SKIP_KEY) !== 't';
+    set(SKIP_KEY, skip ? 't' : null);
+    history.replaceState(history.state, '', location.pathname + location.search);
+    setTimeout(() => alert(skip ? 'GoatCounter: this browser is no longer counted on this site.' : 'GoatCounter: this browser is counted again.'), 0);
+  }
+} catch { /* no location (tests) */ }
+
 /** Whether counts are sent: a site is set, the browser doesn't object, and it isn't switched off. */
-export const feedbackOn = () => !!BUILD.feedback && !browserSaysNo() && get(OFF_KEY) !== '1';
+export const feedbackOn = () => !!BUILD.feedback && !browserSaysNo() && get(OFF_KEY) !== '1' && get(SKIP_KEY) !== 't';
 export const feedbackAvailable = () => !!BUILD.feedback;
 /** The public dashboard with the totals (GoatCounter's, made public by the maintainer). */
 export const totalsUrl = () => (BUILD.feedback ? `https://${BUILD.feedback}.goatcounter.com/` : null);
