@@ -1,7 +1,7 @@
 // The game's install folder in the workbench: the checks themselves are in the core (splitscreenme-vscode
 // src/core/gamefolder.ts, shared with VS Code); this file reads a folder the author picks and draws the list pickers.
 export * from '@core/gamefolder';
-import { type FolderList, type GameFolder, MAX_DEPTH, MAX_ENTRIES, type PickOption, SKIP_DIRS, engineFacts, findExe, folderLists, folderSummary, insertEntry, pickerOptions } from '@core/gamefolder';
+import { type FolderList, type GameFolder, MAX_DEPTH, MAX_ENTRIES, type PickOption, SKIP_DIRS, engineFacts, findExe, folderLists, folderSummary, insertEntry, pickerOptions, join, base } from '@core/gamefolder';
 const lower = (s: string) => s.toLowerCase();
 // ---------------------------------------------------------------------------------------------------------------
 // Reading a folder (DOM).

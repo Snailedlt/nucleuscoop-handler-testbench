@@ -717,6 +717,8 @@ a { color: var(--accent); }
 .wm-menu button small { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
 .wm-menu .wm-n { justify-self: end; color: var(--muted); font-size: 12px; }
 .wm-menu-f { margin: 4px 8px 6px; font-size: 12px; }
+.ai-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 8px; }
+.ai-presets .btn { font-size: 12.5px; padding: 3px 9px; }
 .CodeMirror .vp-chip { margin: 0 2px; padding: 0 5px; height: 1.35em; line-height: 1.2; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); color: var(--accent); font: inherit; font-size: .85em; cursor: pointer; vertical-align: baseline; }
 .CodeMirror .vp-chip.bad { color: var(--warn, #b45309); border-color: currentColor; }
 .CodeMirror .vp-chip:hover, .CodeMirror .vp-chip:focus-visible { border-color: var(--accent); }
@@ -2118,6 +2120,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <span class="set-g" role="presentation">You</span>
       <button type="button" role="tab" id="st-a11y" data-st="a11y" aria-controls="sp-a11y">Accessibility</button>
       <button type="button" role="tab" id="st-help" data-st="help" aria-controls="sp-help">Tips and help</button>
+      <button type="button" role="tab" id="st-ai" data-st="ai" aria-controls="sp-ai">AI</button>
       <button type="button" role="tab" id="st-feedback" data-st="feedback" aria-controls="sp-feedback">Feedback and privacy</button>
       <span class="set-g" role="presentation">More</span>
       <button type="button" role="tab" id="st-general" data-st="general" aria-controls="sp-general">Updates and backup</button>
@@ -2226,6 +2229,28 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <p class="muted small" style="margin:0 0 8px">A file with your settings (look, layout, editor, Check, Lines, accessibility, tips), to use in another browser or on another computer. Your handlers, drafts and WakaTime key aren't in it.</p>
       <div class="set-row"><button class="btn" type="button" id="set-export">Export settings…</button><button class="btn" type="button" id="set-import">Import settings…</button><input type="file" id="set-import-file" accept=".json,application/json" hidden></div>
       <p class="small" id="set-io-msg" role="status" aria-live="polite"></p></div>
+  </div>
+  <div class="set-panel" role="tabpanel" id="sp-ai" aria-labelledby="st-ai" data-label="AI" hidden>
+    <div class="set-sec"><h3>Fix with AI</h3>
+      <p class="muted small" style="margin:0 0 8px">Which AI fixes handlers when you press Fix with AI. The handler's code goes to that provider then, and only then. Keys stay in this browser, go only to that provider, and are never in exported settings, links or feedback.</p>
+      <label class="set-field">Provider
+        <select id="ai-provider">
+          <option value="claude-page">Claude on claude.ai (when this page is opened there)</option>
+          <option value="anthropic">Anthropic API: Claude, with your API key</option>
+          <option value="openai">OpenAI, with your API key</option>
+          <option value="compatible">Another service: OpenRouter, Gemini, Ollama, LM Studio…</option>
+          <option value="off">Off</option>
+        </select></label>
+      <div class="set-fields" id="ai-fields">
+        <div id="ai-url-row"><label class="set-field">Address <small>The service's OpenAI-compatible API address</small><input type="url" id="ai-url" spellcheck="false" placeholder="https://openrouter.ai/api/v1"></label>
+          <div class="ai-presets" id="ai-presets" role="group" aria-label="Fill in the address for"></div></div>
+        <label class="set-field" id="ai-key-row">API key <small id="ai-key-hint"></small><input type="text" id="ai-key" class="secret" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label>
+        <label class="set-check" id="ai-remember-row"><input type="checkbox" id="ai-remember"> <span>Remember the key in this browser<small>Off: only until this tab is closed</small></span></label>
+        <label class="set-field" id="ai-model-row">Model <small id="ai-model-hint"></small><input type="text" id="ai-model" spellcheck="false" list="ai-models"><datalist id="ai-models"></datalist></label>
+        <div class="set-waka-row"><button class="btn" type="button" id="ai-test">Check the connection</button><span class="muted small" id="ai-status" role="status"></span></div>
+      </div>
+      <p class="muted small" id="ai-help"></p>
+    </div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-advanced" aria-labelledby="st-advanced" data-label="Advanced" hidden>
 

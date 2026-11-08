@@ -18,6 +18,8 @@ import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
+import { AiError, currentRunner } from './aiproviders';
+import { initAiSettings } from './aisettings';
 import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
@@ -2439,12 +2441,16 @@ let aiCtl: AbortController | null = null;
   } catch {
     sample = null;
   }
-  // Fix with AI only exists inside a Claude artifact viewer.
-  if (sample) {
-    aiBtn.hidden = false;
-    ($('#ai-note') as HTMLInputElement).hidden = false;
-  }
+  refreshAi();
 })();
+/** Fix with AI shows when a provider is set up (Settings › AI): Claude on claude.ai, an API key, or a local model. */
+function refreshAi() {
+  const on = !!currentRunner(sample).runner;
+  aiBtn.hidden = !on;
+  ($('#ai-note') as HTMLInputElement).hidden = !on;
+}
+document.addEventListener('ai-settings-changed', refreshAi);
+initAiSettings(() => sample);
 
 const AI_ERRORS: Record<string, string> = {
   rate_limited: 'Too many requests right now. Try again in a minute.',
@@ -2462,38 +2468,45 @@ function aiStatus(text: string) {
 }
 
 async function runAiFix() {
-  if (!sample) return;
+  const { runner, reason } = currentRunner(sample);
+  if (!runner) {
+    if (reason && reason !== 'off') notice(reason, { kind: 'info', action: { label: 'Open Settings › AI', run: () => settings.open('ai') } });
+    return;
+  }
+  const who = runner.label;
   const base = editor.getValue();
   const before = counts(base, lintCtx());
   aiCtl = new AbortController();
   aiBtn.disabled = true;
   aiBox.hidden = false;
-  // Nucli reads the code while Claude works on it (a spinner when mascots are off).
-  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking Claude…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
+  // Nucli reads the code while the AI works on it (a spinner when mascots are off).
+  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking ${esc(who)}…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
   $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
 
-  const limits = await sample.limits().catch(() => null);
+  // On claude.ai the page's Claude may not take tools; every API provider does.
+  const limits = runner.label === 'Claude' && sample ? await sample.limits().catch(() => null) : { tools: true };
   const tools = limits?.tools
     ? pageTools().map((t) => ({
         ...t,
         execute: (input: { [k: string]: unknown }) => {
-          aiStatus(t.name === 'lint_handler' ? 'Claude is checking its fix with the linter…' : `Claude is looking up ${String(input.query ?? '').slice(0, 40)}…`);
+          aiStatus(t.name === 'lint_handler' ? `${who} is checking its fix with the linter…` : `${who} is looking up ${String(input.query ?? '').slice(0, 40)}…`);
           return t.execute(input);
         },
       }))
     : undefined;
   try {
-    const r: any = await sample.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
+    const r: any = await runner.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
       signal: aiCtl.signal,
-      ...(tools ? { tools } : { cache: false }),
-      onText: () => aiStatus('Claude is writing the fix…'),
+      tools,
+      onText: () => aiStatus(`${who} is writing the fix…`),
     });
+    use('ai-fix');
     const code = typeof r?.code === 'string' ? r.code.replace(/\r\n/g, '\n') : '';
     const changes = Array.isArray(r?.changes) ? r.changes.map(String).slice(0, 20) : [];
     if (!code.trim()) {
-      aiBox.innerHTML = `<p>Claude's answer had no handler code. Try again.</p>`;
+      aiBox.innerHTML = `<p>The answer had no handler code. Try again.</p>`;
     } else if (code === base) {
-      aiBox.innerHTML = `<p>Claude found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
+      aiBox.innerHTML = `<p>${esc(who)} found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
     } else {
       showProposal(base, code, changes, before);
     }
@@ -2501,11 +2514,11 @@ async function runAiFix() {
     if (e?.code === 'cancelled') {
       aiBox.hidden = true;
     } else if (AI_UNAVAILABLE.has(e?.code)) {
-      aiBtn.hidden = true;
-      ($('#ai-note') as HTMLInputElement).hidden = true;
-      aiBox.innerHTML = `<p>Claude isn't available on this page for your account, so Fix with AI is turned off. Fix all problems still works.</p>`;
+      aiBox.innerHTML = `<p>Claude isn't available on this page for your account. Pick another provider in Settings › AI; Fix all problems still works.</p>`;
+    } else if (e instanceof AiError) {
+      aiBox.innerHTML = `<p>${esc(e.message)}</p>`;
     } else {
-      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? 'Something went wrong reaching Claude. Try again.')}</p>`;
+      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? `Something went wrong reaching ${who}. Try again.`)}</p>`;
     }
   } finally {
     aiBtn.disabled = false;

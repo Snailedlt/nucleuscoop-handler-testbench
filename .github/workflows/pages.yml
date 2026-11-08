@@ -66,6 +66,9 @@ jobs:
           (cd "$RUNNER_TEMP/prev-core" && npm ci --silent)
           (cd "$RUNNER_TEMP/prev/playground" && npm ci --silent && node build.mjs --core "$RUNNER_TEMP/prev-core")
           node tools/previous-wrap.mjs "$RUNNER_TEMP/prev/playground/dist/pages/index.html" playground/dist/pages/previous/index.html "$label"
+      - name: Typecheck the workbench (catches code the smoke test doesn't reach)
+        run: npx tsc --noEmit -p tsconfig.ci.json  # the extension is checked out at ../core here
+        working-directory: playground
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground
