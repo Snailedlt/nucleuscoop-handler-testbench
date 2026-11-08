@@ -390,7 +390,10 @@ const result = await esbuild.build({
   target: 'es2020',
   minify: true,
   write: false,
-  alias: { '@core': path.join(coreRepo, 'src', 'core') },
+  // ESLint (the core linter's general JavaScript rules) asks for Node's path module: the browser build of it.
+  alias: { '@core': path.join(coreRepo, 'src', 'core'), 'node:path': 'path-browserify', path: 'path-browserify' },
+  // …and reads a few things from `process`.
+  banner: { js: "var process = globalThis.process || { env: {}, argv: [], versions: {}, platform: 'browser', cwd: function () { return '/'; }, emitWarning: function () {}, nextTick: function (f) { Promise.resolve().then(f); } };" },
   nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
   logLevel: 'warning',
 });
@@ -405,7 +408,8 @@ const { builtInCSS } = await import('data:text/javascript;base64,' + Buffer.from
 const THEMES = JSON.parse(fs.readFileSync(path.join(here, 'src', 'themes.json'), 'utf8'));
 const themesCSS = builtInCSS(THEMES);
 // Each Hub example's problem counts, worked out here so the Open list needs no handler sources.
-const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning' });
+// ESM from a data: URL has no `require`; ESLint (inside the linter) requires Node's built-ins.
+const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
 const { lint: lintHandler } = await import('data:text/javascript;base64,' + Buffer.from(lintMod.outputFiles[0].text).toString('base64'));
 for (const h of hub.handlers) {
   const d = lintHandler(h.source);

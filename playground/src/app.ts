@@ -1,3 +1,4 @@
+import { JS_RULES } from '@core/jsrules';
 import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
@@ -167,7 +168,9 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
   if (d.rule === 'unknown-member' && /calling it throws/.test(d.message)) {
     return { title: "A function that doesn't exist", why: "Calling it is an error, so Nucleus stops here. It's usually a typo." };
   }
-  return PLAIN[d.rule] ?? { title: d.rule, why: '' };
+  // General JavaScript mistakes (ESLint's rules, core/jsrules.ts) carry their own plain title and why.
+  const js = (JS_RULES as Record<string, { title: string; why: string }>)[d.rule];
+  return PLAIN[d.rule] ?? (js ? { title: js.title, why: js.why } : { title: d.rule, why: '' });
 }
 
 const STORE_KEY = 'nucleus-workbench-draft';
