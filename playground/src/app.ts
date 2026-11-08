@@ -1,3 +1,4 @@
+import { definitionAt } from '@core/definition';
 import { JS_RULES } from '@core/jsrules';
 import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
@@ -327,6 +328,7 @@ const editor = CodeMirror($('#editor'), {
       if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
     }),
     'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
+    F12: () => goToDefinition(),
     // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
     Tab: (cm: any) => cm.execCommand('insertSoftTab'),
     'Shift-Tab': (cm: any) => cm.execCommand('indentLess'),
@@ -953,6 +955,20 @@ function jumpTo(offset: number) {
 }
 
 /** F8 / Shift+F8: move through the problems shown in the list. */
+/** F12: the handler's own function or variable, `Game.X` where it's set, `Context.Options["key"]` its AddOption. */
+function goToDefinition() {
+  const text = editor.getValue();
+  const at = editor.getCursor();
+  const d = definitionAt(text, editor.indexFromPos(at));
+  if (!d) {
+    codeNote(editor, at.line, 'Nothing in this handler defines this. For Nucleus\'s own names, hover for the docs.', { mood: 'info' });
+    return;
+  }
+  editor.setSelection(editor.posFromIndex(d.start), editor.posFromIndex(d.end));
+  editor.scrollIntoView({ from: editor.posFromIndex(d.start), to: editor.posFromIndex(d.end) }, 120);
+  editor.focus();
+}
+
 function stepProblem(dir: 1 | -1) {
   if (!shownProblems.length) {
     codeNote(editor, editor.getCursor().line, 'No problems to go to.', { mood: 'info' });
@@ -1707,6 +1723,7 @@ function commandList(): OpenEntry[] {
     c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
     c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
+    c('Go to definition', 'F12', 'definition declaration where defined jump go to function variable', () => goToDefinition(), 'Where the function or variable under the cursor is declared, or the option set'),
     c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
     c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
     c('Go to line…', 'Ctrl+G', 'line jump goto', () => { editor.focus(); editor.execCommand('jumpToLine'); }),
