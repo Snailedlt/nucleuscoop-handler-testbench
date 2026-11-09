@@ -588,6 +588,9 @@ for (const [dir, names] of [
   [path.join(coreRepo, 'docs', 'images'), ['vscode-problems', 'vscode-try-it', 'vscode-hover']],
 ]) for (const n of names) for (const t of ['light', 'dark']) fs.copyFileSync(path.join(dir, `${n}-${t}.png`), path.join(startDir, `${n}-${t}.png`));
 fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
+// The editor icons ("Works in your editor"): Devicon's where it has one, a neutral stand-in where it doesn't.
+fs.mkdirSync(path.join(startDir, 'editors'), { recursive: true });
+for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.endsWith('.svg')) fs.copyFileSync(path.join(here, 'src', 'editor-icons', f), path.join(startDir, 'editors', f));
 // Duo and Nucli, the mascot concepts (design/mascots), at /mascots/: the sheet, its earlier steps and the archive.
 // Concepts for now, not approved by the Nucleus Co-op maintainers, so search engines are asked to leave them out.
 {
