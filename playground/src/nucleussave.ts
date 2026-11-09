@@ -46,7 +46,6 @@ async function remember(h: Dir | undefined) {
 export async function rememberedName(): Promise<string | undefined> {
   return (await remembered())?.name;
 }
-export const forgetNucleusFolder = () => remember(undefined);
 
 /** The handlers folder from what was picked: Nucleus' own folder (it has handlers/) or the handlers folder itself. */
 async function handlersOf(picked: Dir): Promise<Dir | undefined> {
