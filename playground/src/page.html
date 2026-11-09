@@ -441,8 +441,6 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .set-check small .fb-open { display: inline-block; margin-top: 4px; }
 .more-list { display: flex; flex-direction: column; gap: 8px; }
 .more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
-.code-list .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.code-list .btn small { color: var(--muted); font-size: 12px; font-weight: 400; }
 /* Save or copy: one recommended action (the .zip for Nucleus), the rest as a grid of small choices. */
 #code-dialog { width: min(560px, calc(100vw - 32px)); }
 #code-dialog button svg { flex: none; color: var(--accent); }
@@ -451,7 +449,6 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .code-hero { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid var(--accent); border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--fg); font: inherit; font-size: 15px; cursor: pointer; }
 .code-hero:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 .code-hero > span:nth-child(2) { flex: 1; }
-.code-badge { font-size: 11.5px; font-weight: 600; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; flex: none !important; }
 .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .code-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
 .code-opt:hover { background: var(--surface-2); }
@@ -752,7 +749,6 @@ li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
 .tg-time { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--surface-2); color: var(--fg); cursor: help; }
 .tg-need { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--fg); cursor: help; }
 @media (max-width: 520px) { .tg-ask .masc { display: none; } .tg-cards { grid-template-columns: 1fr; } }
-.tg-count { margin: 0 0 8px; }
 .tg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow: auto; }
 .tg-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
 .tg-item.done { opacity: .65; }
@@ -760,7 +756,7 @@ li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
 .tg-done input { width: 18px; height: 18px; margin-top: 2px; }
 .tg-item p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
 .tg-title { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.tg-kind, .tg-for { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.tg-kind { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
 .tg-kind { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--fg); border-color: transparent; cursor: help; }
 .tg-legend { margin-top: 10px; font-size: 13px; } .tg-legend dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; } .tg-legend dt { font-weight: 600; } .tg-legend dd { margin: 0; color: var(--muted); }
 @media (pointer: coarse) { .no-touch { display: none !important; } }
@@ -883,7 +879,6 @@ table { border-collapse: collapse; width: 100%; }
 .probes tr.disagree { background: var(--err-bg); }
 .detail { color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); overflow-wrap: anywhere; }
 .center { text-align: center; } .agree { color: var(--ok); font-weight: 700; } .disagree-mark { color: var(--err); font-weight: 700; }
-.lede { margin: 0 0 12px; max-width: 65ch; }
 .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
 #api-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 12px; }
 .api { border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; margin: 0 0 10px; background: var(--surface); }
@@ -940,13 +935,7 @@ dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
 #hub-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 8px; }
 #hub-intro { margin: 0 0 10px; font-size: 12.5px; max-width: 65ch; }
 #hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.hub-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.hub-item h3 { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
-.hub-meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; font-variant-numeric: tabular-nums; grid-column: 1; }
-.hub-actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; }
-.hub-lint { display: flex; gap: 4px; flex-wrap: wrap; }
 #source-note { margin-left: auto; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-@media (max-width: 520px) { .hub-item { grid-template-columns: minmax(0, 1fr); } .hub-actions { grid-column: 1; grid-row: auto; } }
 kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
 .btn.primary kbd { background: transparent; color: inherit; border-color: color-mix(in srgb, var(--accent-fg) 45%, transparent); opacity: .85; margin-left: 4px; }
 .btn.icon { width: 32px; padding: 6px 0; text-align: center; font-weight: 600; }
@@ -1084,7 +1073,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 :root[data-site="v3"] #open-dialog { border-radius: var(--r-pane); }
 /* Settings → Theme */
 .ct { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; align-self: stretch; }
-.ct-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
 /* Looks: a card each, with a small picture of the workbench in its colours */
 .looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
 .look-card { position: relative; display: flex; flex-direction: column; border-radius: var(--r-pane); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); transition: border-color .12s, box-shadow .12s, transform .12s; }
@@ -1412,7 +1400,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #tipbar.open #tip-off .short { display: inline; }
   #toasts { bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   header .brand { order: 0; min-width: 0; }
-  header .toolbar { order: 2; }
   .switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; }
   .switch button { border: 0; background: var(--surface); padding: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .switch button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); }
@@ -1456,7 +1443,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #code-dialog { padding-inline: 8px; }
   #code-dialog h2 { padding-inline: 12px; }
   #code-dialog .actions { display: none; }
-  .code-list .btn small { font-size: 13px; }
   #more-dialog .more-list .btn, #code-dialog .more-list .btn { border: 0; border-radius: 10px; background: none; padding: 14px 12px; font-size: 16px; }
   #more-dialog .more-list .btn:active, #code-dialog .more-list .btn:active { background: var(--surface-2); }
   #more-dialog .actions { display: none; }
@@ -1778,9 +1764,6 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .view-switch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
 .view-switch button { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12.5px; padding: 3px 10px; cursor: pointer; }
 .view-switch button[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); font-weight: 600; }
-.gf-btn { display: inline-flex; align-items: center; gap: 5px; }
-.gf-btn.on { border-color: var(--ok); }
-.gf-btn .gf-n { font-size: 11px; color: var(--muted); }
 #formview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
 #formview[hidden] { display: none; }
 #blocksview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
