@@ -458,7 +458,7 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .code-saved::before { content: '✓ '; color: var(--ok, #2e9e5b); }
 .code-warn { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 4px; }
 @media (max-width: 520px) { .code-grid { grid-template-columns: 1fr; } }
-#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; padding: 2px 9px; align-self: stretch; }
+#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; }
 .lines-toggle { align-self: stretch; }
 #keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
 #keybar[hidden] { display: none; }
@@ -1519,9 +1519,10 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .brand-long { font-weight: inherit; }
 @media (max-width: 1280px) { .brand-long { display: none; } }
 .htabs-wrap { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-width: 0; align-self: stretch; }
-#htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; align-self: flex-end; }
+#htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; align-self: flex-end; } /* no scroll bar to change its height: the wheel, a trackpad and ▾ reach the rest */
+#htabs::-webkit-scrollbar { display: none; }
 .htab-all[hidden] { display: none; }
-.htab-all { font-size: 12px; }
+
 .htab-w { display: inline-flex; align-items: center; max-width: 250px; border: 1px solid transparent; border-bottom: 0; border-radius: 9px 9px 0 0; flex: none; }
 .htab-w:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .htab-w.on { background: var(--surface); border-color: var(--line); }
@@ -1537,7 +1538,7 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .htab-w:hover .ht-x, .htab-w.on .ht-x, .ht-x:focus-visible { opacity: 1; }
 .ht-x:hover { background: var(--surface-2); color: var(--fg); }
 @media (pointer: coarse) { .ht-x { opacity: 1; } }
-.htab-add { flex: none; width: 30px; height: 30px; margin-bottom: 2px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.htab-add { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; margin-bottom: 3px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
 .htab-add:hover, .htab-add[aria-expanded="true"] { background: var(--surface); color: var(--fg); }
 .save-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
 .save-btn:hover { filter: brightness(1.08); }
@@ -1546,6 +1547,12 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .split-save .save-more { padding: 0 8px; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid color-mix(in srgb, var(--accent-fg) 35%, transparent); }
 .split-save .save-more[aria-expanded=true] { background: var(--accent); color: var(--accent-fg); filter: brightness(.88); }
 .share-btn { display: inline-flex; align-items: center; gap: 6px; }
+/* The header's buttons (Share, Save and its ▾, the menu): one height whatever their content, so they line up. */
+:root { --hdr-ctl: 32px; }
+:root[data-site="mac"] { --hdr-ctl: 28px; }
+header :is(#share-open, .split-save .btn, #app-menu-open) { box-sizing: border-box; height: var(--hdr-ctl); padding-top: 0; padding-bottom: 0; }
+header .split-save { align-self: center; }
+header #app-menu-open { width: var(--hdr-ctl); }
 @media (max-width: 860px) { .split-save.wide-only, .share-btn.wide-only { display: none; } }
 #app-menu-open { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
 #app-menu-open .phone-dots { display: none; }
@@ -2073,7 +2080,7 @@ footer .made-by { margin-left: auto; }
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
       <h1><span class="brand-long">Nucleus Handler </span>Workbench</h1></a><a class="start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></div>
     </div>
-    <div class="htabs-wrap"><div id="htabs" role="tablist" aria-label="Open handlers"></div><button class="htab-add" id="tab-add" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="New handler, open a file, or an example">+</button></div>
+    <div class="htabs-wrap"><div id="htabs" role="tablist" aria-label="Open handlers"></div><button class="htab-add" id="tab-add" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="New handler, open a file, or an example"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
     <div class="switch" role="group" aria-label="Show">
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
       <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>

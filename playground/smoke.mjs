@@ -321,6 +321,11 @@ for (const theme of ['light', 'dark']) {
     // The ▾ (all open handlers) follows the number of tabs, on a fresh load as after any change.
     const allShown = () => p.isVisible('#tab-all');
     check((await allShown()) === (tabsAfter >= 2), `${theme}: ▾ all open handlers shown with ${tabsAfter} tabs`);
+    // Header buttons: one height and one centre line; ▾ and + centred on the tabs.
+    const geo = await p.evaluate(() => Object.fromEntries(['#share-open', '#code-menu-open', '#save-more', '#app-menu-open', '#tab-all', '#tab-add', '.htab-w.on'].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return [q, { h: r.height, mid: r.top + r.height / 2 }]; })));
+    const hdr = ['#share-open', '#code-menu-open', '#save-more', '#app-menu-open'].map((q) => geo[q]);
+    check(hdr.every((g) => Math.abs(g.h - hdr[0].h) < 1 && Math.abs(g.mid - hdr[0].mid) < 1), `${theme}: Share, Save, its ▾ and the menu are one height on one line (${hdr.map((g) => g.h).join('/')})`);
+    check(['#tab-all', '#tab-add'].every((q) => Math.abs(geo[q].mid - geo['.htab-w.on'].mid) <= 1.5), `${theme}: ▾ and + sit level with the tabs`);
     await p.reload();
     await p.waitForTimeout(800);
     check((await allShown()) === ((await nTabs()) >= 2), `${theme}: ▾ the same after a reload`);

@@ -1464,13 +1464,19 @@ function initTabs() {
   all.setAttribute('aria-haspopup', 'menu');
   all.setAttribute('aria-label', 'All open handlers');
   all.title = 'All open handlers';
-  all.textContent = '▾';
+  all.innerHTML = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   $('#tab-add').before(all);
   renderTabs(); // after the ▾ exists, so it's shown or hidden from the start
   all.addEventListener('click', () => openMenu(all, 'Open handlers', tabs.map((x) => {
     const on = x.id === activeTab;
     return { label: on ? doc.name : x.meta.name, checked: on, run: () => switchTab(x.id) };
   })));
+  // No scroll bar on the tabs: a mouse wheel scrolls them sideways (trackpads already do).
+  strip.addEventListener('wheel', (e) => {
+    if (strip.scrollWidth <= strip.clientWidth || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+    strip.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
   strip.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     const close = t.closest<HTMLElement>('[data-close]');
