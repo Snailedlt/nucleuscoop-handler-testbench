@@ -64,6 +64,9 @@ code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg
 .btn:focus-visible, a:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 .small { font-size: 14px; color: var(--muted); }
 .shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+.videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+.videos video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: contain; background: #000; }
+@media (max-width: 900px) { .videos { grid-template-columns: minmax(0, 1fr); } }
 .after-shots { margin-top: 28px; }
 figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; box-shadow: var(--sh-1); }
 figure a { display: block; }
@@ -174,6 +177,15 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
       <figcaption><strong>Browser workbench:</strong> the same checks and Try it, nothing to install. Share a handler with a link.</figcaption></figure>
     <figure><a href="lines-tree-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="lines-tree-dark.png"><img src="lines-tree-light.png" width="1600" height="800" loading="lazy" alt="The workbench's Lines list as a tree at System › IO › File, with the docs for File.Exists"></picture></a>
       <figcaption><strong>Lines:</strong> every name a handler can use, as a tree (Game, Context, System…), with docs and how many Hub handlers use it. Click to insert.</figcaption></figure>
+  </div>
+  <h3 id="in-motion" class="has-anchor">In motion<a class="anchor" href="#in-motion" aria-label="Link to this section: In motion"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h3>
+  <div class="videos">
+    <figure><video controls preload="none" playsinline muted poster="videos/workbench-poster.jpg" width="1280" height="800" aria-label="The workbench,: a short demo with captions"><source src="videos/workbench.mp4" type="video/mp4"></video>
+      <figcaption><strong>The workbench,</strong> about a minute: checks, fixes, suggestions, Docs, Try it, the visual editor and the debugger. <a href="videos/workbench.mp4">Download</a></figcaption></figure>
+    <figure><video controls preload="none" playsinline muted poster="videos/vscode-poster.jpg" width="1280" height="800" aria-label="VS Code,: a short demo with captions"><source src="videos/vscode.mp4" type="video/mp4"></video>
+      <figcaption><strong>VS Code,</strong> about a minute: problems, quick fixes, suggestions, parameter hints, the Docs panel and Try it. <a href="videos/vscode.mp4">Download</a></figcaption></figure>
+    <figure><video controls preload="none" playsinline muted poster="videos/notepadpp-poster.jpg" width="1400" height="900" aria-label="Notepad++,: a short demo with captions"><source src="videos/notepadpp.mp4" type="video/mp4"></video>
+      <figcaption><strong>Notepad++,</strong> under a minute: the same checks, fixes, suggestions and docs, and the plugin's menu. <a href="videos/notepadpp.mp4">Download</a></figcaption></figure>
   </div>
   <h3 id="in-your-editor" class="after-shots has-anchor">In your editor<a class="anchor" href="#in-your-editor" aria-label="Link to this section: In your editor"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h3>
 <ul class="facts">
