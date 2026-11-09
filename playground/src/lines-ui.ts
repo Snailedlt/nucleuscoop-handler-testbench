@@ -86,7 +86,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     // With Reference open beside the list (desktop), the full docs go there, where there's room.
     const path = l.path.replace(/^new /, '');
     if (previewReference && previewReference(path)) {
-      info.append(text('div', 'muted', 'Its docs are on the right, in Reference.'));
+      info.append(text('div', 'muted', 'Its docs are on the right, in Docs.'));
       return;
     }
     if (l.doc) info.append(text('div', '', l.doc));

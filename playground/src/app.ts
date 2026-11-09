@@ -82,6 +82,10 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySe
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** Tiny Markdown for API docs: fenced code, inline code, bold, links, paragraphs. */
+// The address as the page was opened (start-up loads the last draft, which can rewrite it): a #docs-… link from an
+// editor's hover opens Docs there, over whatever handler is open.
+const INITIAL_HASH = location.hash;
+
 function md(src: string): string {
   const out: string[] = [];
   const parts = src.split(/```(\w*)\n?([\s\S]*?)```/g);
@@ -430,7 +434,7 @@ function markApiLink(el: HTMLElement, path: string) {
   el.dataset.api = path;
   el.tabIndex = 0;
   el.setAttribute('role', 'link');
-  el.title = `${path} in the Reference`;
+  el.title = `${path} in Docs`;
 }
 function openReferenceAt(path: string) {
   tip.hidden = true;
@@ -1407,6 +1411,7 @@ function refGo(view: string, push = true) {
   if (push && view !== refView) refHistory.push(refView);
   if (refHistory.length > 50) refHistory.shift();
   refView = view;
+  setDocsHash(view);
   const q = view.startsWith('q:') ? view.slice(2) : '';
   ($('#api-q') as HTMLInputElement).value = q;
   const el = $('#api-results');
@@ -1419,16 +1424,42 @@ function refBack() {
   const v = refHistory.pop();
   if (v !== undefined) refGo(v, false);
 }
+// The address follows Docs, so it can be shared: #docs (the main page), #docs-Context (a group),
+// #docs-Context.ModifySaveFile (a name) or #docs-mutex (a search). Replaced, not pushed: the handler's own link
+// (#hub-…, #share-…) comes back when you leave Docs.
+const docsHashOf = (view: string) => (view === 'home' ? 'docs' : `docs-${encodeURIComponent(view.replace(/^(group|q):/, ''))}`);
+function setDocsHash(view = refView) {
+  try {
+    history.replaceState(history.state, '', `${location.pathname}${location.search}#${docsHashOf(view)}`);
+  } catch {
+    /* ignore */
+  }
+}
+function leaveDocsHash() {
+  if (!/^#docs(-|$)/.test(location.hash)) return;
+  try {
+    history.replaceState(history.state, '', `${location.pathname}${location.search}${doc.hash ? '#' + doc.hash : ''}`);
+  } catch {
+    /* ignore */
+  }
+}
+/** A #docs… link: Docs at that name, group or search. */
+function openDocsHash(h: string) {
+  const v = h === 'docs' ? '' : h.slice(5);
+  const view = !v ? 'home' : API_GROUPS.some((g) => g.key === v) ? `group:${v}` : `q:${v}`;
+  selectTab('api');
+  refGo(view);
+}
 function refBar(crumbs: { label: string; view?: string; count?: number; code?: boolean }[]): string {
   // A quiet path, as docs sites show it: "Reference / Context / ModifySaveFile", the parents as plain links, and a
   // back arrow when there's somewhere to go back to.
   const back = refHistory.length ? `<button type="button" class="ref-back" data-back aria-label="Back" title="Back (Alt+←)">←</button>` : '';
-  const parts = [`<button type="button" class="ref-crumb" data-home>Reference</button>`].concat(crumbs.map((c, i) => {
+  const parts = [`<button type="button" class="ref-crumb" data-home>Docs</button>`].concat(crumbs.map((c, i) => {
     const last = i === crumbs.length - 1;
     const attr = c.view ? (c.view.startsWith('group:') ? `data-group="${esc(c.view.slice(6))}"` : `data-q="${esc(c.view.slice(2))}"`) : '';
     return (c.view && !last ? `<button type="button" class="ref-crumb" ${attr}>${esc(c.label)}</button>` : `<span class="ref-here"${last ? ' aria-current="page"' : ''}>${esc(c.label)}</span>`) + (c.count !== undefined ? `<span class="ref-count">${c.count}</span>` : '');
   }));
-  return `<nav class="api-crumbs" aria-label="Where you are in the Reference">${back}${parts.join('<span class="ref-sep" aria-hidden="true">/</span>')}</nav>`;
+  return `<nav class="api-crumbs" aria-label="Where you are in Docs">${back}${parts.join('<span class="ref-sep" aria-hidden="true">/</span>')}</nav>`;
 }
 const groupOf = (path: string) => API_GROUPS.find((g) => g.key !== 'AI' && g.match(path));
 
@@ -1471,6 +1502,7 @@ $('#api-q').addEventListener('input', (e) => {
   // Typing doesn't add to Back; the view before the search does (once).
   if (!refView.startsWith('q:') || !refView.slice(2)) refHistory.push(refView);
   refView = q.trim() ? `q:${q}` : 'home';
+  setDocsHash();
   renderApi(q);
 });
 // Alt+Left in the Reference goes back, as in a browser.
@@ -2349,6 +2381,7 @@ function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   requestAnimationFrame(placeInk);
   document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
+  if (id !== 'api') leaveDocsHash();
   if (id === 'simulate') runSim();
   if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
   if (id === 'probes' && !probesRendered) {
@@ -2362,7 +2395,10 @@ function selectTab(id: string) {
     /* ignore */
   }
 }
-document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
+document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => {
+  selectTab(t.dataset.tab!);
+  if (t.dataset.tab === 'api') setDocsHash();
+}));
 
 const SIM_KEY = 'nucleus-workbench-sim';
 const simIds = ['sim-players', 'sim-res', 'sim-kb'];
@@ -3157,6 +3193,10 @@ function openFromHash(): boolean {
     }
     return false;
   }
+  if (h === 'docs' || h.startsWith('docs-')) {
+    openDocsHash(h);
+    return false; // opens no handler: the draft stays
+  }
   if (h === 'dev') {
     // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
     devBar.show();
@@ -3251,7 +3291,7 @@ const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
   done: (exp) => { if (exp) announce(exp === 'developer' ? 'Advanced mode is on.' : 'Guided: tips and plain words. Getting started is above the code.'); editor.focus(); },
 });
 // A new visitor: during the beta, the tester questions first (they also pick guided or Advanced); else Nucli's.
-if (!welcomed && !firstRunDone() && !location.hash) {
+if (!welcomed && !firstRunDone() && !INITIAL_HASH) {
   if (testGuide.needed()) testGuide.open(); else firstRun.open();
 }
 $('#fr-again').addEventListener('click', () => { ($('#settings-dialog') as HTMLDialogElement).close(); firstRun.open(); });
@@ -3270,7 +3310,11 @@ try {
   /* ignore */
 }
 initTabs();
-if (!openFromHash()) {
+const initialDocs = /^#docs(-|$)/.test(INITIAL_HASH) ? decodeURIComponent(INITIAL_HASH.slice(1)) : '';
+if (initialDocs) {
+  renderDocHead();
+  openDocsHash(initialDocs);
+} else if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 } else if (narrow()) setView('code');

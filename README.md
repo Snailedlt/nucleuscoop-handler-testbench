@@ -96,7 +96,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - a visual editor beside the code: **Form** (one line per option, values from lists) and **Blocks** (`Game.Play` as conditions and actions), plus **Lines** (every option Nucleus has, grouped, insertable);
 - a **debugger**: breakpoints, stepping, variables and watches, per player;
 - **Files**: open a whole `.zip`/`.nc` package, edit its text files, with the package checks; and **Your game on this PC**: link the game's install folder to check paths against it;
-- API search;
+- **Docs**: every name with its docs, searchable; `#docs-<name>` links open one (e.g. `#docs-Context.ModifySaveFile`), and the address follows what you browse;
 - the New Handler generator;
 - a per-player `Game.Play` simulation (**Try it**), and **Test all** for every players × input × monitor combination;
 - the probes, shown next to the linter's verdict;
@@ -129,7 +129,7 @@ In Advanced mode everything is keyboard-driven:
 
 **Share links.** **Share › Copy a link** puts the handler, compressed, into the link (`#share-…`), so anyone with the link sees the same code; with text selected it shares just the selection, which keeps links short enough for a Discord message (2,000 characters; whole handlers are usually longer).
 
-Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly. The page also remembers your draft, the active tab and the simulation settings in your browser.
+Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly, and `#docs-<name>` opens a name in Docs (over the handler you have open). The page also remembers your draft, the active tab and the simulation settings in your browser.
 
 It uses the same core code as the extension, from a checkout of [splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode). That checkout needs `npm ci` run in it first.
 

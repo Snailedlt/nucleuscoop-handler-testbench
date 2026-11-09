@@ -97,11 +97,11 @@ for (const theme of ['light', 'dark']) {
   const typed = focused && (await p.keyboard.type('// typed'), await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue().includes('// typed')));
   check(typed, `${theme}: Tab reaches the code editor, and typing goes into it`);
   await axe(p, `${theme}, Try it`);
-  // Reference with nothing typed shows what's in it.
+  // Docs with nothing typed shows what's in it.
   await p.click('[role=tab][data-tab=api]');
   await p.waitForTimeout(200);
-  check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Reference lists what's in it when nothing is typed`);
-  await axe(p, `${theme}, Reference`);
+  check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Docs lists what's in it when nothing is typed`);
+  await axe(p, `${theme}, Docs`);
   // A custom theme file: applied, unsafe values left out, removable.
   await p.$eval('#settings-open', (b) => b.click()); // in the menu now
   await p.waitForTimeout(300);
@@ -418,7 +418,7 @@ for (const theme of ['light', 'dark']) {
     await p.click('[role=tab][data-tab=api]');
     await p.fill('#api-q', 'Game.PlayersPerInstance');
     await p.waitForTimeout(400);
-    check((await p.$$('#api-results pre.doc-code.hl .cm-number')).length > 0, `${theme}: Reference shows its example coloured like the code`);
+    check((await p.$$('#api-results pre.doc-code.hl .cm-number')).length > 0, `${theme}: Docs shows its example coloured like the code`);
     // Blocks: a code step is a small CodeMirror with the colours, and typing in it edits the handler.
     await p.click('[data-view-mode=blocks]');
     await p.waitForTimeout(800);
