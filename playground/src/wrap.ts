@@ -6,7 +6,6 @@ import CodeMirror from 'codemirror';
 
 let on = false;
 const editors = new Set<any>();
-const listeners: ((on: boolean) => void)[] = [];
 
 /** The left padding CodeMirror gives a line (its theme's), read once. */
 let basePad: number | undefined;
@@ -48,6 +47,4 @@ export function setWrap(next: boolean) {
     cm.setOption('lineWrapping', on);
     cm.refresh();
   }
-  for (const f of listeners) f(on);
 }
-export const onWrapChange = (f: (on: boolean) => void) => listeners.push(f);

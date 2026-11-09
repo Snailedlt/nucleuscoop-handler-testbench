@@ -45,7 +45,6 @@ let framed = true;
 try {
   framed = window.self !== window.top;
 } catch {}
-export const isFramed = framed;
 export const touchDevice = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const portrait = () => window.innerHeight >= window.innerWidth;
 const learned = (): number | undefined => {

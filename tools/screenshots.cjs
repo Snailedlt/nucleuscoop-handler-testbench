@@ -1,10 +1,15 @@
 // Takes the workbench screenshots used by the README, /start and What's new, in light and dark.
 //   (cd playground/dist/pages && python3 -m http.server 8765) &
-//   node tools/screenshots.cjs [http://127.0.0.1:8765/]
+//   node tools/screenshots.cjs [http://127.0.0.1:8765/] [--only check,lines-tree]
 // Needs Python with Pillow for the phone collage. Writes docs/images/<name>-light.png and <name>-dark.png (changelog images under docs/images/changelog/).
 const path = require('path');
 const { chromium, devices } = require('playwright');
-const BASE = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://127.0.0.1:8765/';
+const args = process.argv.slice(2);
+const onlyAt = args.indexOf('--only');
+// --only <names>: just these screenshots (comma-separated: check, fix-all, try-it, lines-tree, lines, whats-new, phone).
+const ONLY = onlyAt >= 0 ? args[onlyAt + 1].split(',') : null;
+const want = (name) => !ONLY || ONLY.includes(name);
+const BASE = args.find((a, i) => !a.startsWith('--') && i !== onlyAt + 1) || 'http://127.0.0.1:8765/';
 const IMG = path.join(__dirname, '..', 'docs', 'images');
 const CH = path.join(IMG, 'changelog');
 const SKYRIM = 'PPct546raDXfjRLGw';
@@ -50,7 +55,7 @@ async function open(b, theme, opts, hash) {
   return { ctx, p };
 }
 const cmTop = (p, line) => p.evaluate((l) => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.scrollTo(null, cm.heightAtLine(l, 'local')); }, line);
-const setCode = (p, code, name) => p.evaluate(([c, n]) => { document.querySelector('.CodeMirror').CodeMirror.setValue(c); if (n) { document.querySelector('#doc-name').textContent = n; const e = document.querySelector('#doc-edited'); if (e) e.hidden = true; } }, [code, name]);
+const setCode = (p, code, name) => p.evaluate(([c, n]) => { document.querySelector('.CodeMirror').CodeMirror.setValue(c); if (n) { document.querySelector('#doc-name').textContent = n; const t = document.querySelector('.htab-w.on .ht-name'); if (t) t.textContent = n; const e = document.querySelector('#doc-edited'); if (e) e.hidden = true; } }, [code, name]);
 const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
 
 (async () => {
@@ -59,41 +64,55 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
   // --release-shots: only the release-note screenshots below (the README and start page ones stay).
   if (!process.argv.includes('--release-shots')) for (const t of ['light', 'dark']) {
     // README + /start: Check on a verified Hub handler.
-    let { ctx, p } = await open(b, t, desk, 'hub-' + SKYRIM);
+    let ctx, p;
+    if (want('check')) {
+    ({ ctx, p } = await open(b, t, desk, 'hub-' + SKYRIM));
     await cmTop(p, 179);
     await p.waitForTimeout(400);
     await p.screenshot({ path: path.join(IMG, `check-${t}.png`) });
     await ctx.close();
+    }
 
     // Fix all on the example with common mistakes.
+    if (want('fix-all')) {
     ({ ctx, p } = await open(b, t, desk, 'example-mistakes'));
     await p.click('#fix-all');
     await p.waitForTimeout(800);
     await p.screenshot({ path: path.join(IMG, `fix-all-${t}.png`) });
     await ctx.close();
+    }
 
     // Try it: StardewValley with 4 players.
+    if (want('try-it')) {
     ({ ctx, p } = await open(b, t, desk, 'hub-' + STARDEW));
     await p.click('[role=tab][data-tab=simulate]');
     await p.selectOption('#sim-players', '4');
     await p.waitForTimeout(1200);
     await p.screenshot({ path: path.join(IMG, `try-it-${t}.png`) });
     await ctx.close();
+    }
 
     // Lines as a tree, on a wide screen.
-    ({ ctx, p } = await open(b, t, { viewport: { width: 1600, height: 800 }, deviceScaleFactor: 1 }));
+    if (want('lines-tree')) {
+    ({ ctx, p } = await open(b, t, { viewport: { width: 1600, height: 800 }, deviceScaleFactor: 2 }));
     await setCode(p, DEMO, 'Demo Game.js');
     if (!(await p.isVisible('#lines'))) await p.click('#lines-toggle');
     await p.evaluate(() => document.querySelector('#lines').classList.add('wide'));
-    await p.selectOption('#lines-group', 'tree');
+    // View: Tree, grouped by object (the selects are under Lines' advanced settings, so set them directly).
+    await p.evaluate(() => {
+      for (const [sel, v] of [['#lines-view', 'tree'], ['#lines-group', 'object']]) { const s = document.querySelector(sel); s.value = v; s.dispatchEvent(new Event('change')); }
+    });
     for (const n of ['System', 'IO', 'File']) await p.click(`#lines-list .ln-col:last-child .ln-node:has(.nm:text-is("${n}")), #lines-list > .ln-row .ln-node:has(.nm:text-is("${n}"))`);
     await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.focus(); cm.setCursor(9, 22); });
     await p.hover('#lines-list .ln:has(.nm:text-is("Exists()"))');
     await p.waitForTimeout(400);
+    await p.evaluate(() => { const n = document.querySelector('.htab-w.on .ht-name'); if (n) n.textContent = 'Demo Game.js'; }); // the tabs redraw after an edit
     await p.screenshot({ path: path.join(IMG, `lines-tree-${t}.png`) });
     await ctx.close();
+    }
 
     // Changelog: Lines filtered to "kill".
+    if (want('lines')) {
     ({ ctx, p } = await open(b, t, { viewport: { width: 1400, height: 800 }, deviceScaleFactor: 1 }, 'example-mistakes'));
     if (!(await p.isVisible('#lines'))) await p.click('#lines-toggle');
     await p.selectOption('#lines-group', 'object').catch(() => {});
@@ -103,15 +122,19 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     await p.waitForTimeout(300);
     await p.screenshot({ path: path.join(CH, `2026-11-05-lines-${t}.png`), clip: await box(p, '.pane:not(.side)') });
     await ctx.close();
+    }
 
     // Changelog: What's new.
+    if (want('whats-new')) {
     ({ ctx, p } = await open(b, t, { viewport: { width: 900, height: 760 }, deviceScaleFactor: 1 }));
     await p.click('#news-open-2');
     await p.waitForTimeout(500);
     await p.screenshot({ path: path.join(CH, `whats-new-${t}.png`), clip: await box(p, '#news-dialog') });
     await ctx.close();
+    }
 
     // Phone: Check results (README), and four phone views (changelog).
+    if (want('phone')) {
     const phone = { ...devices['Pixel 7'] };
     ({ ctx, p } = await open(b, t, phone, 'example-mistakes'));
     await p.tap('.switch button[data-view=results]').catch(() => {});
@@ -135,6 +158,7 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     parts.push(await p.screenshot());
     require('fs').writeFileSync(path.join(CH, `.phones-${t}.json`), JSON.stringify(parts.map((x) => x.toString('base64'))));
     await ctx.close();
+    }
   }
   // Release-note screenshots (CHANGELOG.md), light and dark, ≈900 px wide.
   const CHW = { viewport: { width: 1280, height: 760 }, deviceScaleFactor: 1 };
@@ -142,7 +166,7 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     const r = sel ? await box(p, sel) : null;
     await p.screenshot({ path: path.join(CH, file), ...(r ? { clip: { x: Math.max(0, r.x - pad), y: Math.max(0, r.y - pad), width: r.width + pad * 2, height: r.height + pad * 2 } } : {}) });
   };
-  for (const t of ['light', 'dark']) {
+  if (!ONLY) for (const t of ['light', 'dark']) {
     // 18:33: Test all combinations.
     let { ctx, p } = await open(b, t, CHW, 'hub-' + STARDEW);
     await p.click('[role=tab][data-tab=simulate]');
@@ -222,5 +246,5 @@ const box = (p, sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(
     }
   }
   await b.close();
-  if (!process.argv.includes('--release-shots')) require('child_process').execFileSync('python3', ['-I', path.join(__dirname, 'compose-images.py'), CH], { stdio: 'inherit' });
+  if (!process.argv.includes('--release-shots') && want('phone')) require('child_process').execFileSync('python3', ['-I', path.join(__dirname, 'compose-images.py'), CH], { stdio: 'inherit' });
 })();

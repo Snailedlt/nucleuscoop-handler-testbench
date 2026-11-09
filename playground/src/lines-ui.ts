@@ -8,6 +8,7 @@
 // - grouped by object or by topic, A–Z or by how many Hub handlers use it, keyboard friendly.
 import { allLines, KINDS, Kind, Line, matches, scanHandler, inCallback, Scan, USAGE_TOTAL } from './lines';
 import { BEFORE_SESSION } from '@core/lifecycle';
+import { narrow } from './dom';
 
 interface Deps {
   editor: any; // CodeMirror 5
@@ -69,7 +70,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   const saved = store.get(LINES_KEY);
   // Closed until someone opens it (help on request; Ctrl+B or the Lines button), then as they left it. Phones always
   // start closed (it's a sheet over the code there).
-  let open = window.matchMedia('(max-width: 860px)').matches ? false : saved === '1';
+  let open = narrow() ? false : saved === '1';
   let scan: Scan | undefined;
   let callback = false;
   let current: Line | undefined;

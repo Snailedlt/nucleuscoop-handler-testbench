@@ -86,8 +86,6 @@ export const foldRange = (CodeMirror as any).fold.combine((CodeMirror as any).fo
 import 'codemirror/keymap/sublime';
 
 export const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-/** "Ctrl" or "⌘", for labels. */
-export const MOD_LABEL = isMac ? '⌘' : 'Ctrl';
 
 /** The editor actions that need more than a CodeMirror command (keybindings.ts lists them all, with their keys). */
 export const codeHandlers: Record<string, (cm: any) => void> = {

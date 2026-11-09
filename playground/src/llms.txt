@@ -9,7 +9,7 @@ Run the tools yourself, on your own machine: the MCP server or the CLI below che
 - [MCP server](https://github.com/Snailedlt/splitscreenme-vscode#mcp-server-claude-desktop-cursor-vs-code-copilot-): `node nucleus.js mcp` (download `nucleus.js` from the releases). Tools: nucleus_lint, nucleus_fix, nucleus_simulate, nucleus_api, nucleus_api_search, nucleus_new_handler, nucleus_hub_search, nucleus_hub_handler.
 - [Agent skill](https://github.com/Snailedlt/splitscreenme-vscode/tree/main/plugin/skills/nucleus-handler): the rules, workflow and recipes for writing handlers (SKILL.md), with a bundled CLI.
 - [API reference](https://raw.githubusercontent.com/Snailedlt/splitscreenme-vscode/main/plugin/skills/nucleus-handler/reference/api.md): every Game, Context, Player and Nucleus name with type, default and docs.
-- [CLI](https://github.com/Snailedlt/splitscreenme-vscode#command-line-linter): `nucleus lint <file> --json`, `nucleus api <name>`, `nucleus simulate <file>`.
+- [CLI](https://github.com/Snailedlt/splitscreenme-vscode#the-command-line-tool-ncdev): `nucleus lint <file> --json`, `nucleus api <name>`, `nucleus simulate <file>`.
 
 ## Time tracking
 
