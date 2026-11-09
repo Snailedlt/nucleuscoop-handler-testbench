@@ -1,7 +1,7 @@
 // Handler packages (.zip / .nc): handler.js at the root, plus whatever else the author ships
 // (config files, DLLs, scripts in folders). Opening one keeps those other files, and saving puts
 // them back unchanged, with the explicit folder entries Nucleus' installer needs.
-import { zipStore } from './zipstore';
+import { packageEntries, zipBytes, zipRecords, type ZipRecord } from '@core/zipbytes';
 
 export { sizeOf, type PackageFile } from '@core/pkgcheck';
 import type { PackageFile } from '@core/pkgcheck';
@@ -15,73 +15,44 @@ export interface Package {
 }
 
 async function inflate(data: Uint8Array): Promise<Uint8Array | null> {
-  if (!('DecompressionStream' in window)) return null;
+  if (typeof DecompressionStream !== 'function') return null;
   const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw' as CompressionFormat));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 /** Reads a package; null when it has no root .js the page can read. */
 export async function readPackage(buf: ArrayBuffer): Promise<Package | null> {
-  const v = new DataView(buf);
-  let eocd = -1;
-  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) {
-    if (v.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
+  let records: ZipRecord[];
+  try {
+    records = zipRecords(new Uint8Array(buf)).filter((r) => r.body); // folder entries are rebuilt on save
+  } catch {
+    return null;
   }
-  if (eocd < 0) return null;
-  const count = v.getUint16(eocd + 10, true);
-  let p = v.getUint32(eocd + 16, true);
-  const utf8 = new TextDecoder();
-  const entries: { name: string; method: number; start: number; size: number }[] = [];
-  for (let i = 0; i < count; i++) {
-    const method = v.getUint16(p + 10, true);
-    const csize = v.getUint32(p + 20, true);
-    const nlen = v.getUint16(p + 28, true);
-    const xlen = v.getUint16(p + 30, true);
-    const clen = v.getUint16(p + 32, true);
-    const local = v.getUint32(p + 42, true);
-    const name = utf8.decode(new Uint8Array(buf, p + 46, nlen)).replace(/\\/g, '/');
-    p += 46 + nlen + xlen + clen;
-    if (name.endsWith('/')) continue; // folder entries are rebuilt on save
-    const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
-    entries.push({ name, method, start, size: csize });
-  }
-  const roots = entries.filter((e) => !e.name.includes('/') && /\.js$/i.test(e.name));
+  const roots = records.filter((e) => !e.name.includes('/') && /\.js$/i.test(e.name));
   const pick = roots.find((e) => e.name.toLowerCase() === 'handler.js') ?? roots[0];
   if (!pick) return null;
-  const read = async (e: (typeof entries)[number]) => {
-    const raw = new Uint8Array(buf, e.start, e.size);
-    if (e.method === 0) return raw.slice();
-    if (e.method === 8) return inflate(raw);
+  const read = async (e: ZipRecord) => {
+    if (e.method === 0) return e.body!.slice();
+    if (e.method === 8) return inflate(e.body!);
     return null;
   };
   const handlerBytes = await read(pick);
   if (!handlerBytes) return null;
   const files: PackageFile[] = [];
   const unreadable: string[] = [];
-  for (const e of entries) {
+  for (const e of records) {
     if (e === pick) continue;
     const data = await read(e);
     if (data) files.push({ name: e.name, data });
     else unreadable.push(e.name);
   }
-  return { handler: utf8.decode(handlerBytes), handlerName: pick.name, files, unreadable };
+  return { handler: new TextDecoder().decode(handlerBytes), handlerName: pick.name, files, unreadable };
 }
 
-/** A package with the handler as handler.js and the other files, plus an entry for each folder. */
+/** A package with the handler as handler.js and the other files, plus an entry for each folder (core/zipbytes.ts, stored). */
 export function buildPackage(handler: string, files: PackageFile[]): Uint8Array {
-  const dirs = new Set<string>();
-  for (const f of files) {
-    const parts = f.name.split('/');
-    for (let i = 1; i < parts.length; i++) dirs.add(parts.slice(0, i).join('/') + '/');
-  }
-  return zipStore([
-    { name: 'handler.js', data: new TextEncoder().encode(handler) },
-    ...[...dirs].sort().map((name) => ({ name, data: new Uint8Array(0) })),
-    ...files.filter((f) => f.name.toLowerCase() !== 'handler.js' && !f.remote), // placeholders have no content to save
-  ]);
+  const keep = files.filter((f) => f.name.toLowerCase() !== 'handler.js' && !f.remote); // placeholders have no content to save
+  return zipBytes(packageEntries(new TextEncoder().encode(handler), keep.map((f) => ({ name: f.name, data: f.data }))));
 }
 
 // --- kept with the draft in this browser, so a reload doesn't lose them
