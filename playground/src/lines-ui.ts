@@ -67,8 +67,9 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   if (prefs.group === 'tree') { prefs.view = 'tree'; prefs.group = 'object'; }
   if ((prefs as any).tree === false && !('view' in JSON.parse(store.get(PREFS_KEY) || '{}'))) prefs.view = 'list';
   const saved = store.get(LINES_KEY);
-  // Phones always start with the list closed (it's a sheet over the code there).
-  let open = window.matchMedia('(max-width: 860px)').matches ? false : saved ? saved === '1' : window.matchMedia('(min-width: 1680px)').matches;
+  // Closed until someone opens it (help on request; Ctrl+B or the Lines button), then as they left it. Phones always
+  // start closed (it's a sheet over the code there).
+  let open = window.matchMedia('(max-width: 860px)').matches ? false : saved === '1';
   let scan: Scan | undefined;
   let callback = false;
   let current: Line | undefined;

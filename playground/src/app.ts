@@ -1617,6 +1617,9 @@ async function copyLink(trigger?: HTMLElement | null) {
     await navigator.clipboard.writeText(url);
     confirmOn(trigger, 'Link copied ✓', `Link copied. It opens ${what} for anyone.`);
     if (long) notice(`The link copied, but it's long.${long}`, { kind: 'warning' });
+    // A link carries the code only: say so when the handler has package files, so nobody expects them.
+    const n = packageFiles.length;
+    if (n && !selection) notice(`The link has the code only: its ${n} package file${n === 1 ? '' : 's'} ${n === 1 ? "isn't" : "aren't"} in it. To share those too, Save ▾ › .zip and send the file.`, { kind: 'info' });
   } catch {
     notice(`Couldn't copy. The link is in the address bar.${long}`, { kind: 'warning' });
     history.replaceState(null, '', '#' + id);
@@ -3315,7 +3318,21 @@ const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
   setMode,
   layout,
   setLayout,
-  done: (exp) => { if (exp) announce(exp === 'developer' ? 'Advanced mode is on.' : 'Guided: tips and plain words. Getting started is above the code.'); editor.focus(); },
+  done: (exp) => {
+    if (exp === 'developer') {
+      // "I write code" starts compact: no tip bar, no Getting started banner (both stay a click away: Settings, the footer).
+      tips.set(false);
+      $('#welcome').hidden = true;
+      try {
+        localStorage.setItem(WELCOME_KEY, '1');
+      } catch {
+        /* ignore */
+      }
+      editor.refresh();
+    }
+    if (exp) announce(exp === 'developer' ? 'Advanced mode is on: tips are off (Settings › Tips and help).' : 'Guided: tips and plain words. Getting started is above the code.');
+    editor.focus();
+  },
 });
 // A new visitor: during the beta, the tester questions first (they also pick guided or Advanced); else Nucli's.
 if (!welcomed && !firstRunDone() && !INITIAL_HASH) {
@@ -3380,9 +3397,14 @@ document.querySelectorAll('dialog').forEach((dl) =>
 // the first saves of a .zip.
 const codeDialog = $('#code-dialog') as HTMLDialogElement;
 /** The Save or Share button the person can see (slim bar, side rail or phone), so confirmations show where they look. */
-const shown = (...sel: string[]) => sel.map((s) => document.querySelector<HTMLElement>(s)).find((el) => !!el?.offsetParent) ?? null;
+// Function declarations (hoisted): initTips, far above, may ask for the Share button while the page starts.
+function shown(...sel: string[]): HTMLElement | null {
+  return sel.map((s) => document.querySelector<HTMLElement>(s)).find((el) => !!el?.offsetParent) ?? null;
+}
 const saveButton = () => shown('#code-menu-open', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#code-menu-open');
-const shareButton = () => shown('#share-open', '.rail [data-rail=share]', '#code-menu-phone') ?? $('#share-open');
+function shareButton(): HTMLElement {
+  return shown('#share-open', '.rail [data-rail=share]', '#code-menu-phone') ?? ($('#share-open') as HTMLElement);
+}
 type SaveKind = 'zip' | 'js' | 'nc';
 const SAVE_KEY = 'nucleus-workbench-save-format';
 const STEPS_KEY = 'nucleus-workbench-install-steps-seen';

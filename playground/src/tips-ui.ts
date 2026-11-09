@@ -54,7 +54,14 @@ export function initTips({ editor, actions, toast, targets }: Deps) {
     });
     $('#tip-votes').innerHTML = voteButtons('tip', tip.id, { up: 'Useful tip', down: 'Not useful' });
     document.querySelectorAll('.tip-target').forEach((e) => e.classList.remove('tip-target'));
-    if (tip.action && on) targets?.[tip.action.run]?.()?.classList.add('tip-target');
+    if (tip.action && on) {
+      // Only a highlight: a control that isn't there (yet) must never stop the page.
+      try {
+        targets?.[tip.action.run]?.()?.classList.add('tip-target');
+      } catch {
+        /* no highlight */
+      }
+    }
     if (tip.action) {
       act.hidden = false;
       act.textContent = tip.action.label;

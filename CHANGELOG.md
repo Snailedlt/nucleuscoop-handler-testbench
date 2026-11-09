@@ -45,6 +45,14 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Anonymous counts include screen size, language and where people come from.** When sharing counts is on (Settings › General), each count now also says the screen size, the browser's language and the site the visit came from (just the site, e.g. discord.com), so we can see what to design for and where people find the workbench. Still no code, names or cookies.
 - **JavaScript's own methods in suggestions.** After a string (`Context.StartArguments.`), a list, `Math.` or `JSON.`, suggestions and hover cover JavaScript's built-in methods, only the ones Nucleus's engine has.
 
+
+### 🐛 Fixed
+
+- **The workbench always starts.** Now and then (when the first tip was the one about sharing) the page stopped while starting: no handler, and Settings did nothing.
+- **Save is readable in every look.** In the Mac and alpha 8 looks the Save button's text was nearly invisible.
+- **"I write code" starts compact.** That first-visit answer now also turns tips off and skips the Getting started banner (both stay in Settings and the footer).
+- **Lines waits to be asked.** On wide screens the Lines list no longer opens by itself; Lines or Ctrl+B opens it, and it stays as you leave it.
+- **Share links say what they leave out.** A link carries the code only; with package files it now says so and how to share them (Save ▾ › .zip).
 ---
 
 ## 2026-11-08

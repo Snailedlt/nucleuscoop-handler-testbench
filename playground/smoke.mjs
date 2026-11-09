@@ -493,6 +493,42 @@ await m.p.waitForTimeout(200);
 check(!(await m.p.$('dialog.xf-dialog')), 'phone: Esc closes it');
 await m.ctx.close();
 
+// Start-up with each general tip first (the first one is random): none may stop the page (a tip's highlight once
+// asked for a control declared later in app.ts, and the whole workbench failed to start).
+{
+  let crashed = 0;
+  for (let i = 0; i < 40; i++) {
+    const s = await page('light');
+    await s.ctx.addInitScript((v) => {
+      const r = Math.random;
+      let first = true;
+      Math.random = () => (first ? ((first = false), v) : r());
+    }, (i + 0.5) / 40);
+    await s.p.goto(BASE + '#docs');
+    await s.p.waitForTimeout(400);
+    if (s.errors.length) crashed++;
+    await s.ctx.close();
+  }
+  check(crashed === 0, `start-up with every possible first tip: no page errors (${crashed} of 40 failed)`);
+}
+// The main button stays readable in every look (light and dark): the looks restyle .btn.
+for (const site of ['v3', 'mac', 'alpha8'])
+  for (const theme of ['light', 'dark']) {
+    const s = await page(theme);
+    await s.ctx.addInitScript((v) => {
+      try {
+        localStorage.setItem('nucleus-workbench-dev-site', v);
+      } catch {}
+    }, site);
+    await s.p.goto(BASE);
+    await s.p.waitForTimeout(500);
+    await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+    await s.p.addScriptTag({ content: AXE });
+    const bad = await s.p.evaluate(async () => (await axe.run('#code-menu-open, #save-more', { runOnly: ['color-contrast'] })).violations.length);
+    check(bad === 0, `${site} look, ${theme}: Save is readable (contrast)`);
+    await s.ctx.close();
+  }
+
 await browser.close();
 server.close();
 console.log(failures ? `\n${failures} check(s) failed.` : '\nAll checks passed.');
