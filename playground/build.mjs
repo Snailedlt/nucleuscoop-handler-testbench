@@ -550,6 +550,7 @@ const hlStatic = (() => {
     return out;
   };
 })();
+const ANCHOR_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg>';
 const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 fs.writeFileSync(
   path.join(startDir, 'index.html'),
@@ -564,6 +565,8 @@ fs.writeFileSync(
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
     .replaceAll('__PROBES__', String(probes.length))
+    // Every heading with class has-anchor gets its link (GitHub's link icon, shown on hover), written here once.
+    .replace(/<(h[2-4]) id="([^"]+)" class="([^"]*\bhas-anchor\b[^"]*)">([^<]+)<\/\1>/g, (m, h, id, cls, text) => `<${h} id="${id}" class="${cls}">${text}<a class="anchor" href="#${id}" aria-label="Link to this section: ${text}">${ANCHOR_SVG}</a></${h}>`)
     // Code in the text coloured like the workbench's editor (issue #12): CodeMirror's runMode at build time, the
     // www look's code colours (AA on this page's code background, light and dark).
     .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlStatic(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
