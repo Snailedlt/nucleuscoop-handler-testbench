@@ -30,6 +30,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Common JavaScript mistakes caught.** Check now includes ESLint's rules for real bugs: `=` where `==` was meant, a backslash that disappears from a Windows path (`"C:\Games"`), the same key twice, code that never runs, a line that does nothing, and more, each explained in plain words.
 
 ### 🛠️ Improved
+- **Compare the editors.** The start page has a table of what VS Code, Notepad++, the workbench and other editors (through `ncdev lsp`) can each do.
 
 - **Every editor on the start page.** *Works in your editor* shows VS Code, Notepad++ and the browser, and for experienced developers the editors that can use the language server (Neovim, Helix, Sublime Text, Emacs, Kate, JetBrains IDEs, Zed), each with its icon and how much setup it takes.
 - **Old links keep working.** A link from before a change (an old `#reference-…` from before Docs) opens the same thing and says it moved; a link to something that isn't here any more says so and offers the way on (a Hub handler not among the examples opens on the Hub).
