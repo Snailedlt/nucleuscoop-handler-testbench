@@ -6,8 +6,6 @@ What changed in the browser workbench (<https://snailedlt.github.io/nucleuscoop-
 How to write it (people and AI agents read this, and the workbench shows it):
 - Add each user-visible change under "## Unreleased", in one of these groups, biggest change first:
   ### ✨ New · ### 🛠️ Improved · ### 🐛 Fixed · ### ⚡ Faster · ### ⚠️ Changed (what users must do differently) · ### 🙏 Thanks
-- **A clear privacy switch.** Settings › Feedback and privacy now has a Privacy section with one switch for the anonymous usage counts (GoatCounter), what they are in plain words, and links to the public numbers and the open-source code that sends them. Opening the workbench with `#toggle-goatcounter` at the end of the address also turns them off for that browser.
-- **The UI kit and the Duo and Nucli overview are online.** Their links from the mascot pages led to a "404" (and *Overview* to the workbench): they're now at `/ui-kit/` and `/duo-nucli/`.
 - 🙏 Thanks: one line per person who tested, reported a bug or contributed to this release, e.g. "- **Horah** for reporting …". When it came through GitHub (an issue, a pull request, a review), link their profile: "- **[name](https://github.com/name)** for …". Credit them inline too ("Reported by Horah.").
 - One line per change: a **short summary** in bold (the update note shows only that), then one or two plain sentences.
 - A screenshot (or other media) for big, visible changes, folded away in a `<details><summary>Screenshot</summary>` block indented under its line, with a blank line before and after the image and the closing `  </details>`; the image line: `  ![What it shows](docs/images/changelog/<date>-<name>-light.png)` (≈700–1000 px wide), with `<date>-<name>-dark.png` beside it: What's new shows the one for the viewer's theme (`tools/screenshots.cjs` takes both). An animation is a `.gif` (or `.mp4`/`.webm`, smaller) with a `.png` still of the same name beside it (`x-light.gif` + `x-light.png`, and the dark pair): What's new shows the still until the item is opened, then plays it, unless the device asks for less motion. Keep each under ~300 KB; summary `Animation`.
@@ -30,9 +28,11 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Common JavaScript mistakes caught.** Check now includes ESLint's rules for real bugs: `=` where `==` was meant, a backslash that disappears from a Windows path (`"C:\Games"`), the same key twice, code that never runs, a line that does nothing, and more, each explained in plain words.
 
 ### 🛠️ Improved
+
+- **A clear privacy switch.** Settings › Feedback and privacy now has a Privacy section with one switch for the anonymous usage counts (GoatCounter), what they are in plain words, and links to the public numbers and the open-source code that sends them. Opening the workbench with `#toggle-goatcounter` at the end of the address also turns them off for that browser.
+- **The UI kit and the Duo and Nucli overview are online.** Their links from the mascot pages led to a "404" (and *Overview* to the workbench): they're now at `/ui-kit/` and `/duo-nucli/`.
 - **Short demo videos.** The start page shows the workbench, VS Code and Notepad++ in a minute or two each (captioned, no sound).
 - **Compare the editors.** The start page has a table of what VS Code, Notepad++, the workbench and other editors (through `ncdev lsp`) can each do.
-
 - **Every editor on the start page.** *Works in your editor* shows VS Code, Notepad++ and the browser, and for experienced developers the editors that can use the language server (Neovim, Helix, Sublime Text, Emacs, Kate, JetBrains IDEs, Zed), each with its icon and how much setup it takes.
 - **Old links keep working.** A link from before a change (an old `#reference-…` from before Docs) opens the same thing and says it moved; a link to something that isn't here any more says so and offers the way on (a Hub handler not among the examples opens on the Hub).
 - **Neater code in the docs.** Examples and long signatures are laid out the way prettier would: one parameter, array item or argument per line when they don't fit, a last list hugged by its call (`f(a, b, [` … `])`), long `+` chains broken after `=`. Short code stays on one line, and nothing about what the code does changes.

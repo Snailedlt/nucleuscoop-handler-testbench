@@ -591,7 +591,11 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
 // The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
 fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });
 for (const [dir, names] of [[path.join(here, '..', 'docs', 'videos'), ['workbench']], [path.join(coreRepo, 'docs', 'videos'), ['vscode', 'notepadpp']]])
-  for (const n of names) for (const f of [`${n}.mp4`, `${n}-poster.jpg`]) if (fs.existsSync(path.join(dir, f))) fs.copyFileSync(path.join(dir, f), path.join(startDir, 'videos', f));
+  for (const n of names) for (const f of [`${n}.mp4`, `${n}-poster.jpg`]) {
+    // The start page plays each of these: a missing one would ship as a broken player, so stop here.
+    if (!fs.existsSync(path.join(dir, f))) throw new Error(`build: ${path.join(dir, f)} is missing (the start page shows it). The editors' videos come from splitscreenme-vscode's docs/videos.`);
+    fs.copyFileSync(path.join(dir, f), path.join(startDir, 'videos', f));
+  }
 // The editor icons ("Works in your editor"): Devicon's where it has one, a neutral stand-in where it doesn't.
 fs.mkdirSync(path.join(startDir, 'editors'), { recursive: true });
 for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.endsWith('.svg')) fs.copyFileSync(path.join(here, 'src', 'editor-icons', f), path.join(startDir, 'editors', f));
