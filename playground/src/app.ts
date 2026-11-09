@@ -49,6 +49,7 @@ import type { PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
+import { initTestPins } from './testpins';
 import { exportSettings, importSettings } from './settingsio';
 import { BETA } from './testplan';
 import { feedbackUrl, openReport, setReportState } from './report';
@@ -2203,6 +2204,8 @@ const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#tes
     announce(p.coding === 'dev' ? 'Advanced mode is on, since you write code. Settings changes it.' : 'Guided mode, with tips. Advanced mode is in Settings.');
   },
 });
+// Tasks pinned from the guide float over the workbench while you test (testpins.ts).
+initTestPins(() => testGuide.open());
 
 // ---------------------------------------------------------------------------
 // Code | Form | Blocks: the options as a form (formview.ts) and the callbacks as if / do steps (blocksview.ts), both

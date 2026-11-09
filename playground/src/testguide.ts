@@ -9,9 +9,9 @@ import { mascot } from './mascots';
 import { appNote, feedbackUrl } from './report';
 import { totalsUrl } from './feedback';
 import { AREAS, BETA, EFFORT, fit, KINDS, priority, TEST_PLAN, type Coding, type NucleusKnow, type Profile, type TestItem } from './testplan';
+import { isDone, isPinned, onProgress, setDone, setPinned } from './testprogress';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-const DONE_KEY = 'nucleus-workbench-tested';
 const PROFILE_KEY = 'nucleus-workbench-tester-profile';
 const get = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const set = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
@@ -31,7 +31,6 @@ export const testerProfile = (): Profile | null => { try { return JSON.parse(get
 
 export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], hooks: { answered?: (p: Profile, first: boolean) => void } = {}) {
   if (!BETA) { openers.forEach((o) => o.remove()); dlg.remove(); return { open: () => {}, needed: () => false }; }
-  const done = new Set<string>(JSON.parse(get(DONE_KEY) || '[]'));
   let profile: Profile | null = testerProfile();
   let asking = !profile; // the questions are showing
   let pending: Partial<Profile> = { ...(profile ?? {}) };
@@ -42,11 +41,13 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
 
   const item = (t: TestItem) => {
     const e = EFFORT[priority(t).effort];
-    return `<li class="tg-item${done.has(t.id) ? ' done' : ''}">
-    <label class="tg-done"><input type="checkbox" data-id="${t.id}"${done.has(t.id) ? ' checked' : ''}><span class="sr-only">Tried: ${esc(t.title)}</span></label>
+    const pin = isPinned(t.id);
+    return `<li class="tg-item${isDone(t.id) ? ' done' : ''}">
+    <label class="tg-done"><input type="checkbox" data-id="${t.id}"${isDone(t.id) ? ' checked' : ''}><span class="sr-only">Tried: ${esc(t.title)}</span></label>
     <div><div class="tg-title"><strong>${esc(t.title)}</strong><span class="tg-time" title="${esc(e.how)}">${esc(e.label)}</span>${priority(t).need === 3 ? '<span class="tg-need" title="We need this one most">Much needed</span>' : ''}${t.areas.map((a) => `<span class="tg-area a-${a}" title="${esc(AREAS[a].who)}">${esc(AREAS[a].label)}</span>`).join('')}${t.kinds.map((k) => `<span class="tg-kind" title="${esc(KINDS[k].how)}">${esc(KINDS[k].label)}</span>`).join('')}</div>
     <p><span class="muted">Try:</span> ${esc(t.steps)}</p><p><span class="muted">Look for:</span> ${esc(t.look)}</p>
-    <a class="small tg-report" data-id="${t.id}" href="${esc(report(t))}" target="_blank" rel="noopener">Report what you found</a></div></li>`;
+    <div class="tg-acts"><a class="small tg-report" data-id="${t.id}" href="${esc(report(t))}" target="_blank" rel="noopener">Report what you found</a>
+    <button type="button" class="link small tg-pin" data-pin="${t.id}" aria-pressed="${pin}" title="Keep it in a small window over the workbench while you test">${pin ? '📌 Pinned' : '📌 Pin while testing'}</button></div></div></li>`;
   };
 
   const choice = (q: string, legend: string, opts: { v: string; icon: string; label: string; sub: string }[]) =>
@@ -85,7 +86,7 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
     const rank = (t: TestItem) => priority(t).need * 2 - priority(t).effort + score(t, p) * 0.5;
     const mine = TEST_PLAN.filter((t) => score(t, p) >= 3).sort((a, z) => rank(z) - rank(a));
     const rest = TEST_PLAN.filter((t) => score(t, p) < 3).sort((a, z) => score(z, p) - score(a, p) || rank(z) - rank(a));
-    const tried = mine.filter((t) => done.has(t.id)).length;
+    const tried = mine.filter((t) => isDone(t.id)).length;
     const c = CODING.find((o) => o.v === p.coding)!, n = NUCLEUS.find((o) => o.v === p.nucleus)!;
     body.innerHTML = `<div class="tg-you"><span>You: <b>${c.icon} ${esc(c.label)}</b> · <b>${n.icon} ${esc(n.label)}</b></span><button class="link" type="button" id="tg-change">Change</button></div>${appNote() ? `<p class="small">${appNote()}</p>` : ''}
       <h3 class="tg-h" tabindex="-1">Recommended for you <span class="muted">· quickest and most needed first · ${tried} of ${mine.length} tried</span></h3>
@@ -95,14 +96,21 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
       <details class="tg-legend"><summary>What the labels mean</summary><dl>${Object.values(EFFORT).map((e) => `<dt>${esc(e.label)}</dt><dd>${esc(e.how)}</dd>`).join('')}${Object.values(AREAS).map((a) => `<dt>${esc(a.label)}</dt><dd>${esc(a.who)}</dd>`).join('')}${Object.values(KINDS).map((k) => `<dt>${esc(k.label)}</dt><dd>${esc(k.how)}</dd>`).join('')}</dl></details>`;
     body.querySelector('#tg-change')!.addEventListener('click', () => { asking = true; pending = { ...p }; ask(); body.querySelector<HTMLInputElement>('input:checked')?.focus(); });
     body.querySelectorAll<HTMLInputElement>('input[data-id]').forEach((cb) => cb.addEventListener('change', () => {
-      cb.checked ? done.add(cb.dataset.id!) : done.delete(cb.dataset.id!);
-      set(DONE_KEY, JSON.stringify([...done]));
+      setDone(cb.dataset.id!, cb.checked);
       cb.closest('.tg-item')!.classList.toggle('done', cb.checked);
     }));
     closeBtn.hidden = false;
   };
 
   body.addEventListener('click', (e) => {
+    const pinBtn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-pin]');
+    if (pinBtn) {
+      const id = pinBtn.dataset.pin!, on = !isPinned(id);
+      setPinned(id, on);
+      pinBtn.setAttribute('aria-pressed', String(on));
+      pinBtn.textContent = on ? '📌 Pinned' : '📌 Pin while testing';
+      return;
+    }
     const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.tg-report');
     const t = a && TEST_PLAN.find((x) => x.id === a.dataset.id);
     if (a && t) a.href = report(t);
@@ -115,6 +123,11 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
     asking ? ask() : list();
     if (!dlg.open) dlg.showModal();
   };
+  // A tick in the floating window (testpins.ts) shows here too.
+  onProgress(() => body.querySelectorAll<HTMLInputElement>('input[data-id]').forEach((cb) => {
+    cb.checked = isDone(cb.dataset.id!);
+    cb.closest('.tg-item')?.classList.toggle('done', cb.checked);
+  }));
   openers.forEach((o) => o.addEventListener('click', open));
   closeBtn.addEventListener('click', () => { if (profile) dlg.close(); });
   return { open, needed: () => !profile };

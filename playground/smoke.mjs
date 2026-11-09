@@ -493,6 +493,71 @@ await m.p.waitForTimeout(200);
 check(!(await m.p.$('dialog.xf-dialog')), 'phone: Esc closes it');
 await m.ctx.close();
 
+// Help test the beta: pin a task, and it floats over the workbench while you test (testpins.ts).
+{
+  const s = await page('light', { viewport: { width: 1440, height: 900 } });
+  await s.ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('nucleus-workbench-tester-profile', JSON.stringify({ coding: 'dev', nucleus: 'expert' }));
+    } catch {}
+  });
+  await s.p.goto(BASE);
+  await s.p.waitForTimeout(600);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  check(await s.p.isHidden('#test-pins'), 'pinned tasks: nothing on screen until something is pinned');
+  await s.p.click('#test-open');
+  await s.p.waitForTimeout(300);
+  const first = await s.p.$eval('#test-body .tg-pin', (b) => b.getAttribute('data-pin'));
+  await s.p.click('#test-body .tg-pin');
+  check((await s.p.getAttribute('#test-body .tg-pin', 'aria-pressed')) === 'true', 'pinned tasks: Pin says it is pinned');
+  await s.p.click('#test-close');
+  await s.p.waitForTimeout(200);
+  check(await s.p.isVisible(`#test-pins [data-toggle="${first}"]`), 'pinned tasks: the task floats over the workbench');
+  check(await s.p.isVisible('#test-pins .tf-body'), 'pinned tasks: the first one shows what to try');
+  await axe(s.p, 'light, pinned tasks');
+  await s.p.check(`#test-pins input[data-done="${first}"]`);
+  await s.p.click('#test-open');
+  await s.p.waitForTimeout(200);
+  check(await s.p.isChecked(`#test-body input[data-id="${first}"]`), 'pinned tasks: a tick there shows in the guide');
+  await s.p.click('#test-close');
+  const before = await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left);
+  const h = await s.p.$eval('#test-pins .tf-title', (e) => { const r = e.getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; });
+  await s.p.mouse.move(h.x, h.y);
+  await s.p.mouse.down();
+  await s.p.mouse.move(h.x - 300, h.y - 200, { steps: 6 });
+  await s.p.mouse.up();
+  const dragged = await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left);
+  check(dragged < before - 250, 'pinned tasks: drag the header to move it');
+  await s.p.focus('#test-pins .tf-grip');
+  await s.p.keyboard.press('ArrowRight');
+  check((await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left)) > dragged + 10, 'pinned tasks: the arrow keys move it too');
+  await s.p.click('#test-pins .tf-fold');
+  check(await s.p.isHidden('#test-pins .tf-list'), 'pinned tasks: collapse to the header');
+  await s.p.reload();
+  await s.p.waitForTimeout(600);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  check((await s.p.isVisible('#test-pins')) && (await s.p.isHidden('#test-pins .tf-list')), 'pinned tasks: still there, and still collapsed, after a reload');
+  await s.p.click('#test-pins .tf-fold');
+  await s.p.click(`#test-pins [data-unpin="${first}"]`);
+  check(await s.p.isHidden('#test-pins'), 'pinned tasks: unpinning the last one hides the window');
+  check(!s.errors.length, `pinned tasks: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
+{
+  const s = await page('dark', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await s.ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('nucleus-workbench-tester-profile', JSON.stringify({ coding: 'new', nucleus: 'new' }));
+      localStorage.setItem('nucleus-workbench-test-pins', JSON.stringify(['messages']));
+    } catch {}
+  });
+  await s.p.goto(BASE);
+  await s.p.waitForTimeout(600);
+  const r = await s.p.$eval('#test-pins', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, b: b.bottom }; });
+  check(r.l >= 0 && r.r <= 390 && r.b <= 844, 'phone: pinned tasks dock at the bottom, inside the screen');
+  await s.ctx.close();
+}
+
 // Start-up with each general tip first (the first one is random): none may stop the page (a tip's highlight once
 // asked for a control declared later in app.ts, and the whole workbench failed to start).
 {
