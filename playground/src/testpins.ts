@@ -56,7 +56,7 @@ export function initTestPins(openGuide: () => void) {
     box.innerHTML = `<div class="tf-head">
         <button type="button" class="tf-grip" aria-label="Move the pinned tasks (arrow keys)" title="Drag to move (or focus and use the arrow keys). Double-click: back to the corner"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2h.01M8 2h.01M4 6h.01M8 6h.01M4 10h.01M8 10h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
         <strong class="tf-title">🧪 Testing <span class="muted">${left ? `${left} to try` : 'all tried'}</span></strong>
-        <button type="button" class="btn icon tf-all" title="All tasks (Help test the beta)" aria-label="All tasks">☰</button>
+        <button type="button" class="btn icon tf-all" title="All tasks (Help test this beta)" aria-label="All tasks">☰</button>
         <button type="button" class="btn icon tf-fold" aria-expanded="${!pos.collapsed}" aria-label="${pos.collapsed ? 'Show the tasks' : 'Collapse'}" title="${pos.collapsed ? 'Show' : 'Collapse'}">${pos.collapsed ? '▴' : '▾'}</button>
       </div>
       <ol class="tf-list"${pos.collapsed ? ' hidden' : ''}>${items.map((t) => `<li class="tf-item${isDone(t.id) ? ' done' : ''}">

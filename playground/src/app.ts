@@ -1690,7 +1690,7 @@ function commandList(): OpenEntry[] {
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
     c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
-    c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
+    c('Help test this beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
     c('Move Files to the other side of the code', '', 'files panel left right side move swap', () => announce(`Files is now ${panels.flip('files')} of the code.`)),
     c('Move Lines to the other side of the code', '', 'lines list left right side move swap', () => announce(`Lines is now ${panels.flip('lines')} of the code.`)),
     c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
@@ -2289,7 +2289,7 @@ const appItems = (): MenuItem[] => [
   { label: 'Send feedback…', run: () => openReport(feedbackUrl()) },
   { kind: 'separator', label: '' },
   { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
-  ...(document.getElementById('test-open') ? [{ label: '🧪 Help test the beta', run: () => testGuide.open() }] : []),
+  ...(document.getElementById('test-open') ? [{ label: '🧪 Help test this beta', run: () => testGuide.open() }] : []),
 ];
 $('#tab-add').addEventListener('click', () => openMenu($('#tab-add'), 'New or open', addItems()));
 $('#app-menu-open').addEventListener('click', () => openMenu($('#app-menu-open'), 'Menu', appItems()));
@@ -2677,6 +2677,14 @@ if (initialDocs) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 } else if (narrow()) setView('code');
+// A link that opened a handler (#example-…, #hub-…) leaves the results tabs as they were: mark the one whose
+// panel shows, so a tab is always selected (and its ink drawn). Only the marking: the view stays as it is.
+if (!document.querySelector('.pane-head [role=tab][aria-selected=true]')) {
+  const shown = [...document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]')].find((p) => !p.hidden);
+  const id = shown ? shown.id.slice('panel-'.length) : 'problems';
+  document.querySelectorAll<HTMLElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+  requestAnimationFrame(placeInk);
+}
 initTouchTitles();
 
 // The phone's own "Select all" selects the whole editable area. CodeMirror then redraws that same

@@ -104,11 +104,12 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
 body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select: none !important; }
 .pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; box-shadow: var(--sh-1); }
 .pane-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 40px; box-sizing: border-box; }
+@media (min-width: 861px) { .pane-head { min-height: 52px; } .pane-head[role=tablist] { padding-block: 7px; } }
 #status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
 .code-row { flex: 1; min-height: 0; display: flex; position: relative; }
 #editor { flex: 1; min-height: 0; min-width: 0; position: relative; }
 /* Lines: a Pawno-style list of every name, beside the code */
-.lines-toggle { padding: 2px 9px; font-size: 12px; margin-left: 6px; }
+.lines-toggle { padding: 2px 10px; font-size: 12.5px; margin-left: 6px; }
 .lines-toggle[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 #lines { width: 310px; flex: none; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
 #lines[hidden] { display: none; }
@@ -339,7 +340,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #updated #updated-text { flex: 1; min-width: 0; }
 #updated .btn.icon { width: 26px; padding: 2px 0; }
 #news-dialog { width: min(560px, 94vw); }
-#news-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+#news-dialog h2 { margin: 0 0 6px; }
 #news-body { max-height: 62vh; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
 #news-body .release { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
 #news-body .release[open] { border-color: var(--accent); }
@@ -419,7 +420,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 .set-field small { color: var(--muted); font-size: 12px; }
 .set-field input { font: 13px var(--font-mono); color: var(--fg); background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 8px; width: 100%; box-sizing: border-box; }
 .set-waka-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-#settings-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+#settings-dialog h2 { margin: 0 0 6px; }
 .set-sec { border-top: 1px solid var(--line); padding: 12px 0 10px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
 .set-sec:not(.ct) > :not(.check):not(h3) { align-self: flex-start; }
 /* Settings: on/off choices as switches, each row with a soft hover */
@@ -712,7 +713,6 @@ li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
 .CodeMirror .line-changed { background: color-mix(in srgb, var(--ok) 7%, transparent); box-shadow: inset 3px 0 0 var(--ok); transition: background-color 1s; }
 /* Help test this beta (testguide.ts). */
 #test-dialog { width: min(720px, calc(100vw - 32px)); }
-#test-dialog { width: min(720px, 96vw); }
 .tg-ask { display: flex; gap: 14px; align-items: center; margin: 0 0 6px; }
 .rel-intro { margin: 2px 0 10px; font-size: 14px; line-height: 1.5; }
 .rel-intro strong { font-size: 15px; }
@@ -943,6 +943,8 @@ dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
 .check input { margin-top: 4px; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+/* Dialogs long enough to scroll keep their Close/Done in view, as What's new and Settings do */
+@media (min-width: 601px) { :is(#help-dialog, #test-dialog) > .actions { position: sticky; bottom: -20px; margin: 14px -20px -20px; padding: 12px 20px 20px; background: var(--surface); border-top: 1px solid var(--line); z-index: 1; } }
 .ai-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface-2); }
 .ai-bar .toggle { display: flex; gap: 6px; align-items: center; font-size: 12.5px; }
 #ai-note { flex: 1 1 200px; min-width: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); }
@@ -1041,7 +1043,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 @media (prefers-reduced-motion: reduce) { #toasts, .toast, .toast-inner { transition: none; } }
 /* The Open dialog (Ctrl+P) and command palette (Ctrl+Shift+P): a palette at a fixed spot near the top,
    so it doesn't jump while the results change. Soft rows instead of an outline on every card. */
-#open-dialog { width: min(1120px, calc(100vw - 24px)); height: min(86vh, 960px); max-height: none; margin: 6vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.15); }
+#open-dialog { width: min(1120px, calc(100vw - 24px)); height: min(86vh, 960px); max-height: none; margin: 6vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: var(--r-lg); box-shadow: var(--sh-2); }
 #open-dialog[open] { display: flex; }
 @media (prefers-reduced-motion: no-preference) {
   #open-dialog[open] { animation: palette-in .16s cubic-bezier(.2,.9,.3,1); }
@@ -1306,8 +1308,8 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .pcard .loc { flex: none; }
 .pcard .body { padding: 4px 0 6px 26px; }
 .pcard .body .plain-why { margin-top: 0; }
-.sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); }
-.problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); color: #1b1f2a; } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
+.sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: var(--surface); background: var(--muted); } /* the page's surface colour: light on the dark fills of light themes, dark on the light fills of dark ones */
+.problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
 #problems[data-density="compact"] { gap: 4px; }
 /* First visit: Nucli's two questions (firstrun.ts) */
 #firstrun-dialog { width: min(600px, 94vw); }
@@ -1558,6 +1560,8 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .app-menu .am-l { flex: 1; }
 .app-menu .am-k { font: 11px var(--font-mono); color: var(--muted); }
 .app-menu .am-check { width: 14px; color: var(--accent); font-weight: 700; }
+/* in a menu with ticks, every label starts in the same column */
+.app-menu:has(.am-check) button:not(:has(.am-check))::before { content: ""; width: 14px; flex: none; }
 .app-menu .am-sep { height: 1px; background: var(--line); margin: 5px 4px; }
 .app-menu .am-h { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px 2px; }
 /* Side rail */
@@ -1793,7 +1797,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .gf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Code | Form switch, the game folder button, and Check's extra groups (game folder, package) */
-.view-switch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
+.view-switch { display: inline-flex; align-self: stretch; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
 .view-switch button { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12.5px; padding: 3px 10px; cursor: pointer; }
 .view-switch button[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); font-weight: 600; }
 #formview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
@@ -2000,15 +2004,17 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 #extra-problems .xp .xp-b { flex: 1; min-width: 0; }
 #extra-problems .xp .xp-why { color: var(--muted); margin: 2px 0 0; }
 #extra-problems .xp .xp-act { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
-#extra-problems .xp.error .sev-ico { background: var(--err); } #extra-problems .xp.warning .sev-ico { background: var(--warn); color: #1b1f2a; } #extra-problems .xp.info .sev-ico { background: var(--info); }
+#extra-problems .xp.error .sev-ico { background: var(--err); } #extra-problems .xp.warning .sev-ico { background: var(--warn); } #extra-problems .xp.info .sev-ico { background: var(--info); }
 #gf-dialog { width: min(560px, calc(100vw - 32px)); }
 
 /* ---- Packages: the Files panel, the file tabs, file icons, the second editor ---- */
 .fi-badge { display: inline-grid; place-items: center; min-width: 22px; height: 16px; padding: 0 3px; border-radius: 4px; font: 700 9px/1 var(--font-mono); color: #fff; background: #64748b; flex: none; letter-spacing: -.2px; margin-right: 5px; }
 .fi-js { background: #e0b100; color: #1b1f2a; } .fi-ini, .fi-cfg { background: #57657a; } .fi-json { background: #0f766e; } .fi-xml, .fi-toml, .fi-yaml { background: #9a3412; } .fi-txt { background: #6b7280; } .fi-bat { background: #166534; } .fi-ps1 { background: #1e3a8a; } .fi-lua { background: #1e40af; } .fi-reg { background: #57657a; } .fi-vdf { background: #374151; } .fi-dll { background: #6d28d9; } .fi-exe { background: #b91c1c; } .fi-img { background: #be185d; } .fi-bin { background: #475569; }
 .fi-dir { background: none; color: var(--muted); font-size: 12px; min-width: 14px; }
-.files-toggle { display: inline-flex; align-items: center; }
-.files-toggle[aria-pressed="true"] { background: var(--surface-2); }
+.files-toggle { display: inline-flex; align-items: center; align-self: stretch; padding: 2px 10px; font-size: 12.5px; }
+/* pressed like its neighbour Lines */
+.files-toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.files-toggle[aria-pressed="true"] :is(.fi-dir, .files-n, .files-game) { color: inherit; }
 .files-n { font-size: 11px; color: var(--muted); margin-left: 4px; }
 #file-strip { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--line); background: var(--surface-2); overflow-x: auto; }
 #file-strip[hidden] { display: none; }
@@ -2092,7 +2098,7 @@ footer .made-by { margin-left: auto; }
       <button class="rail-btn" type="button" data-rail="lines" aria-label="Lines"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="rail-label" aria-hidden="true">Lines</span></button>
       <button class="rail-btn" type="button" data-rail="share" aria-label="Share: a link, the code, or a post for Discord"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Share</span></button><button class="rail-btn" type="button" data-rail="save" aria-label="Save the handler"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Save</span></button>
       <span class="rail-sp"></span>
-      <button class="rail-btn" type="button" data-rail="test" aria-label="Help test the beta">🧪<span class="rail-label" aria-hidden="true">Help test the beta</span></button>
+      <button class="rail-btn" type="button" data-rail="test" aria-label="Help test this beta">🧪<span class="rail-label" aria-hidden="true">Help test this beta</span></button>
       <button class="rail-btn" type="button" data-rail="menu" aria-label="Menu: settings, Advanced mode, help" aria-haspopup="menu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Settings and menu</span></button>
       <button class="rail-btn rail-toggle" type="button" id="rail-toggle" aria-expanded="false" aria-label="Show labels in the sidebar" title="Show labels"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Hide labels</span></button>
     </nav>
@@ -2204,7 +2210,7 @@ footer .made-by { margin-left: auto; }
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </main>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="welcome-open" type="button">Getting started</button><button class="link tg-open" id="test-open" type="button">🧪 Help test the beta</button><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a><span class="made-by">Made by <a class="link" href="https://github.com/Snailedlt" rel="author" target="_blank">Snailedlt</a> (Jørgen KH)</span></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="welcome-open" type="button">Getting started</button><button class="link tg-open" id="test-open" type="button">🧪 Help test this beta</button><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a><span class="made-by">Made by <a class="link" href="https://github.com/Snailedlt" rel="author" target="_blank">Snailedlt</a> (Jørgen KH)</span></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -2416,7 +2422,7 @@ footer .made-by { margin-left: auto; }
   <div class="more-list">
     <button class="btn no-touch" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
-    <button class="btn" type="button" data-proxy="#test-open">🧪 Help test the beta</button>
+    <button class="btn" type="button" data-proxy="#test-open">🧪 Help test this beta</button>
     <button class="btn" type="button" data-proxy="a.home-link">⌂ Home: about these tools</button>
   </div>
   <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
