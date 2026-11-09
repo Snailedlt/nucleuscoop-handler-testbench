@@ -53,6 +53,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **The ▾ beside the tabs shows when it should.** The list of open handlers is there whenever two or more are open; it used to show on first load even with one tab, then come and go.
 - **The page no longer shrinks on touch-screen laptops.** Opening Examples and Hub handlers (or any text field) in the preview made room for an on-screen keyboard that isn't there; now that only happens when touch is the only way in.
 - **The workbench always starts.** Now and then (when the first tip was the one about sharing) the page stopped while starting: no handler, and Settings did nothing.
 - **Save is readable in every look.** In the Mac and alpha 8 looks the Save button's text was nearly invisible.

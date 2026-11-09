@@ -318,6 +318,17 @@ for (const theme of ['light', 'dark']) {
     await p.evaluate(() => { location.hash = 'example-mistakes'; });
     await p.waitForTimeout(600);
     check(tabsAfter === tabsBefore + 1 && (await nTabs()) === tabsAfter && /mistakes/i.test(await p.innerText('#htabs [aria-selected=true]')), `${theme}: another handler opens a new tab, and an open one switches to its tab (${tabsBefore} -> ${tabsAfter})`);
+    // The ▾ (all open handlers) follows the number of tabs, on a fresh load as after any change.
+    const allShown = () => p.isVisible('#tab-all');
+    check((await allShown()) === (tabsAfter >= 2), `${theme}: ▾ all open handlers shown with ${tabsAfter} tabs`);
+    await p.reload();
+    await p.waitForTimeout(800);
+    check((await allShown()) === ((await nTabs()) >= 2), `${theme}: ▾ the same after a reload`);
+    while ((await nTabs()) > 1) { await p.click('#htabs .htab-w:not(.on) [data-close]'); await p.waitForTimeout(150); }
+    check(!(await allShown()), `${theme}: ▾ hidden with one tab`);
+    await p.reload();
+    await p.waitForTimeout(800);
+    check(!(await allShown()), `${theme}: ▾ still hidden with one tab after a reload (it showed on first load)`);
   }
   // The side rail's Save: right-click offers the formats, like the arrow beside Save in the slim bar.
   await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'rail'));

@@ -1432,7 +1432,7 @@ function reopenClosed() {
 function renderTabs() {
   const live = countsOf(current);
   const allBtn = document.getElementById('tab-all');
-  if (allBtn) allBtn.hidden = tabs.length < 3;
+  if (allBtn) allBtn.hidden = tabs.length < 2; // the list of open handlers: there as soon as there's more than one
   requestAnimationFrame(() => document.querySelector(`#tab-${activeTab}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
   const dot = (c?: { e: number; w: number }) => (!c ? '' : c.e ? ' e' : c.w ? ' w' : ' ok');
   const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
@@ -1456,7 +1456,6 @@ function initTabs() {
   Object.assign(activeT(), { meta: doc, base: loadedText, files: packageFiles, cm: editor.getDoc() });
   tabsReady = true;
   saveTabs();
-  renderTabs();
   const strip = $('#htabs');
   const all = document.createElement('button');
   all.type = 'button';
@@ -1467,6 +1466,7 @@ function initTabs() {
   all.title = 'All open handlers';
   all.textContent = '▾';
   $('#tab-add').before(all);
+  renderTabs(); // after the ▾ exists, so it's shown or hidden from the start
   all.addEventListener('click', () => openMenu(all, 'Open handlers', tabs.map((x) => {
     const on = x.id === activeTab;
     return { label: on ? doc.name : x.meta.name, checked: on, run: () => switchTab(x.id) };
