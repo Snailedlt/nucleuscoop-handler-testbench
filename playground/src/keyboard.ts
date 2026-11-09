@@ -45,7 +45,10 @@ let framed = true;
 try {
   framed = window.self !== window.top;
 } catch {}
-export const touchDevice = () => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+/** An on-screen keyboard is likely: touch is the main way in, and there's no mouse or trackpad. A laptop with a touch
+ * screen (navigator.maxTouchPoints > 0, a fine pointer too) has a real keyboard: guessing one there shrank the whole
+ * page whenever a text field got focus inside a frame, where it can't be measured. */
+export const softKeyboard = () => window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
 const portrait = () => window.innerHeight >= window.innerWidth;
 const learned = (): number | undefined => {
   try {
@@ -107,7 +110,7 @@ export function initKeyboard() {
   let lastKey = '';
 
   function update() {
-    const editing = touchDevice() && editable(document.activeElement);
+    const editing = softKeyboard() && editable(document.activeElement);
     const vv = window.visualViewport;
     const byApi = vkH >= 0;
     let height = byApi ? vkH : Math.max(0, baseH - (vv ? vv.height : window.innerHeight));

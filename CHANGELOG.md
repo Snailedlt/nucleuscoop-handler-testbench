@@ -16,7 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
-- **Pin what you're testing.** In Help test this beta, Pin keeps a task in a small window over the workbench, with what to try, what to look for and Report. Drag it anywhere (or move it with the arrow keys), collapse it, tick it off; it stays where you put it. On a narrow screen it docks at the bottom.
+- **Pin what you're testing.** In Help test this beta, Pin keeps a task in a small window in the code editor's bottom-right corner, with what to try, what to look for and Report, and lists it at the top of Help test this beta too. Drag it anywhere (or move it with the arrow keys; double-click its header to put it back), collapse it, tick it off; it stays where you put it. On a narrow screen it docks at the bottom.
 - **Notepad++ code colours.** *Settings › Theme and colours › Code colours* now has Notepad++: bold blue keywords, bold navy operators, green comments, and its dark mode's colours in dark (strings, numbers and dark comments adjusted a little for 4.5:1 contrast). VS Code's (Light+ / Dark+) is there too; point at a card to see what it is.
 - **Suggestions as smart as VS Code's.** The code editor now suggests your own functions and variables (with their comments), the keys your `Game.AddOption` lines add after `Context.Options["` and their values after `== "`, snippets for what most handlers do (`iniset`, `startargs`, `eachplayer`…) and, in an empty file, the whole handler template; Tab moves through the parts to fill in. The highlighted suggestion's docs show beside the list, parameter hints say what to pass, and hovering your own function shows its comment.
 - **Credit lines on handlers made here.** A handler made or changed in the workbench gets a few comment lines at the top when you save or copy it: made with the workbench (with a link), and plainly what was and wasn't done here (checked, simulated with Try it on this version, changed by Fix with AI), so people helping you see which tools were used. A handler you only opened and saved stays as it was; opened again, the lines are folded away. In Advanced mode, Settings › Feedback and privacy can turn them off.
@@ -30,6 +30,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Beta testing in the anonymous counts.** When counts are on, opening Help test this beta and pinning, trying, opening and reporting a task are counted by the task's public id, so we see which tasks get tested and which get skipped. Nothing else about you or your code.
 - **Help test this beta, for this release.** New things to try: the Notepad++ plugin, your own editor through `ncdev lsp`, Docs links from hovers, an endless loop that no longer freezes the editor, and the first-visit choice. Developers' items come first, and nothing asks for phone testing any more.
 - **A saved handler is named the way Nucleus names its folder.** The file name comes from `Game.GameName` read exactly as a Hub install reads it, so the .js matches `Game.Folder`.
 - **New screenshots of Check and Lines on the start page.** They show the current workbench, sharper on high-DPI screens.
@@ -52,6 +53,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **The page no longer shrinks on touch-screen laptops.** Opening Examples and Hub handlers (or any text field) in the preview made room for an on-screen keyboard that isn't there; now that only happens when touch is the only way in.
 - **The workbench always starts.** Now and then (when the first tip was the one about sharing) the page stopped while starting: no handler, and Settings did nothing.
 - **Save is readable in every look.** In the Mac and alpha 8 looks the Save button's text was nearly invisible.
 - **"I write code" starts compact.** That first-visit answer now also turns tips off and skips the Getting started banner (both stay in Settings and the footer).

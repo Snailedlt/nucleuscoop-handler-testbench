@@ -4,6 +4,7 @@ const DONE_KEY = 'nucleus-workbench-tested';
 const PIN_KEY = 'nucleus-workbench-test-pins';
 const get = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const set = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
+import { testEvent } from './feedback';
 const read = (k: string): string[] => { try { const v = JSON.parse(get(k) || '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; } catch { return []; } };
 
 const done = new Set(read(DONE_KEY));
@@ -14,6 +15,7 @@ const changed = () => listeners.forEach((f) => f());
 export const isDone = (id: string) => done.has(id);
 export function setDone(id: string, on: boolean) {
   on ? done.add(id) : done.delete(id);
+  testEvent(on ? 'tried' : 'untried', id);
   set(DONE_KEY, JSON.stringify([...done]));
   changed();
 }
@@ -22,6 +24,7 @@ export const pinned = (): readonly string[] => pins;
 export const isPinned = (id: string) => pins.includes(id);
 export function setPinned(id: string, on: boolean) {
   pins = on ? (pins.includes(id) ? pins : [...pins, id]) : pins.filter((x) => x !== id);
+  testEvent(on ? 'pin' : 'unpin', id);
   set(PIN_KEY, JSON.stringify(pins));
   changed();
 }

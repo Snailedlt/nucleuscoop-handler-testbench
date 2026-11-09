@@ -752,6 +752,13 @@ li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
 .tg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow: auto; }
 .tg-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
 .tg-item.done { opacity: .65; }
+.tg-pinned { list-style: none; margin: 0 0 12px; padding: 4px 4px 4px 12px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: var(--r-pane); max-height: 24vh; overflow: auto; }
+.tg-prow { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+.tg-prow .tg-goto { flex: 1; text-align: left; color: var(--fg); font-weight: 600; }
+.tg-prow.done .tg-goto { text-decoration: line-through; color: var(--muted); }
+.tg-item.tg-flash { animation: tg-flash 1.2s ease-out; }
+@keyframes tg-flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 3px transparent; } }
+@media (prefers-reduced-motion: reduce) { .tg-item.tg-flash { animation: none; outline: 2px solid var(--accent); } }
 .tg-acts { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin-top: 4px; }
 .tg-pin[aria-pressed="true"] { font-weight: 600; }
 /* Pinned test tasks: a small window over the workbench while testing (testpins.ts). */
@@ -2328,7 +2335,7 @@ footer .made-by { margin-left: auto; }
   </div>
   <div class="set-panel" role="tabpanel" id="sp-feedback" aria-labelledby="st-feedback" data-label="Feedback and privacy" hidden>
     <div class="set-sec"><h3>Privacy</h3>
-      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Anonymous usage counts (GoatCounter)<small>Simple tallies that show us what's useful: which features get used, your 👍/👎 on tips and docs, screen size, language, and which site linked here. No cookies, no IDs, nothing that tells you apart from anyone else, and never your code or handler names. <b>Off:</b> nothing is sent at all.<br><span class="fb-open">Everything counted is public: <span id="set-feedback-totals" hidden>the <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">same numbers we see</a>, and </span>the <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/blob/main/playground/src/feedback.ts" target="_blank" rel="noopener">code that sends them</a> is open source.</span></small></span></label>
+      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Anonymous usage counts (GoatCounter)<small>Simple tallies that show us what's useful: which features get used, which beta test tasks get pinned, tried and reported, your 👍/👎 on tips and docs, screen size, language, and which site linked here. No cookies, no IDs, nothing that tells you apart from anyone else, and never your code or handler names. <b>Off:</b> nothing is sent at all.<br><span class="fb-open">Everything counted is public: <span id="set-feedback-totals" hidden>the <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">same numbers we see</a>, and </span>the <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/blob/main/playground/src/feedback.ts" target="_blank" rel="noopener">code that sends them</a> is open source.</span></small></span></label>
       <p class="muted small" id="set-feedback-note" hidden></p></div>
     <div class="set-sec dev-only"><h3>Credit lines<span class="chip adv-tag">Advanced</span></h3>
       <label class="set-check"><input type="checkbox" id="set-credit"> <span>Add credit lines when saving<small>A handler made or changed here gets a few comment lines at the top when you save or copy it: made with the workbench (with a link), and what was and wasn't done here: checked, simulated with Try it, changed by Fix with AI. Helps people who support you see which tools were used. A handler you only opened and saved stays as it was.</small></span></label></div>

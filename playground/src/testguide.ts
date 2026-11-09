@@ -7,9 +7,9 @@
 // the tester feedback form filled in (report.ts).
 import { mascot } from './mascots';
 import { appNote, feedbackUrl } from './report';
-import { totalsUrl } from './feedback';
+import { testEvent, totalsUrl } from './feedback';
 import { AREAS, BETA, EFFORT, fit, KINDS, priority, TEST_PLAN, type Coding, type NucleusKnow, type Profile, type TestItem } from './testplan';
-import { isDone, isPinned, onProgress, setDone, setPinned } from './testprogress';
+import { isDone, isPinned, onProgress, pinned, setDone, setPinned } from './testprogress';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const PROFILE_KEY = 'nucleus-workbench-tester-profile';
@@ -71,6 +71,7 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
       profile = pending as Profile;
       set(PROFILE_KEY, JSON.stringify(profile));
       asking = false;
+      testEvent('profile', `${profile.coding}-${profile.nucleus}`); // how much testers code and know Nucleus: two picks, nothing else
       hooks.answered?.(profile, first);
       list();
       body.querySelector<HTMLElement>('.tg-h')?.focus();
@@ -89,31 +90,63 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
     const tried = mine.filter((t) => isDone(t.id)).length;
     const c = CODING.find((o) => o.v === p.coding)!, n = NUCLEUS.find((o) => o.v === p.nucleus)!;
     body.innerHTML = `<div class="tg-you"><span>You: <b>${c.icon} ${esc(c.label)}</b> · <b>${n.icon} ${esc(n.label)}</b></span><button class="link" type="button" id="tg-change">Change</button></div>${appNote() ? `<p class="small">${appNote()}</p>` : ''}
+      <div id="tg-pinned"></div>
       <h3 class="tg-h" tabindex="-1">Recommended for you <span class="muted">· quickest and most needed first · ${tried} of ${mine.length} tried</span></h3>
       <ol class="tg-list">${mine.map(item).join('')}</ol>
       <details class="tg-more"><summary>Everything else (${rest.length})</summary><ol class="tg-list">${rest.map(item).join('')}</ol></details>
       ${totalsUrl() ? `<p class="muted small tg-totals">Your 👍 and 👎 on tips and docs count (anonymously): <a href="${esc(totalsUrl()!)}" target="_blank" rel="noopener">see the totals</a>.</p>` : ''}
       <details class="tg-legend"><summary>What the labels mean</summary><dl>${Object.values(EFFORT).map((e) => `<dt>${esc(e.label)}</dt><dd>${esc(e.how)}</dd>`).join('')}${Object.values(AREAS).map((a) => `<dt>${esc(a.label)}</dt><dd>${esc(a.who)}</dd>`).join('')}${Object.values(KINDS).map((k) => `<dt>${esc(k.label)}</dt><dd>${esc(k.how)}</dd>`).join('')}</dl></details>`;
     body.querySelector('#tg-change')!.addEventListener('click', () => { asking = true; pending = { ...p }; ask(); body.querySelector<HTMLInputElement>('input:checked')?.focus(); });
-    body.querySelectorAll<HTMLInputElement>('input[data-id]').forEach((cb) => cb.addEventListener('change', () => {
-      setDone(cb.dataset.id!, cb.checked);
-      cb.closest('.tg-item')!.classList.toggle('done', cb.checked);
-    }));
+    renderPinned();
     closeBtn.hidden = false;
   };
 
+  // What you pinned, on top of the list too: the floating window is behind this dialog while it's open.
+  const renderPinned = () => {
+    const box = body.querySelector<HTMLElement>('#tg-pinned');
+    if (!box) return;
+    const items = pinned().map((id) => TEST_PLAN.find((t) => t.id === id)).filter((t): t is TestItem => !!t);
+    // One line each (the full card is in the list below; its name goes there).
+    box.innerHTML = items.length ? `<h3 class="tg-h">📌 Pinned <span class="muted">· ${items.filter((t) => !isDone(t.id)).length} to try · also in the window over the workbench</span></h3>
+      <ol class="tg-pinned">${items.map((t) => `<li class="tg-prow${isDone(t.id) ? ' done' : ''}"><label class="tg-done"><input type="checkbox" data-id="${t.id}"${isDone(t.id) ? ' checked' : ''}><span class="sr-only">Tried: ${esc(t.title)}</span></label>
+        <button type="button" class="link tg-goto" data-goto="${t.id}" title="Show it in the list">${esc(t.title)}</button>
+        <button type="button" class="btn icon tg-unpin" data-pin="${t.id}" aria-label="Unpin ${esc(t.title)}" title="Unpin">×</button></li>`).join('')}</ol>` : '';
+    body.querySelectorAll<HTMLButtonElement>('button.tg-pin').forEach((b) => {
+      const on = isPinned(b.dataset.pin!);
+      b.setAttribute('aria-pressed', String(on));
+      b.textContent = on ? '📌 Pinned' : '📌 Pin while testing';
+    });
+  };
+  body.addEventListener('toggle', (e) => { if ((e.target as HTMLDetailsElement).matches?.('.tg-more[open]')) testEvent('everything-else'); }, true);
+  body.addEventListener('change', (e) => {
+    const cb = (e.target as HTMLElement).closest<HTMLInputElement>('input[data-id]');
+    if (cb) setDone(cb.dataset.id!, cb.checked);
+  });
   body.addEventListener('click', (e) => {
     const pinBtn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-pin]');
     if (pinBtn) {
-      const id = pinBtn.dataset.pin!, on = !isPinned(id);
-      setPinned(id, on);
-      pinBtn.setAttribute('aria-pressed', String(on));
-      pinBtn.textContent = on ? '📌 Pinned' : '📌 Pin while testing';
+      const id = pinBtn.dataset.pin!;
+      setPinned(id, !isPinned(id)); // onProgress re-draws the Pinned list
+      // The focus goes to (or stays on) the task's button in the main list: the Pinned list's copy may be gone.
+      body.querySelector<HTMLElement>(`button.tg-pin[data-pin="${id}"]`)?.focus();
+      return;
+    }
+    const go = (e.target as HTMLElement).closest<HTMLElement>('[data-goto]');
+    if (go) {
+      const cb = [...body.querySelectorAll<HTMLInputElement>(`input[data-id="${go.dataset.goto}"]`)].find((x) => !x.closest('#tg-pinned'));
+      const li = cb?.closest<HTMLElement>('.tg-item');
+      if (!cb || !li) return;
+      const more = li.closest('details');
+      if (more) more.open = true;
+      li.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      li.classList.remove('tg-flash'); void li.offsetWidth; li.classList.add('tg-flash');
+      cb.focus({ preventScroll: true });
+      testEvent('view', go.dataset.goto!);
       return;
     }
     const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.tg-report');
     const t = a && TEST_PLAN.find((x) => x.id === a.dataset.id);
-    if (a && t) a.href = report(t);
+    if (a && t) { a.href = report(t); testEvent('report', t.id); }
   });
   // Esc can't skip the questions the first time.
   dlg.addEventListener('cancel', (e) => { if (!profile) e.preventDefault(); });
@@ -121,13 +154,16 @@ export function initTestGuide(dlg: HTMLDialogElement, openers: HTMLElement[], ho
     asking = !profile;
     pending = { ...(profile ?? {}) };
     asking ? ask() : list();
-    if (!dlg.open) dlg.showModal();
+    if (!dlg.open) { dlg.showModal(); testEvent('open-guide'); }
   };
   // A tick in the floating window (testpins.ts) shows here too.
-  onProgress(() => body.querySelectorAll<HTMLInputElement>('input[data-id]').forEach((cb) => {
-    cb.checked = isDone(cb.dataset.id!);
-    cb.closest('.tg-item')?.classList.toggle('done', cb.checked);
-  }));
+  onProgress(() => {
+    renderPinned();
+    body.querySelectorAll<HTMLInputElement>('input[data-id]').forEach((cb) => {
+      cb.checked = isDone(cb.dataset.id!);
+      cb.closest('.tg-item, .tg-prow')?.classList.toggle('done', cb.checked);
+    });
+  });
   openers.forEach((o) => o.addEventListener('click', open));
   closeBtn.addEventListener('click', () => { if (profile) dlg.close(); });
   return { open, needed: () => !profile };

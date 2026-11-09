@@ -510,10 +510,21 @@ await m.ctx.close();
   const first = await s.p.$eval('#test-body .tg-pin', (b) => b.getAttribute('data-pin'));
   await s.p.click('#test-body .tg-pin');
   check((await s.p.getAttribute('#test-body .tg-pin', 'aria-pressed')) === 'true', 'pinned tasks: Pin says it is pinned');
+  check(await s.p.isVisible(`#tg-pinned input[data-id="${first}"]`), 'pinned tasks: also listed on top of the guide');
+  await s.p.click(`#tg-pinned [data-goto="${first}"]`);
+  check(await s.p.evaluate((id) => { const a = document.activeElement; return a?.dataset.id === id && !a.closest('#tg-pinned'); }, first), 'pinned tasks: its name there goes to its card in the list');
   await s.p.click('#test-close');
   await s.p.waitForTimeout(200);
   check(await s.p.isVisible(`#test-pins [data-toggle="${first}"]`), 'pinned tasks: the task floats over the workbench');
   check(await s.p.isVisible('#test-pins .tf-body'), 'pinned tasks: the first one shows what to try');
+  await s.p.click(`#test-pins [data-toggle="${first}"]`);
+  check(await s.p.isHidden('#test-pins .tf-body'), 'pinned tasks: closing the only open task keeps it closed');
+  await s.p.click(`#test-pins [data-toggle="${first}"]`);
+  const inCorner = () => s.p.evaluate(() => {
+    const b = document.querySelector('#test-pins').getBoundingClientRect(), e = document.querySelector('#editor').getBoundingClientRect();
+    return b.left >= e.left && b.right <= e.right && b.bottom <= e.bottom && e.right - b.right < 40 && e.bottom - b.bottom < 40;
+  });
+  check(await inCorner(), 'pinned tasks: starts in the code editor\'s bottom-right corner');
   await axe(s.p, 'light, pinned tasks');
   await s.p.check(`#test-pins input[data-done="${first}"]`);
   await s.p.click('#test-open');
@@ -531,6 +542,8 @@ await m.ctx.close();
   await s.p.focus('#test-pins .tf-grip');
   await s.p.keyboard.press('ArrowRight');
   check((await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left)) > dragged + 10, 'pinned tasks: the arrow keys move it too');
+  await s.p.dblclick('#test-pins .tf-title');
+  check(await inCorner(), 'pinned tasks: double-click the header puts it back in the corner');
   await s.p.click('#test-pins .tf-fold');
   check(await s.p.isHidden('#test-pins .tf-list'), 'pinned tasks: collapse to the header');
   await s.p.reload();
@@ -541,6 +554,22 @@ await m.ctx.close();
   await s.p.click(`#test-pins [data-unpin="${first}"]`);
   check(await s.p.isHidden('#test-pins'), 'pinned tasks: unpinning the last one hides the window');
   check(!s.errors.length, `pinned tasks: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
+{
+  // A laptop with a touch screen has a real keyboard: a text field getting focus inside a frame (the claude.ai
+  // preview) must not shrink the page for an on-screen keyboard that isn't there.
+  const s = await page('dark', { viewport: { width: 1600, height: 730 } }); // a mouse (fine pointer) ...
+  await s.ctx.addInitScript(() => Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 10 })); // ... and a touch screen
+  await s.p.setContent(`<style>body{margin:0}</style><iframe src="${BASE}" style="border:0;width:100vw;height:100vh"></iframe>`);
+  await s.p.waitForTimeout(1200);
+  const f = s.p.frames()[1];
+  await f.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  await f.click('#tab-add');
+  await f.getByText('Examples and Hub handlers').click();
+  await f.focus('#open-dialog input');
+  await f.waitForTimeout(1200);
+  check(await f.evaluate(() => !document.documentElement.classList.contains('kb-up') && document.querySelector('.app').getBoundingClientRect().height >= innerHeight - 2), 'touch-screen laptop, in a frame: the page keeps its height when a text field gets focus');
   await s.ctx.close();
 }
 {

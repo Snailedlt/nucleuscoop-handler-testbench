@@ -106,6 +106,9 @@ export function countVisit() {
 }
 
 const used = new Set<string>();
+/** Beta testing (Help test this beta and the pinned tasks): what gets opened, pinned, tried and reported, by task id
+ * (the public ids in testplan.ts), e.g. "test/pin/no-freeze". Once per visit each, like every feature count. */
+export const testEvent = (action: string, task?: string) => use(task ? `test/${action}/${task}` : `test/${action}`);
 /** Counts a feature as used, once per visit. */
 export function use(feature: string) {
   if (used.has(feature)) return;
