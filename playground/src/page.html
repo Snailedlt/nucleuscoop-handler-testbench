@@ -7,9 +7,10 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>/*CODEMIRROR_CSS*/
 /* Word wrap (wrap.ts; Settings › Wrap long lines, Alt+Z): read-only code follows the code editor. On: long lines wrap
-   at word boundaries; off: they scroll sideways. Either way nothing is cut off. */
-:root[data-wrap="on"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek, #sig .sig-label) { white-space: pre-wrap; overflow-wrap: break-word; }
-:root[data-wrap="off"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek, #sig .sig-label) { white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+   at word boundaries; off: they scroll sideways. Either way nothing is cut off. Parameter hints always wrap, as in
+   VS Code: a hint you'd have to scroll is no hint. */
+:root[data-wrap="on"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek) { white-space: pre-wrap; overflow-wrap: break-word; }
+:root[data-wrap="off"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek) { white-space: pre; overflow-wrap: normal; overflow-x: auto; }
 :root[data-wrap="on"] .diff td { white-space: pre-wrap; overflow-wrap: break-word; }
 </style>
 <style>
