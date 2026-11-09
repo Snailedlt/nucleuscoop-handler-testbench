@@ -92,10 +92,13 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 
 `playground/` builds a single self-contained page for testing by hand. It's published at **https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=workbench-readme-md** (`.github/workflows/pages.yml`: on every push and daily, against splitscreenme-vscode's `main`; one-time setup: Settings > Pages > Source: GitHub Actions). It has:
 
-- an editor with live lint squiggles, quick fixes, completion, hover docs and signature help;
+- a code editor with the same features as the VS Code extension: live squiggles and quick fixes, suggestions (API members, option values, your own functions and variables, `Context.Options` keys, snippets, the template in an empty file), hovers and parameter hints styled like VS Code's, F12, rename (F2), find and replace, folding, Format Document, and VS Code's shortcuts (all rebindable);
+- a visual editor beside the code: **Form** (one line per option, values from lists) and **Blocks** (`Game.Play` as conditions and actions), plus **Lines** (every option Nucleus has, grouped, insertable);
+- a **debugger**: breakpoints, stepping, variables and watches, per player;
+- **Files**: open a whole `.zip`/`.nc` package, edit its text files, with the package checks; and **Your game on this PC**: link the game's install folder to check paths against it;
 - API search;
 - the New Handler generator;
-- a per-player `Game.Play` simulation;
+- a per-player `Game.Play` simulation (**Try it**), and **Test all** for every players × input × monitor combination;
 - the probes, shown next to the linter's verdict;
 - **Engine templates**: the same files the SplitScreen.Me Discord bot sends with `/create`. They are read at build time from [splitscreenme-discordbot](https://github.com/SplitScreen-Me/splitscreenme-discordbot)'s `src/handler_templates`, using a cached shallow clone in `.cache/`. Pass `--bot <path>` to use a local checkout, or `--refresh-bot` to re-clone;
 - **Hub examples**: the most-downloaded handlers whose current version is verified, snapshotted from the hub API at build time (`--hub <n>`, default 40; `--refresh-hub` to re-fetch). A published artifact can't reach other sites when you view it, so they are embedded. Each one's source is that verified package's own `jsContent`, and its package's other files are downloaded once per version (cached in `.cache/hub-files/`) for the Files panel;
@@ -108,7 +111,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - The result is shown as a diff, with error and warning counts before and after. You choose **Accept** or **Reject**.
 - In **Apply automatically** mode the fix is applied straight away, with **Undo**. It still goes to review if the fix adds any new problem, removes more than half the handler, doesn't reduce the problem count, or you edited the handler meanwhile.
 
-**Advanced mode** is off by default. You turn it on with the switch at the top right.
+**Advanced mode** is off by default. You turn it on in **Settings › Advanced**.
 
 - **Off:** problems in plain language with **Fix this** and **Show me**, a readable per-player preview ("Window: the left half of the screen, 960 × 1080", "Changes config.ini: Width = 960"), and **Save for Nucleus**. That saves a `.zip` you drag onto Nucleus Co-op's *Extract handler* button.
 - **On:** rule ids, severity filters, the API reference, engine probes and recorded calls.
@@ -136,9 +139,9 @@ cd playground && npm install && node build.mjs --core ../../splitscreenme-vscode
 
 The simulation runs in the browser's JavaScript engine, not Jint. It emulates the Jint rules the probes confirmed, and it refuses code Jint can't parse. Before running a handler it rewrites the source so the browser behaves like Jint where they differ: ES2015+ built-ins Jint lacks (`.includes()`, `Object.assign`, `Map`, …) fail, `let`/`const` become `var`, and a top-level `"use strict"` applies to the whole handler.
 
-The simulation lives in splitscreenme-vscode (`src/core/sim.ts`), where it also powers the extension's **Try it** panel and `nucleus simulate`; this page bundles the same file.
+The simulation lives in splitscreenme-vscode (`src/core/sim.ts`), where it also powers the extension's **Try it** panel and `ncdev simulate`; this page bundles the same file.
 
-`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 113. `--isolated` does the same through `nucleus simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
+`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 119. `--isolated` does the same through `ncdev simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
 
 ```bash
 cd playground && node sim-parity.mjs --core ../../splitscreenme-vscode              # and with --isolated
