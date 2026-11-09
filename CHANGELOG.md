@@ -29,6 +29,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Help test this beta, for this release.** New things to try: the Notepad++ plugin, your own editor through `ncdev lsp`, Docs links from hovers, an endless loop that no longer freezes the editor, and the first-visit choice. Developers' items come first, and nothing asks for phone testing any more.
 - **A saved handler is named the way Nucleus names its folder.** The file name comes from `Game.GameName` read exactly as a Hub install reads it, so the .js matches `Game.Folder`.
 - **New screenshots of Check and Lines on the start page.** They show the current workbench, sharper on high-DPI screens.
 - **A clear privacy switch.** Settings › Feedback and privacy now has a Privacy section with one switch for the anonymous usage counts (GoatCounter), what they are in plain words, and links to the public numbers and the open-source code that sends them. Opening the workbench with `#toggle-goatcounter` at the end of the address also turns them off for that browser.
