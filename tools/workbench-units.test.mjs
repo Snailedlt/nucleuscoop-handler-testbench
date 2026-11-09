@@ -1,0 +1,174 @@
+// Unit tests for the workbench's pure modules (playground/src): share links, packages, theme files, looks, key
+// bindings and the saved file's name. Run: node tools/workbench-units.test.mjs (or npm test in playground).
+// The extension's core is found as in tools/bundle-ts.mjs (CORE_DIR, ./core, ../splitscreenme-vscode).
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { coreDir, load, memoryStorage, root } from './bundle-ts.mjs';
+
+globalThis.localStorage = memoryStorage();
+globalThis.window = { addEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }) };
+globalThis.matchMedia = window.matchMedia;
+// The browser's CSS.supports, roughly: enough to tell a theme file's good values from bad ones.
+globalThis.CSS = {
+  supports: (prop, v) =>
+    prop === 'color' ? /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([^()]*\)|color-mix\(.*\)|[a-z]+)$/i.test(v)
+    : prop === 'border-radius' ? /^\d+(\.\d+)?(px|rem|em|%)?$/.test(v)
+    : prop === 'box-shadow' ? /^(none|[\d\s.pxrgba(),#-]+)$/i.test(v)
+    : prop === 'font-family' ? /^[\w\s,"'-]+$/.test(v)
+    : false,
+};
+
+const share = await load('playground/src/share.ts');
+const pkg = await load('playground/src/package.ts');
+const theme = await load('playground/src/customtheme.ts');
+const kit = await load('playground/src/themekit.ts');
+const keys = await load('playground/src/keybindings.ts');
+const save = await load('playground/src/savefile.ts');
+const THEMES = JSON.parse(fs.readFileSync(path.join(root, 'playground/src/themes.json'), 'utf8'));
+
+test('share links: round trip, unicode and long text, only letters and digits', async () => {
+  for (const src of ['', 'Game.GameName = "x";', 'Game.GameName = "Ünïcode ✓ 日本 🎮";\n// ½ — “quotes”\n', 'var a = 1;\n'.repeat(5000) + Array.from({ length: 2000 }, (_, i) => `var v${i} = ${(i * 7919) % 1000};`).join('\n')]) {
+    const h = await share.encodeShare(src);
+    assert.ok(h.startsWith(share.SHARE_PREFIX));
+    assert.match(h.slice(share.SHARE_PREFIX.length), /^[0-9A-Za-z]*$/);
+    assert.equal(await share.decodeShare(h), src);
+  }
+  await assert.rejects(share.decodeShare('share-A'), 'a damaged link throws');
+  await assert.rejects(share.decodeShare('share-AB_'));
+});
+
+test('packages: build then read gives the handler and files back, with folder entries', async () => {
+  const enc = new TextEncoder();
+  const files = [
+    { name: 'My Game/readme.txt', data: enc.encode('hello') },
+    { name: 'My Game/utils/x.ini', data: enc.encode('[a]\nb=ü') },
+    { name: 'My Game/big.dll', data: new Uint8Array(0), remote: { size: 9e6, url: 'https://hub.splitscreen.me/handler/x' } },
+    { name: 'handler.js', data: enc.encode('an old handler.js among the files: replaced') },
+  ];
+  const zip = pkg.buildPackage('Game.GameName = "Ünï";\n', files);
+  // The directory entries Nucleus needs, sorted, after handler.js; placeholders and a second handler.js left out.
+  const names = [];
+  const v = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  for (let p = v.getUint32(zip.length - 22 + 16, true); v.getUint32(p, true) === 0x02014b50; p += 46 + v.getUint16(p + 28, true) + v.getUint16(p + 30, true) + v.getUint16(p + 32, true)) names.push(new TextDecoder().decode(zip.subarray(p + 46, p + 46 + v.getUint16(p + 28, true))));
+  assert.deepEqual(names, ['handler.js', 'My Game/', 'My Game/utils/', 'My Game/readme.txt', 'My Game/utils/x.ini']);
+  const back = await pkg.readPackage(zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength));
+  assert.equal(back.handler, 'Game.GameName = "Ünï";\n');
+  assert.equal(back.handlerName, 'handler.js');
+  assert.deepEqual(back.files.map((f) => [f.name, new TextDecoder().decode(f.data)]), [['My Game/readme.txt', 'hello'], ['My Game/utils/x.ini', '[a]\nb=ü']]);
+  assert.deepEqual(back.unreadable, []);
+  assert.equal(await pkg.readPackage(new TextEncoder().encode('not a zip').buffer), null);
+});
+
+test('packages: a deflated package (as the Hub and VS Code write it) reads too', async () => {
+  const zlib = await import('node:zlib');
+  const { packageEntries, zipBytes: zb } = await load(path.join(coreDir, 'src/core/zipbytes.ts'));
+  const enc = new TextEncoder();
+  const z = zb(packageEntries(enc.encode('Game.GUID = "a";\n'.repeat(50)), [{ name: 'G/a.txt', data: enc.encode('x'.repeat(4000)) }]), new Date(), (raw) => new Uint8Array(zlib.deflateRawSync(raw)));
+  const back = await pkg.readPackage(z.buffer.slice(z.byteOffset, z.byteOffset + z.byteLength));
+  assert.equal(back.handler, 'Game.GUID = "a";\n'.repeat(50));
+  assert.equal(new TextDecoder().decode(back.files[0].data), 'x'.repeat(4000));
+});
+
+test('theme files: known tokens and safe values only, with what was left out', () => {
+  const ok = theme.parseTheme({ name: ' Sunset ', base: 'v3', shared: { '--r-pane': '18px' }, light: { bg: '#fbf1e6', accent: '#b4232c', nope: '#fff' }, dark: { bg: '#1a1210', fg: 'url(x.png)' } });
+  assert.ok(!('error' in ok));
+  assert.equal(ok.look.name, 'Sunset');
+  assert.equal(ok.look.base, 'v3');
+  assert.deepEqual(ok.look.shared, { 'r-pane': '18px' }, 'a leading -- is allowed');
+  assert.deepEqual(ok.look.light, { bg: '#fbf1e6', accent: '#b4232c' });
+  assert.deepEqual(ok.look.dark, { bg: '#1a1210' });
+  assert.deepEqual(ok.skipped, ['light.nope (not a theme token)', 'dark.fg (not a valid color)']);
+  // Nothing that could leave the rule: semicolons, braces, url(), @import.
+  for (const bad of ['red; } body { display: none', 'url(https://x)', '@import "x"', 'expression(alert(1))', '<script>']) {
+    const r = theme.parseTheme({ light: { accent: bad, bg: '#fff' } });
+    assert.deepEqual(r.look.light, { bg: '#fff' }, bad);
+  }
+  const unknownBase = theme.parseTheme({ base: 'nope', light: { bg: '#fff' } });
+  assert.notEqual(unknownBase.look.base, 'nope');
+  assert.match(unknownBase.skipped[0], /^base "nope" \(built-in looks: /);
+  assert.equal(theme.parseTheme({ light: { bg: '#fff' } }).look.name, 'Custom theme');
+  for (const raw of [null, 'x', 42, [], {}]) assert.ok('error' in theme.parseTheme(raw), JSON.stringify(raw));
+  assert.match(theme.parseTheme({ light: { nope: 1 } }).error, /^Nothing in this file can be used: light\.nope/);
+  assert.ok('error' in theme.parseTheme({ light: 'red' }));
+});
+
+test('themekit: a look builds on its base, derives what it leaves out, never loops', () => {
+  const looks = { a: { name: 'A', shared: { r: '4px' }, light: { bg: '#fff', fg: '#000', surface: '#fff', accent: '#0050aa' }, dark: { bg: '#000', fg: '#fff', surface: '#111', accent: '#ffcc00' } }, b: { name: 'B', base: 'a', light: { accent: '#ffee00' } }, loop: { name: 'L', base: 'loop2' }, loop2: { name: 'L2', base: 'loop' } };
+  const b = kit.resolve('b', looks, 'light');
+  assert.equal(b.bg, '#fff');
+  assert.equal(b.r, '4px');
+  assert.equal(b.accent, '#ffee00');
+  assert.equal(b['accent-fg'], '#0b0d12', 'dark text on a light accent (derived)');
+  assert.equal(kit.resolve('a', looks, 'dark')['accent-fg'], '#0b0d12');
+  assert.equal(kit.resolve('a', looks, 'light')['accent-fg'], '#ffffff', 'white text on a dark accent');
+  assert.equal(kit.resolve('a', looks, 'light')['err-bg'], undefined, 'nothing derived from tokens the look lacks');
+  assert.deepEqual(kit.resolve('loop', looks, 'light'), {});
+  assert.deepEqual(kit.resolve('missing', looks, 'light'), {});
+  assert.equal(kit.readableOn('#000000'), '#ffffff');
+  assert.equal(kit.readableOn('#fff'), '#0b0d12');
+  assert.equal(kit.readableOn('red'), '#ffffff');
+  const css = kit.lookCSS(':root', { bg: '#fff' }, { bg: '#000' });
+  assert.match(css, /^:root \{ --bg: #fff; color-scheme: light; \}/);
+  assert.match(css, /:root\[data-theme="dark"\] \{ --bg: #000; color-scheme: dark; \}/);
+  // Every built-in look resolves, with text tokens for every pair the contrast check reads.
+  const file = THEMES;
+  for (const id of Object.keys(file.looks)) for (const m of ['light', 'dark']) {
+    const t = kit.resolve(id, file.looks, m);
+    for (const [fg, bg] of kit.PAIRS) assert.ok(t[fg] && t[bg], `${id} ${m}: ${fg} on ${bg}`);
+  }
+  assert.match(kit.builtInCSS(file), /:root\[data-site="v3"\]\[data-site\]/);
+  assert.deepEqual(kit.codeTokens({ 'code-fg': '#000', 'code-bg': '#fff' })['code-line'], 'color-mix(in srgb, #000 12%, #fff)');
+});
+
+test('key bindings: defaults, own bindings, two-step keys, conflicts and keys the browser keeps', () => {
+  assert.equal(keys.binding('palette'), 'Ctrl+Shift+P');
+  assert.equal(keys.binding('nope'), '');
+  assert.equal(keys.keyLabel('Ctrl+Shift+P'), 'Ctrl+Shift+P');
+  const ev = (o) => ({ ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...o });
+  assert.equal(keys.stepOf(ev({ key: 'p', code: 'KeyP', ctrlKey: true, shiftKey: true })), 'Ctrl+Shift+P');
+  assert.equal(keys.stepOf(ev({ key: 'ö', code: 'Semicolon', ctrlKey: true })), 'Ctrl+;', 'punctuation by its US position');
+  assert.equal(keys.stepOf(ev({ key: 'Shift', code: 'ShiftLeft', shiftKey: true })), undefined);
+  assert.equal(keys.appActionFor(ev({ key: 'P', code: 'KeyP', ctrlKey: true, shiftKey: true })), 'palette');
+  // Ctrl+; A: the first step waits, the second completes it.
+  assert.equal(keys.appActionFor(ev({ key: ';', code: 'Semicolon', ctrlKey: true })), 'pending');
+  assert.equal(keys.appActionFor(ev({ key: 'a', code: 'KeyA' })), 'testAll');
+  // Conflicts: another action with the same keys, written in any order of modifiers.
+  assert.deepEqual(keys.conflicts('lines', 'Shift+Ctrl+P').map((a) => a.id), ['palette']);
+  assert.deepEqual(keys.conflicts('palette', 'Ctrl+Shift+P'), []);
+  assert.equal(keys.reserved('Ctrl+W'), 'closes the tab');
+  assert.equal(keys.reserved('Ctrl+B'), undefined);
+  // An own binding is kept, can be empty (none), and resets.
+  let changed = 0;
+  keys.onBindingsChange(() => changed++);
+  keys.setBinding('lines', 'Ctrl+Alt+L');
+  assert.equal(keys.binding('lines'), 'Ctrl+Alt+L');
+  assert.ok(keys.isCustom('lines'));
+  assert.deepEqual(JSON.parse(localStorage.getItem('nucleus-workbench-keys')), { lines: 'Ctrl+Alt+L' });
+  assert.deepEqual(keys.conflicts('palette', 'Ctrl+B'), [], 'the old binding is free now');
+  keys.setBinding('save', '');
+  assert.equal(keys.binding('save'), '');
+  keys.resetAll();
+  assert.equal(keys.binding('lines'), 'Ctrl+B');
+  assert.equal(localStorage.getItem('nucleus-workbench-keys'), null);
+  assert.equal(changed, 3);
+  // The code editor's keymap: CodeMirror's notation, two steps with a space.
+  const map = keys.codeKeyMap({ find: () => {} });
+  assert.equal(typeof map['Ctrl-F'], 'function');
+  assert.equal(map['Ctrl-K Ctrl-0'], 'foldAll');
+  // Every action has a unique id, and no two changeable actions share a default binding where they'd clash.
+  const ids = keys.ACTIONS.map((a) => a.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const a of keys.ACTIONS) if (a.where !== 'fixed') assert.deepEqual(keys.conflicts(a.id, keys.binding(a.id)).map((x) => x.id), [], a.id);
+});
+
+test("the saved file's name: the folder a Hub install makes (Game.GameName), else the document's name", () => {
+  assert.equal(save.saveFileName('Game.GameName = "Half-Life: Source";\n', 'x.js'), 'Half-Life Source');
+  assert.equal(save.saveFileName('game.gamename = "lower case";', 'x.js'), 'lower case', 'Nucleus matches the line case-insensitively');
+  assert.equal(save.saveFileName('Game.GameName = "A \\"quoted\\" name";', 'x.js'), 'A quoted name', 'between the first and the last quote');
+  assert.equal(save.saveFileName('Game.GameName = "Back\\\\slash";', 'x.js'), 'Backslash', 'a backslash cannot be in a file name');
+  assert.equal(save.saveFileName('var a = 1;', 'My handler.js'), 'My handler');
+  assert.equal(save.saveFileName('', ''), 'handler');
+  assert.equal(save.saveFileName('  Game.GameName = "Indented";', 'doc.js'), 'doc', 'Nucleus does not see an indented line');
+});
