@@ -13,9 +13,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fetchPackageFiles } from './hub-files.mjs';
+import { hubClientHeaders } from './hub-client.mjs';
 
 const HUB = 'https://hub.splitscreen.me';
-const UA = 'nucleus-handler-tools hub-mirror (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)';
+const HEADERS = hubClientHeaders('hub-mirror', 'mirror');
 const dir = process.argv[2];
 if (!dir) throw new Error('usage: node tools/hub-mirror.mjs <data dir>');
 const MAX_NEW = Number(process.env.HUB_MIRROR_MAX ?? 800); // a cap per run, in case the Hub changes a lot at once
@@ -36,7 +37,7 @@ try {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const get = async (url) => {
-  const r = await fetch(url, { headers: { 'user-agent': UA, 'accept-encoding': 'gzip' } });
+  const r = await fetch(url, { headers: { ...HEADERS, 'accept-encoding': 'gzip' } });
   if (!r.ok) throw new Error(`${r.status}`);
   return r;
 };

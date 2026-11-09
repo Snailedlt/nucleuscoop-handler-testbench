@@ -4,10 +4,11 @@
 // carrying megabytes. Shared by tools/hub-mirror.mjs (the data branch) and playground/build.mjs (the
 // snapshot). No dependencies.
 import zlib from 'node:zlib';
+import { hubClientHeaders } from './hub-client.mjs';
 
 export const MAX_FILE = 256 * 1024; // content for files up to this size…
 export const MAX_TOTAL = 1024 * 1024; // …until a handler's files add up to this
-const UA = 'nucleus-handler-tools hub-files (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)';
+const HEADERS = hubClientHeaders('hub-files', 'package-files');
 
 /** The package's URL on the Hub (as splitscreenme-vscode's core/hub.ts packageUrl). */
 export const packageUrl = (id, pkg, version) => `https://hub.splitscreen.me/cdn/storage/packages/${pkg}/original/handler-${id}-v${version}.nc`;
@@ -76,7 +77,7 @@ export function packageFiles(buf, { maxFile = MAX_FILE, maxTotal = MAX_TOTAL } =
 
 /** Downloads a package once and returns its files (throws on a failed download or a broken zip). */
 export async function fetchPackageFiles(id, pkg, version, opts) {
-  const r = await fetch(packageUrl(id, pkg, version), { headers: { 'user-agent': UA } });
+  const r = await fetch(packageUrl(id, pkg, version), { headers: HEADERS });
   if (!r.ok) throw new Error(`package download: ${r.status}`);
   return packageFiles(Buffer.from(await r.arrayBuffer()), opts);
 }

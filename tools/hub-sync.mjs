@@ -8,13 +8,14 @@
 // ways, that covers up to 1200+ handlers in one short connection.
 //   node tools/hub-sync.mjs <out.json>
 import fs from 'node:fs';
+import { hubClientHeaders } from './hub-client.mjs';
 
 const HUB = 'https://hub.splitscreen.me';
-const UA = 'nucleus-handler-tools hub-sync (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)';
+const HEADERS = hubClientHeaders('hub-sync', 'daily-index');
 const out = process.argv[2];
 if (!out) throw new Error('usage: node tools/hub-sync.mjs <out.json>');
 
-const res = await fetch(`${HUB}/api/v1/allhandlers`, { headers: { 'user-agent': UA, 'accept-encoding': 'gzip' } });
+const res = await fetch(`${HUB}/api/v1/allhandlers`, { headers: { ...HEADERS, 'accept-encoding': 'gzip' } });
 if (!res.ok) throw new Error(`Hub returned ${res.status}`);
 const list = (await res.json()).Handlers ?? [];
 if (list.length < 100) throw new Error(`Only ${list.length} handlers in the Hub's answer; keeping the old index.`);
@@ -44,7 +45,7 @@ console.log(`${handlers.length} handlers, ${(fs.statSync(out).size / 1024).toFix
 function ddpHandlers() {
   const WINDOWS = [['hot', 'down'], ['hot', 'up'], ['download', 'down'], ['download', 'up'], ['alphabetical', 'up'], ['alphabetical', 'down']];
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${HUB.replace(/^http/, 'ws')}/websocket`, { headers: { 'user-agent': UA } });
+    const ws = new WebSocket(`${HUB.replace(/^http/, 'ws')}/websocket`, { headers: HEADERS });
     const docs = new Map();
     const perSub = new Map();
     let ready = 0;

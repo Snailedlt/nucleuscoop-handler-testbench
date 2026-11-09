@@ -75,6 +75,7 @@ jobs:
       - name: Unit tests (Hub package files; feedback links match the extension's issue forms and bot)
         run: |
           node tools/hub-files.test.mjs
+          node tools/hub-client.test.mjs
           node tools/report-links.test.mjs
           node tools/credit.test.mjs
       - name: Browser smoke test (Check, Fix all, Try it, packages, themes, keyboard, accessibility)
