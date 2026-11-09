@@ -20,7 +20,7 @@ import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/mat
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, ownerLabel, Resolved } from '@core/api';
 import { resolveAt } from '@core/complete';
-import { completionsAt, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
+import { apiPathOf, completionsAt, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
 import { insertSnippet } from './snippet';
 import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
@@ -406,17 +406,7 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
 
 // API names in hovers, parameter hints and suggestion docs are links: a click (or Enter) opens that name in the
 // Reference tab, as VS Code's hovers link to the docs.
-const NAME_RE = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/;
-function apiPathOf(raw: string): string | undefined {
-  const t = raw.trim().replace(/\(.*\)$/, '').replace(/;$/, '').replace(/^new\s+/, '');
-  if (!NAME_RE.test(t) || /^(true|false|null|undefined|var|function|return)$/.test(t)) return undefined;
-  if (api.globals[t]) return t;
-  const r = lookup(t);
-  if (r.kind === 'entries') return r.entries.length === 1 ? r.entries[0].path : t;
-  if (r.kind === 'enum') return t.startsWith('Nucleus.') ? t : `Nucleus.${t}`;
-  if (r.kind === 'class') return t.startsWith('Nucleus.') ? t : `Nucleus.${t}`;
-  return undefined;
-}
+// Which names are API (`ModifySaveFile` → Context.ModifySaveFile; `path` is a parameter): core decides, as for VS Code.
 function linkApiNames(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('code').forEach((c) => {
     if (c.closest('pre, a, button')) return;
