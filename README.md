@@ -15,7 +15,7 @@ Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) ga
   <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/phone-dark.png"><img src="docs/images/phone-light.png" width="24%" alt="The workbench on a phone: the Check results for the example handler"></picture>
 </p>
 
-**In motion** (about a minute each, captioned, no sound): [▶ the workbench](docs/videos/workbench.mp4) · [▶ VS Code](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/docs/videos/vscode.mp4) · [▶ Notepad++](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/docs/videos/notepadpp.mp4)
+**In motion** (a minute or two each, captioned, no sound): [▶ the workbench](docs/videos/workbench.mp4) · [▶ VS Code](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/docs/videos/vscode.mp4) · [▶ Notepad++](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/docs/videos/notepadpp.mp4)
 
 [![The workbench in motion: checks, fixes, suggestions, Docs, Try it, the visual editor and the debugger](docs/videos/workbench-poster.jpg)](docs/videos/workbench.mp4)
 
