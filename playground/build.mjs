@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import * as esbuild from 'esbuild';
 import { fetchPackageFiles, slimFiles } from '../tools/hub-files.mjs';
+import { hubClientHeaders } from '../tools/hub-client.mjs';
 
 const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 // A preview build (the Claude artifact, the raw.githack test address) is served somewhere else: its
@@ -122,7 +123,7 @@ async function hubExamples() {
     for (const h of JSON.parse(fs.readFileSync(cachePath, 'utf8')).handlers) previous.set(`${h.id}-v${h.version}`, h);
   } catch {}
   const get = async (url) => {
-    const r = await fetch(url, { headers: { 'user-agent': 'nucleus-handler-workbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)' } });
+    const r = await fetch(url, { headers: hubClientHeaders('workbench-build', 'examples'), signal: AbortSignal.timeout(30000) });
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     return r.json();
   };
@@ -217,7 +218,7 @@ for (const h of hubData ? [] : hub.handlers) {
   const file = path.join(coverDir, `${h.cover}.jpg`);
   if (fs.existsSync(file)) continue;
   try {
-    const r = await fetch(`https://images.igdb.com/igdb/image/upload/t_cover_small/${h.cover}.jpg`, { headers: { 'user-agent': 'nucleus-handler-workbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)' } });
+    const r = await fetch(`https://images.igdb.com/igdb/image/upload/t_cover_small/${h.cover}.jpg`, { headers: hubClientHeaders('workbench-build', 'covers'), signal: AbortSignal.timeout(30000) });
     const buf = Buffer.from(await r.arrayBuffer());
     if (r.ok && /^image\//.test(r.headers.get('content-type') ?? '') && buf.length < 200_000) {
       fs.writeFileSync(file, buf);
