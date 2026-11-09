@@ -29,6 +29,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **A saved handler is named the way Nucleus names its folder.** The file name comes from `Game.GameName` read exactly as a Hub install reads it, so the .js matches `Game.Folder`.
+- **New screenshots of Check and Lines on the start page.** They show the current workbench, sharper on high-DPI screens.
 - **A clear privacy switch.** Settings › Feedback and privacy now has a Privacy section with one switch for the anonymous usage counts (GoatCounter), what they are in plain words, and links to the public numbers and the open-source code that sends them. Opening the workbench with `#toggle-goatcounter` at the end of the address also turns them off for that browser.
 - **The UI kit and the Duo and Nucli overview are online.** Their links from the mascot pages led to a "404" (and *Overview* to the workbench): they're now at `/ui-kit/` and `/duo-nucli/`.
 - **Short demo videos.** The start page shows the workbench, VS Code and Notepad++ in a minute or two each (captioned, no sound).
@@ -53,6 +55,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **"I write code" starts compact.** That first-visit answer now also turns tips off and skips the Getting started banner (both stay in Settings and the footer).
 - **Lines waits to be asked.** On wide screens the Lines list no longer opens by itself; Lines or Ctrl+B opens it, and it stays as you leave it.
 - **Share links say what they leave out.** A link carries the code only; with package files it now says so and how to share them (Save ▾ › .zip).
+- **Links to probes 100 and up open the right probe.** `#probe-112` used to open probe 11; probe links now use the full number.
+- **The command-line link in llms.txt works again.** It pointed at a README heading that was renamed.
 ---
 
 ## 2026-11-08
