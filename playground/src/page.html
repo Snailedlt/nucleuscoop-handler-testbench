@@ -587,6 +587,14 @@ li.CodeMirror-hint-active { background: var(--accent); color: var(--accent-fg); 
 li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .hint-type { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hint-name.dep { text-decoration: line-through; opacity: .7; }
+.hint-ico { width: 1.4em; flex: none; text-align: center; color: var(--muted); }
+li.CodeMirror-hint-active .hint-ico { color: inherit; }
+.hint-name { flex: 1; }
+.hint-doc { position: fixed; z-index: 61; max-height: 260px; overflow: auto; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 10px; font: 12.5px/1.45 var(--font-body); box-shadow: 0 8px 22px rgba(0,0,0,.2); }
+.hint-doc pre { white-space: pre-wrap; margin: 0 0 6px; }
+.cm-snippet-stop { background: color-mix(in srgb, var(--accent) 18%, transparent); outline: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
+#sig .sig-doc { font-family: var(--font-body); color: var(--muted); white-space: normal; }
+#sig .sig-doc p { margin: 2px 0 0; }
 
 #sig { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 10px; font: 12px/1.5 var(--font-mono); box-shadow: 0 4px 14px rgba(0,0,0,.15); overflow-x: auto; }
 #sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }

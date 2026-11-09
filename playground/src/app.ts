@@ -18,8 +18,10 @@ import { codeHandlers, fixedCodeKeys, foldRange, keysByPosition, lineCommentFold
 import { ACTIONS, appActionFor, codeKeyMap, keyLabel, labelOf, binding, onBindingsChange, type Group } from './keybindings';
 import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
-import { api, membersOf, ownerLabel, Resolved } from '@core/api';
-import { memberContextAt, resolveAt, callContextAt, valueContextAt } from '@core/complete';
+import { api, ownerLabel, Resolved } from '@core/api';
+import { resolveAt } from '@core/complete';
+import { completionsAt, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
+import { insertSnippet } from './snippet';
 import { search, lookup, allEntries, Entry } from '@core/lookup';
 import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
@@ -337,7 +339,7 @@ const editorHandlers: Record<string, (cm: any) => void> = {
     if (linePop.hidden) showLineProblems(c.line);
     if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
   },
-  suggest: (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
+  suggest: (cm: any) => cm.showHint({ hint: hinter, completeSingle: false, explicit: true }),
   goToLine: () => showOpen('line'),
   definition: () => goToDefinition(),
   rename: () => renameSymbol(),
@@ -393,55 +395,90 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
   });
 }
 
-// Completion
-function hinter(cm: any) {
+// Completion: the same suggestions as VS Code and other editors (core/features.ts completionsAt): API members, the
+// option's values, the handler's own functions and variables, Context.Options keys and their values, snippets, the
+// whole template in an empty file. The docs of the highlighted one show beside the list.
+const HINT_ICON: Partial<Record<CompletionKind, string>> = { method: 'ƒ', function: 'ƒ', snippet: '⧉', keyword: 'k', enumMember: '▪', value: '▪', constant: '#', property: '·', field: '·', variable: 'x', module: '{}', class: 'C', enum: 'E' };
+function hinter(cm: any, options?: { explicit?: boolean }) {
   const text = cm.getValue();
   const cur = cm.getCursor();
   const offset = cm.indexFromPos(cur);
-  const ctx = memberContextAt(text, offset);
-  // `Game.DPIHandling = |`: the values the option takes (enum values, true/false, a callback function, the usual
-  // window messages for BlockedMessages).
-  const val = !ctx ? valueContextAt(text, offset) : undefined;
-  if (val && !val.partial.includes('.')) {
-    const p = val.partial.toLowerCase();
-    const indent = (cm.getLine(cur.line).match(/^\s*/) ?? [''])[0];
-    const list = val.values.filter((v) => v.value.toLowerCase().startsWith(p)).map((v) => ({
-      text: v.value,
-      displayText: v.value,
-      render(el: HTMLElement) {
-        el.innerHTML = `<span class="hint-name">${esc(v.value.replace(/\s+/g, ' '))}</span><span class="hint-type">${esc(v.detail ?? '')}</span>`;
-      },
-      // A callback: the function on its own lines, the cursor inside it.
-      hint: v.snippet ? (c: any, data: any) => {
-        c.replaceRange(`function () {\n${indent}  \n${indent}};`, data.from, data.to);
-        c.setCursor({ line: data.from.line + 1, ch: indent.length + 2 });
-      } : undefined,
-    }));
-    return list.length ? { list, from: cm.posFromIndex(val.partialStart), to: cur } : null;
-  }
-  if (!ctx) return null;
-  const partial = ctx.partial.toLowerCase();
-  const list = membersOf(ctx.base)
-    .filter((m) => m.name.toLowerCase().startsWith(partial))
-    .sort((a, b) => rank(a.member) - rank(b.member) || a.name.localeCompare(b.name))
-    .map((m) => ({
-      text: m.name,
-      displayText: m.name,
-      render(el: HTMLElement) {
-        const t = m.member ? (m.member.kind === 'method' ? 'method' : m.member.ts ?? m.member.ref ?? '') : m.detail ?? '';
-        el.innerHTML = `<span class="hint-name${m.member?.deprecated ? ' dep' : ''}">${esc(m.name)}</span><span class="hint-type">${esc(String(t))}</span>`;
-      },
-    }));
-  return { list, from: cm.posFromIndex(ctx.partialStart), to: cur };
+  const items = completionsAt(text, offset, { own: true, explicit: !!options?.explicit });
+  if (!items?.length) return null;
+  // The word the editor would replace when an item has no range of its own.
+  let ws = offset;
+  while (ws > 0 && /[\w$]/.test(text[ws - 1])) ws--;
+  // What's typed, matched with its case first (`hand` → handler before Handler), as VS Code ranks them.
+  const exact = (it: CompletionEntry) => {
+    const typed = text.slice(it.range?.start ?? ws, offset).replace(/^["']/, '');
+    return typed && it.label.startsWith(typed) ? 1 : 0;
+  };
+  const list = items
+    .filter((it) => {
+      const start = it.range?.start ?? ws;
+      const typed = text.slice(start, offset).replace(/^["']/, '').toLowerCase();
+      if (!typed) return true;
+      return [it.label, ...(it.filterText ?? '').split(/\s+/)].some((w) => w.toLowerCase().startsWith(typed));
+    })
+    .sort((a, z) => exact(z) - exact(a) || (a.sortText ?? a.label).localeCompare(z.sortText ?? z.label))
+    .map((it) => {
+      const from = cm.posFromIndex(it.range?.start ?? ws);
+      const to = cm.posFromIndex(Math.max(it.range?.end ?? offset, offset));
+      const right = it.labelDetail ?? (it.kind === 'method' ? 'method' : (it.detail ?? '').replace(/^.*?\):\s*/, '').slice(0, 40));
+      return {
+        text: it.insertText ?? it.label,
+        displayText: it.label,
+        from,
+        to,
+        doc: it.documentation,
+        render(el: HTMLElement) {
+          el.innerHTML = `<span class="hint-ico" aria-hidden="true">${HINT_ICON[it.kind] ?? ''}</span><span class="hint-name${it.deprecated ? ' dep' : ''}">${esc(it.label)}</span><span class="hint-type">${esc(right)}</span>`;
+        },
+        hint(c: any, _data: any, self: any) {
+          if (it.snippet) insertSnippet(c, self.from, self.to, it.insertText ?? it.label);
+          else c.replaceRange(self.text, self.from, self.to, 'complete');
+          if (it.signatureHelp) showSignature();
+        },
+      };
+    });
+  if (!list.length) return null;
+  const pre = items.findIndex((it) => it.preselect);
+  const data = { list, from: list[0].from, to: cur, selectedHint: Math.max(0, list.findIndex((h) => h.displayText === items[pre]?.label)) };
+  // The highlighted suggestion's docs, next to the list.
+  CodeMirror.on(data, 'select', (c: any, el: HTMLElement) => showHintDoc(c.doc, el));
+  CodeMirror.on(data, 'close', () => showHintDoc(undefined));
+  return data;
 }
-const rank = (m?: { required?: boolean; deprecated?: string; doc?: string }) => (!m ? 1 : m.required ? 0 : m.deprecated ? 3 : m.doc ? 1 : 2);
+const hintDoc = document.createElement('div');
+hintDoc.className = 'hint-doc';
+hintDoc.hidden = true;
+document.body.appendChild(hintDoc);
+function showHintDoc(doc: string | undefined, el?: HTMLElement) {
+  const box = el?.closest('.CodeMirror-hints') as HTMLElement | null;
+  if (!doc || !box) return void (hintDoc.hidden = true);
+  hintDoc.innerHTML = md(doc);
+  hintDoc.hidden = false;
+  const r = box.getBoundingClientRect();
+  const w = Math.min(420, window.innerWidth - 16);
+  hintDoc.style.width = `${w}px`;
+  const right = r.right + 6 + w <= window.innerWidth - 8;
+  hintDoc.style.left = `${right ? r.right + 6 : Math.max(8, r.left - 6 - w)}px`;
+  hintDoc.style.top = `${r.top}px`;
+  // No room on either side (a phone): under the list.
+  if (!right && r.left - 6 - w < 8) { hintDoc.style.left = `${Math.max(8, r.left)}px`; hintDoc.style.top = `${r.bottom + 6}px`; }
+}
 
 editor.on('inputRead', (cm: any, change: any) => {
   const afterEquals = change.text[0] === ' ' && /[\w\]]\s*=\s$/.test(cm.getLine(change.from.line).slice(0, change.from.ch + 1));
-  if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0]) || afterEquals) {
+  if (change.text[0] === '.' || /^[\w$"'\[,]$/.test(change.text[0]) || afterEquals) {
     if (!cm.state.completionActive) cm.showHint({ hint: hinter, completeSingle: false });
   }
   if (change.text[0] === '(' || change.text[0] === ',') showSignature();
+});
+// A quote or `[` typed where brackets close themselves (closebrackets' keys insert `""`, `[]` with no inputRead):
+// `Context.Options["` still opens the keys.
+editor.on('keyHandled', (cm: any, name: string) => {
+  if (/^'["'[]'$/.test(name) && !cm.state.completionActive) cm.showHint({ hint: hinter, completeSingle: false });
 });
 editor.on('cursorActivity', () => showSignature());
 // Settings › Accessibility: read out the problems on the line the cursor moves to (once per line).
@@ -573,8 +610,11 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
     // A number in Game.ProtoInput.BlockedMessages: the window message and what blocking it does.
     const msg = blockedItemAt(text, at);
     const r = msg ? undefined : resolveAt(text, at);
-    const doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
-    const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : at;
+    let doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+    // Not an API name: the handler's own functions and variables, Context.Options keys, JavaScript's own (as in VS Code).
+    const own = !doc && !msg ? hoverAt(text, at, { own: true }) : undefined;
+    if (own) doc = md(own.markdown);
+    const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : own ? own.range.start : at;
     showHoverCard(text, at, list, doc, from);
   }, hoverDelay(280));
 });
@@ -605,7 +645,9 @@ setCodeFieldSupport({
       const end = cm.charCoords({ line: pos.line, ch: cm.getLine(pos.line).length }, 'window');
       if (e.clientX > end.right + 4) return void (tip.hidden = true);
       const r = resolveAt(text, at);
-      const doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+      let doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+      const own = doc ? undefined : hoverAt(text, at, { own: true });
+      if (own) doc = md(own.markdown);
       if (!doc && !problems.length) return void (tip.hidden = true);
       tip.innerHTML = problems.map((d) => `<div class="hc-item ${sevClass[d.severity] ?? 'info'}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hc-body"><div class="hc-msg">${hlHtml(codeIn(d.message))}</div></div></div>`).join('')
         + (doc ? `<div class="hc-doc">${doc}</div>` : '');
@@ -623,7 +665,8 @@ setCodeFieldSupport({
 function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
     case 'member':
-      return memberCard(res.owner, res.name, res.member);
+      // The handler's own function (its return type, resolved): core's own hover says it better.
+      return res.member.own ? '' : memberCard(res.owner, res.name, res.member);
     case 'enum': {
       const e = api.enums[res.name];
       return md('```\nenum Nucleus.' + res.name + '\n```\n\n' + (e.doc ?? '') + '\n\n' + Object.entries(e.values).map(([k, v]) => `\`${k}\` = ${v}`).join(', '));
@@ -646,8 +689,10 @@ function showSignature() {
   // While text is selected, stay out of the way of the selection handles and the copy menu.
   if (editor.somethingSelected()) return void (sig.hidden = true);
   const text = editor.getValue();
-  const c = callContextAt(text, editor.indexFromPos(editor.getCursor()));
-  if (!c || (c.callee.kind !== 'member' && c.callee.kind !== 'nucleusClass')) {
+  // Every overload, the parameter being typed highlighted, and what to pass for it (core's signature help, as in VS
+  // Code): Nucleus' methods and classes, JavaScript's own, the handler's own functions.
+  const h = signatureHelpAt(text, editor.indexFromPos(editor.getCursor()), { own: true });
+  if (!h?.signatures.length) {
     // Touch screens have no hover: show the docs for whatever is under the cursor instead.
     if (coarse.matches) {
       const r = resolveAt(text, editor.indexFromPos(editor.getCursor()));
@@ -661,24 +706,22 @@ function showSignature() {
     sig.hidden = true;
     return;
   }
-  let lines: string[] = [];
-  if (c.callee.kind === 'member' && c.callee.member.kind === 'method') {
-    const { owner, name, member } = c.callee;
-    lines = (member.overloads ?? []).map(
-      (o) =>
-        `${esc(ownerLabel(owner))}.${esc(name)}(` +
-        o.params.map((p, i) => `<span class="${i === c.activeParameter || (p.rest && c.activeParameter >= i) ? 'active' : ''}">${esc(`${p.rest ? '...' : ''}${p.name}: ${p.type}`)}</span>`).join(', ') +
-        `): ${esc(o.returns)}`,
-    );
-  } else if (c.callee.kind === 'nucleusClass') {
-    const cls = api.nucleusClasses[c.callee.name];
-    lines = [`new Nucleus.${esc(c.callee.name)}(` + cls.params.map((p, i) => `<span class="${i === c.activeParameter ? 'active' : ''}">${esc(p)}</span>`).join(', ') + ')'];
-  }
-  if (!lines.length) {
-    sig.hidden = true;
-    return;
-  }
-  sig.innerHTML = lines.map((l) => `<div>${l}</div>`).join('');
+  const k = h.activeParameter;
+  const rows = h.signatures.map((s, si) => {
+    let at = s.label.indexOf('(') + 1;
+    let html = '';
+    s.parameters.forEach((p, i) => {
+      const pos = s.label.indexOf(p, at);
+      if (pos < 0) return;
+      const active = i === k || (i === s.parameters.length - 1 && k > i && p.startsWith('...'));
+      html += esc(s.label.slice(at, pos)) + `<span class="${active ? 'active' : ''}">${esc(p)}</span>`;
+      at = pos + p.length;
+    });
+    html = esc(s.label.slice(0, s.label.indexOf('(') + 1)) + html + esc(s.label.slice(at));
+    const pdoc = si === h.activeSignature ? s.parameterDocs?.[Math.min(k, s.parameters.length - 1)] : undefined;
+    return `<div>${html}</div>` + (pdoc ? `<div class="sig-doc">${md(pdoc)}</div>` : '');
+  });
+  sig.innerHTML = rows.join('');
   sig.hidden = false;
 }
 
@@ -2235,7 +2278,7 @@ $('#tips-reset').addEventListener('click', () => tips.reset());
 initA11y();
 const settings = initSettings({
   editor,
-  hint: () => editor.showHint({ hint: hinter, completeSingle: false }),
+  hint: () => editor.showHint({ hint: hinter, completeSingle: false, explicit: true }),
   lines,
   tips,
   advanced: $('#advanced') as HTMLInputElement,
