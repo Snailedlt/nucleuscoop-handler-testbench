@@ -5,6 +5,7 @@ import { appNote, withContext } from './report';
 import { claudeNote, docReviewUrl, ownerLabel, type Member } from '@core/api';
 import { voteButtons } from './feedback';
 import { hlHtml } from './codehl';
+import { prettyCode } from '@core/pretty';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -15,8 +16,16 @@ const ty = (t: string) => `<span class="sg-t">${esc(t.replace(/ \| number \| boo
 export function memberCard(owner: string, name: string, m: Member, opts: { head?: boolean; compact?: boolean } = {}): string {
   const label = ownerLabel(owner);
   const pre = `<span class="sg-o">${esc(label)}.</span><span class="sg-n">${esc(name)}</span>`;
+  // A long overload one parameter per line, as prettier prints it (core/pretty.ts prettySignature does the same in
+  // VS Code, the Docs panel and the CLI): measured on the plain text.
+  const plainType = (t: string) => t.replace(/ \| number \| boolean$/, '').replace(/^string \| number \| boolean$/, 'string');
   const sigs = m.kind === 'method'
-    ? (m.overloads ?? []).map((o) => `${pre}(${o.params.map((p) => `<span class="sg-p">${p.rest ? '...' : ''}${esc(p.name)}</span>: ${ty(p.type)}`).join(', ')})<span class="sg-c">: </span>${ty(o.returns)}`)
+    ? (m.overloads ?? []).map((o) => {
+      const ps = o.params.map((p) => `<span class="sg-p">${p.rest ? '...' : ''}${esc(p.name)}</span>: ${ty(p.type)}`);
+      const plain = `${label}.${name}(${o.params.map((p) => `${p.rest ? '...' : ''}${p.name}: ${plainType(p.type)}`).join(', ')}): ${plainType(o.returns)}`;
+      const list = plain.length > 60 && ps.length > 1 ? `\n  ${ps.join(',\n  ')}\n` : ps.join(', ');
+      return `${pre}(${list})<span class="sg-c">: </span>${ty(o.returns)}`;
+    })
     : [`${pre}<span class="sg-c">: </span>${ty(m.kind === 'object' ? m.ref ?? m.ts ?? '' : m.ts ?? '')}`];
   const facts: string[] = [];
   if (m.required) facts.push('<span class="dc-chip req">Required</span>');
@@ -39,7 +48,7 @@ export function memberCard(owner: string, name: string, m: Member, opts: { head?
     + (opts.head === false ? '' : `<div class="dc-sig">${sigs.map((s) => `<div>${s}</div>`).join('')}</div>`)
     + (m.deprecated ? `<p class="dc-dep">${inline(m.deprecated)}</p>` : '')
     + (m.doc ? m.doc.split(/\n{2,}/).map((p) => `<p>${inline(p)}</p>`).join('') : '<p class="muted">No description yet.</p>')
-    + (m.example ? `<pre class="doc-code">${esc(m.example)}</pre>` : '')
+    + (m.example ? `<pre class="doc-code">${esc(prettyCode(m.example))}</pre>` : '')
     + (facts.length ? `<div class="dc-facts">${facts.join('')}</div>` : '')
     + (note ? `<div class="dc-ai" title="${esc(note)}"><span class="ai-spark" aria-hidden="true"></span><span>${m.docCheckedBy ? `AI-written, checked by ${esc(m.docCheckedBy)}${m.docCheckedOn ? ` on ${esc(m.docCheckedOn)}` : ''}.` : 'AI-written, not from the official docs.'} Based on ${esc(m.docBasis ?? '')}.</span></div>`
       + `<div class="dc-check"><span>Is this right?</span>${voteButtons('doc', `${label}.${name}`, { up: 'Correct', down: 'Wrong or unclear' })}<a href="${esc(withContext(docReviewUrl(`${label}.${name}`), { Doc: `${label}.${name}` }))}" target="_blank" rel="noopener">Tell us what's wrong</a>${appNote()}</div>` : '')

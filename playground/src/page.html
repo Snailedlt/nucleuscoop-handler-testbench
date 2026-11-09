@@ -661,6 +661,8 @@ li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
 #tip p, .api p { margin: 0 0 6px; }
 /* API docs card (doccard.ts): signature, description, facts, and who wrote it. */
 .dc-sig { font: 12.5px/1.5 var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 7px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }
+/* A long overload is printed one parameter per line (doccard.ts): keep its line breaks. */
+.dc-sig > div { white-space: pre-wrap; }
 .dc-sig div + div { margin-top: 2px; border-top: 1px dashed var(--line); padding-top: 2px; }
 .sg-o { color: var(--muted); } .sg-n { color: var(--prop, var(--accent)); font-weight: 700; } .sg-p { color: var(--code-fg, var(--fg)); }
 .sg-t { color: var(--kw, var(--accent)); } .sg-c { color: var(--muted); }
