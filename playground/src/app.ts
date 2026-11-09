@@ -436,8 +436,7 @@ function openReferenceAt(path: string) {
   tip.hidden = true;
   selectTab('api');
   if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
-  ($('#api-q') as HTMLInputElement).value = path;
-  renderApi(path);
+  refGo(`q:${path}`);
 }
 function wireApiLinkClicks(el: HTMLElement, on: 'click' | 'mousedown' = 'click') {
   el.addEventListener(on, (e) => {
@@ -1381,50 +1380,102 @@ function renderApiHome(el: HTMLElement) {
     <h3 class="api-h">Try a search</h3>
     <p class="muted">${['mutex', 'window title', 'save file', 'keyboard', 'steam'].map((q) => `<button class="link" data-q="${q}">${q}</button>`).join(' · ')}</p>
   </div>`;
-  el.querySelectorAll<HTMLButtonElement>('[data-group]').forEach((b) => b.addEventListener('click', () => renderApiGroup(el, b.dataset.group!)));
   wireApiLinks(el);
 }
 /** One object's members, as a compact list: click one for its docs. */
 function renderApiGroup(el: HTMLElement, key: string) {
   const g = API_GROUPS.find((x) => x.key === key)!;
   const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
-  el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
+  el.innerHTML = refBar([{ label: g.title, count: list.length }]) + `<div class="api-home"><p class="muted">${esc(g.doc)}</p>
     <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="AI-written, not from the official docs" role="img" aria-label="AI-written"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
-  el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
   wireApiLinks(el);
   el.scrollTop = 0;
 }
 function wireApiLinks(el: HTMLElement) {
-  el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) =>
-    b.addEventListener('click', () => {
-      ($('#api-q') as HTMLInputElement).value = b.dataset.q!;
-      renderApi(b.dataset.q!);
-    }),
-  );
+  el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) => b.addEventListener('click', () => refGo(`q:${b.dataset.q}`)));
+  el.querySelectorAll<HTMLButtonElement>('[data-group]').forEach((b) => b.addEventListener('click', () => refGo(`group:${b.dataset.group}`)));
+  el.querySelectorAll<HTMLButtonElement>('[data-home]').forEach((b) => b.addEventListener('click', () => refGo('home')));
+  el.querySelectorAll<HTMLButtonElement>('[data-back]').forEach((b) => b.addEventListener('click', () => refBack()));
+  // API names inside the docs open their own entry too.
+  linkApiNames(el);
 }
+// Where you are in the Reference: "← Back · Reference › Context › ModifySaveFile", every part clickable (as a docs
+// site's breadcrumbs), and Back to the view before. Views: home, a group (Context, Game…), or a search / one name.
+let refView = 'home';
+const refHistory: string[] = [];
+function refGo(view: string, push = true) {
+  if (push && view !== refView) refHistory.push(refView);
+  if (refHistory.length > 50) refHistory.shift();
+  refView = view;
+  const q = view.startsWith('q:') ? view.slice(2) : '';
+  ($('#api-q') as HTMLInputElement).value = q;
+  const el = $('#api-results');
+  if (view.startsWith('group:')) renderApiGroup(el, view.slice(6));
+  else renderApi(q);
+  // Each view starts at its top: scroll whichever box holds the Reference.
+  for (let n: HTMLElement | null = el; n; n = n.parentElement) if (n.scrollTop) n.scrollTop = 0;
+}
+function refBack() {
+  const v = refHistory.pop();
+  if (v !== undefined) refGo(v, false);
+}
+function refBar(crumbs: { label: string; view?: string; count?: number; code?: boolean }[]): string {
+  const back = refHistory.length ? `<button type="button" class="link ref-back" data-back aria-label="Back (to the view before)">← Back</button><span class="ref-sep" aria-hidden="true">·</span>` : '';
+  const parts = [`<button type="button" class="link" data-home>Reference</button>`].concat(crumbs.map((c, i) => {
+    const t = c.code ? `<code>${esc(c.label)}</code>` : esc(c.label);
+    const last = i === crumbs.length - 1;
+    return (c.view && !last ? `<button type="button" class="link" data-${c.view.startsWith('group:') ? `group="${esc(c.view.slice(6))}"` : `q="${esc(c.view.slice(2))}"`}>${t}</button>` : `<strong${last ? ' aria-current="page"' : ''}>${t}</strong>`) + (c.count !== undefined ? ` <span class="muted">· ${c.count}</span>` : '');
+  }));
+  return `<nav class="api-crumbs" aria-label="Where you are in the Reference">${back}${parts.join('<span class="ref-sep" aria-hidden="true">›</span>')}</nav>`;
+}
+const groupOf = (path: string) => API_GROUPS.find((g) => g.key !== 'AI' && g.match(path));
 
 function renderApi(q: string) {
   if (q.trim()) use('reference-search');
   const el = $('#api-results');
   if (!q.trim()) return renderApiHome(el);
-  {
-    const exact = lookup(q);
-    let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
-    for (const e of search(q, 30)) if (!entries.some((x) => x.path === e.path)) entries.push(e);
-    let head = '';
-    if (exact.kind === 'enum') head = `<article class="api"><h3>enum Nucleus.${esc(exact.name)}</h3>${md(exact.doc ?? '')}<p class="mono">${Object.entries(exact.values).map(([k, v]) => `${esc(k)} = ${v}`).join(' · ')}</p></article>`;
-    if (exact.kind === 'class') head = `<article class="api"><h3>new Nucleus.${esc(exact.name)}(${exact.params.join(', ')})</h3>${md(exact.doc)}</article>`;
-    if (exact.kind === 'none' && exact.didYouMean) head = `<p class="muted">"${esc(q)}" isn't part of the handler API. Did you mean <button class="link" data-q="${esc(exact.didYouMean)}">${esc(exact.didYouMean)}</button>?</p>`;
-    entries = entries.slice(0, 30);
-    el.innerHTML =
-      head +
-      (entries.length || head
-        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`).join('')
-        : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
+  const exact = lookup(q);
+  const card = (e: Entry) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`;
+  // One name: its card, where it sits (group › name), and the names next to it.
+  const one = exact.kind === 'entries' && exact.entries.length === 1 ? exact.entries[0] : undefined;
+  if (one) {
+    const g = groupOf(one.path);
+    const sibs = g ? allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path)) : [];
+    el.innerHTML = refBar([...(g ? [{ label: g.title, view: `group:${g.key}` }] : []), { label: one.path.slice(g && one.path.startsWith(g.key + '.') ? g.key.length + 1 : 0), code: true }])
+      + card(one)
+      // The names next to it: open when there are few, one click away when there are many (Context has ~190).
+      + (sibs.length > 1 ? `<details class="api-more"${sibs.length <= 30 ? ' open' : ''}><summary>More in ${esc(g!.title)} <span class="muted">· ${sibs.length}</span></summary><div class="api-chips">${sibs.map((e) => e.path === one.path ? `<span class="api-chip on" aria-current="true">${esc(e.name)}</span>` : `<button type="button" class="api-chip" data-q="${esc(e.path)}">${esc(e.name)}</button>`).join('')}</div></details>` : '');
+    return wireApiLinks(el);
   }
+  let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
+  for (const e of search(q, 30)) if (!entries.some((x) => x.path === e.path)) entries.push(e);
+  let head = '';
+  let crumbs: Parameters<typeof refBar>[0] = [{ label: `Results for "${q.trim()}"`, count: Math.min(entries.length, 30) }];
+  if (exact.kind === 'enum') {
+    crumbs = [{ label: 'Nucleus values' }, { label: `Nucleus.${exact.name}`, code: true }];
+    head = `<article class="api"><h3>enum Nucleus.${esc(exact.name)}</h3>${md(exact.doc ?? '')}<p class="mono">${Object.entries(exact.values).map(([k, v]) => `${esc(k)} = ${v}`).join(' · ')}</p></article>`;
+    entries = entries.filter((e) => e.member.ts?.includes(exact.name) || e.member.ref === exact.name);
+    if (entries.length) head += `<h3 class="api-h">Options that take it</h3>`;
+  }
+  if (exact.kind === 'class') {
+    crumbs = [{ label: `new Nucleus.${exact.name}`, code: true }];
+    head = `<article class="api"><h3>new Nucleus.${esc(exact.name)}(${exact.params.join(', ')})</h3>${md(exact.doc)}</article>`;
+  }
+  if (exact.kind === 'none' && exact.didYouMean) head = `<p class="muted">"${esc(q)}" isn't part of the handler API. Did you mean <button class="link" data-q="${esc(exact.didYouMean)}">${esc(exact.didYouMean)}</button>?</p>`;
+  entries = entries.slice(0, 30);
+  el.innerHTML = refBar(crumbs) + head
+    + (entries.length || head ? entries.map(card).join('') : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
   wireApiLinks(el);
 }
-$('#api-q').addEventListener('input', (e) => renderApi((e.target as HTMLInputElement).value));
+$('#api-q').addEventListener('input', (e) => {
+  const q = (e.target as HTMLInputElement).value;
+  // Typing doesn't add to Back; the view before the search does (once).
+  if (!refView.startsWith('q:') || !refView.slice(2)) refHistory.push(refView);
+  refView = q.trim() ? `q:${q}` : 'home';
+  renderApi(q);
+});
+// Alt+Left in the Reference goes back, as in a browser.
+$('#api-results').addEventListener('keydown', (e) => { if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); refBack(); } });
 renderApi('');
 
 // ---------------------------------------------------------------------------
@@ -2341,8 +2392,7 @@ const lines = initLines({
   openReference: (path) => {
     selectTab('api');
     if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
-    ($('#api-q') as HTMLInputElement).value = path;
-    renderApi(path);
+    refGo(`q:${path}`);
   },
   // Hovering a name in Lines while Reference is the open tab (and its search is empty) shows the
   // name's docs there. Suggested by messenils.
