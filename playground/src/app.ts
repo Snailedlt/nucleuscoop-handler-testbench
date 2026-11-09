@@ -3167,8 +3167,31 @@ $('#save').addEventListener('click', () => void saveAs());
 // ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
 
+// Links live for ever (in Discord, READMEs, bookmarks), so an address that moved keeps working: it opens the new
+// place and says once that it moved and where. Add a line here whenever a #link changes; never just drop one.
+const MOVED_LINKS: { from: RegExp; to: (m: RegExpExecArray) => string; why: string }[] = [
+  // The Reference tab became Docs (2026-11).
+  { from: /^(?:reference|api|ref)$/i, to: () => 'docs', why: 'Reference is now called Docs' },
+  { from: /^(?:reference|api|ref)-(.+)$/i, to: (m) => `docs-${m[1]}`, why: 'Reference is now called Docs' },
+];
+/** A moved link's new address (and puts it in the address bar, with a note), else the link as it is. */
+function followMoved(h: string): string {
+  for (const m of MOVED_LINKS) {
+    const r = m.from.exec(h);
+    if (!r) continue;
+    const to = m.to(r);
+    try {
+      history.replaceState(history.state, '', `${location.pathname}${location.search}#${to}`);
+    } catch {
+      /* ignore */
+    }
+    setTimeout(() => notice(`This is an older link: ${m.why}. It opened the same thing; the new link is in the address bar.`, { kind: 'info' }), 0);
+    return to;
+  }
+  return h;
+}
 function openFromHash(): boolean {
-  const h = decodeURIComponent(location.hash.slice(1));
+  const h = followMoved(decodeURIComponent(location.hash.slice(1)));
   if (!h) return false;
   if (h.startsWith(SHARE_PREFIX)) {
     decodeShare(h)
@@ -3217,7 +3240,15 @@ function openFromHash(): boolean {
     const t = BOT_TEMPLATES.templates.find((x) => slug(x.id) === slug(h.slice('template-'.length)));
     if (t) return openTemplate(t.id), true;
   }
-  notice(`The link "#${h}" doesn't match an example or Hub handler in this version of the workbench.`, { kind: 'error' });
+  // Not here (any more): say what it was and show the way, never a dead end.
+  if (h.startsWith('hub-')) {
+    const id = h.slice(4);
+    notice(`That Hub handler isn't one of the examples in this version of the workbench. It's still on the Hub.`, { kind: 'info', action: { label: 'Open it on the Hub', run: () => window.open(`https://hub.splitscreen.me/handler/${encodeURIComponent(id)}`, '_blank', 'noopener') } });
+  } else if (h.startsWith('probe-')) {
+    notice(`There's no probe ${h.slice(6)} in this version of the workbench; the probes are numbered again when they change.`, { kind: 'info', action: { label: 'See the probes', run: () => selectTab('probes') } });
+  } else {
+    notice(`The link "#${h}" is from another version of the workbench, or mistyped: it doesn't match anything here.`, { kind: 'info', action: { label: 'Open an example or a Hub handler', run: () => showOpen() } });
+  }
   return false;
 }
 // A link shares code: on phones, show the handler, not the results.
@@ -3306,7 +3337,8 @@ try {
   /* ignore */
 }
 initTabs();
-const initialDocs = /^#docs(-|$)/.test(INITIAL_HASH) ? decodeURIComponent(INITIAL_HASH.slice(1)) : '';
+const initialHash = INITIAL_HASH ? followMoved(decodeURIComponent(INITIAL_HASH.slice(1))) : '';
+const initialDocs = /^docs(-|$)/.test(initialHash) ? initialHash : '';
 if (initialDocs) {
   renderDocHead();
   openDocsHash(initialDocs);
