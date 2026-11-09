@@ -11,7 +11,8 @@ const inline = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').re
 // Parameters accept numbers and booleans too (Jint converts them to text); the signature shows the declared type.
 const ty = (t: string) => `<span class="sg-t">${esc(t.replace(/ \| number \| boolean$/, '').replace(/^string \| number \| boolean$/, 'string'))}</span>`;
 
-export function memberCard(owner: string, name: string, m: Member, opts: { head?: boolean } = {}): string {
+/** `compact`: the editor's hover, as VS Code shows it: signature, text, one line of facts; no example or chips. */
+export function memberCard(owner: string, name: string, m: Member, opts: { head?: boolean; compact?: boolean } = {}): string {
   const label = ownerLabel(owner);
   const pre = `<span class="sg-o">${esc(label)}.</span><span class="sg-n">${esc(name)}</span>`;
   const sigs = m.kind === 'method'
@@ -23,6 +24,17 @@ export function memberCard(owner: string, name: string, m: Member, opts: { head?
   if (m.default !== undefined) facts.push(`<span class="dc-chip">Default <code>${esc(m.default)}</code></span>`);
   if (m.category) facts.push(`<span class="dc-chip">${esc(m.category)}</span>`);
   const note = claudeNote(m);
+  if (opts.compact) {
+    const fact = [m.required ? '<span class="req">Required</span>' : '', m.readonly ? 'Read-only' : '', m.default !== undefined ? `Default <code>${esc(m.default)}</code>` : '', m.category ? esc(m.category) : ''].filter(Boolean).join(' · ');
+    return hlHtml(`<div class="dc compact">`
+      + (opts.head === false ? '' : `<div class="dc-sig">${sigs.map((s) => `<div>${s}</div>`).join('')}</div>`)
+      + `<div class="dc-text">`
+      + (m.deprecated ? `<p class="dc-dep">${inline(m.deprecated)}</p>` : '')
+      + (m.doc ? m.doc.split(/\n{2,}/).map((p) => `<p>${inline(p)}</p>`).join('') : '<p class="muted">No description yet.</p>')
+      + (fact ? `<p class="dc-fact">${fact}</p>` : '')
+      + (note ? `<p class="dc-ai" title="${esc(note)}"><span class="ai-spark" aria-hidden="true"></span><span>${m.docCheckedBy ? `AI-written, checked by ${esc(m.docCheckedBy)}` : 'AI-written'}</span>${voteButtons('doc', `${label}.${name}`, { up: 'Correct', down: 'Wrong or unclear' })}<a href="${esc(withContext(docReviewUrl(`${label}.${name}`), { Doc: `${label}.${name}` }))}" target="_blank" rel="noopener">Report</a></p>` : '')
+      + `</div></div>`);
+  }
   return hlHtml(`<div class="dc">`
     + (opts.head === false ? '' : `<div class="dc-sig">${sigs.map((s) => `<div>${s}</div>`).join('')}</div>`)
     + (m.deprecated ? `<p class="dc-dep">${inline(m.deprecated)}</p>` : '')

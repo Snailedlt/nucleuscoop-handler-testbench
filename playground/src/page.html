@@ -581,46 +581,73 @@ ul.hl { padding: 4px 8px; border-radius: var(--r-ctl); }
 .CodeMirror-lint-mark-info { --sq: var(--info); }
 .CodeMirror-lint-mark-info::after { height: 2px; --sq-mask: radial-gradient(circle, #000 0.7px, transparent 1px); -webkit-mask-size: 4px 2px; mask-size: 4px 2px; }
 .CodeMirror-lint-tooltip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px/1.45 var(--font-body); max-width: 460px; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 50; }
-.CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px var(--font-mono); max-height: 260px; box-shadow: 0 8px 22px rgba(0,0,0,.2); z-index: 60; }
-.CodeMirror-hint { color: var(--fg); display: flex; justify-content: space-between; gap: 16px; padding: 3px 8px; }
-li.CodeMirror-hint-active { background: var(--accent); color: var(--accent-fg); }
-li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
-.hint-type { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Suggestions, as VS Code: dense rows, an icon per kind, the typed letters highlighted, the type dim on the right. */
+.CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font: 13px var(--font-mono); max-height: 264px; box-shadow: 0 2px 8px rgba(0,0,0,.16); z-index: 60; padding: 0; }
+.CodeMirror-hint { color: var(--fg); display: flex; align-items: center; gap: 6px; padding: 0 8px 0 4px; line-height: 22px; border-radius: 0; white-space: nowrap; }
+li.CodeMirror-hint-active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--fg); outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: -1px; }
+li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
+.hint-hit { color: var(--accent); font-weight: 700; }
+.hint-type { color: var(--muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; margin-left: 12px; }
 .hint-name.dep { text-decoration: line-through; opacity: .7; }
-.hint-ico { width: 1.4em; flex: none; text-align: center; color: var(--muted); }
-li.CodeMirror-hint-active .hint-ico { color: inherit; }
+.hint-ico { width: 16px; flex: none; text-align: center; font-size: 12px; color: var(--muted); }
+.hint-ico.k-method, .hint-ico.k-function { color: #b180d7; } .hint-ico.k-property, .hint-ico.k-field, .hint-ico.k-variable { color: #75beff; }
+.hint-ico.k-enumMember, .hint-ico.k-value, .hint-ico.k-constant, .hint-ico.k-enum { color: #ee9d28; }
 .hint-name { flex: 1; }
-.hint-doc { position: fixed; z-index: 61; max-height: 260px; overflow: auto; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 10px; font: 12.5px/1.45 var(--font-body); box-shadow: 0 8px 22px rgba(0,0,0,.2); }
-.hint-doc pre { white-space: pre-wrap; margin: 0 0 6px; }
+.hint-doc { position: fixed; z-index: 61; max-height: 264px; overflow: auto; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0 0 4px; font: 13px/1.45 var(--font-body); box-shadow: 0 2px 8px rgba(0,0,0,.16); }
+.hint-doc > * { margin: 4px 8px 0; }
+.hint-doc > pre.doc-code:first-child { margin: 0; padding: 4px 8px; background: none; border-radius: 0; border-bottom: 1px solid var(--line); font: 12.5px/1.5 var(--font-mono); white-space: pre-wrap; }
+.hint-doc pre { white-space: pre-wrap; }
+.hint-doc code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 3px; border-radius: 3px; }
 .cm-snippet-stop { background: color-mix(in srgb, var(--accent) 18%, transparent); outline: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
-#sig .sig-doc { font-family: var(--font-body); color: var(--muted); white-space: normal; }
-#sig .sig-doc p { margin: 2px 0 0; }
 
-#sig { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 10px; font: 12px/1.5 var(--font-mono); box-shadow: 0 4px 14px rgba(0,0,0,.15); overflow-x: auto; }
-#sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }
-#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
+/* Parameter hints, as VS Code: a small box just above the line being typed; the parameter being typed in bold,
+   what to pass for it under a thin line; "1/2" with arrows when there are overloads. */
+#sig { position: fixed; z-index: 65; display: flex; max-width: min(620px, calc(100vw - 16px)); background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.16); font: 13px/1.45 var(--font-body); }
+#sig[hidden] { display: none; }
+#sig .sig-nav { display: flex; flex-direction: column; align-items: center; padding: 2px 2px; color: var(--muted); font-size: 11px; border-right: 1px solid var(--line); }
+#sig .sig-nav button { background: none; border: 0; color: var(--muted); font-size: 9px; line-height: 1; padding: 2px 4px; cursor: pointer; }
+#sig .sig-nav button:hover { color: var(--fg); }
+#sig .sig-body { min-width: 0; }
+#sig .sig-label { padding: 3px 8px; font: 12.5px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+#sig .active { font-weight: 700; color: var(--accent); }
+#sig .sig-docs { padding: 3px 8px 4px; border-top: 1px solid var(--line); max-height: 9em; overflow: auto; }
+#sig .sig-docs p { margin: 0; }
+#sig .sig-pdoc + .sig-fdoc { margin-top: 4px; color: var(--muted); }
+#sig .sig-fdoc { color: var(--muted); }
+#sig code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 3px; border-radius: 3px; }
+/* The editor's hover, as VS Code draws it: a flat box with square-ish corners and a light shadow; sections (problems,
+   docs) split by a thin line; code on top of the docs; the fixes as links in a bar at the bottom. */
+#tip { position: fixed; z-index: 70; max-width: min(520px, calc(100vw - 24px)); max-height: 45vh; overflow: auto; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0; font: 13px/1.45 var(--font-body); box-shadow: 0 2px 8px rgba(0,0,0,.16); }
 #tip[hidden] { display: none; }
-/* The hover card (one box): over a problem, the problem with an icon in its colour, its message (names as code) and
-   its fixes; the docs of the name fold away below. */
-#tip .hc-item { display: flex; gap: 10px; }
-#tip .hc-item + .hc-item { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-#tip .hc-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); margin-top: 1px; }
-#tip .error .hc-ico { background: var(--err); }
-#tip .warning .hc-ico { background: var(--warn); color: #1b1f2a; }
-#tip .info .hc-ico { background: var(--info); }
-#tip .hc-body { min-width: 0; }
-#tip .hc-title { font-weight: 600; color: var(--fg); }
-#tip .hc-msg { color: var(--muted); margin-top: 2px; line-height: 1.45; }
-#tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 4px; border-radius: 3px; overflow-wrap: anywhere; }
-#tip .hc-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-#tip .hc-actions .btn { padding: 3px 10px; font-size: 12px; }
-#tip .hc-actions .btn code { background: transparent; color: inherit; padding: 0; }
-#tip .hc-key { display: inline-flex; gap: 2px; margin-left: 2px; }
-#tip .hc-key kbd { font: 10.5px var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
-#tip .hc-rule { font: 11px var(--font-mono); color: var(--muted); }
-#tip details.hc-doc { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 6px; }
-#tip details.hc-doc > summary { cursor: pointer; font-size: 12px; color: var(--muted); }
-#tip details.hc-doc[open] > summary { margin-bottom: 6px; }
+#tip .hv-sec { padding: 4px 8px; }
+#tip .hv-sec + .hv-sec { border-top: 1px solid var(--line); }
+#tip .hv-prob { display: flex; gap: 6px; align-items: baseline; padding: 1px 0; }
+#tip .hv-ico { flex: none; font: 700 12px/1 var(--font-body); width: 12px; text-align: center; }
+#tip .error .hv-ico { color: var(--err); } #tip .warning .hv-ico { color: var(--warn); } #tip .info .hv-ico, #tip .hint .hv-ico { color: var(--info); }
+#tip .hv-msg { color: var(--fg); }
+#tip .hv-prob + .hv-prob { margin-top: 4px; }
+#tip ul, .hint-doc ul, #sig ul { margin: 0 0 6px; padding-left: 18px; }
+#tip .hv-prob strong { font-weight: 600; }
+#tip .hv-rule { font: 11.5px var(--font-mono); color: var(--muted); }
+#tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 3px; border-radius: 3px; overflow-wrap: anywhere; }
+#tip .hv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; padding: 3px 8px; border-top: 1px solid var(--line); background: var(--surface-2); font-size: 12px; }
+#tip .hv-link { background: none; border: 0; padding: 1px 0; color: var(--link, var(--accent)); font: inherit; cursor: pointer; }
+#tip .hv-link:hover, #tip .hv-link:focus-visible { text-decoration: underline; }
+#tip .hv-link code { background: transparent; color: inherit; padding: 0; font-size: 11.5px; }
+#tip .hv-key { margin-left: auto; color: var(--muted); font-size: 11.5px; }
+/* Docs in the hover: the signature as plain code on top, a thin line, then the text. */
+#tip .hv-doc { padding: 0; }
+#tip .hv-doc > pre.doc-code:first-child, #tip .dc.compact .dc-sig { margin: 0; padding: 4px 8px; background: none; border-radius: 0; border-bottom: 1px solid var(--line); font: 12.5px/1.5 var(--font-mono); }
+#tip .hv-doc > :not(pre:first-child) { margin-left: 8px; margin-right: 8px; }
+#tip .hv-doc > p:first-of-type, #tip .hv-doc > pre:first-child + p { margin-top: 4px; }
+#tip .hv-doc > :last-child { margin-bottom: 6px; }
+#tip .dc.compact .dc-sig div + div { border-top: 0; padding-top: 0; }
+#tip .dc.compact .dc-text { padding: 4px 8px 2px; }
+#tip .dc.compact .dc-fact { color: var(--muted); font-size: 12px; }
+#tip .dc.compact .dc-fact .req { color: var(--err); }
+#tip .dc.compact .dc-ai { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 4px; padding: 0; border: 0; font-size: 11.5px; }
+#tip .dc.compact .dc-ai a { font-size: 11.5px; }
+#tip pre { margin: 0 0 6px; }
 #tip p, .api p { margin: 0 0 6px; }
 /* API docs card (doccard.ts): signature, description, facts, and who wrote it. */
 .dc-sig { font: 12.5px/1.5 var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 7px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }

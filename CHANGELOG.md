@@ -30,6 +30,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Hovers and hints like VS Code's.** The hover over code is now one small flat box above the line: each problem in a line or two, the docs under a thin divider, the fixes as links at the bottom. Parameter hints sit just above the line you type, show one overload at a time (1/2, Alt+↑/↓) and what to pass. Suggestions are denser, with the typed letters highlighted and the signature on top of their docs.
 - **Expert settings only in Advanced mode.** Settings shows newcomers only what they need: credit lines, the developer bar, WakaTime and the Lines list's finer controls now appear (marked *Advanced*) when Advanced mode is on. Nothing changes value when it's hidden, and WakaTime stays in view while it's on.
 - **Anonymous counts include screen size, language and where people come from.** When sharing counts is on (Settings › General), each count now also says the screen size, the browser's language and the site the visit came from (just the site, e.g. discord.com), so we can see what to design for and where people find the workbench. Still no code, names or cookies.
 - **JavaScript's own methods in suggestions.** After a string (`Context.StartArguments.`), a list, `Math.` or `JSON.`, suggestions and hover cover JavaScript's built-in methods, only the ones Nucleus's engine has.

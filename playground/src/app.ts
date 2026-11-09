@@ -89,11 +89,16 @@ function md(src: string): string {
     if (i % 3 === 0) {
       for (const para of parts[i].split(/\n{2,}/)) {
         if (!para.trim()) continue;
-        let h = esc(para.trim());
-        h = h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        h = h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-        h = h.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
-        out.push(`<p>${h.replace(/\n/g, '<br>')}</p>`);
+        const inl = (t: string) => {
+          let h = esc(t);
+          h = h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])_([^_]+)_(?=$|[\s.,)])/g, '$1<em>$2</em>');
+          h = h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+          return h.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+        };
+        const lines = para.trim().split('\n');
+        // A list: every line starts with "- ".
+        if (lines.every((l) => /^\s*[-*] /.test(l))) out.push(`<ul>${lines.map((l) => `<li>${inl(l.replace(/^\s*[-*] /, ''))}</li>`).join('')}</ul>`);
+        else out.push(`<p>${inl(para.trim()).replace(/\n/g, '<br>')}</p>`);
       }
     } else if (i % 3 === 2) out.push(`<pre class="doc-code">${esc(parts[i].trim())}</pre>`);
   }
@@ -425,14 +430,17 @@ function hinter(cm: any, options?: { explicit?: boolean }) {
       const from = cm.posFromIndex(it.range?.start ?? ws);
       const to = cm.posFromIndex(Math.max(it.range?.end ?? offset, offset));
       const right = it.labelDetail ?? (it.kind === 'method' ? 'method' : (it.detail ?? '').replace(/^.*?\):\s*/, '').slice(0, 40));
+      const typed = text.slice(it.range?.start ?? ws, offset).replace(/^["']/, '');
+      const hit = typed && it.label.toLowerCase().startsWith(typed.toLowerCase()) ? typed.length : 0;
+      const doc = it.documentation && !/^\s*```/.test(it.documentation) && it.detail && !it.labelDetail ? '```js\n' + it.detail + '\n```\n\n' + it.documentation : it.documentation;
       return {
         text: it.insertText ?? it.label,
         displayText: it.label,
         from,
         to,
-        doc: it.documentation,
+        doc,
         render(el: HTMLElement) {
-          el.innerHTML = `<span class="hint-ico" aria-hidden="true">${HINT_ICON[it.kind] ?? ''}</span><span class="hint-name${it.deprecated ? ' dep' : ''}">${esc(it.label)}</span><span class="hint-type">${esc(right)}</span>`;
+          el.innerHTML = `<span class="hint-ico k-${it.kind}" aria-hidden="true">${HINT_ICON[it.kind] ?? ''}</span><span class="hint-name${it.deprecated ? ' dep' : ''}">${hit ? `<b class="hint-hit">${esc(it.label.slice(0, hit))}</b>` : ''}${esc(it.label.slice(hit))}</span><span class="hint-type">${esc(right)}</span>`;
         },
         hint(c: any, _data: any, self: any) {
           if (it.snippet) insertSnippet(c, self.from, self.to, it.insertText ?? it.label);
@@ -544,31 +552,30 @@ let tipHideTimer: number | undefined;
 // the pointer moves onto it. Replaces CodeMirror's own plain-text lint tooltip (lint.tooltips: false).
 const SEV_ICON: Record<string, string> = { error: '✖', warning: '!', info: 'i', hint: '·' };
 const codeIn = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+// The hover, as VS Code shows it: one flat box; each problem a short line (what, then why), the docs under a thin
+// divider, and the fixes as links in a bar at the bottom (Ctrl+. from the keyboard).
 function problemCard(list: Diagnostic[]): string {
-  return list.map((d, i) => {
+  return `<div class="hv-sec hv-probs">${list.map((d) => {
     const plain = plainFor(d);
-    const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
-    return `<div class="hc-item ${sevClass[d.severity]}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div class="hc-body">`
-      + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${hlHtml(codeIn(d.message))}</div>`
-      + (fixes.length || mode === 'dev' ? `<div class="hc-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred ? 'Fix: ' : ''}${codeIn(f.title)}</button>`).join('')}${fixes.length && i === 0 ? '<span class="hc-key" title="Fixes from the keyboard"><kbd>Ctrl</kbd><kbd>.</kbd></span>' : ''}${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : '')
-      + `</div></div>`;
-  }).join('');
+    return `<div class="hv-prob ${sevClass[d.severity]}"><span class="hv-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div><strong>${esc(plain.title)}</strong><span class="sr-only"> (${d.severity})</span><div class="hv-msg">${hlHtml(codeIn(d.message))}${mode === 'dev' ? ` <span class="hv-rule">${d.rule}</span>` : ''}</div></div></div>`;
+  }).join('')}</div>`;
+}
+function fixBar(list: Diagnostic[]): string {
+  const links = list.flatMap((d, i) => [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred))
+    .map((f) => `<button class="hv-link" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${codeIn(f.title)}</button>`));
+  return links.length ? `<div class="hv-bar">${links.slice(0, 3).join('')}<span class="hv-key" title="Fixes from the keyboard">Ctrl+.</span></div>` : '';
 }
 function placeTip(from: { left: number; top: number; bottom: number }) {
   const w = tip.offsetWidth, h = tip.offsetHeight;
   const x = Math.min(Math.max(8, from.left - 12), window.innerWidth - w - 8);
-  const below = from.bottom + 6 + h <= window.innerHeight - 8 || from.top - 6 - h < 8;
+  // Above the line, as VS Code (the code under it stays readable); below when there's no room above.
+  const above = from.top - 4 - h >= 8;
   tip.style.left = `${x}px`;
-  tip.style.top = `${below ? from.bottom + 6 : from.top - 6 - h}px`;
+  tip.style.top = `${above ? from.top - 4 - h : from.bottom + 4}px`;
 }
 function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
   if (!list.length && !doc) return void (tip.hidden = true);
-  // One box: over a problem, the problem (what, why, fixes); the name's docs fold away under it, open on a click.
-  // Over plain code, the docs. (As in JetBrains IDEs and VS Code: the problem first, the docs one step away.)
-  const name = list.length && doc ? resolveAt(text, at) : undefined;
-  tip.innerHTML = list.length
-    ? problemCard(list) + (doc ? `<details class="hc-doc"><summary>Docs${name ? ` for <code>${esc(text.slice(name.start, name.end))}</code>` : ''}</summary>${doc}</details>` : '')
-    : `<div class="hc-doc">${doc}</div>`;
+  tip.innerHTML = (list.length ? problemCard(list) : '') + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '') + fixBar(list);
   tip.classList.toggle('has-problems', list.length > 0);
   tip.hidden = false;
   tip.querySelectorAll<HTMLButtonElement>('[data-hc-fix]').forEach((b) => b.addEventListener('click', () => {
@@ -649,8 +656,8 @@ setCodeFieldSupport({
       const own = doc ? undefined : hoverAt(text, at, { own: true });
       if (own) doc = md(own.markdown);
       if (!doc && !problems.length) return void (tip.hidden = true);
-      tip.innerHTML = problems.map((d) => `<div class="hc-item ${sevClass[d.severity] ?? 'info'}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hc-body"><div class="hc-msg">${hlHtml(codeIn(d.message))}</div></div></div>`).join('')
-        + (doc ? `<div class="hc-doc">${doc}</div>` : '');
+      tip.innerHTML = (problems.length ? `<div class="hv-sec hv-probs">${problems.map((d) => `<div class="hv-prob ${sevClass[d.severity] ?? 'info'}"><span class="hv-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hv-msg">${hlHtml(codeIn(d.message))}</div></div>`).join('')}</div>` : '')
+        + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '');
       tip.classList.toggle('has-problems', problems.length > 0);
       tip.hidden = false;
       placeTip(cm.charCoords(cm.posFromIndex(problems.length ? problems[0].start : r ? r.start : at), 'window'));
@@ -666,7 +673,7 @@ function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
     case 'member':
       // The handler's own function (its return type, resolved): core's own hover says it better.
-      return res.member.own ? '' : memberCard(res.owner, res.name, res.member);
+      return res.member.own ? '' : memberCard(res.owner, res.name, res.member, { compact: true });
     case 'enum': {
       const e = api.enums[res.name];
       return md('```\nenum Nucleus.' + res.name + '\n```\n\n' + (e.doc ?? '') + '\n\n' + Object.entries(e.values).map(([k, v]) => `\`${k}\` = ${v}`).join(', '));
@@ -698,32 +705,66 @@ function showSignature() {
       const r = resolveAt(text, editor.indexFromPos(editor.getCursor()));
       if (r && r.resolved.kind === 'member') {
         const m = r.resolved.member;
-        sig.innerHTML = `<div><strong>${esc(ownerLabel(r.resolved.owner))}.${esc(r.resolved.name)}</strong>: ${esc(m.kind === 'method' ? 'method' : m.ts ?? '')}${m.doc ? ` · ${esc(m.doc.split('\n')[0].slice(0, 140))}` : ''}</div>`;
+        sig.innerHTML = `<div class="sig-body"><div class="sig-label"><strong>${esc(ownerLabel(r.resolved.owner))}.${esc(r.resolved.name)}</strong>: ${esc(m.kind === 'method' ? 'method' : m.ts ?? '')}</div>${m.doc ? `<div class="sig-docs">${esc(m.doc.split('\n')[0].slice(0, 140))}</div>` : ''}</div>`;
+        sig.classList.remove('multi');
         sig.hidden = false;
+        placeSig();
         return;
       }
     }
     sig.hidden = true;
     return;
   }
+  // One overload at a time, as VS Code: "1/2" with arrows (Alt+Up / Alt+Down) when there are more.
+  const key = h.signatures.map((x) => x.label).join('\n');
+  if (sigPick.key !== key) sigPick = { key, index: h.activeSignature };
+  const n = h.signatures.length;
+  const si = ((sigPick.index % n) + n) % n;
+  const s = h.signatures[si];
   const k = h.activeParameter;
-  const rows = h.signatures.map((s, si) => {
-    let at = s.label.indexOf('(') + 1;
-    let html = '';
-    s.parameters.forEach((p, i) => {
-      const pos = s.label.indexOf(p, at);
-      if (pos < 0) return;
-      const active = i === k || (i === s.parameters.length - 1 && k > i && p.startsWith('...'));
-      html += esc(s.label.slice(at, pos)) + `<span class="${active ? 'active' : ''}">${esc(p)}</span>`;
-      at = pos + p.length;
-    });
-    html = esc(s.label.slice(0, s.label.indexOf('(') + 1)) + html + esc(s.label.slice(at));
-    const pdoc = si === h.activeSignature ? s.parameterDocs?.[Math.min(k, s.parameters.length - 1)] : undefined;
-    return `<div>${html}</div>` + (pdoc ? `<div class="sig-doc">${md(pdoc)}</div>` : '');
+  let at = s.label.indexOf('(') + 1;
+  let html = '';
+  let activeIdx = -1;
+  s.parameters.forEach((p, i) => {
+    const pos = s.label.indexOf(p, at);
+    if (pos < 0) return;
+    const active = i === k || (i === s.parameters.length - 1 && k > i && p.startsWith('...'));
+    if (active) activeIdx = i;
+    html += esc(s.label.slice(at, pos)) + (active ? `<span class="active">${esc(p)}</span>` : esc(p));
+    at = pos + p.length;
   });
-  sig.innerHTML = rows.join('');
+  html = esc(s.label.slice(0, s.label.indexOf('(') + 1)) + html + esc(s.label.slice(at));
+  const pdoc = activeIdx >= 0 ? s.parameterDocs?.[activeIdx] : undefined;
+  const fdoc = s.documentation?.split(/\n{2,}/)[0];
+  sig.innerHTML = (n > 1 ? `<div class="sig-nav"><button type="button" data-sig="-1" aria-label="Previous overload (Alt+Up)">▲</button><span>${si + 1}/${n}</span><button type="button" data-sig="1" aria-label="Next overload (Alt+Down)">▼</button></div>` : '')
+    + `<div class="sig-body"><div class="sig-label">${html}</div>`
+    + (pdoc || fdoc ? `<div class="sig-docs">${pdoc ? `<div class="sig-pdoc">${md(pdoc)}</div>` : ''}${fdoc ? `<div class="sig-fdoc">${md(fdoc)}</div>` : ''}</div>` : '')
+    + '</div>';
+  sig.classList.toggle('multi', n > 1);
   sig.hidden = false;
+  placeSig();
 }
+let sigPick = { key: '', index: 0 };
+// Just above the cursor's line (below it near the top), like VS Code; never over the line being typed.
+function placeSig() {
+  const c = editor.cursorCoords(null, 'window');
+  const box = editor.getWrapperElement().getBoundingClientRect();
+  const w = sig.offsetWidth, h = sig.offsetHeight;
+  sig.style.left = `${Math.max(box.left + 4, Math.min(c.left - 24, window.innerWidth - w - 8))}px`;
+  sig.style.top = `${c.top - h - 4 >= box.top ? c.top - h - 4 : c.bottom + 4}px`;
+}
+sig.addEventListener('mousedown', (e) => e.preventDefault()); // keep the editor's focus
+sig.addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLElement>('[data-sig]');
+  if (b) { sigPick.index += Number(b.dataset.sig); showSignature(); }
+});
+editor.addKeyMap({
+  'Alt-Up': () => { if (sig.hidden || !sig.classList.contains('multi')) return CodeMirror.Pass; sigPick.index--; showSignature(); },
+  'Alt-Down': () => { if (sig.hidden || !sig.classList.contains('multi')) return CodeMirror.Pass; sigPick.index++; showSignature(); },
+  Esc: () => { if (sig.hidden) return CodeMirror.Pass; sig.hidden = true; },
+});
+editor.on('blur', () => (sig.hidden = true));
+editor.on('scroll', () => { if (!sig.hidden) placeSig(); });
 
 // ---------------------------------------------------------------------------
 // Problems
