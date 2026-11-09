@@ -551,10 +551,10 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 .CodeMirror-cursor { border-left-color: var(--code-fg, var(--fg)); }
 .CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 600; }
-.cm-s-default .cm-keyword { color: var(--kw); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
+.cm-s-default .cm-keyword { color: var(--kw); font-weight: var(--kw-weight, normal); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
 .cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
-.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--code-muted, var(--muted)); }
+.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--op, var(--code-muted, var(--muted))); font-weight: var(--op-weight, normal); }
 /* Tokens other file types use (batch, PowerShell, ini, xml, yaml): mapped onto the same code colours. */
 .cm-s-default .cm-builtin, .cm-s-default .cm-tag { color: var(--kw); } .cm-s-default .cm-attribute, .cm-s-default .cm-qualifier { color: var(--prop); }
 .cm-s-default .cm-meta, .cm-s-default .cm-header, .cm-s-default .cm-bracket { color: var(--code-muted, var(--muted)); } .cm-s-default .cm-variable-3, .cm-s-default .cm-type { color: var(--num); }
@@ -1119,7 +1119,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .code-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--sh-1); }
 .code-card:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ct-sample { margin: 0; padding: 6px 8px; border-radius: calc(var(--r-ctl) + 2px); background: var(--code-bg); color: var(--code-fg, var(--fg)); font: 10.5px/1.5 var(--font-mono); white-space: pre; overflow: hidden; border: 1px solid var(--code-line, var(--line)); }
-.ct-sample .k { color: var(--kw); } .ct-sample .s { color: var(--str); } .ct-sample .n { color: var(--num); } .ct-sample .c { color: var(--cmt); font-style: italic; } .ct-sample .p { color: var(--prop); }
+.ct-sample .k { color: var(--kw); font-weight: var(--kw-weight, normal); } .ct-sample .o { color: var(--op, inherit); font-weight: var(--op-weight, normal); } .ct-sample .s { color: var(--str); } .ct-sample .n { color: var(--num); } .ct-sample .c { color: var(--cmt); font-style: italic; } .ct-sample .p { color: var(--prop); }
 .code-card .lc-name { font-size: 12.5px; padding: 0 2px; }
 .code-card .lc-tick { top: 8px; right: 8px; }
 .code-card.on .lc-tick { display: grid; }

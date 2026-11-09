@@ -80,7 +80,7 @@ export function initSettings(d: Deps) {
     if (!box) return;
     const on = currentCodeTheme();
     const mode = isDark() ? 'dark' : 'light';
-    const sample = '<span class="c">// Two players, one screen</span>\nGame.<span class="p">MaxPlayers</span> = <span class="n">2</span>;\n<span class="k">var</span> exe = <span class="s">"game.exe"</span>;';
+    const sample = '<span class="c">// Two players, one screen</span>\nGame.<span class="p">MaxPlayers</span> <span class="o">=</span> <span class="n">2</span>;\n<span class="k">var</span> exe <span class="o">=</span> <span class="s">"game.exe"</span>;';
     const card = (id: string, name: string) => {
       const label = document.createElement('label');
       label.className = `code-card${id === on ? ' on' : ''}`;
@@ -106,7 +106,11 @@ export function initSettings(d: Deps) {
       label.append(r, pre, nm, tick);
       return label;
     };
-    box.replaceChildren(card('', "The look's own"), ...Object.entries(CODE_THEMES).map(([id, t]) => card(id, t.name)));
+    box.replaceChildren(card('', "The look's own"), ...Object.entries(CODE_THEMES).map(([id, t]) => {
+      const c = card(id, t.name);
+      if (t.about) c.title = t.about; // what it is ("VS Code's default colours…") on hover
+      return c;
+    }));
   }
   function syncLooks() {
     syncCode();

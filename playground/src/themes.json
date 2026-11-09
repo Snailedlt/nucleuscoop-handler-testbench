@@ -316,6 +316,35 @@
         "num": "#b5cea8",
         "cmt": "#6a9955",
         "prop": "#9cdcfe"
+      },
+      "about": "VS Code's default colours: Light+ and Dark+ (Light Modern and Dark Modern use the same)."
+    },
+    "notepadpp": {
+      "name": "Notepad++",
+      "about": "Notepad++'s default style: bold blue keywords, bold navy operators, green comments; its dark mode's colours in dark. Strings, numbers and dark comments a little darker or lighter, for 4.5:1.",
+      "light": {
+        "code-bg": "#ffffff",
+        "code-fg": "#000000",
+        "kw": "#0000ff",
+        "kw-weight": "700",
+        "str": "#767676",
+        "num": "#b35900",
+        "cmt": "#008000",
+        "prop": "#000000",
+        "op": "#000080",
+        "op-weight": "700"
+      },
+      "dark": {
+        "code-bg": "#3f3f3f",
+        "code-fg": "#dcdccc",
+        "kw": "#f0dfaf",
+        "kw-weight": "700",
+        "str": "#d4a0a0",
+        "num": "#8cd0d3",
+        "cmt": "#95b895",
+        "prop": "#dcdccc",
+        "op": "#c3bf9f",
+        "op-weight": "700"
       }
     },
     "xcode": {
