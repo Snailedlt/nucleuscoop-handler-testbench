@@ -63,7 +63,7 @@ import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 import { mountDebugger } from './debugui';
-import { hlCode, hlHtml } from './codehl';
+import { hlCode, hlHtml, modeFor } from './codehl';
 import { setCodeFieldSupport } from './codefield';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
@@ -1885,7 +1885,11 @@ function openFilesDialog() {
       const top = f.name.includes('/');
       return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(sizeOf(f))}${f.remote ? ' · in the Hub package, not downloaded here' : ''}</span></summary>
         <p class="muted small">${top ? `Installed as <code>${esc(dest(f.name))}</code>` : "At the package's top level: the Hub install keeps only handler.js there, so this file is dropped."}</p>
-        ${text !== null ? `<pre class="pkg-text">${esc(text.slice(0, 20000))}${text.length > 20000 ? '\n…' : ''}</pre>` : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
+        ${text !== null ? (() => {
+          // Coloured like code when it is code (INI, JSON, XML, JavaScript); plain text stays plain.
+          const shown = text.slice(0, 20000), mode = modeFor(f.name);
+          return `<pre class="pkg-text${mode ? ' hl cm-s-default' : ''}">${mode ? hlCode(shown, mode) : esc(shown)}${text.length > 20000 ? '\n…' : ''}</pre>`;
+        })() : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
     })
     .join('');
   $('#files-body').innerHTML = `<p class="muted">A package (.zip or .nc) is <code>handler.js</code> plus folders. Nucleus installs the folders' contents in the handler's folder, <code>handlers\\${esc(folder)}\\</code>, which is <code>Game.Folder</code>. They're saved with the handler.</p>

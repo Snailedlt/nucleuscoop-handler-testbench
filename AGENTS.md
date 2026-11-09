@@ -49,5 +49,6 @@ The Pages build uses splitscreenme-vscode's `main`: merge that first when the wo
 
 - Show changes in the preview artifact or the test address first; go live only when the maintainer says so.
 - When the maintainer has to run a workflow or change a setting, give the direct link and the inputs. Allowlist hosts and environment variables go in a code block, one per line.
+- **Every code block is syntax highlighted**: docs, hovers, hints, suggestion docs, Check, Try it, the debugger, What's new, the Files panel, the start page. Use `codehl.ts` (`hlHtml` for rendered docs, `hlCode(src, mode)` for raw code, `modeFor(name)` for a file by type); plain text (a .txt) stays plain. Inline code that is clearly code is coloured too.
 - Screenshots come in light and dark (`<name>-light.png`, `<name>-dark.png`); pages show the viewer's theme.
 - Keep the Hub's load low: the Hub list comes from our daily index (`data` branch), packages once per version.
