@@ -98,6 +98,17 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
   .cards .card:hover, figure:hover { transform: translateY(-3px); box-shadow: var(--sh-2); }
 }
 @media (max-width: 760px) { .shots, .cards { grid-template-columns: 1fr; } main { padding-top: 20px; } }
+/* Section links, as GitHub's: a link icon by the heading on hover or focus; the link puts #heading-name in the address. */
+.has-anchor { position: relative; scroll-margin-top: 16px; }
+.has-anchor .anchor { position: absolute; left: -24px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 22px; height: 22px; color: var(--muted); opacity: 0; border-radius: var(--r-sm); text-decoration: none; transition: opacity .12s; }
+.has-anchor:hover .anchor, .has-anchor .anchor:focus-visible { opacity: 1; }
+.has-anchor .anchor:hover { color: var(--accent); }
+.anchor-alias { display: block; position: relative; top: -16px; }
+/* No room left of the heading on narrow screens, and no hover on touch: the icon sits after the text, faint. */
+@media (max-width: 1040px), (hover: none) {
+  .has-anchor { display: flex; align-items: center; gap: 6px; }
+  .has-anchor .anchor { position: static; transform: none; opacity: .45; width: 32px; height: 32px; }
+}
 </style>
 </head>
 <body>
@@ -109,14 +120,14 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
   <p class="lede">Tools for VS Code, Notepad++ and the browser that check your handler the way Nucleus runs it, explain every option as you type, and show what each player gets, without starting Nucleus or the game. When it looks right, one click starts it in Nucleus.</p>
   <div class="ctas">
     <a class="btn primary" href="../?ref=start">Try it in the browser</a>
-    <a class="btn" href="#install">Get it for VS Code or Notepad++</a>
+    <a class="btn" href="#try-it-in-5-minutes">Get it for VS Code or Notepad++</a>
     <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Send feedback</a>
   </div>
   <p class="small">The workbench needs no install. Paste a handler, or open one of the verified Hub handlers.</p>
   </header>
 
-  <section aria-labelledby="catches">
-  <h2 id="catches">What it catches</h2>
+  <section aria-labelledby="what-it-catches">
+  <span id="catches" class="anchor-alias" aria-hidden="true"></span><h2 id="what-it-catches" class="has-anchor">What it catches<a class="anchor" href="#what-it-catches" aria-label="Link to this section: What it catches"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h2>
   <ul class="facts">
     <li><strong>Lines Nucleus quietly ignores.</strong> A misspelled option or <code>Player.ProtoController5</code> (only 1–4 exist) runs without an error and does nothing. 16 verified Hub handlers have that one.</li>
     <li><strong>Code Nucleus can't run.</strong> Its script engine (Jint 2.11.58) only takes ES5: arrow functions, template literals and <code>includes()</code> break the handler.</li>
@@ -127,8 +138,8 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 
   </section>
 
-  <section aria-labelledby="see">
-  <h2 id="see">See it</h2>
+  <section aria-labelledby="see-it">
+  <span id="see" class="anchor-alias" aria-hidden="true"></span><h2 id="see-it" class="has-anchor">See it<a class="anchor" href="#see-it" aria-label="Link to this section: See it"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h2>
   <div class="shots">
     <figure><a href="vscode-problems-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="vscode-problems-dark.png"><img src="vscode-problems-light.png" width="2160" height="1290" loading="lazy" alt="VS Code showing handler problems underlined, with the Problems panel listing them"></picture></a>
       <figcaption><strong>VS Code: checks as you type.</strong> Problems are underlined and listed, with quick fixes.</figcaption></figure>
@@ -141,14 +152,14 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
     <figure><a href="lines-tree-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="lines-tree-dark.png"><img src="lines-tree-light.png" width="1600" height="800" loading="lazy" alt="The workbench's Lines list as a tree at System › IO › File, with the docs for File.Exists"></picture></a>
       <figcaption><strong>Lines:</strong> every name a handler can use, as a tree (Game, Context, System…), with docs and how many Hub handlers use it. Click to insert.</figcaption></figure>
   </div>
-  <h3 class="after-shots">In your editor</h3>
+  <h3 id="in-your-editor" class="after-shots has-anchor">In your editor<a class="anchor" href="#in-your-editor" aria-label="Link to this section: In your editor"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h3>
 <ul class="facts">
 <li><strong>Suggestions that know your handler</strong>: every option Nucleus has with its values, your own functions and variables, and the keys your <code>Game.AddOption</code> lines add. Parameter hints say what to pass.</li>
 <li><strong>Snippets and a template</strong>: type <code>handler</code> in an empty file, or <code>iniset</code>, <code>startargs</code>, <code>eachplayer</code>… where you need them.</li>
 <li><strong>Test in Nucleus Co-op</strong>: one click installs the handler and starts Nucleus with its game selected.</li>
 <li><strong>Format, rename, go to definition</strong>, and a getting-started guide in VS Code. Neovim, Helix, Zed and other editors get the same through <code>ncdev lsp</code>.</li>
 </ul>
-<h3>Also in the workbench</h3>
+<h3 id="also-in-the-workbench" class="has-anchor">Also in the workbench<a class="anchor" href="#also-in-the-workbench" aria-label="Link to this section: Also in the workbench"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h3>
   <ul class="facts">
     <li><strong>Test all combinations</strong>: every player count, input setup and monitor size in one click, with what fails and why.</li>
     <li><strong>Whole packages</strong>: open a .zip or .nc and save it again with its Goldberg files, configs and DLLs.</li>
@@ -159,8 +170,8 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 
   </section>
 
-  <section aria-labelledby="install">
-  <h2 id="install">Try it in 5 minutes</h2>
+  <section aria-labelledby="try-it-in-5-minutes">
+  <span id="install" class="anchor-alias" aria-hidden="true"></span><h2 id="try-it-in-5-minutes" class="has-anchor">Try it in 5 minutes<a class="anchor" href="#try-it-in-5-minutes" aria-label="Link to this section: Try it in 5 minutes"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h2>
   <div class="cards">
     <div class="card"><h3>1. Install</h3>
       <ol><li>Download <a id="vsix" href="__VSIX_URL__"><strong id="vsix-name">__VSIX_NAME__</strong></a> (<span id="vsix-tag">__VSIX_TAG__</span>, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
@@ -178,8 +189,8 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 
   </section>
 
-  <section aria-labelledby="help">
-  <h2 id="help">Want to help build it?</h2>
+  <section aria-labelledby="want-to-help-build-it">
+  <span id="help" class="anchor-alias" aria-hidden="true"></span><h2 id="want-to-help-build-it" class="has-anchor">Want to help build it?<a class="anchor" href="#want-to-help-build-it" aria-label="Link to this section: Want to help build it?"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg></a></h2>
   <p>Handler authors know Nucleus better than any linter. Contributions are welcome, especially:</p>
   <ul>
     <li><strong>Option docs:</strong> better explanations and examples for <code>Game.*</code> options.</li>

@@ -30,6 +30,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Link to a part of the start page.** Point at a heading and click the 🔗 next to it (always shown on phones): the address gets the section's name (`#what-it-catches`, `#try-it-in-5-minutes`), ready to paste, like on GitHub. Old links such as `#install` still work.
 - **Reference is now Docs, with links you can share.** The tab is called Docs, and the address follows it: `#docs-Context.ModifySaveFile` opens that name, `#docs-Context` the Context list, so a link to a doc can go in Discord. A quiet path at the top (*Docs / Context / ModifySaveFile*) takes you to the main page or the whole list in one click, ← (or Alt+←) goes back, and names in the docs open their own page.
 - **Hovers and hints like VS Code's.** The hover over code is now one small flat box above the line: each problem in a line or two, the docs under a thin divider, the fixes as links at the bottom. Parameter hints sit just above the line you type, show one overload at a time (1/2, Alt+↑/↓) and what to pass. Suggestions are denser, with the typed letters highlighted and the signature on top of their docs. Every API name in them is a link: click it (or Enter) to open it in Docs.
 - **Expert settings only in Advanced mode.** Settings shows newcomers only what they need: credit lines, the developer bar, WakaTime and the Lines list's finer controls now appear (marked *Advanced*) when Advanced mode is on. Nothing changes value when it's hidden, and WakaTime stays in view while it's on.
