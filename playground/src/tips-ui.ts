@@ -3,6 +3,7 @@
 import { voteButtons } from './feedback';
 import { CONTEXT_TIPS, GENERAL_TIPS, Tip, TipContext } from './tips';
 import { scanHandler, inCallback, Scan } from './lines';
+import { narrow } from './dom';
 
 const ON_KEY = 'nucleus-workbench-tips';
 const SEEN_KEY = 'nucleus-workbench-tips-seen';
@@ -106,7 +107,7 @@ export function initTips({ editor, actions, toast, targets }: Deps) {
   $('#tip-off').addEventListener('click', () => setOn(false));
   $('#tip-off-2').addEventListener('click', () => setOn(false));
   // Phones: the tip is one line; tapping it shows all of it with back, next and Turn off.
-  const phone = () => window.matchMedia('(max-width: 860px)').matches;
+  const phone = narrow;
   body.parentElement!.addEventListener('click', () => {
     if (phone()) bar.classList.toggle('open');
   });

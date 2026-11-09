@@ -7,6 +7,7 @@ import { confirmOn } from './toast';
 import { applyTheme } from './devbar';
 import { initKeyboard, keyboard, onKeyboard } from './keyboard';
 import { CODE_THEMES, codeThemeTokens, currentCodeTheme, pickCodeTheme, addLook, BUILT_IN_LOOKS, lookAbout, contrastProblems, currentLook, customLooks, lookName, lookTokens, parseTheme, pickLook, removeLook, themeFile } from './customtheme';
+import { narrow } from './dom';
 
 const EDITOR_KEY = 'nucleus-workbench-editor';
 const THEME_KEY = 'nucleus-workbench-dev-mode'; // shared with the dev bar
@@ -25,7 +26,6 @@ const put = (k: string, v: string | null) => {
   } catch {}
 };
 const touch = () => window.matchMedia('(pointer: coarse)').matches;
-const narrow = () => window.matchMedia('(max-width: 860px)').matches;
 
 interface Deps {
   editor: any;

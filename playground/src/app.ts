@@ -1,5 +1,5 @@
 import { initKeySettings } from './kbsettings';
-import { openFind, findStep } from './findwidget';
+import { openFind } from './findwidget';
 import { hasCredit, withCredit, withoutCredit } from './credit';
 import { definitionAt } from '@core/definition';
 import { JS_RULES } from '@core/jsrules';
@@ -7,7 +7,7 @@ import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
 import { announce, clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
-import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
+import { decodeShare, encodeShare } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/lint/lint';
@@ -16,23 +16,18 @@ import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
 import { codeHandlers, fixedCodeKeys, foldRange, keysByPosition, lineCommentFold, selectReferences, vscodeMouse } from './keys';
 import { ACTIONS, appActionFor, codeKeyMap, keyLabel, labelOf, binding, onBindingsChange, type Group } from './keybindings';
-import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, ownerLabel, Resolved } from '@core/api';
 import { resolveAt } from '@core/complete';
-import { apiPathOf, completionsAt, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
+import { completionsAt, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
 import { insertSnippet } from './snippet';
-import { search, lookup, allEntries, Entry } from '@core/lookup';
-import USAGE from './usage.json';
 import { renderHandler, FEATURES } from '@core/templates';
-import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
-import { AiError, currentRunner } from './aiproviders';
-import { initAiSettings } from './aisettings';
-import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
+import { simulate, parsePluginsInfo } from '@core/sim';
+import { counts } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
 import { canSaveIntoFolder, rememberedName, saveIntoNucleus } from './nucleussave';
-import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
+import { buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
@@ -40,7 +35,7 @@ import { announceLine, hoverDelay, initA11y } from './a11y';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
-import { mascot, mascotsOn } from './mascots';
+import { mascot } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
 import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
@@ -50,7 +45,7 @@ import { initKeyHints } from './keyhints';
 import { mountFormView, type FormView } from './formview';
 import { mountBlocksView, type BlocksView } from './blocksview';
 import { initPackageUI, fileIcon } from './packageui';
-import { installMap, type PkgProblem } from './pkgcheck';
+import type { PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
@@ -65,6 +60,13 @@ import { initWakaTime } from './wakatime';
 import { mountDebugger } from './debugui';
 import { hlCode, hlHtml, modeFor } from './codehl';
 import { setCodeFieldSupport } from './codefield';
+import { $, esc, md, narrow, onNarrowChange } from './dom';
+import { initDocs, linkApiNames, wireApiLinkClicks } from './docs-ui';
+import { initTryIt } from './tryit-ui';
+import { initFixes } from './aifix-ui';
+import { initFileOpen } from './fileopen-ui';
+import { pageDownloads, saveFileName, type Downloads } from './savefile';
+import { followMoved as followMovedLink, movedNote, probeHash, routeLink, slug, unknownNote, type LinkCatalog } from './links';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -78,36 +80,9 @@ declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; ba
 declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
 declare const BOT_TEMPLATES: { commit: string | null; templates: { id: string; name: string; source: string }[] };
 
-const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-
-/** Tiny Markdown for API docs: fenced code, inline code, bold, links, paragraphs. */
 // The address as the page was opened (start-up loads the last draft, which can rewrite it): a #docs-… link from an
 // editor's hover opens Docs there, over whatever handler is open.
 const INITIAL_HASH = location.hash;
-
-function md(src: string): string {
-  const out: string[] = [];
-  const parts = src.split(/```(\w*)\n?([\s\S]*?)```/g);
-  for (let i = 0; i < parts.length; i++) {
-    if (i % 3 === 0) {
-      for (const para of parts[i].split(/\n{2,}/)) {
-        if (!para.trim()) continue;
-        const inl = (t: string) => {
-          let h = esc(t);
-          h = h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])_([^_]+)_(?=$|[\s.,)])/g, '$1<em>$2</em>');
-          h = h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-          return h.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
-        };
-        const lines = para.trim().split('\n');
-        // A list: every line starts with "- ".
-        if (lines.every((l) => /^\s*[-*] /.test(l))) out.push(`<ul>${lines.map((l) => `<li>${inl(l.replace(/^\s*[-*] /, ''))}</li>`).join('')}</ul>`);
-        else out.push(`<p>${inl(para.trim()).replace(/\n/g, '<br>')}</p>`);
-      }
-    } else if (i % 3 === 2) out.push(`<pre class="doc-code">${esc(parts[i].trim())}</pre>`);
-  }
-  return hlHtml(out.join(''));
-}
 
 // ---------------------------------------------------------------------------
 // Samples
@@ -404,45 +379,13 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
   });
 }
 
-// API names in hovers, parameter hints and suggestion docs are links: a click (or Enter) opens that name in the
-// Reference tab, as VS Code's hovers link to the docs.
-// Which names are API (`ModifySaveFile` → Context.ModifySaveFile; `path` is a parameter): core decides, as for VS Code.
-function linkApiNames(root: HTMLElement) {
-  root.querySelectorAll<HTMLElement>('code').forEach((c) => {
-    if (c.closest('pre, a, button')) return;
-    const path = apiPathOf(c.textContent ?? '');
-    if (path) markApiLink(c, path);
-  });
-  // The signature on top of a doc card: the name is the link.
-  root.querySelectorAll<HTMLElement>('.dc-sig .sg-n').forEach((n) => {
-    const owner = n.previousElementSibling?.classList.contains('sg-o') ? n.previousElementSibling.textContent ?? '' : '';
-    markApiLink(n, owner + (n.textContent ?? ''));
-  });
-}
-function markApiLink(el: HTMLElement, path: string) {
-  el.classList.add('api-link');
-  el.dataset.api = path;
-  el.tabIndex = 0;
-  el.setAttribute('role', 'link');
-  el.title = `${path} in Docs`;
-}
+// API names in hovers, parameter hints and suggestion docs are links (docs-ui.ts): a click (or Enter) opens that name
+// in Docs, as VS Code's hovers link to the docs.
 function openReferenceAt(path: string) {
   tip.hidden = true;
   selectTab('api');
-  if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
-  refGo(`q:${path}`);
-}
-function wireApiLinkClicks(el: HTMLElement, on: 'click' | 'mousedown' = 'click') {
-  el.addEventListener(on, (e) => {
-    const a = (e.target as HTMLElement).closest<HTMLElement>('[data-api]');
-    if (!a) return;
-    e.preventDefault();
-    openReferenceAt(a.dataset.api!);
-  });
-  el.addEventListener('keydown', (e) => {
-    const a = (e.target as HTMLElement).closest<HTMLElement>('[data-api]');
-    if (a && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openReferenceAt(a.dataset.api!); }
-  });
+  if (narrow()) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+  docs.go(`q:${path}`);
 }
 
 // Completion: the same suggestions as VS Code and other editors (core/features.ts completionsAt): API members, the
@@ -507,7 +450,7 @@ hintDoc.className = 'hint-doc';
 hintDoc.hidden = true;
 document.body.appendChild(hintDoc);
 // The list closes when the editor loses focus, so the docs beside it act on mousedown.
-wireApiLinkClicks(hintDoc, 'mousedown');
+wireApiLinkClicks(hintDoc, openReferenceAt, 'mousedown');
 function showHintDoc(doc: string | undefined, el?: HTMLElement) {
   const box = el?.closest('.CodeMirror-hints') as HTMLElement | null;
   if (!doc || !box) return void (hintDoc.hidden = true);
@@ -593,7 +536,7 @@ $('#gf-close').addEventListener('click', () => ($('#gf-dialog') as HTMLDialogEle
 
 // Hover docs
 const tip = $('#tip');
-wireApiLinkClicks(tip);
+wireApiLinkClicks(tip, openReferenceAt);
 let tipTimer: number | undefined;
 let tipHideTimer: number | undefined;
 // The hover card: the problems under the pointer (what, why, a fix you can click) and the docs of the name there.
@@ -807,7 +750,7 @@ function placeSig() {
   sig.style.top = `${c.top - h - 4 >= box.top ? c.top - h - 4 : c.bottom + 4}px`;
 }
 sig.addEventListener('mousedown', (e) => { if (!(e.target as HTMLElement).closest('[data-api]')) e.preventDefault(); }); // keep the editor's focus
-wireApiLinkClicks(sig);
+wireApiLinkClicks(sig, openReferenceAt);
 sig.addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>('[data-sig]');
   if (b) { sigPick.index += Number(b.dataset.sig); showSignature(); }
@@ -1158,87 +1101,22 @@ function setFixCount(n: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Simulate
+// Try it and Test all (tryit-ui.ts)
 
-// Players to try: 1 up to the handler's Game.MaxPlayers (at least 4, at most Nucleus' 32).
-function syncPlayerChoices() {
-  const sel = $('#sim-players') as HTMLSelectElement;
-  const m = editor.getValue().match(/^\s*Game\.MaxPlayers\s*=\s*(\d+)/m);
-  const max = Math.min(32, Math.max(4, m ? Number(m[1]) : 4, Number(sel.value) || 0));
-  if (sel.options.length === max) return;
-  const v = sel.value;
-  sel.replaceChildren(...Array.from({ length: max }, (_, i) => new Option(String(i + 1), String(i + 1))));
-  sel.value = Number(v) <= max ? v : String(max);
-}
-/** Try it's choices: players, monitor, keyboard (shared with the debugger). */
-function simOptions() {
-  syncPlayerChoices();
-  const players = Number(($('#sim-players') as HTMLSelectElement).value);
-  const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
-  const keyboardPlayer = Number(($('#sim-kb') as HTMLSelectElement).value);
-  return { players, width, height, keyboardPlayer, plugins: simPlugins() };
-}
-function runSim() {
-  if (!$('#panel-simulate').hidden) use('try-it');
-  const o = simOptions();
-  const kb = o.keyboardPlayer;
-  const r = simulate(editor.getValue(), o);
-  // Seen in Try it: the credit lines can say this version was simulated.
-  if (!$('#panel-simulate').hidden) {
-    doc.tried = { of: versionOf(withoutCredit(editor.getValue())), players: o.players, loaded: r.loaded && !r.loadError };
+const tryIt = initTryIt({
+  editor,
+  plugins: simPlugins,
+  packageFiles: () => packageFiles,
+  simple: () => mode === 'simple',
+  selectTab,
+  used: use,
+  tried: (t) => {
+    doc.tried = { of: versionOf(withoutCredit(editor.getValue())), ...t };
     saveDocMeta();
-  }
-  const out: string[] = [];
-  const simple = mode === 'simple';
-  // Test all needs a handler that loads: until then the banner below says what to fix.
-  const all = $('#sim-all') as HTMLButtonElement;
-  all.disabled = !r.loaded;
-  all.title = r.loaded ? 'Every player count, input setup and monitor size' : 'Fix the problems first: the handler has to load before it can be tried';
-  if (!r.loaded) {
-    out.push(
-      `<div class="banner error masc-banner">${mascot('n-bad', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.${r.loadError ? `<details class="small"><summary>Technical details</summary><div class="mono">${esc(r.loadError)}</div></details>` : ''}<div class="banner-actions">${($('#fix-all') as HTMLButtonElement).hidden ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
-    );
-  } else {
-    // Nucli, pleased when every player starts; worried when the session ends.
-    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'} masc-banner">${mascot(r.sessionEnded ? 'n-bad' : 'n-ok', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong></div></div>`);
-    if (r.inputNote) out.push(`<p class="note">${esc(r.inputNote)}</p>`);
-  }
-  if (r.ignored.length) {
-    const uniq = groupIgnored(r.ignored);
-    out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
-  }
-  // A package: what a Hub install puts where (pkgcheck.ts installMap).
-  if (packageFiles.length) {
-    const map = installMap(editor.getValue(), packageFiles);
-    out.push(`<details class="install"${simple ? '' : ' open'}><summary>What Nucleus installs <span class="count">${map.length}</span></summary><div class="install-map">${map.map((m) => `<span>${fileIcon(m.name)}${esc(m.name)}</span><span aria-hidden="true">${m.to ? '→' : '✕'}</span><span class="im-to${m.to ? '' : ' im-drop'}">${m.to ? esc(m.to) : 'dropped (top level)'}</span>`).join('')}</div></details>`);
-  }
-  for (const p of r.players) {
-    const ownKb = p.index === kb || kb === -2; // -2: each player their own keyboard and mouse
-    const role = ownKb ? 'keyboard & mouse' : 'controller';
-    out.push(`<section class="player p${(p.index % 8) + 1}"><h3>Player ${p.index + 1} <span class="chip ${ownKb ? 'info' : ''}">${role}</span></h3>
-      ${p.error ? `<div class="banner error">Setting up this player fails here, and Nucleus ends the session.<div class="mono small">${esc(p.error)}</div></div>` : ''}
-      ${p.note ? `<p class="muted">${esc(p.note)}</p>` : ''}
-      <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
-      <dt>Starts the game with</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
-      ${p.effects.length ? `<dl><dt>Changes before the game starts</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : '<p class="muted">Changes no files before the game starts.</p>'}
-      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list hl cm-s-default">${p.calls.map((c) => `<li>${hlCode(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
-    </section>`);
-  }
-  for (const c of r.callbacks) {
-    out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.note ?? '')}<div class="mono small">${esc(c.error)}</div></div>` : ''}
-      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list hl cm-s-default">${c.calls.map((x) => `<li>${hlCode(x)}</li>`).join('')}</ul></details>`}</section>`);
-  }
-  if (r.options.length) {
-    out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono"><code class="hl cm-s-default">${hlCode(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</code></td></tr>`).join('')}</tbody></table></details>`);
-  }
-  $('#sim-out').innerHTML = out.join('');
-  $('#sim-out').querySelector('#sim-check')?.addEventListener('click', () => selectTab('problems'));
-  $('#sim-out').querySelector('#sim-fix')?.addEventListener('click', () => {
-    selectTab('problems');
-    ($('#fix-all') as HTMLButtonElement).click();
-  });
-}
-$('#sim-run').addEventListener('click', runSim);
+  },
+});
+const runSim = tryIt.run;
+const simOptions = tryIt.options;
 
 // Debug: step through the run (debugui.ts), in Try it.
 const debug = mountDebugger({
@@ -1256,248 +1134,9 @@ const debug = mountDebugger({
 $('#sim-debug').addEventListener('click', () => debug.start());
 
 // ---------------------------------------------------------------------------
-// Test all combinations: every player count (up to Game.MaxPlayers, at most 8), input setup and
-// monitor size, a few runs at a time so the page stays responsive; one cell per players × input.
+// Docs (docs-ui.ts)
 
-// The combinations and what counts as failing come from the core, shared with the VS Code panel.
-const MX_RES = MATRIX_RESOLUTIONS;
-let mxRun = 0;
-function testAll() {
-  use('test-all');
-  document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: 'running tests' }));
-  const run = ++mxRun;
-  const code = editor.getValue();
-  const box = $('#sim-matrix');
-  box.hidden = false;
-  const first = simulate(code, { players: 1, width: 1920, height: 1080, keyboardPlayer: -1, plugins: simPlugins() });
-  if (!first.loaded) {
-    box.innerHTML = `<div class="mx-head"><strong>Can't test combinations yet</strong><span class="muted">Nucleus can't load this handler. Fix the problems first.</span></div>`;
-    return;
-  }
-  const { max, modes, jobs } = planMatrix(first)!;
-  type Cell = { ok: number; fail: { res: string; why: string }[] };
-  const cells = new Map<string, Cell>();
-  let done = 0;
-  const t0 = performance.now();
-  const draw = (finished: boolean) => {
-    const failed = [...cells.values()].reduce((n, c) => n + c.fail.length, 0);
-    const rows = Array.from({ length: max }, (_, i) => i + 1)
-      .map((p) => `<tr><th>${p} player${p === 1 ? '' : 's'}</th>${modes
-        .map((m) => {
-          if (!m.offered) return `<td><button class="na" type="button" disabled title="The handler doesn't set Game.SupportsMultipleKeyboardsAndMice = true">not offered</button></td>`;
-          const c = cells.get(`${p}|${m.kb}`);
-          if (!c) return '<td><button type="button" disabled>…</button></td>';
-          return `<td><button class="${c.fail.length ? 'fail' : 'ok'}" type="button" data-p="${p}" data-kb="${m.kb}" data-res="${c.fail[0]?.res ?? '1920x1080'}">${c.fail.length ? `${c.fail.length} of ${MX_RES.length} screens` : 'all screens'}</button></td>`;
-        })
-        .join('')}</tr>`)
-      .join('');
-    const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
-    // Nucli runs the relay while it tests, then shows how it went.
-    const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc', busy: !finished });
-    box.innerHTML = `<div class="mx-head">${nuc}<strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
-      ${finished ? '' : `<div class="mx-bar" role="progressbar" aria-label="Combinations tested" aria-valuemin="0" aria-valuemax="${jobs.length}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, jobs.length)) * 100)}%"></i></div>`}
-      <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
-      ${fails.length ? `<ul class="mx-fails">${fails.slice(0, 8).map((f) => { const [p, kb] = f.k.split('|'); return `<li>${p} player${p === '1' ? '' : 's'}, ${modes.find((m) => String(m.kb) === kb)!.label.toLowerCase()}, ${f.res.replace('x', '×')}: ${esc(f.why)}</li>`; }).join('')}${fails.length > 8 ? `<li>…and ${fails.length - 8} more</li>` : ''}</ul>` : ''}
-      <p class="muted small" style="margin:6px 0 0">Pick a cell to see that run below.</p>`;
-    document.documentElement.classList.toggle('busy', !finished); // the logo beats while it runs
-    box.querySelector('#mx-stop')?.addEventListener('click', () => (mxRun++, draw(true)));
-    box.querySelector('#mx-close')?.addEventListener('click', () => ((mxRun++, (box.hidden = true), document.documentElement.classList.remove('busy'))));
-    box.querySelectorAll<HTMLButtonElement>('button[data-p]').forEach((b) =>
-      b.addEventListener('click', () => {
-        const players = $('#sim-players') as HTMLSelectElement;
-        if (![...players.options].some((o) => o.value === b.dataset.p)) players.append(new Option(b.dataset.p!, b.dataset.p!));
-        players.value = b.dataset.p!;
-        ($('#sim-kb') as HTMLSelectElement).value = b.dataset.kb!;
-        const res = $('#sim-res') as HTMLSelectElement;
-        if (![...res.options].some((o) => o.value === b.dataset.res)) res.append(new Option(b.dataset.res!.replace('x', '×'), b.dataset.res!));
-        res.value = b.dataset.res!;
-        runSim();
-        $('#sim-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }),
-    );
-  };
-  const step = () => {
-    if (run !== mxRun) return;
-    const until = performance.now() + 12; // a few runs per frame
-    while (done < jobs.length && performance.now() < until) {
-      const j = jobs[done++];
-      const key = `${j.players}|${j.kb}`;
-      const c = cells.get(key) ?? { ok: 0, fail: [] };
-      const why = failureOf(simulate(code, { ...jobOptions(j), plugins: simPlugins() }));
-      if (why) c.fail.push({ res: `${j.width}x${j.height}`, why });
-      else c.ok++;
-      cells.set(key, c);
-    }
-    draw(done >= jobs.length);
-    if (done < jobs.length) setTimeout(step, 0);
-  };
-  draw(false);
-  setTimeout(step, 0);
-}
-$('#sim-all').addEventListener('click', testAll);
-
-// ---------------------------------------------------------------------------
-// API search
-
-// Reference with nothing typed: what's in it, so it's clear what can be found there.
-const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
-  // The docs Claude wrote that no person has checked yet: handler authors can confirm or correct them (👍/👎, an issue).
-  { key: 'AI', title: 'AI-written: please check', doc: 'Docs written by AI from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
-  { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
-  { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
-  { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
-  { key: 'Context', title: 'Context', doc: 'One player\'s instance, inside Game.Play: launch arguments, folders and files to edit.', match: (p) => p.startsWith('Context.') },
-  { key: 'Player', title: 'Player', doc: 'The player Game.Play runs for (also PlayerList[i]): screen, controller, nickname.', match: (p) => p.startsWith('Player.') },
-  { key: 'ProtoInput', title: 'ProtoInput', doc: 'Proto Input calls at runtime, inside Game.Play and other callbacks.', match: (p) => p.startsWith('ProtoInput.') },
-  { key: 'Hub', title: 'Hub (written by the Hub)', doc: 'Lines hub.splitscreen.me writes into a handler when it is uploaded. You don\'t add or change them.', match: (p) => p.startsWith('Hub.') },
-  { key: 'System', title: '.NET (System.*)', doc: 'Files, folders, paths and the environment, through .NET.', match: (p) => p.startsWith('System.') },
-];
-let uncheckedCache: Set<string> | undefined;
-const unchecked = () => (uncheckedCache ??= new Set(allEntries(true).filter((e) => e.member.docBy === 'claude' && !e.member.docCheckedBy).map((e) => e.path)));
-const typeOf = (e: Entry) => (e.member.kind === 'method' ? 'fn' : ((e.member as { type?: string }).type ?? ''));
-function renderApiHome(el: HTMLElement) {
-  const all = allEntries(true);
-  const usage = USAGE.counts as Record<string, number>;
-  const top = Object.entries(usage)
-    .filter(([p]) => !/^Game\.(GUID|GameName|ExecutableName|Play|Hub)$/.test(p) && all.some((e) => e.path === p && e.member.kind !== 'object'))
-    .slice(0, 14);
-  const enums = Object.keys(api.enums).sort();
-  el.innerHTML = `<div class="api-home">
-    <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
-    ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check AI-written docs <span class="count">${unchecked().size}</span></span><span class="d">AI wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
-    <h3 class="api-h">Browse</h3>
-    <div class="api-groups">${API_GROUPS.filter((g) => g.key !== 'AI').map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
-    <h3 class="api-h">Most used in Hub handlers</h3>
-    <div class="api-chips">${top.map(([p, n]) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${n} of ${USAGE.handlers} Hub handlers">${esc(p)}</button>`).join('')}</div>
-    <h3 class="api-h">Nucleus values (enums)</h3>
-    <div class="api-chips">${enums.map((n) => `<button type="button" class="api-chip" data-q="Nucleus.${esc(n)}">Nucleus.${esc(n)}</button>`).join('')}</div>
-    <h3 class="api-h">Try a search</h3>
-    <p class="muted">${['mutex', 'window title', 'save file', 'keyboard', 'steam'].map((q) => `<button class="link" data-q="${q}">${q}</button>`).join(' · ')}</p>
-  </div>`;
-  wireApiLinks(el);
-}
-/** One object's members, as a compact list: click one for its docs. */
-function renderApiGroup(el: HTMLElement, key: string) {
-  const g = API_GROUPS.find((x) => x.key === key)!;
-  const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
-  el.innerHTML = refBar([{ label: g.title, count: list.length }]) + `<div class="api-home"><p class="muted">${esc(g.doc)}</p>
-    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="AI-written, not from the official docs" role="img" aria-label="AI-written"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
-  wireApiLinks(el);
-  el.scrollTop = 0;
-}
-function wireApiLinks(el: HTMLElement) {
-  el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) => b.addEventListener('click', () => refGo(`q:${b.dataset.q}`)));
-  el.querySelectorAll<HTMLButtonElement>('[data-group]').forEach((b) => b.addEventListener('click', () => refGo(`group:${b.dataset.group}`)));
-  el.querySelectorAll<HTMLButtonElement>('[data-home]').forEach((b) => b.addEventListener('click', () => refGo('home')));
-  el.querySelectorAll<HTMLButtonElement>('[data-back]').forEach((b) => b.addEventListener('click', () => refBack()));
-  // API names inside the docs open their own entry too.
-  linkApiNames(el);
-}
-// Where you are in the Reference: "← Back · Reference › Context › ModifySaveFile", every part clickable (as a docs
-// site's breadcrumbs), and Back to the view before. Views: home, a group (Context, Game…), or a search / one name.
-let refView = 'home';
-const refHistory: string[] = [];
-function refGo(view: string, push = true) {
-  if (push && view !== refView) refHistory.push(refView);
-  if (refHistory.length > 50) refHistory.shift();
-  refView = view;
-  setDocsHash(view);
-  const q = view.startsWith('q:') ? view.slice(2) : '';
-  ($('#api-q') as HTMLInputElement).value = q;
-  const el = $('#api-results');
-  if (view.startsWith('group:')) renderApiGroup(el, view.slice(6));
-  else renderApi(q);
-  // Each view starts at its top: scroll whichever box holds the Reference.
-  for (let n: HTMLElement | null = el; n; n = n.parentElement) if (n.scrollTop) n.scrollTop = 0;
-}
-function refBack() {
-  const v = refHistory.pop();
-  if (v !== undefined) refGo(v, false);
-}
-// The address follows Docs, so it can be shared: #docs (the main page), #docs-Context (a group),
-// #docs-Context.ModifySaveFile (a name) or #docs-mutex (a search). Replaced, not pushed: the handler's own link
-// (#hub-…, #share-…) comes back when you leave Docs.
-const docsHashOf = (view: string) => (view === 'home' ? 'docs' : `docs-${encodeURIComponent(view.replace(/^(group|q):/, ''))}`);
-function setDocsHash(view = refView) {
-  try {
-    history.replaceState(history.state, '', `${location.pathname}${location.search}#${docsHashOf(view)}`);
-  } catch {
-    /* ignore */
-  }
-}
-function leaveDocsHash() {
-  if (!/^#docs(-|$)/.test(location.hash)) return;
-  try {
-    history.replaceState(history.state, '', `${location.pathname}${location.search}${doc.hash ? '#' + doc.hash : ''}`);
-  } catch {
-    /* ignore */
-  }
-}
-/** A #docs… link: Docs at that name, group or search. */
-function openDocsHash(h: string) {
-  const v = h === 'docs' ? '' : h.slice(5);
-  const view = !v ? 'home' : API_GROUPS.some((g) => g.key === v) ? `group:${v}` : `q:${v}`;
-  selectTab('api');
-  refGo(view);
-}
-function refBar(crumbs: { label: string; view?: string; count?: number; code?: boolean }[]): string {
-  // A quiet path, as docs sites show it: "Reference / Context / ModifySaveFile", the parents as plain links, and a
-  // back arrow when there's somewhere to go back to.
-  const back = refHistory.length ? `<button type="button" class="ref-back" data-back aria-label="Back" title="Back (Alt+←)">←</button>` : '';
-  const parts = [`<button type="button" class="ref-crumb" data-home>Docs</button>`].concat(crumbs.map((c, i) => {
-    const last = i === crumbs.length - 1;
-    const attr = c.view ? (c.view.startsWith('group:') ? `data-group="${esc(c.view.slice(6))}"` : `data-q="${esc(c.view.slice(2))}"`) : '';
-    return (c.view && !last ? `<button type="button" class="ref-crumb" ${attr}>${esc(c.label)}</button>` : `<span class="ref-here"${last ? ' aria-current="page"' : ''}>${esc(c.label)}</span>`) + (c.count !== undefined ? `<span class="ref-count">${c.count}</span>` : '');
-  }));
-  return `<nav class="api-crumbs" aria-label="Where you are in Docs">${back}${parts.join('<span class="ref-sep" aria-hidden="true">/</span>')}</nav>`;
-}
-const groupOf = (path: string) => API_GROUPS.find((g) => g.key !== 'AI' && g.match(path));
-
-function renderApi(q: string) {
-  if (q.trim()) use('reference-search');
-  const el = $('#api-results');
-  if (!q.trim()) return renderApiHome(el);
-  const exact = lookup(q);
-  const card = (e: Entry) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`;
-  // One name: its card, and where it sits (Reference / group / name; the group lists the names next to it).
-  const one = exact.kind === 'entries' && exact.entries.length === 1 ? exact.entries[0] : undefined;
-  if (one) {
-    const g = groupOf(one.path);
-    el.innerHTML = refBar([...(g ? [{ label: g.title, view: `group:${g.key}` }] : []), { label: one.path.slice(g && one.path.startsWith(g.key + '.') ? g.key.length + 1 : 0), code: true }])
-      + card(one);
-    return wireApiLinks(el);
-  }
-  let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
-  for (const e of search(q, 30)) if (!entries.some((x) => x.path === e.path)) entries.push(e);
-  let head = '';
-  let crumbs: Parameters<typeof refBar>[0] = [{ label: `Results for "${q.trim()}"`, count: Math.min(entries.length, 30) }];
-  if (exact.kind === 'enum') {
-    crumbs = [{ label: 'Nucleus values' }, { label: `Nucleus.${exact.name}`, code: true }];
-    head = `<article class="api"><h3>enum Nucleus.${esc(exact.name)}</h3>${md(exact.doc ?? '')}<p class="mono">${Object.entries(exact.values).map(([k, v]) => `${esc(k)} = ${v}`).join(' · ')}</p></article>`;
-    entries = entries.filter((e) => e.member.ts?.includes(exact.name) || e.member.ref === exact.name);
-    if (entries.length) head += `<h3 class="api-h">Options that take it</h3>`;
-  }
-  if (exact.kind === 'class') {
-    crumbs = [{ label: `new Nucleus.${exact.name}`, code: true }];
-    head = `<article class="api"><h3>new Nucleus.${esc(exact.name)}(${exact.params.join(', ')})</h3>${md(exact.doc)}</article>`;
-  }
-  if (exact.kind === 'none' && exact.didYouMean) head = `<p class="muted">"${esc(q)}" isn't part of the handler API. Did you mean <button class="link" data-q="${esc(exact.didYouMean)}">${esc(exact.didYouMean)}</button>?</p>`;
-  entries = entries.slice(0, 30);
-  el.innerHTML = refBar(crumbs) + head
-    + (entries.length || head ? entries.map(card).join('') : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
-  wireApiLinks(el);
-}
-$('#api-q').addEventListener('input', (e) => {
-  const q = (e.target as HTMLInputElement).value;
-  // Typing doesn't add to Back; the view before the search does (once).
-  if (!refView.startsWith('q:') || !refView.slice(2)) refHistory.push(refView);
-  refView = q.trim() ? `q:${q}` : 'home';
-  setDocsHash();
-  renderApi(q);
-});
-// Alt+Left in the Reference goes back, as in a browser.
-$('#api-results').addEventListener('keydown', (e) => { if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); refBack(); } });
-renderApi('');
+const docs = initDocs({ selectTab, handlerHash: () => doc.hash, used: use });
 
 // ---------------------------------------------------------------------------
 // Probes: real Jint results vs the linter
@@ -1694,7 +1333,7 @@ function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) 
   if (meta.hash) history.replaceState(null, '', '#' + meta.hash);
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   renderDocHead();
-  aiBox.hidden = true;
+  $('#ai-box').hidden = true; // the fix box (aifix-ui.ts) shows an older version
   selectTab('problems');
   editor.focus();
   if (tabsReady) (saveTabs(), renderTabs());
@@ -1749,7 +1388,7 @@ function switchTab(id: string) {
   if (doc.hash) history.replaceState(null, '', '#' + doc.hash);
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   clearNotice();
-  aiBox.hidden = true;
+  $('#ai-box').hidden = true; // the fix box (aifix-ui.ts) shows an older version
   (CodeMirror as any).signal(editor, 'change', editor, { origin: '+swap', from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 }, text: [''], removed: [''] });
   (editor as any).performLint();
   renderDocHead();
@@ -1953,10 +1592,9 @@ function openTemplate(id: string) {
 }
 function openProbe(i: number) {
   const p = PROBES[i];
-  loadSource(p.source, { name: `Probe: ${probeTitle(p.name)}`, kind: 'probe', hash: `probe-${p.name.slice(0, 2)}` });
+  loadSource(p.source, { name: `Probe: ${probeTitle(p.name)}`, kind: 'probe', hash: probeHash(p.name) });
 }
 const probeTitle = (name: string) => name.replace(/\.js$/, '').replace(/^\d+-/, '').replace(/-/g, ' ');
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // ---------------------------------------------------------------------------
 // Open dialog (Ctrl+K): starters, Hub handlers, probes and actions in one searchable list
@@ -2062,7 +1700,7 @@ function commandList(): OpenEntry[] {
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
   if (packageFiles.length) list.splice(16, 0, c("Show the package's files", '', 'package files folder zip nc', openFilesDialog));
-  if (!aiBtn.hidden) list.splice(2, 0, c('Fix with AI', '', 'ai claude fix', click('#ai-fix')));
+  if (!$('#ai-fix').hidden) list.splice(2, 0, c('Fix with AI', '', 'ai claude fix', click('#ai-fix')));
   return list;
 }
 // Settings › Theme, from the palette.
@@ -2379,7 +2017,7 @@ function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   requestAnimationFrame(placeInk);
   document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
-  if (id !== 'api') leaveDocsHash();
+  if (id !== 'api') docs.leaveHash();
   if (id === 'simulate') runSim();
   if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
   if (id === 'probes' && !probesRendered) {
@@ -2395,7 +2033,7 @@ function selectTab(id: string) {
 }
 document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => {
   selectTab(t.dataset.tab!);
-  if (t.dataset.tab === 'api') setDocsHash();
+  if (t.dataset.tab === 'api') docs.setHash();
 }));
 
 const SIM_KEY = 'nucleus-workbench-sim';
@@ -2424,15 +2062,15 @@ const lines = initLines({
   editor,
   openReference: (path) => {
     selectTab('api');
-    if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
-    refGo(`q:${path}`);
+    if (narrow()) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+    docs.go(`q:${path}`);
   },
   // Hovering a name in Lines while Reference is the open tab (and its search is empty) shows the
   // name's docs there. Suggested by messenils.
   previewReference: (path) => {
-    if (window.matchMedia('(max-width: 860px)').matches || ($('#panel-api') as HTMLElement).hidden) return false;
+    if (narrow() || ($('#panel-api') as HTMLElement).hidden) return false;
     if (($('#api-q') as HTMLInputElement).value.trim()) return false;
-    renderApi(path);
+    docs.preview(path);
     return true;
   },
 });
@@ -2445,7 +2083,7 @@ const tips = initTips({
     new: () => ($('#new-open') as HTMLButtonElement).click(),
     examples: () => showOpen(),
     tryit: () => {
-      if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+      if (narrow()) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
       selectTab('simulate');
     },
     share: () => copyLink(),
@@ -2789,247 +2427,19 @@ $('#set-import-file').addEventListener('change', async () => {
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 
 // ---------------------------------------------------------------------------
-// Fix with AI (artifact `sample` capability: Claude, on the viewer's own account)
+// Fix with AI and Fix all (aifix-ui.ts)
 
-const aiBox = $('#ai-box');
-const aiBtn = $('#ai-fix') as HTMLButtonElement;
-// Fixes are applied straight away (no "Apply without review" any more): Undo and the highlighted lines replace the review.
-
-let sample: any = null;
-let aiCtl: AbortController | null = null;
-(async () => {
-  try {
-    sample = await (window as any).claude?.use?.('sample');
-  } catch {
-    sample = null;
-  }
-  refreshAi();
-})();
-/** Fix with AI shows when a provider is set up (Settings › AI): Claude on claude.ai, an API key, or a local model. */
-function refreshAi() {
-  const on = !!currentRunner(sample).runner;
-  aiBtn.hidden = !on;
-  ($('#ai-note') as HTMLInputElement).hidden = !on;
-}
-document.addEventListener('ai-settings-changed', refreshAi);
-initAiSettings(() => sample);
-
-const AI_ERRORS: Record<string, string> = {
-  rate_limited: 'Too many requests right now. Try again in a minute.',
-  session_expired: 'Your Claude session expired. Sign in again, then retry.',
-  refused: 'Claude declined to change this handler.',
-  empty_completion: 'Claude returned nothing. Try again, or ask for less in the note.',
-  invalid_json: "Claude's answer wasn't in the expected format. Try again.",
-  prompt_too_large: 'This handler is too large to send in one request.',
-};
-const AI_UNAVAILABLE = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed']);
-
-function aiStatus(text: string) {
-  const el = aiBox.querySelector('.ai-status-text');
-  if (el) el.textContent = text;
-}
-
-async function runAiFix() {
-  const { runner, reason } = currentRunner(sample);
-  if (!runner) {
-    if (reason && reason !== 'off') notice(reason, { kind: 'info', action: { label: 'Open Settings › AI', run: () => settings.open('ai') } });
-    return;
-  }
-  const who = runner.label;
-  const base = editor.getValue();
-  const before = counts(base, lintCtx());
-  aiCtl = new AbortController();
-  aiBtn.disabled = true;
-  aiBox.hidden = false;
-  // Nucli reads the code while the AI works on it (a spinner when mascots are off).
-  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking ${esc(who)}…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
-  $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
-
-  // On claude.ai the page's Claude may not take tools; every API provider does.
-  const limits = runner.label === 'Claude' && sample ? await sample.limits().catch(() => null) : { tools: true };
-  const tools = limits?.tools
-    ? pageTools().map((t) => ({
-        ...t,
-        execute: (input: { [k: string]: unknown }) => {
-          aiStatus(t.name === 'lint_handler' ? `${who} is checking its fix with the linter…` : `${who} is looking up ${String(input.query ?? '').slice(0, 40)}…`);
-          return t.execute(input);
-        },
-      }))
-    : undefined;
-  try {
-    const r: any = await runner.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
-      signal: aiCtl.signal,
-      tools,
-      onText: () => aiStatus(`${who} is writing the fix…`),
-    });
-    use('ai-fix');
-    const code = typeof r?.code === 'string' ? r.code.replace(/\r\n/g, '\n') : '';
-    const changes = Array.isArray(r?.changes) ? r.changes.map(String).slice(0, 20) : [];
-    if (!code.trim()) {
-      aiBox.innerHTML = `<p>The answer had no handler code. Try again.</p>`;
-    } else if (code === base) {
-      aiBox.innerHTML = `<p>${esc(who)} found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
-    } else {
-      showProposal(base, code, changes, before);
-    }
-  } catch (e: any) {
-    if (e?.code === 'cancelled') {
-      aiBox.hidden = true;
-    } else if (AI_UNAVAILABLE.has(e?.code)) {
-      aiBox.innerHTML = `<p>Claude isn't available on this page for your account. Pick another provider in Settings › AI; Fix all problems still works.</p>`;
-    } else if (e instanceof AiError) {
-      aiBox.innerHTML = `<p>${esc(e.message)}</p>`;
-    } else {
-      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? `Something went wrong reaching ${who}. Try again.`)}</p>`;
-    }
-  } finally {
-    aiBtn.disabled = false;
-    aiCtl = null;
-  }
-}
-aiBtn.addEventListener('click', runAiFix);
-
-// Fix all: the deterministic, offline fixes (the same as `nucleus lint --fix` and the extension).
-$('#fix-all').addEventListener('click', () => {
-  use('fix-all');
-  const base = editor.getValue();
-  const before = counts(base, lintCtx());
-  const r = fixAll(base, lintCtx());
-  aiBox.hidden = false;
-  boxShows = null;
-  if (r.code === base) {
-    aiBox.innerHTML = `<p>Nothing can be fixed automatically. ${before.errors + before.warnings ? 'The remaining problems need your decision; see their quick fixes below' + (sample ? ', or try Fix with AI' : '') + '.' : ''}</p>`;
-    return;
-  }
-  const changes = [...new Set(r.applied.map((a) => `${a.title} (line ${a.line})`))];
-  showProposal(base, r.code, changes, before, 'Fix all');
-});
-
-// The fix box shows a before/after of one version of the handler: once the code moves on (you keep
-// typing), it would be stale, so it closes and the list below is what counts.
-let boxShows: string | null = null;
-editor.on('change', (_cm: unknown, ch: { origin?: string }) => {
-  if (boxShows === null || ch.origin === '+ai-fix' || ch.origin === 'undo') return;
-  if (!aiBox.hidden && editor.getValue() !== boxShows) aiBox.hidden = true;
-  boxShows = null;
-});
-
-function applyCode(code: string) {
-  const doc = editor.getDoc();
-  fixWithNucli(editor, code, () => doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix'));
-}
-
-function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }, source: 'AI' | 'Fix all' = 'AI') {
-  const after = counts(code, lintCtx());
-  const edited = editor.getValue() !== base;
-  const better = after.errors < before.errors || (after.errors === before.errors && after.warnings < before.warnings);
-  const notWorse = after.errors <= before.errors;
-  const lines = hunks(diffLines(base, code));
-  const rows = lines
-    .map((l) =>
-      l === null
-        ? '<tr class="gap"><td colspan="4">⋯</td></tr>'
-        : `<tr class="${l.kind === '+' ? 'add' : l.kind === '-' ? 'del' : ''}"><td class="n">${l.a ?? ''}</td><td class="n">${l.b ?? ''}</td><td class="sign">${l.kind === ' ' ? '' : l.kind}</td><td class="code">${esc(l.text) || ' '}</td></tr>`,
-    )
-    .join('');
-  const added = lines.filter((l) => l?.kind === '+').length;
-  const removed = lines.filter((l) => l?.kind === '-').length;
-  const chip = (n: number, kind: string) => `<span class="chip ${n ? kind : 'ok'}">${n} ${kind === 'error' ? 'error' : 'warning'}${n === 1 ? '' : 's'}</span>`;
-  const delta = `<div class="ai-delta">Before ${chip(before.errors, 'error')} ${chip(before.warnings, 'warning')} → after ${chip(after.errors, 'error')} ${chip(after.warnings, 'warning')} <span class="muted">· +${added} −${removed} lines</span></div>`;
-
-  const introduced = newProblems(base, code, lintCtx());
-  const baseLines = base.split('\n').length;
-  const bigRewrite = removed > Math.max(20, baseLines * 0.5);
-  let reason = '';
-  if (edited) reason = 'You edited the handler while the AI was working, so this was not applied automatically. Accepting replaces your latest edits.';
-  else if (introduced.length) reason = `This version adds ${introduced.length} new problem${introduced.length > 1 ? 's' : ''} (${introduced.slice(0, 2).join('; ')}${introduced.length > 2 ? '; …' : ''}), so it was not applied automatically.`;
-  else if (bigRewrite) reason = `This rewrites a large part of the handler (${removed} of ${baseLines} lines removed), so it was not applied automatically.`;
-  else if (!notWorse) reason = 'This version has more errors than yours, so it was not applied automatically.';
-  else if (!better) reason = 'This version does not reduce the problem count, so it was not applied automatically.';
-  // Applied straight away (Undo is one click, and the changed lines light up in the code). Only an AI fix that looks
-  // risky (it adds problems, rewrites most of the file, makes it worse, or you typed meanwhile) waits for a review.
-  const risky = source === 'AI' && (edited || introduced.length > 0 || bigRewrite || !notWorse);
-  const fixedCount = source === 'Fix all' ? changes.length : 0;
-  const remaining = after.errors + after.warnings;
-  const diffTable = `<div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>`;
-  const changeList = changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
-
-  const review = () => `
-    <h3>${source === 'AI' ? "AI's proposed fix" : 'Automatic fixes'}</h3>
-    ${reason ? `<p class="note">${esc(reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, '.'))} Check it before applying.</p>` : ''}
-    ${changeList}${delta}
-    <div class="ai-actions"><button class="btn primary" id="ai-accept" type="button">Apply</button><button class="btn" id="ai-reject" type="button">Discard</button></div>
-    ${diffTable}`;
-  const applied = () => `<div class="fix-done">
-    <span class="fix-ok" aria-hidden="true">✓</span>
-    <span class="fix-msg"><strong>${source === 'Fix all' ? `Fixed ${fixedCount} problem${fixedCount === 1 ? '' : 's'}` : 'Applied the AI fix'}</strong>${remaining ? ` · ${remaining} need${remaining === 1 ? 's' : ''} your decision, below` : ' · nothing left to fix'}. Changed lines are highlighted in the code.</span>
-    <button class="btn" id="ai-undo" type="button">Undo</button>
-    <button class="btn icon" id="ai-close" type="button" aria-label="Close">×</button>
-    <details class="fix-more"><summary>What changed (+${added} −${removed} lines)</summary>${changeList}${delta}${diffTable}</details></div>`;
-
-  const showApplied = (how: 'direct' | 'reviewed') => {
-    aiBox.innerHTML = applied();
-    aiBox.classList.add('compact');
-    boxShows = code;
-    markChanged(code, lines);
-    $('#ai-undo').addEventListener('click', () => {
-      if (editor.getValue() === code) {
-        editor.undo();
-        clearChanged();
-        countAi(how, -1);
-        aiBox.innerHTML = '<p class="fix-done"><span class="fix-msg">Undone. Your handler is back to how it was.</span></p>';
-      } else {
-        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe here. Use Ctrl+Z in the editor instead.</p>';
-      }
-    });
-    $('#ai-close').addEventListener('click', () => (aiBox.hidden = true));
-  };
-  // Fix with AI changes kept, for the credit lines (credit.ts); Undo takes one back.
-  const countAi = (kind: 'direct' | 'reviewed', d: number) => {
-    if (source !== 'AI') return;
+initFixes({
+  editor,
+  lintCtx,
+  openAiSettings: () => settings.open('ai'),
+  used: use,
+  aiKept: (kind, d) => {
     doc.ai = doc.ai ?? { direct: 0, reviewed: 0 };
     doc.ai[kind] = Math.max(0, doc.ai[kind] + d);
     saveDocMeta();
-  };
-  if (!risky) {
-    applyCode(code);
-    countAi('direct', 1);
-    showApplied('direct');
-    return;
-  }
-  aiBox.classList.remove('compact');
-  aiBox.innerHTML = review();
-  boxShows = editor.getValue();
-  aiBox.scrollIntoView({ block: 'nearest' });
-  $('#ai-accept').addEventListener('click', () => {
-    applyCode(code);
-    countAi('reviewed', 1);
-    showApplied('reviewed');
-    $('#ai-undo').focus(); // keep the keyboard where the result is
-  });
-  $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
-}
-
-// The lines a fix added or changed, highlighted in the editor until you edit the code (or 12 s).
-let changedMarks: any[] = [];
-let changedTimer = 0;
-function clearChanged() {
-  changedMarks.forEach((h) => editor.removeLineClass(h, 'background', 'line-changed'));
-  changedMarks = [];
-  clearTimeout(changedTimer);
-}
-function markChanged(code: string, diff: (DiffLine | null)[]) {
-  const go = (tries = 0) => {
-    if (editor.getValue() !== code) return tries < 40 ? void setTimeout(() => go(tries + 1), 100) : undefined; // after Nucli's edit animation
-    clearChanged();
-    for (const l of diff) if (l?.kind === '+' && l.b) changedMarks.push(editor.addLineClass(l.b - 1, 'background', 'line-changed'));
-    const first = diff.find((l) => l?.kind === '+' && l.b);
-    if (first?.b) editor.scrollIntoView({ line: first.b - 1, ch: 0 }, 80);
-    changedTimer = window.setTimeout(clearChanged, 12000);
-  };
-  go();
-}
-editor.on('change', (_cm: unknown, ch: { origin?: string }) => { if (ch.origin !== '+ai-fix' && changedMarks.length) clearChanged(); });
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Advanced mode switch
@@ -3057,201 +2467,102 @@ advanced.addEventListener('change', () => {
 // ---------------------------------------------------------------------------
 // Small screens: show the handler or the results, with a switch
 
-const narrowQuery = matchMedia('(max-width: 860px)');
-function narrow() {
-  return narrowQuery.matches;
-}
 function setView(v: 'code' | 'results') {
   $('#main').dataset.view = v;
   document.querySelectorAll<HTMLButtonElement>('.switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
   if (v === 'code') editor.refresh();
 }
 document.querySelectorAll<HTMLButtonElement>('.switch button').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'code' | 'results')));
-narrowQuery.addEventListener('change', () => editor.refresh());
+onNarrowChange(() => editor.refresh());
 
 // ---------------------------------------------------------------------------
-// Open a file from the computer (picker or drag & drop): .js, or a .zip/.nc package
+// Open a file from the computer (picker or drag & drop): .js, or a .zip/.nc package (fileopen-ui.ts)
 
-async function openFile(file: File) {
-  try {
-    if (/\.(zip|nc)$/i.test(file.name)) {
-      const pkg = await readPackage(await file.arrayBuffer());
-      if (!pkg) {
-        notice(`${file.name} doesn't contain a handler.js this page can read.`, { kind: 'error' });
-        return;
-      }
-      loadSource(pkg.handler.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name.replace(/\.(zip|nc)$/i, '.js'), kind: 'draft' });
-      // The package's other files: kept, and saved with the handler.
-      setPackageFiles(pkg.files);
-      const kept = storeFiles(pkg.files);
-      const n = pkg.files.length;
-      const lost = pkg.unreadable.length ? ` This browser couldn't unpack ${pkg.unreadable.join(', ')}, so saving won't include ${pkg.unreadable.length === 1 ? 'it' : 'them'}.` : '';
-      // The "+ N files" chip shows the files; only what needs saying goes in a notice.
-      if (!kept || lost) notice(`${kept ? '' : `The ${n} other file${n === 1 ? '' : 's'} are too big to keep after a reload: save before closing the page.`}${lost}`.trim(), { kind: 'warning' });
-      return;
-    }
-    const text = await file.text();
-    loadSource(text.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name, kind: 'draft' });
-  } catch {
-    notice(`Couldn't read ${file.name}.`, { kind: 'error' });
-  }
-}
-const fileInput = $('#file-input') as HTMLInputElement;
-$('#file-open').addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => {
-  const f = fileInput.files?.[0];
-  if (f) openFile(f);
-  fileInput.value = '';
-});
-const dropHint = $('#drop-hint');
-let dragDepth = 0;
-const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
-document.addEventListener('dragenter', (e) => {
-  if (!hasFiles(e)) return;
-  dragDepth++;
-  dropHint.hidden = false;
-});
-document.addEventListener('dragleave', (e) => {
-  if (!hasFiles(e)) return;
-  dragDepth = Math.max(0, dragDepth - 1);
-  if (!dragDepth) dropHint.hidden = true;
-});
-document.addEventListener('dragover', (e) => {
-  if (hasFiles(e)) e.preventDefault();
-});
-document.addEventListener(
-  'drop',
-  (e) => {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragDepth = 0;
-    dropHint.hidden = true;
-    const f = e.dataTransfer!.files[0];
-    if (f) openFile(f);
-  },
-  true,
-);
+const fileInput = initFileOpen({ loadSource, setPackageFiles });
 
 // ---------------------------------------------------------------------------
-// Save for Nucleus: a .zip with handler.js that Nucleus' "Extract handler" installs
+// Save for Nucleus: a .zip with handler.js that Nucleus' "Extract handler" installs (the file name: savefile.ts)
 
-let downloads: any = null;
-(async () => {
-  try {
-    downloads = await (window as any).claude?.use?.('downloads');
-  } catch {
-    downloads = null;
-  }
-  if (!downloads && !(window as any).claude) {
-    // A normal web page (GitHub Pages): an ordinary browser download.
-    downloads = {
-      save: async ({ filename, data }: { filename: string; data: Uint8Array }) => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([data as BlobPart], { type: filename.endsWith('.js') ? 'text/javascript' : 'application/zip' }));
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      },
-    };
-  }
-  if (downloads) $('#save').hidden = false;
-})();
-const handlerFileName = () => {
-  const m = editor.getValue().match(/^Game\.GameName\s*=\s*"([^"]*)"/m);
-  const name = (m?.[1] || doc.name.replace(/\.js$/i, '') || 'handler').replace(/[\\/:*?"<>|]/g, '').trim() || 'handler';
-  return name;
-};
+let downloads: Downloads | null = null;
+void pageDownloads().then((d) => {
+  downloads = d;
+  if (d) $('#save').hidden = false;
+});
+const handlerFileName = () => saveFileName(editor.getValue(), doc.name);
 // "Save for Nucleus" in the header opens the same Save or copy dialog as the button next to the code.
 $('#save').addEventListener('click', () => void saveAs());
 
 // ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
 
-// Links live for ever (in Discord, READMEs, bookmarks), so an address that moved keeps working: it opens the new
-// place and says once that it moved and where. Add a line here whenever a #link changes; never just drop one.
-const MOVED_LINKS: { from: RegExp; to: (m: RegExpExecArray) => string; why: string }[] = [
-  // The Reference tab became Docs (2026-11).
-  { from: /^(?:reference|api|ref)$/i, to: () => 'docs', why: 'Reference is now called Docs' },
-  { from: /^(?:reference|api|ref)-(.+)$/i, to: (m) => `docs-${m[1]}`, why: 'Reference is now called Docs' },
-];
-/** A moved link's new address (and puts it in the address bar, with a note), else the link as it is. */
+// What a #link opens is links.ts (pure, tested in tools/links.test.mjs); here it's done. A moved link opens the new
+// place, puts the new address in the address bar and says so once.
 function followMoved(h: string): string {
-  for (const m of MOVED_LINKS) {
-    const r = m.from.exec(h);
-    if (!r) continue;
-    const to = m.to(r);
-    try {
-      history.replaceState(history.state, '', `${location.pathname}${location.search}#${to}`);
-    } catch {
-      /* ignore */
-    }
-    setTimeout(() => notice(`This is an older link: ${m.why}. It opened the same thing; the new link is in the address bar.`, { kind: 'info' }), 0);
-    return to;
+  const { to, why } = followMovedLink(h);
+  if (why === undefined) return h;
+  try {
+    history.replaceState(history.state, '', `${location.pathname}${location.search}#${to}`);
+  } catch {
+    /* ignore */
   }
-  return h;
+  setTimeout(() => notice(movedNote(why), { kind: 'info' }), 0);
+  return to;
 }
+const linkCatalog = (): LinkCatalog => ({
+  hub: HUB_EXAMPLES.handlers.map((x) => x.id),
+  probes: PROBES.map((p) => p.name),
+  packages: EXAMPLE_PACKAGES.map((e) => e.id),
+  templates: BOT_TEMPLATES.templates.map((t) => t.id),
+});
+const dropHash = () => {
+  try {
+    history.replaceState(null, '', location.pathname + location.search);
+  } catch {
+    /* ignore */
+  }
+};
 function openFromHash(): boolean {
   const h = followMoved(decodeURIComponent(location.hash.slice(1)));
-  if (!h) return false;
-  if (h.startsWith(SHARE_PREFIX)) {
-    decodeShare(h)
-      .then((src) => {
-        loadSource(src, { name: 'Shared handler', kind: 'example', hash: h });
-        if (narrow()) setView('code'); // after the async load, which shows the results
-      })
-      .catch(() => notice('This share link is damaged or incomplete. Ask for it again, or for the file.', { kind: 'error' }));
-    return true;
-  }
-  if (h === 'whats-new') {
-    // The link in the Discord update post: the workbench, with What's new open.
-    news.open();
-    try {
-      history.replaceState(null, '', location.pathname + location.search);
-    } catch {
-      /* ignore */
-    }
-    return false;
-  }
-  if (h === 'docs' || h.startsWith('docs-')) {
-    openDocsHash(h);
-    return false; // opens no handler: the draft stays
-  }
-  if (h === 'dev') {
-    // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
-    devBar.show();
-    try {
-      history.replaceState(null, '', location.pathname + location.search);
-    } catch {
-      /* ignore */
-    }
-    return false;
-  }
-  if (h.startsWith('hub-')) {
-    const i = HUB_EXAMPLES.handlers.findIndex((x) => x.id === h.slice(4));
-    if (i >= 0) return void openHub(i), true;
-  } else if (h.startsWith('probe-')) {
-    const i = PROBES.findIndex((p) => p.name.startsWith(h.slice(6).padStart(2, '0') + '-'));
-    if (i >= 0) return openProbe(i), true;
-  } else if (h.startsWith('package-') && EXAMPLE_PACKAGES.some((e) => e.id === h.slice(8))) {
-    return openExamplePackage(h.slice(8)), true;
-  } else if (h === 'example-mistakes') {
-    return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
-  } else if (h.startsWith('template-')) {
-    const t = BOT_TEMPLATES.templates.find((x) => slug(x.id) === slug(h.slice('template-'.length)));
-    if (t) return openTemplate(t.id), true;
+  const t = routeLink(h, linkCatalog());
+  switch (t.kind) {
+    case 'none':
+      return false;
+    case 'share':
+      decodeShare(t.hash)
+        .then((src) => {
+          loadSource(src, { name: 'Shared handler', kind: 'example', hash: t.hash });
+          if (narrow()) setView('code'); // after the async load, which shows the results
+        })
+        .catch(() => notice('This share link is damaged or incomplete. Ask for it again, or for the file.', { kind: 'error' }));
+      return true;
+    case 'whats-new':
+      // The link in the Discord update post: the workbench, with What's new open.
+      news.open();
+      dropHash();
+      return false;
+    case 'docs':
+      docs.openHash(t.hash);
+      return false; // opens no handler: the draft stays
+    case 'dev':
+      // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
+      devBar.show();
+      dropHash();
+      return false;
+    case 'hub':
+      return void openHub(t.index), true;
+    case 'probe':
+      return openProbe(t.index), true;
+    case 'package':
+      return openExamplePackage(t.id), true;
+    case 'example-mistakes':
+      return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
+    case 'template':
+      return openTemplate(t.id), true;
   }
   // Not here (any more): say what it was and show the way, never a dead end.
-  if (h.startsWith('hub-')) {
-    const id = h.slice(4);
-    notice(`That Hub handler isn't one of the examples in this version of the workbench. It's still on the Hub.`, { kind: 'info', action: { label: 'Open it on the Hub', run: () => window.open(`https://hub.splitscreen.me/handler/${encodeURIComponent(id)}`, '_blank', 'noopener') } });
-  } else if (h.startsWith('probe-')) {
-    notice(`There's no probe ${h.slice(6)} in this version of the workbench; the probes are numbered again when they change.`, { kind: 'info', action: { label: 'See the probes', run: () => selectTab('probes') } });
-  } else {
-    notice(`The link "#${h}" is from another version of the workbench, or mistyped: it doesn't match anything here.`, { kind: 'info', action: { label: 'Open an example or a Hub handler', run: () => showOpen() } });
-  }
+  const n = unknownNote(t)!;
+  const run = n.action.to === 'hub' ? () => window.open(n.action.url, '_blank', 'noopener') : n.action.to === 'probes' ? () => selectTab('probes') : () => showOpen();
+  notice(n.text, { kind: 'info', action: { label: n.action.label, run } });
   return false;
 }
 // A link shares code: on phones, show the handler, not the results.
@@ -3358,7 +2669,7 @@ const initialHash = INITIAL_HASH ? followMoved(decodeURIComponent(INITIAL_HASH.s
 const initialDocs = /^docs(-|$)/.test(initialHash) ? initialHash : '';
 if (initialDocs) {
   renderDocHead();
-  openDocsHash(initialDocs);
+  docs.openHash(initialDocs);
 } else if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
