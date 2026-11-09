@@ -625,6 +625,10 @@ li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
 #tip .hv-ico { flex: none; font: 700 12px/1 var(--font-body); width: 12px; text-align: center; }
 #tip .error .hv-ico { color: var(--err); } #tip .warning .hv-ico { color: var(--warn); } #tip .info .hv-ico, #tip .hint .hv-ico { color: var(--info); }
 #tip .hv-msg { color: var(--fg); }
+/* API names in hovers, hints and suggestion docs open the Reference (as VS Code's hover links). */
+.api-link { cursor: pointer; text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.api-link:hover, .api-link:focus-visible { text-decoration: underline solid; color: var(--accent); outline: none; }
+.api-link:focus-visible { box-shadow: 0 0 0 2px var(--accent); border-radius: 3px; }
 #tip .hv-prob + .hv-prob { margin-top: 4px; }
 #tip ul, .hint-doc ul, #sig ul { margin: 0 0 6px; padding-left: 18px; }
 #tip .hv-prob strong { font-weight: 600; }

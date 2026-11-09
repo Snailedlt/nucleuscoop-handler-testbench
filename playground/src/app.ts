@@ -400,6 +400,58 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
   });
 }
 
+// API names in hovers, parameter hints and suggestion docs are links: a click (or Enter) opens that name in the
+// Reference tab, as VS Code's hovers link to the docs.
+const NAME_RE = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/;
+function apiPathOf(raw: string): string | undefined {
+  const t = raw.trim().replace(/\(.*\)$/, '').replace(/;$/, '').replace(/^new\s+/, '');
+  if (!NAME_RE.test(t) || /^(true|false|null|undefined|var|function|return)$/.test(t)) return undefined;
+  if (api.globals[t]) return t;
+  const r = lookup(t);
+  if (r.kind === 'entries') return r.entries.length === 1 ? r.entries[0].path : t;
+  if (r.kind === 'enum') return t.startsWith('Nucleus.') ? t : `Nucleus.${t}`;
+  if (r.kind === 'class') return t.startsWith('Nucleus.') ? t : `Nucleus.${t}`;
+  return undefined;
+}
+function linkApiNames(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>('code').forEach((c) => {
+    if (c.closest('pre, a, button')) return;
+    const path = apiPathOf(c.textContent ?? '');
+    if (path) markApiLink(c, path);
+  });
+  // The signature on top of a doc card: the name is the link.
+  root.querySelectorAll<HTMLElement>('.dc-sig .sg-n').forEach((n) => {
+    const owner = n.previousElementSibling?.classList.contains('sg-o') ? n.previousElementSibling.textContent ?? '' : '';
+    markApiLink(n, owner + (n.textContent ?? ''));
+  });
+}
+function markApiLink(el: HTMLElement, path: string) {
+  el.classList.add('api-link');
+  el.dataset.api = path;
+  el.tabIndex = 0;
+  el.setAttribute('role', 'link');
+  el.title = `${path} in the Reference`;
+}
+function openReferenceAt(path: string) {
+  tip.hidden = true;
+  selectTab('api');
+  if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+  ($('#api-q') as HTMLInputElement).value = path;
+  renderApi(path);
+}
+function wireApiLinkClicks(el: HTMLElement, on: 'click' | 'mousedown' = 'click') {
+  el.addEventListener(on, (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLElement>('[data-api]');
+    if (!a) return;
+    e.preventDefault();
+    openReferenceAt(a.dataset.api!);
+  });
+  el.addEventListener('keydown', (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLElement>('[data-api]');
+    if (a && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openReferenceAt(a.dataset.api!); }
+  });
+}
+
 // Completion: the same suggestions as VS Code and other editors (core/features.ts completionsAt): API members, the
 // option's values, the handler's own functions and variables, Context.Options keys and their values, snippets, the
 // whole template in an empty file. The docs of the highlighted one show beside the list.
@@ -461,10 +513,13 @@ const hintDoc = document.createElement('div');
 hintDoc.className = 'hint-doc';
 hintDoc.hidden = true;
 document.body.appendChild(hintDoc);
+// The list closes when the editor loses focus, so the docs beside it act on mousedown.
+wireApiLinkClicks(hintDoc, 'mousedown');
 function showHintDoc(doc: string | undefined, el?: HTMLElement) {
   const box = el?.closest('.CodeMirror-hints') as HTMLElement | null;
   if (!doc || !box) return void (hintDoc.hidden = true);
   hintDoc.innerHTML = md(doc);
+  linkApiNames(hintDoc);
   hintDoc.hidden = false;
   const r = box.getBoundingClientRect();
   const w = Math.min(420, window.innerWidth - 16);
@@ -545,6 +600,7 @@ $('#gf-close').addEventListener('click', () => ($('#gf-dialog') as HTMLDialogEle
 
 // Hover docs
 const tip = $('#tip');
+wireApiLinkClicks(tip);
 let tipTimer: number | undefined;
 let tipHideTimer: number | undefined;
 // The hover card: the problems under the pointer (what, why, a fix you can click) and the docs of the name there.
@@ -577,6 +633,7 @@ function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string
   if (!list.length && !doc) return void (tip.hidden = true);
   tip.innerHTML = (list.length ? problemCard(list) : '') + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '') + fixBar(list);
   tip.classList.toggle('has-problems', list.length > 0);
+  linkApiNames(tip);
   tip.hidden = false;
   tip.querySelectorAll<HTMLButtonElement>('[data-hc-fix]').forEach((b) => b.addEventListener('click', () => {
     const [di, fi] = b.dataset.hcFix!.split(':').map(Number);
@@ -659,7 +716,8 @@ setCodeFieldSupport({
       tip.innerHTML = (problems.length ? `<div class="hv-sec hv-probs">${problems.map((d) => `<div class="hv-prob ${sevClass[d.severity] ?? 'info'}"><span class="hv-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hv-msg">${hlHtml(codeIn(d.message))}</div></div>`).join('')}</div>` : '')
         + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '');
       tip.classList.toggle('has-problems', problems.length > 0);
-      tip.hidden = false;
+      linkApiNames(tip);
+  tip.hidden = false;
       placeTip(cm.charCoords(cm.posFromIndex(problems.length ? problems[0].start : r ? r.start : at), 'window'));
     }, hoverDelay(280));
   },
@@ -707,6 +765,7 @@ function showSignature() {
         const m = r.resolved.member;
         sig.innerHTML = `<div class="sig-body"><div class="sig-label"><strong>${esc(ownerLabel(r.resolved.owner))}.${esc(r.resolved.name)}</strong>: ${esc(m.kind === 'method' ? 'method' : m.ts ?? '')}</div>${m.doc ? `<div class="sig-docs">${esc(m.doc.split('\n')[0].slice(0, 140))}</div>` : ''}</div>`;
         sig.classList.remove('multi');
+        linkApiNames(sig);
         sig.hidden = false;
         placeSig();
         return;
@@ -741,6 +800,7 @@ function showSignature() {
     + (pdoc || fdoc ? `<div class="sig-docs">${pdoc ? `<div class="sig-pdoc">${md(pdoc)}</div>` : ''}${fdoc ? `<div class="sig-fdoc">${md(fdoc)}</div>` : ''}</div>` : '')
     + '</div>';
   sig.classList.toggle('multi', n > 1);
+  linkApiNames(sig);
   sig.hidden = false;
   placeSig();
 }
@@ -753,7 +813,8 @@ function placeSig() {
   sig.style.left = `${Math.max(box.left + 4, Math.min(c.left - 24, window.innerWidth - w - 8))}px`;
   sig.style.top = `${c.top - h - 4 >= box.top ? c.top - h - 4 : c.bottom + 4}px`;
 }
-sig.addEventListener('mousedown', (e) => e.preventDefault()); // keep the editor's focus
+sig.addEventListener('mousedown', (e) => { if (!(e.target as HTMLElement).closest('[data-api]')) e.preventDefault(); }); // keep the editor's focus
+wireApiLinkClicks(sig);
 sig.addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>('[data-sig]');
   if (b) { sigPick.index += Number(b.dataset.sig); showSignature(); }
