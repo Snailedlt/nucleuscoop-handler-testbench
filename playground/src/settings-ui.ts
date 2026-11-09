@@ -1,4 +1,5 @@
 import { PRESETS, presetOf, savedMotion, setMotion, type MascotMotion, type Preset } from './motion';
+import { setWrap, wrapEditor } from './wrap';
 import { confirmOn } from './toast';
 // Workbench settings (the gear in the header): theme, editor, tips, the Lines column, and the
 // niche ones (Advanced mode, the dev bar) under Advanced. Also the phone helpers it controls:
@@ -44,9 +45,10 @@ export function initSettings(d: Deps) {
   const save = () => put(EDITOR_KEY, JSON.stringify(ed));
   const applyEditor = () => {
     document.documentElement.style.setProperty('--code-size', { s: '12px', m: '13px', l: '15px' }[ed.size]);
-    d.editor.setOption('lineWrapping', ed.wrap);
+    setWrap(ed.wrap); // every code view, not only the handler's editor (wrap.ts)
     d.editor.refresh();
   };
+  wrapEditor(d.editor);
   applyEditor();
 
   const dlg = $('#settings-dialog') as HTMLDialogElement;
@@ -381,5 +383,13 @@ export function initSettings(d: Deps) {
   // Not while selecting: dragging a selection handle scrolls by itself.
   d.editor.on('cursorActivity', () => kbOpen && !d.editor.somethingSelected() && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
 
-  return { open };
+  /** Alt+Z (View: Toggle Word Wrap in VS Code): flips the setting, kept like a change in Settings. */
+  function toggleWrap() {
+    ed.wrap = !ed.wrap;
+    save();
+    applyEditor();
+    ($('#set-wrap') as HTMLInputElement).checked = ed.wrap;
+    d.toast(ed.wrap ? 'Word wrap on: long lines wrap (Alt+Z turns it off).' : 'Word wrap off: long lines scroll sideways (Alt+Z turns it on).');
+  }
+  return { open, toggleWrap };
 }

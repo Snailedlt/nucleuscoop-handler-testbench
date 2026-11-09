@@ -30,6 +30,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Word wrap everywhere, as in VS Code.** *Settings › Wrap long lines* (or **Alt+Z**, also in the command palette) now applies to every place code shows: the handler, the package's files, hovers, Docs, Check, the debugger. Wrapped lines keep their indent, like VS Code's. With it off, long lines scroll sideways and are never cut off.
 - **Package files in colour everywhere.** *Show the package's files* (Ctrl+K) now shows INI, CFG, JSON and XML in the code colours, as the Files panel's editor already did.
 - **Link to a part of the start page.** Point at a heading and click the 🔗 next to it (always shown on phones): the address gets the section's name (`#what-it-catches`, `#try-it-in-5-minutes`), ready to paste, like on GitHub. Old links such as `#install` still work.
 - **Reference is now Docs, with links you can share.** The tab is called Docs, and the address follows it: `#docs-Context.ModifySaveFile` opens that name, `#docs-Context` the Context list, so a link to a doc can go in Discord. A quiet path at the top (*Docs / Context / ModifySaveFile*) takes you to the main page or the whole list in one click, ← (or Alt+←) goes back, and names in the docs open their own page.

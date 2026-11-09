@@ -5,7 +5,13 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
   var m = localStorage.getItem('nucleus-workbench-dev-mode'); if (m === 'light' || m === 'dark') document.documentElement.dataset.theme = m; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>/*CODEMIRROR_CSS*/</style>
+<style>/*CODEMIRROR_CSS*/
+/* Word wrap (wrap.ts; Settings › Wrap long lines, Alt+Z): read-only code follows the code editor. On: long lines wrap
+   at word boundaries; off: they scroll sideways. Either way nothing is cut off. */
+:root[data-wrap="on"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek, #sig .sig-label) { white-space: pre-wrap; overflow-wrap: break-word; }
+:root[data-wrap="off"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek, #sig .sig-label) { white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+:root[data-wrap="on"] .diff td { white-space: pre-wrap; overflow-wrap: break-word; }
+</style>
 <style>
 /* Layout: a two-pane workbench, code on the left, analysis on the right; stacks on phones.
  * Two site themes, switched in the dev bar (data-site on <html>):
@@ -2270,7 +2276,7 @@ footer .made-by { margin-left: auto; }
 
     <div class="set-sec">
       <label class="set-line">Text size <select id="set-size"><option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option></select></label>
-      <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>Instead of scrolling sideways. On by default on phones.</small></span></label>
+      <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>In the code and everywhere code is shown, keeping the indent, instead of scrolling sideways (as VS Code's word wrap; Alt+Z). On by default on phones.</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-keybar"> <span>Symbol keys on touch screens<small>A row with ; = " ( ) { } [ ], Suggest and Undo above the on-screen keyboard</small></span></label></div>
   </div>
  <div class="set-panel" role="tabpanel" id="sp-keys" aria-labelledby="st-keys" data-label="Keyboard shortcuts" hidden></div>

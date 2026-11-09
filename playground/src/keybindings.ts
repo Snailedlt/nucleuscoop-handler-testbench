@@ -35,6 +35,7 @@ export const ACTIONS: Action[] = [
   { id: 'saveNucleus', label: "Save into Nucleus Co-op's handlers folder", group: 'Workbench', keys: 'Ctrl+Alt+S', where: 'app' },
   { id: 'lines', label: 'Show or hide the Lines list', group: 'Workbench', keys: 'Ctrl+B', where: 'app' },
   { id: 'settings', label: 'Settings', group: 'Workbench', keys: 'Ctrl+,', where: 'app' },
+  { id: 'wordWrap', label: 'Word wrap: wrap long lines or scroll sideways', group: 'Workbench', keys: 'Alt+Z', where: 'app' },
   { id: 'format', label: 'Format the code', group: 'Problems', keys: 'Shift+Alt+F', where: 'app' },
   { id: 'nextProblem', label: 'Next problem', group: 'Problems', keys: 'F8', where: 'app' },
   { id: 'prevProblem', label: 'Previous problem', group: 'Problems', keys: 'Shift+F8', where: 'app' },
