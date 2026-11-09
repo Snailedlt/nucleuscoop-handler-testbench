@@ -189,6 +189,31 @@ for (const theme of ['light', 'dark']) {
   await p.keyboard.press('Enter');
   await p.waitForTimeout(200);
   check((await p.evaluate(() => JSON.stringify(document.querySelector('.CodeMirror').CodeMirror.getCursor()))).startsWith('{"line":1,"ch":4'), `${theme}: Ctrl+G 2:5 goes to line 2, column 5`);
+  // Find, Alt+Enter: every match selected; → / ← put a cursor after / before each (suffix and prefix in one go).
+  await cmSet('a.x = 1;\nb.x = 2;\nc.y = 3;\n', { line: 2, ch: 0 }, { line: 2, ch: 0 });
+  await p.keyboard.press('Control+f');
+  await p.keyboard.type('.x');
+  await p.keyboard.press('Alt+Enter');
+  await p.keyboard.press('ArrowRight');
+  await p.keyboard.type('Y');
+  await p.keyboard.press('ArrowLeft');
+  for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowLeft');
+  await p.keyboard.type('_');
+  check((await cmVal()) === 'a_.xY = 1;\nb_.xY = 2;\nc.y = 3;\n', `${theme}: Find, Alt+Enter, then → / ← add a suffix and a prefix to every match`);
+  // Find stays quick with many matches: no mark per match, the highlight only on the lines on screen.
+  await cmSet('var x = 1;\n'.repeat(30000), { line: 30000, ch: 0 }, { line: 30000, ch: 0 }); // an empty last line: nothing to seed Find with
+  await p.keyboard.press('Control+f');
+  const t0 = Date.now();
+  check(!/of 20000/.test(await p.textContent('.find-widget .fw-count')), `${theme}: (Find starts without those matches)`);
+  await p.keyboard.type('x');
+  await p.waitForFunction(() => /of 20000\+/.test(document.querySelector('.find-widget .fw-count').textContent), null, { timeout: 5000 }).catch(() => {});
+  const took = Date.now() - t0;
+  check(/of 20000\+/.test(await p.textContent('.find-widget .fw-count')) && took < 1500, `${theme}: Find with 30000 matches counts them in ${took} ms (under 1.5 s)`);
+  const t1 = Date.now();
+  await p.keyboard.press('Enter');
+  await p.keyboard.press('Enter');
+  check(Date.now() - t1 < 400, `${theme}: and steps through them without a hang (${Date.now() - t1} ms)`);
+  await p.keyboard.press('Escape');
   // A German keyboard: Ctrl + the key where a US keyboard has "/" (it prints "-") toggles a comment.
   await cmSet('var a = 1;\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
   await p.evaluate(() => {

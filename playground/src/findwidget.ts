@@ -1,7 +1,13 @@
 // Find and replace as in VS Code: a box at the top right of the code (Ctrl+F; Ctrl+H adds the replace row), the
 // match count, Enter / Shift+Enter (and F3 / Shift+F3) through the matches, Alt+C match case, Alt+W whole word,
 // Alt+R regular expression, Replace (Enter in the replace field) and Replace all (Ctrl+Alt+Enter), Esc to close.
-// Every match is highlighted; the current one is selected. One per editor, made on first use.
+// Alt+Enter selects every match (one cursor each, as in VS Code: then → / ← put the cursors after / before them, to
+// add a suffix or prefix to all at once). Every match is highlighted; the current one is selected. One per editor,
+// made on first use.
+//
+// Fast with many matches: the matches are kept as offsets (positions only when needed), the highlight is an overlay
+// that CodeMirror draws only for the lines on screen (not a mark per match, which froze the editor with thousands),
+// and typing in the field searches once it pauses.
 import CodeMirror from 'codemirror';
 
 interface State {
@@ -11,11 +17,15 @@ interface State {
   count: HTMLElement;
   replaceRow: HTMLElement;
   opts: { case: boolean; word: boolean; regex: boolean };
-  marks: any[];
-  matches: { from: any; to: any }[];
+  overlay: any | null;
+  /** [start, end) offsets in the code. */
+  matches: [number, number][];
   current: number;
   timer?: ReturnType<typeof setTimeout>;
+  typing?: ReturnType<typeof setTimeout>;
 }
+const MAX = 20000; // matches counted; past that the count says "20000+"
+const pos = (cm: any, i: number) => cm.posFromIndex(i);
 
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -30,41 +40,59 @@ function pattern(st: State): RegExp | null {
   }
 }
 
+/** The highlight: a CodeMirror overlay, drawn line by line for the lines on screen only. */
+function highlight(cm: any, st: State, re: RegExp | null) {
+  if (st.overlay) cm.removeOverlay(st.overlay);
+  st.overlay = null;
+  if (!re) return;
+  const r = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+  st.overlay = {
+    token(stream: any) {
+      r.lastIndex = stream.pos;
+      const m = r.exec(stream.string);
+      if (m && m.index === stream.pos && m[0].length) {
+        stream.pos += m[0].length;
+        return 'find-match';
+      }
+      if (m && m.index > stream.pos) stream.pos = m.index;
+      else stream.skipToEnd();
+      return null;
+    },
+  };
+  cm.addOverlay(st.overlay, { opaque: false });
+}
+
 function search(cm: any, st: State, from?: any) {
-  st.marks.forEach((m) => m.clear());
-  st.marks = [];
   st.matches = [];
   const re = pattern(st);
   st.box.classList.toggle('bad', !!st.find.value && !re);
   if (re) {
     const text = cm.getValue();
-    for (let m = re.exec(text); m && st.matches.length < 5000; m = re.exec(text)) {
+    for (let m = re.exec(text); m && st.matches.length < MAX; m = re.exec(text)) {
       if (m[0] === '') {
         re.lastIndex++;
         continue;
       }
-      st.matches.push({ from: cm.posFromIndex(m.index), to: cm.posFromIndex(m.index + m[0].length) });
+      st.matches.push([m.index, m.index + m[0].length]);
     }
-    cm.operation(() => {
-      for (const x of st.matches.slice(0, 1000)) st.marks.push(cm.markText(x.from, x.to, { className: 'cm-find-match' }));
-    });
   }
-  // The first match at or after `from` (where the search started), as VS Code does.
-  const at = from ?? cm.getCursor('from');
-  // The match under the cursor, else the next one.
-  let i = st.matches.findIndex((x) => CodeMirror.cmpPos(x.from, at) <= 0 && CodeMirror.cmpPos(at, x.to) <= 0);
-  if (i < 0) i = st.matches.findIndex((x) => CodeMirror.cmpPos(x.from, at) >= 0);
-  st.current = st.matches.length ? (i < 0 ? 0 : i) : -1;
+  highlight(cm, st, re);
+  // The match under the cursor (where the search started), else the next one, as VS Code does.
+  const at = cm.indexFromPos(from ?? cm.getCursor('from'));
+  let lo = 0, hi = st.matches.length; // the first match ending at or after the cursor (binary search: they're in order)
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (st.matches[mid][1] < at) lo = mid + 1; else hi = mid; }
+  st.current = st.matches.length ? (lo < st.matches.length ? lo : 0) : -1;
   show(cm, st);
 }
 
 function show(cm: any, st: State) {
-  st.count.textContent = !st.find.value ? '' : st.matches.length ? `${st.current + 1} of ${st.matches.length}${st.matches.length >= 5000 ? '+' : ''}` : 'No results';
+  st.count.textContent = !st.find.value ? '' : st.matches.length ? `${st.current + 1} of ${st.matches.length}${st.matches.length >= MAX ? '+' : ''}` : 'No results';
   st.box.classList.toggle('none', !!st.find.value && !st.matches.length);
   const m = st.matches[st.current];
   if (m) {
-    cm.setSelection(m.from, m.to);
-    cm.scrollIntoView({ from: m.from, to: m.to }, 80);
+    const from = pos(cm, m[0]), to = pos(cm, m[1]);
+    cm.setSelection(from, to);
+    cm.scrollIntoView({ from, to }, 80);
   }
 }
 
@@ -83,19 +111,38 @@ function replacement(st: State, matched: string): string {
 function replaceOne(cm: any, st: State) {
   const m = st.matches[st.current];
   if (!m) return;
-  const from = m.from;
-  cm.replaceRange(replacement(st, cm.getRange(m.from, m.to)), m.from, m.to, '+replace');
+  const from = pos(cm, m[0]), to = pos(cm, m[1]);
+  cm.replaceRange(replacement(st, cm.getRange(from, to)), from, to, '+replace');
   search(cm, st, from);
 }
 
 function replaceAll(cm: any, st: State) {
   if (!st.matches.length) return;
   const n = st.matches.length;
-  cm.operation(() => {
-    for (const m of [...st.matches].reverse()) cm.replaceRange(replacement(st, cm.getRange(m.from, m.to)), m.from, m.to, '+replace');
-  });
+  // One edit for the whole text: thousands of replaceRange calls would each re-measure the document.
+  const text = cm.getValue();
+  let out = '', last = 0;
+  for (const [a, b] of st.matches) { out += text.slice(last, a) + replacement(st, text.slice(a, b)); last = b; }
+  out += text.slice(last);
+  const scroll = cm.getScrollInfo();
+  cm.replaceRange(out, pos(cm, 0), pos(cm, text.length), '+replace');
+  cm.scrollTo(scroll.left, scroll.top);
   search(cm, st);
   st.count.textContent = `Replaced ${n}`;
+}
+
+/** Alt+Enter: every match selected, one cursor each (VS Code's "Select All Matches"). Returns false with no matches. */
+function selectAll(cm: any, st: State): boolean {
+  if (!st.matches.length) return false;
+  const cur = Math.max(0, st.current);
+  cm.setSelections(st.matches.map(([a, b]) => ({ anchor: pos(cm, a), head: pos(cm, b) })), cur);
+  close(cm, true);
+  return true;
+}
+/** Ctrl+Shift+L while Find is open: its matches (with its case, word and regex options), as VS Code does. */
+export function selectFindMatches(cm: any): boolean {
+  const st = cm.state.findWidget as State | undefined;
+  return !!st && st.box.classList.contains('open') && !!st.find.value && selectAll(cm, st);
 }
 
 function build(cm: any): State {
@@ -129,14 +176,15 @@ function build(cm: any): State {
     count: box.querySelector('.fw-count')!,
     replaceRow: box.querySelector('.fw-replace')!,
     opts: { case: false, word: false, regex: false },
-    marks: [],
+    overlay: null,
     matches: [],
     current: -1,
   };
   const toggleOpt = (k: 'case' | 'word' | 'regex') => {
     st.opts[k] = !st.opts[k];
     box.querySelector(`[data-opt="${k}"]`)!.setAttribute('aria-pressed', String(st.opts[k]));
-    search(cm, st, st.matches[st.current]?.from);
+    const m = st.matches[st.current];
+    search(cm, st, m ? pos(cm, m[0]) : undefined);
   };
   box.addEventListener('mousedown', (e) => {
     // Buttons keep the focus where it was (typing goes on in the field).
@@ -153,14 +201,28 @@ function build(cm: any): State {
     else if (b.dataset.act === 'all') replaceAll(cm, st);
     else if (b.classList.contains('fw-toggle')) setReplace(st, !!st.replaceRow.hidden);
   });
-  st.find.addEventListener('input', () => search(cm, st, st.matches[st.current]?.from ?? cm.getCursor('from')));
+  // Searched once typing pauses (at once in a short file), so a long file never makes typing in the field lag.
+  st.find.addEventListener('input', () => {
+    clearTimeout(st.typing);
+    const m = st.matches[st.current];
+    const from = m ? pos(cm, m[0]) : cm.getCursor('from');
+    st.typing = setTimeout(() => search(cm, st, from), cm.getValue().length > 20000 ? 120 : 0);
+  });
+  // A search still waiting for typing to pause runs now (Enter right after typing).
+  const flush = () => {
+    if (st.typing === undefined) return;
+    clearTimeout(st.typing);
+    st.typing = undefined;
+    search(cm, st, cm.getCursor('from'));
+  };
   const keys = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase();
     if (e.key === 'Escape') { e.preventDefault(); close(cm); }
     else if (e.altKey && !e.ctrlKey && (k === 'c' || k === 'w' || k === 'r')) { e.preventDefault(); toggleOpt(k === 'c' ? 'case' : k === 'w' ? 'word' : 'regex'); }
     else if (e.key === 'Enter' && e.ctrlKey && e.altKey) { e.preventDefault(); replaceAll(cm, st); }
+    else if (e.key === 'Enter' && e.altKey && e.target === st.find) { e.preventDefault(); flush(); selectAll(cm, st); }
     else if (e.key === 'Enter' && e.target === st.repl) { e.preventDefault(); replaceOne(cm, st); }
-    else if (e.key === 'Enter' || e.key === 'F3') { e.preventDefault(); step(cm, st, e.shiftKey ? -1 : 1); }
+    else if (e.key === 'Enter' || e.key === 'F3') { e.preventDefault(); flush(); step(cm, st, e.shiftKey ? -1 : 1); }
     else if ((e.ctrlKey || e.metaKey) && k === 'h') { e.preventDefault(); setReplace(st, true); st.repl.focus(); }
     else if ((e.ctrlKey || e.metaKey) && k === 'f') { e.preventDefault(); st.find.select(); }
   };
@@ -218,11 +280,16 @@ export function findStep(cm: any, d: 1 | -1) {
   if (!st || !st.box.classList.contains('open') || !st.find.value) return openFind(cm);
   step(cm, st, d);
 }
-export function close(cm: any) {
+export function close(cm: any, keepSelections = false) {
   const st = cm.state.findWidget as State | undefined;
   if (!st) return;
   st.box.classList.remove('open');
-  st.marks.forEach((m) => m.clear());
-  st.marks = [];
-  cm.focus();
+  clearTimeout(st.typing);
+  st.typing = undefined;
+  highlight(cm, st, null);
+  if (keepSelections) {
+    const sels = cm.listSelections();
+    cm.focus();
+    cm.setSelections(sels);
+  } else cm.focus();
 }

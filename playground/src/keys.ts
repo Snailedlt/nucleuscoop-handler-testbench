@@ -1,7 +1,7 @@
 // VS Code's editing shortcuts in the code editor, so handler authors don't have to relearn them.
 // The commands come from CodeMirror's addons and its Sublime keymap file (only its commands are
 // used, on VS Code's keys). Cmd replaces Ctrl on a Mac, as in VS Code.
-import { findStep, openFind } from './findwidget';
+import { findStep, openFind, selectFindMatches } from './findwidget';
 import { referencesAt } from '@core/definition';
 import CodeMirror from 'codemirror';
 import 'codemirror/addon/comment/comment';
@@ -49,6 +49,7 @@ function toggleBlockComment(cm: any) {
 }
 /** Ctrl+Shift+L: every occurrence of the selection (or the word at the cursor) selected. */
 function selectAllOccurrences(cm: any) {
+  if (selectFindMatches(cm)) return; // Find is open: its matches, with its options
   let q = cm.getSelection();
   if (!q) {
     const w = cm.findWordAt(cm.getCursor());

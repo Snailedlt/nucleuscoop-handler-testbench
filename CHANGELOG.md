@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Add text before or after every match.** In Find (Ctrl+F), Alt+Enter selects every match, as in VS Code; then → puts a cursor after each (← before each) and you type once for all of them. Ctrl+Shift+L does the same while Find is open, with its case, whole-word and regex options.
 - **Pin what you're testing.** In Help test this beta, Pin keeps a task in a small window in the code editor's bottom-right corner, with what to try, what to look for and Report, and lists it at the top of Help test this beta too. Drag it anywhere (or move it with the arrow keys; double-click its header to put it back), collapse it, tick it off; it stays where you put it. On a narrow screen it docks at the bottom.
 - **Notepad++ code colours.** *Settings › Theme and colours › Code colours* now has Notepad++: bold blue keywords, bold navy operators, green comments, and its dark mode's colours in dark (strings, numbers and dark comments adjusted a little for 4.5:1 contrast). VS Code's (Light+ / Dark+) is there too; point at a card to see what it is.
 - **Suggestions as smart as VS Code's.** The code editor now suggests your own functions and variables (with their comments), the keys your `Game.AddOption` lines add after `Context.Options["` and their values after `== "`, snippets for what most handlers do (`iniset`, `startargs`, `eachplayer`…) and, in an empty file, the whole handler template; Tab moves through the parts to fill in. The highlighted suggestion's docs show beside the list, parameter hints say what to pass, and hovering your own function shows its comment.
@@ -54,6 +55,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **Find no longer freezes on long handlers.** Thousands of matches used to be marked one by one on every keystroke; now only the lines on screen are highlighted and typing in Find stays quick. Moving the cursor near the end of a very long handler froze the editor too; fixed.
 - **Header buttons line up.** Share, Save and the menu are one height, and the ▾ and + beside the tabs sit level with them; the tabs no longer grow a scroll bar (scroll them with the wheel or a trackpad, or pick one from ▾).
 - **The ▾ beside the tabs shows when it should.** The list of open handlers is there whenever two or more are open; it used to show on first load even with one tab, then come and go.
 - **The page no longer shrinks on touch-screen laptops.** Opening Examples and Hub handlers (or any text field) in the preview made room for an on-screen keyboard that isn't there; now that only happens when touch is the only way in.

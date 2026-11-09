@@ -82,6 +82,7 @@ export const ACTIONS: Action[] = [
   { id: 'tab', label: 'Indent (a selection: its lines) · outdent', group: 'Editing', keys: 'Tab · Shift+Tab', where: 'fixed' },
   { id: 'undo', label: 'Undo · redo', group: 'Editing', keys: 'Ctrl+Z · Ctrl+Y', where: 'fixed' },
   { id: 'addCursor', label: 'Add a cursor', group: 'Editing', keys: 'Alt+click', where: 'fixed' },
+  { id: 'findSelectAll', label: 'In Find: select every match (then → or ← puts a cursor after or before each)', group: 'Editing', keys: 'Alt+Enter', where: 'fixed' },
   { id: 'leave', label: 'Leave the code editor', group: 'Workbench', keys: 'Esc Tab', where: 'fixed' },
   { id: 'help', label: 'This list (outside the editor)', group: 'Workbench', keys: '?', where: 'fixed' },
   { id: 'debugBreak', label: 'Breakpoint on this line (Shift+F9: with a condition)', group: 'Debugger', keys: 'F9', where: 'fixed' },
