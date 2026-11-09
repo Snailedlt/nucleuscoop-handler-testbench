@@ -1420,13 +1420,15 @@ function refBack() {
   if (v !== undefined) refGo(v, false);
 }
 function refBar(crumbs: { label: string; view?: string; count?: number; code?: boolean }[]): string {
-  const back = refHistory.length ? `<button type="button" class="link ref-back" data-back aria-label="Back (to the view before)">← Back</button><span class="ref-sep" aria-hidden="true">·</span>` : '';
-  const parts = [`<button type="button" class="link" data-home>Reference</button>`].concat(crumbs.map((c, i) => {
-    const t = c.code ? `<code>${esc(c.label)}</code>` : esc(c.label);
+  // A quiet path, as docs sites show it: "Reference / Context / ModifySaveFile", the parents as plain links, and a
+  // back arrow when there's somewhere to go back to.
+  const back = refHistory.length ? `<button type="button" class="ref-back" data-back aria-label="Back" title="Back (Alt+←)">←</button>` : '';
+  const parts = [`<button type="button" class="ref-crumb" data-home>Reference</button>`].concat(crumbs.map((c, i) => {
     const last = i === crumbs.length - 1;
-    return (c.view && !last ? `<button type="button" class="link" data-${c.view.startsWith('group:') ? `group="${esc(c.view.slice(6))}"` : `q="${esc(c.view.slice(2))}"`}>${t}</button>` : `<strong${last ? ' aria-current="page"' : ''}>${t}</strong>`) + (c.count !== undefined ? ` <span class="muted">· ${c.count}</span>` : '');
+    const attr = c.view ? (c.view.startsWith('group:') ? `data-group="${esc(c.view.slice(6))}"` : `data-q="${esc(c.view.slice(2))}"`) : '';
+    return (c.view && !last ? `<button type="button" class="ref-crumb" ${attr}>${esc(c.label)}</button>` : `<span class="ref-here"${last ? ' aria-current="page"' : ''}>${esc(c.label)}</span>`) + (c.count !== undefined ? `<span class="ref-count">${c.count}</span>` : '');
   }));
-  return `<nav class="api-crumbs" aria-label="Where you are in the Reference">${back}${parts.join('<span class="ref-sep" aria-hidden="true">›</span>')}</nav>`;
+  return `<nav class="api-crumbs" aria-label="Where you are in the Reference">${back}${parts.join('<span class="ref-sep" aria-hidden="true">/</span>')}</nav>`;
 }
 const groupOf = (path: string) => API_GROUPS.find((g) => g.key !== 'AI' && g.match(path));
 
@@ -1436,15 +1438,12 @@ function renderApi(q: string) {
   if (!q.trim()) return renderApiHome(el);
   const exact = lookup(q);
   const card = (e: Entry) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`;
-  // One name: its card, where it sits (group › name), and the names next to it.
+  // One name: its card, and where it sits (Reference / group / name; the group lists the names next to it).
   const one = exact.kind === 'entries' && exact.entries.length === 1 ? exact.entries[0] : undefined;
   if (one) {
     const g = groupOf(one.path);
-    const sibs = g ? allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path)) : [];
     el.innerHTML = refBar([...(g ? [{ label: g.title, view: `group:${g.key}` }] : []), { label: one.path.slice(g && one.path.startsWith(g.key + '.') ? g.key.length + 1 : 0), code: true }])
-      + card(one)
-      // The names next to it: open when there are few, one click away when there are many (Context has ~190).
-      + (sibs.length > 1 ? `<details class="api-more"${sibs.length <= 30 ? ' open' : ''}><summary>More in ${esc(g!.title)} <span class="muted">· ${sibs.length}</span></summary><div class="api-chips">${sibs.map((e) => e.path === one.path ? `<span class="api-chip on" aria-current="true">${esc(e.name)}</span>` : `<button type="button" class="api-chip" data-q="${esc(e.path)}">${esc(e.name)}</button>`).join('')}</div></details>` : '');
+      + card(one);
     return wireApiLinks(el);
   }
   let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
