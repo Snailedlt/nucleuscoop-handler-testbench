@@ -172,3 +172,24 @@ test("the saved file's name: the folder a Hub install makes (Game.GameName), els
   assert.equal(save.saveFileName('', ''), 'handler');
   assert.equal(save.saveFileName('  Game.GameName = "Indented";', 'doc.js'), 'doc', 'Nucleus does not see an indented line');
 });
+
+// The tutorial (playground/src/tutorial.ts): each lesson starts unfinished, its solution finishes it, and the
+// solution is what people copy: no errors.
+test('tutorial: every lesson starts unfinished, its solution passes, with no errors', async () => {
+  const { LESSONS, solutionErrors } = await load('playground/src/tutorial.ts');
+  assert.ok(LESSONS.length >= 6, `${LESSONS.length} lessons`);
+  const ids = new Set();
+  for (const l of LESSONS) {
+    assert.ok(!ids.has(l.id), `two lessons called ${l.id}`);
+    ids.add(l.id);
+    assert.notEqual(l.check(l.start), null, `${l.id}: the starting code is already done`);
+    assert.equal(l.check(l.solution), null, `${l.id}: the solution doesn't pass`);
+    assert.ok(l.title && l.task && l.text.length, l.id);
+    assert.deepEqual(solutionErrors(l), [], `${l.id}: errors in the solution`);
+  }
+  // Each lesson starts where the one before ends (or from its own broken code, for the "fix it" lesson).
+  for (let i = 1; i < LESSONS.length; i++) {
+    const prev = LESSONS[i - 1].solution, cur = LESSONS[i].start;
+    assert.ok(cur.startsWith(prev.split('\nGame.Play')[0]) || cur === prev, `${LESSONS[i].id} doesn't continue from ${LESSONS[i - 1].id}`);
+  }
+});

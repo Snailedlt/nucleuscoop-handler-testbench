@@ -615,6 +615,38 @@ await m.ctx.close();
   check(!s.errors.length, `pinned tasks: no page errors ${s.errors.join(' ')}`);
   await s.ctx.close();
 }
+{
+  // The tutorial: #learn opens it in its own tab; a lesson is done when its code is; Show me, Next.
+  const s = await page('light');
+  await s.p.goto(BASE + '#learn');
+  await s.p.waitForTimeout(900);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  check(await s.p.isVisible('#tutorial'), 'tutorial: #learn opens the lesson card');
+  check(/Tutorial/.test(await s.p.textContent('#htabs [aria-selected=true]')), 'tutorial: its code opens in a Tutorial tab');
+  check(!(await s.p.isVisible('#tutorial .tut-task.ok')), 'tutorial: lesson 1 starts unfinished');
+  // Typing the task's line finishes it.
+  await s.p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.replaceRange('Game.ExecutableName = "racer.exe";\n', { line: cm.lastLine(), ch: 0 }); });
+  await s.p.waitForTimeout(700);
+  check(await s.p.isVisible('#tutorial .tut-task.ok'), 'tutorial: doing the task ticks it');
+  await axe(s.p, 'light, tutorial card');
+  await s.p.click('#tutorial [data-tut=next]');
+  await s.p.waitForTimeout(500);
+  check(/2 of /.test(await s.p.textContent('#tutorial .tut-head')) && !(await s.p.isVisible('#tutorial .tut-task.ok')), 'tutorial: Next goes to lesson 2, unfinished');
+  await s.p.click('#tutorial [data-tut=show]');
+  await s.p.waitForTimeout(700);
+  check(await s.p.isVisible('#tutorial .tut-task.ok'), 'tutorial: Show me puts in the solution, which passes');
+  await s.p.reload();
+  await s.p.waitForTimeout(900);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  check(await s.p.isHidden('#tutorial'), 'tutorial: nothing on screen until it is started again');
+  await s.p.keyboard.press('Control+Shift+P');
+  await s.p.keyboard.type('tutorial');
+  await s.p.keyboard.press('Enter');
+  await s.p.waitForTimeout(700);
+  check(/2 of /.test((await s.p.textContent('#tutorial .tut-head')) ?? ''), 'tutorial: the command palette resumes where you were');
+  check(!s.errors.length, `tutorial: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
 for (const theme of ['light', 'dark']) {
   // One page per check, and the list of them: they load, the examples are there, the filter works, accessible.
   const s = await page(theme);

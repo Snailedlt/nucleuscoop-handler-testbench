@@ -48,6 +48,7 @@ export type LinkTarget =
   | { kind: 'whats-new' }
   | { kind: 'docs'; hash: string }
   | { kind: 'dev' }
+  | { kind: 'learn'; lesson?: string }
   | { kind: 'hub'; index: number }
   | { kind: 'probe'; index: number }
   | { kind: 'package'; id: string }
@@ -70,6 +71,7 @@ export function routeLink(h: string, cat: LinkCatalog): LinkTarget {
   if (h === 'whats-new') return { kind: 'whats-new' };
   if (h === 'docs' || h.startsWith('docs-')) return { kind: 'docs', hash: h };
   if (h === 'dev') return { kind: 'dev' };
+  if (h === 'learn' || h.startsWith('learn-')) return { kind: 'learn', lesson: h.slice(6) || undefined };
   if (h === 'example-mistakes') return { kind: 'example-mistakes' };
   if (h.startsWith('hub-')) {
     const index = cat.hub.indexOf(h.slice(4));
