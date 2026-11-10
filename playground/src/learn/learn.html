@@ -42,6 +42,10 @@ button.link { background: none; border: 0; padding: 0; font: inherit; color: var
 .top .where { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .top .where strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #count { white-space: nowrap; }
+.top-links { display: flex; gap: 2px; font-size: 14px; }
+.top-links a { padding: 4px 8px; border-radius: var(--r-sm); color: var(--muted); text-decoration: none; }
+.top-links a:hover { color: var(--fg); background: var(--bg); }
+@media (max-width: 1100px) { .top-links { display: none; } }
 .top .progress { flex: none; width: 90px; height: 6px; border-radius: 3px; background: var(--code-bg); overflow: hidden; }
 .top .progress span { display: block; height: 100%; background: var(--accent); transition: width .2s; }
 @media (prefers-reduced-motion: reduce) { .top .progress span { transition: none; } }
@@ -222,6 +226,7 @@ li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
   <button type="button" class="btn small" id="drawer-toggle" aria-controls="drawer" aria-expanded="false" title="The lesson list"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Lessons</button>
   <a class="home" href="../">Nucleus <span>Workbench</span></a>
   <div class="where"><span class="muted" aria-hidden="true">›</span> <strong id="chapter-title">Learn</strong> <span id="count" class="muted"></span><div class="progress" aria-hidden="true"><span id="bar"></span></div></div>
+  <nav class="top-links" aria-label="Site"><a href="../">Workbench</a><a href="../docs/">Docs</a><a href="../rules/">Checks</a><a href="../start/">Get the tools</a></nav>
 </header>
 <main class="learn">
   <nav id="drawer" aria-label="All lessons"><ul id="drawer-list"></ul></nav>

@@ -1477,7 +1477,10 @@ function renderTabs() {
   const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
   $('#htabs').innerHTML = noneOpen ? '' : tabs.map((x) => {
     const on = x.id === activeTab, c = on ? live : x.counts, name = on ? doc.name : x.meta.name, files = on ? packageFiles.length : x.files.length;
-    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}. Delete closes it</span><span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span></button></span>`;
+    // Changed since it was opened (as VS Code shows it: a dot where the close button is, the × on hover).
+    const meta = on ? doc : x.meta;
+    const edited = meta.kind !== 'draft' && meta.kind !== 'new' && (on ? editor.getValue() !== loadedText : x.text !== x.base);
+    return `<span class="htab-w${on ? ' on' : ''}${edited ? ' edited' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}${edited ? ', edited' : ''}. Delete closes it</span>${edited ? '<span class="ht-ed" aria-hidden="true" title="Edited">●</span>' : ''}<span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span></button></span>`;
   }).join('');
 }
 function initTabs() {

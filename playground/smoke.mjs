@@ -601,6 +601,30 @@ await m.ctx.close();
   await s.ctx.close();
 }
 {
+  // The docs as pages: the site header, the page, the votes (kept in the browser, pressed state shown) and the
+  // report link; axe in light and dark; nothing cut off on a phone.
+  for (const theme of ['light', 'dark']) {
+    const s = await page(theme);
+    await s.p.goto(BASE + 'docs/Context.ModifySaveFile/');
+    check(await s.p.isVisible('.site-nav a[aria-current="page"]') && /Context\.ModifySaveFile/.test(await s.p.textContent('main h1')), `docs page ${theme}: header and the name`);
+    await s.p.click('.doc-fb [data-vote=down]');
+    check((await s.p.getAttribute('.doc-fb [data-vote=down]', 'aria-pressed')) === 'true' && /Thanks/.test(await s.p.textContent('.doc-fb-thanks')), `docs page ${theme}: a vote shows as pressed, with thanks`);
+    check(/doc-review/.test(await s.p.getAttribute('.doc-fb a', 'href')), `docs page ${theme}: the report link opens the doc review form`);
+    await axe(s.p, `${theme}, docs page`);
+    await s.p.goto(BASE + 'docs/');
+    await axe(s.p, `${theme}, docs list`);
+    check(!s.errors.length, `docs page ${theme}: no page errors ${s.errors.join(' ')}`);
+    await s.ctx.close();
+  }
+  const ph = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  for (const u of ['docs/Context.ModifySaveFile/', 'rules/', 'start/']) {
+    await ph.p.goto(BASE + u);
+    const wide = await ph.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    check(wide <= 1, `phone ${u}: no sideways scrolling, header included (${wide}px)`);
+  }
+  await ph.ctx.close();
+}
+{
   // Every handler can be closed, the last one too: the work area says nothing is open, with ways on; Reopen brings
   // it back, and opening anything fills the empty place (no extra blank tab).
   const s = await page('light');

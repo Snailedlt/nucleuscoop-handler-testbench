@@ -16,6 +16,9 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **One header for the whole site.** The start page, Learn, Docs and the check pages share a bar with Workbench · Learn · Docs · Checks · Get the tools.
+- **Votes and "Tell us what's wrong" on every docs page**, as in the workbench; editors' docs links now open these pages.
+- **An edited handler shows a dot on its tab**, as in VS Code (the × on hover), instead of "· edited" next to a name that wasn't there.
 - **Close every handler, the last one too.** Each tab has its ×; with nothing open, the workbench says so and offers New handler, Open, Learn and Reopen.
 - **Docs as pages.** Every option, Context member, enum and .NET call has its own page (`docs/Context.ModifySaveFile/` and so on), easy to link to and found by search engines; Docs in the workbench has **Open as a page** under each name.
 - **A first visit opens the New handler template**, not the common-mistakes handler (that one is still in Examples). The Fallout New Vegas Multiplayer example is gone: Hub handlers open with their files now, and its old link opens that Hub handler.

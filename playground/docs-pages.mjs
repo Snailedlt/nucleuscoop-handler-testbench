@@ -4,6 +4,7 @@
 // workbench" (#docs-<name>, which keeps working). Called by build.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
+import { siteHeader, SITE_HEADER_CSS, docFeedback, DOC_FEEDBACK_CSS, docFeedbackScript } from './site-chrome.mjs';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** Code, coloured: comments, strings, keywords and numbers (the start page's .hk/.hs/.hc colours). */
@@ -82,10 +83,12 @@ ${style}
 .open-wb { margin: 0 0 18px; font-size: 14px; }
 pre.cfg { white-space: pre-wrap; overflow-wrap: anywhere; }
 .dlist { padding-left: 20px; } .dlist li { margin: 0 0 6px; }
+${SITE_HEADER_CSS}${DOC_FEEDBACK_CSS}
 table { border-collapse: collapse; margin: 0 0 16px; font-size: 14px; } th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 </style>
 </head>
 <body>
+${siteHeader(up, 'docs/')}
 <main>
 `;
   const foot = (up) => `</main>
@@ -117,9 +120,10 @@ table { border-collapse: collapse; margin: 0 0 16px; font-size: 14px; } th, td {
     const title = v ? (page.path ?? v) : 'Docs';
     const first = (page.markdown.replace(/```[\s\S]*?```/g, '').split(/\n{2,}/).map((x) => x.trim()).find((x) => x && !x.startsWith('#') && !x.startsWith('-')) ?? '').replace(/[`*_\[\]]/g, '').replace(/\(@docs:[^)]*\)/g, '').slice(0, 200);
     const body = `<p class="crumbs">${crumbs.join(' › ')}</p>
-${v ? '' : '<h1>Docs</h1>'}
+<h1>${esc(v ? title : 'Docs')}</h1>
 <p class="open-wb"><a href="${up}#docs${v ? `-${encodeURIComponent(v)}` : ''}">Open in the workbench</a> (search, and try it in a handler)</p>
-${mdToHtml(page.markdown, href)}
+${mdToHtml(page.markdown.replace(/^## [^\n]*\n+/, ''), href)}
+${page.path && o.docReviewUrl ? docFeedback(page.path, o.docReviewUrl(page.path), esc) + docFeedbackScript(o.feedbackSite ?? null) : ''}
 `;
     const dir = v ? path.join(o.outDir, v) : o.outDir;
     fs.mkdirSync(dir, { recursive: true });

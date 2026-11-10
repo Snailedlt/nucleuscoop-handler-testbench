@@ -1543,6 +1543,11 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .ht-x { width: 22px; height: 22px; margin-right: 5px; display: grid; place-items: center; flex: none; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 15px; line-height: 1; cursor: pointer; opacity: 0; padding: 0; }
 .htab-w:hover .ht-x, .htab-w.on .ht-x, .ht-x:focus-visible { opacity: 1; }
 .ht-x:hover { background: var(--surface-2); color: var(--fg); }
+.ht-ed { width: 22px; height: 22px; margin-right: 5px; display: none; place-items: center; flex: none; color: var(--muted); font-size: 11px; }
+.htab-w.edited .ht-ed { display: grid; }
+.htab-w.edited .ht-x { display: none; }
+.htab-w.edited:hover .ht-ed, .htab-w.edited:focus-within .ht-ed { display: none; }
+.htab-w.edited:hover .ht-x, .htab-w.edited:focus-within .ht-x { display: grid; }
 @media (pointer: coarse) { .ht-x { opacity: 1; } }
 .htab-add { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; margin-bottom: 3px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
 .htab-add:hover, .htab-add[aria-expanded="true"] { background: var(--surface); color: var(--fg); }
@@ -1564,6 +1569,8 @@ header #app-menu-open { width: var(--hdr-ctl); }
 #app-menu-open .phone-dots { display: none; }
 .app-hidden { display: none !important; }
 .phone-name { display: none !important; }
+/* "· edited" belongs to the name, which only shows here on a phone; on a wide screen the tab's dot says it. */
+#doc-edited { display: none !important; }
 .rail { display: none; }
 /* Menus (menus.ts) */
 .app-menu { position: fixed; z-index: 90; min-width: 240px; max-width: min(340px, calc(100vw - 16px)); padding: 6px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 12px 32px rgba(0,0,0,.28); font-size: 13.5px; }
@@ -1602,6 +1609,7 @@ header #app-menu-open { width: var(--hdr-ctl); }
   :root[data-layout="rail"] header .brand, :root[data-layout="rail"] header .toolbar { display: flex; }
   .htabs-wrap { display: none; }
   .phone-name { display: inline-flex !important; }
+  #doc-edited:not([hidden]) { display: inline !important; }
   #app-menu-open svg { display: none; }
   #app-menu-open .phone-dots { display: inline; font-size: 18px; }
   header .home-link { display: none; }

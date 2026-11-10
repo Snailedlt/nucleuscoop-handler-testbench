@@ -19,6 +19,9 @@ The workbench can send WakaTime heartbeats for the person using it (off by defau
 
 - [Workbench](https://snailedlt.github.io/nucleuscoop-handler-testbench/): check, fix and try a handler in the browser (also as one offline file: `workbench.html` in the releases).
 - [Intro and install](https://snailedlt.github.io/nucleuscoop-handler-testbench/start/)
+- [Learn: making your first handler](https://snailedlt.github.io/nucleuscoop-handler-testbench/learn/): a handler for Boring Man (free on Steam), a few lines at a time, then tested in Nucleus Co-op.
+- [Docs](https://snailedlt.github.io/nucleuscoop-handler-testbench/docs/): one page per option, Context member, enum and .NET call (`docs/Context.ModifySaveFile/`), from the same model the tools use.
+- [Every check](https://snailedlt.github.io/nucleuscoop-handler-testbench/rules/): one page per lint rule: what it means, why, an example and the fix.
 - [VS Code extension](https://github.com/Snailedlt/splitscreenme-vscode/releases)
 - [Jint testbench](https://github.com/Snailedlt/nucleuscoop-handler-testbench): runs handlers in the real Jint 2.11.58; probes of engine behaviour.
 

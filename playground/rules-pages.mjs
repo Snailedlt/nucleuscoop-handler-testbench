@@ -3,6 +3,7 @@
 // each problem to its page; Discord helpers can link one too. Called by build.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
+import { siteHeader, SITE_HEADER_CSS } from './site-chrome.mjs';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** `code` and **bold** in the plain-words texts. */
@@ -49,6 +50,7 @@ ${o.preview ? '' : `<link rel="canonical" href="${esc(canonical)}">\n`}${o.noind
 ${themeScript}
 ${style}
 <style>
+${SITE_HEADER_CSS}
 .crumbs { font-size: 14px; color: var(--muted); margin: 0 0 14px; }
 .crumbs a { color: inherit; }
 .rmeta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; font-size: 14px; color: var(--muted); }
@@ -69,6 +71,7 @@ ${style}
 </style>
 </head>
 <body>
+${siteHeader(up, 'rules/')}
 <main>
 `;
   const foot = (up) => `</main>

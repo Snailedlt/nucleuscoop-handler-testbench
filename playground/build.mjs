@@ -5,6 +5,7 @@
 //
 // The core is imported from a checkout of splitscreenme-vscode (src/core), so the
 // page always runs the same linter as the extension.
+import { siteHeader, SITE_HEADER_CSS } from './site-chrome.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -560,6 +561,9 @@ fs.writeFileSync(
     // the lines that only make sense with an absolute address are left out).
     .replace(/^.*__BASE__(?:start\/)?".*\n/gm, (l) => (PREVIEW && /rel="canonical"|og:url/.test(l) ? '' : l))
     .replace('<meta name="viewport"', `${NOINDEX}<meta name="viewport"`)
+    // The site's header (site-chrome.mjs), as on the other pages.
+    .replace('<body>\n<main>', () => `<body>\n${siteHeader('../', 'start/')}\n<main>`)
+    .replace('</style>', () => `${SITE_HEADER_CSS}</style>`)
     .replaceAll('__BASE__start/', PREVIEW ? '' : `${PAGES_BASE}start/`)
     .replaceAll('__BASE__', PREVIEW ? '../' : PAGES_BASE)
     // A preview links the workbench by its file: some hosts (the Claude artifact) serve ../index.html but not ../.
@@ -630,10 +634,10 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
 // and searchable, each with "Open in the workbench".
 let docValues = [];
 {
-  const mod = await esbuild.build({ stdin: { contents: "export { docsPage, docsView, docsValue, DOCS_GROUPS } from './docspage'; export { allEntries } from './lookup'; export { api } from './api';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const mod = await esbuild.build({ stdin: { contents: "export { docsPage, docsView, docsValue, DOCS_GROUPS } from './docspage'; export { allEntries } from './lookup'; export { api, docReviewUrl } from './api';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
   const D = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
   const { writeDocPages } = await import('./docs-pages.mjs');
-  docValues = writeDocPages({ outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
+  docValues = writeDocPages({ outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), docReviewUrl: D.docReviewUrl, feedbackSite, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
   // Each docs page in the sitemap too (written with the rule pages above).
   const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
   if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
