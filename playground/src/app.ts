@@ -1,3 +1,4 @@
+import { RULE_DOCS, ruleUrl } from '@core/ruledocs';
 import { initKeySettings } from './kbsettings';
 import { openFind } from './findwidget';
 import { hasCredit, withCredit, withoutCredit } from './credit';
@@ -547,6 +548,8 @@ const SEV_ICON: Record<string, string> = { error: '✖', warning: '!', info: 'i'
 const codeIn = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 // The hover, as VS Code shows it: one flat box; each problem a short line (what, then why), the docs under a thin
 // divider, and the fixes as links in a bar at the bottom (Ctrl+. from the keyboard).
+// Each check's own page (core/ruledocs.ts): next to the site's own pages when served with them, else the live site.
+const ruleHref = (id: string) => (/^start\//.test(document.querySelector('a.start-link')?.getAttribute('href') ?? '') ? `rules/${encodeURIComponent(id)}/` : ruleUrl(id));
 function problemCard(list: Diagnostic[]): string {
   return `<div class="hv-sec hv-probs">${list.map((d) => {
     const plain = plainFor(d);
@@ -863,7 +866,7 @@ function renderProblems(text: string) {
           <span class="row-fix">${ordered[0] ? fixBtn(ordered[0], true) : ''}</span>
           <button class="ptoggle" type="button" aria-expanded="${open}" aria-controls="${bodyId}" aria-label="More about line ${line}: ${esc(plain.title)}"></button></div>
         <div class="body" id="${bodyId}"${open ? '' : ' hidden'}><p class="plain-why">${esc(plain.why)}</p>
-        <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
+        <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${RULE_DOCS[d.rule] ? `<a class="link" href="${esc(ruleHref(d.rule))}" target="_blank" rel="noopener">About this check</a>` : ''}${extra}</div>
         <details class="tech"${density === 'detailed' ? ' open' : ''}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></div></li>`;
     })
     .join('');

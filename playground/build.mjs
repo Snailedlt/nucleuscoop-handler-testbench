@@ -594,6 +594,16 @@ fs.rmSync(path.join(startDir, 'gallery'), { recursive: true, force: true });
 fs.mkdirSync(path.join(startDir, 'gallery'), { recursive: true });
 for (const f of fs.readdirSync(path.join(here, '..', 'docs', 'images', 'gallery'))) if (f.endsWith('.webp')) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'gallery', f), path.join(startDir, 'gallery', f));
 fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
+// One page per check (rules/<id>/) and the list of them (rules/), from the core's core/ruledocs.ts (rules-pages.mjs).
+{
+  const mod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'ruledocs.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const { RULE_DOCS } = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
+  const lintAll = await esbuild.build({ stdin: { contents: "export { RULES } from './lint'; export { JS_RULES } from './jsrules';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const { RULES, JS_RULES } = await import('data:text/javascript;base64,' + Buffer.from(lintAll.outputFiles[0].text).toString('base64'));
+  const { writeRulePages } = await import('./rules-pages.mjs');
+  const ruleIds = writeRulePages({ outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
+  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}rules/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+}
 // The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
 fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });
 for (const [dir, names] of [[path.join(here, '..', 'docs', 'videos'), ['workbench']], [path.join(coreRepo, 'docs', 'videos'), ['vscode', 'notepadpp']]])

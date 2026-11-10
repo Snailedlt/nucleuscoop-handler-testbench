@@ -615,6 +615,22 @@ await m.ctx.close();
   check(!s.errors.length, `pinned tasks: no page errors ${s.errors.join(' ')}`);
   await s.ctx.close();
 }
+for (const theme of ['light', 'dark']) {
+  // One page per check, and the list of them: they load, the examples are there, the filter works, accessible.
+  const s = await page(theme);
+  await s.p.goto(BASE + 'rules/');
+  await s.p.fill('.rsearch', 'proto input');
+  const shown = await s.p.$$eval('.ruleset li', (l) => l.filter((x) => !x.hidden).length);
+  check(shown > 0 && shown < 10, `${theme}: rules list: the filter narrows the list (${shown})`);
+  await s.p.fill('.rsearch', '');
+  await axe(s.p, `${theme}, rules list`);
+  await s.p.click('.ruleset a[href="wrong-arguments/"]');
+  await s.p.waitForLoadState();
+  check((await s.p.$$('.ex pre')).length === 2 && /wrong number/.test(await s.p.textContent('h1')), `${theme}: a rule's page: its title and both examples`);
+  await axe(s.p, `${theme}, a rule's page`);
+  check(!s.errors.length, `${theme}: rules pages: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
 {
   // A laptop with a touch screen has a real keyboard: a text field getting focus inside a frame (the claude.ai
   // preview) must not shrink the page for an on-screen keyboard that isn't there.

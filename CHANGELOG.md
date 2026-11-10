@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **A page for every check.** "About this check" in a problem's details opens its page: what it means, why, a wrong and a right example, and the fix. The list of all of them (with a filter) is linked from the start page.
 - **How to get started, on the start page.** VS Code and Notepad++ each have four short steps there, from download to Try it. For Neovim, Helix, Sublime Text, Emacs, Kate, JetBrains IDEs, Zed or any other editor with a language server, click it to see its setup, config included.
 - **See every view in light and dark.** The start page's screenshots are now one gallery: pick the workbench, VS Code or Notepad++ and a view (and for the workbench, one of its four looks), then drag the slider across the picture to compare light and dark anywhere on it. ‹ › and a counter step through the views; light and dark load together.
 - **Add text before or after every match.** In Find (Ctrl+F), Alt+Enter selects every match, as in VS Code; then → puts a cursor after each (← before each) and you type once for all of them. Ctrl+Shift+L does the same while Find is open, with its case, whole-word and regex options.
