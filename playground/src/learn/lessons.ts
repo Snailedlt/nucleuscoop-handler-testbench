@@ -224,6 +224,7 @@ const FIRST: Lesson[] = [
     notes: [
       { kind: 'check', text: 'Check, under the code, lists what Nucleus would refuse. A handler needs `GUID`, `GameName` and `ExecutableName` to load at all, so Check waits until this lesson is done before it asks for them.' },
       { kind: 'pitfall', text: '`ExecutableContext` is a list, in square brackets, even with one name in it. A plain `"maps"` isn\'t what Nucleus expects, and Check says so.' },
+      { kind: 'why', text: '`LauncherTitle = ""` and `StartArguments = ""` only write out what Nucleus does anyway. Lots of Hub handlers carry lines like these from a template; leaving them out changes nothing.' },
     ],
     start: S.name + '\n// The game\n',
     solution: S.game,
@@ -266,13 +267,14 @@ const FIRST: Lesson[] = [
     kind: 'code',
     text: [
       'Two copies of a game in one folder get in each other\'s way. So Nucleus gives each player a folder of their own: `content\\Boring Man Tutorial\\Instance0`, `Instance1`, and so on.',
-      'Copying the whole game for every player would be slow and fill your disk. `SymlinkGame` fills each folder with **links** to the real files instead: they look like the files but take no space. `SymlinkExe = false` gives each player a real copy of the .exe, and `KeepSymLinkOnExit = false` tidies the folders away when you close Nucleus.',
+      'Copying the whole game for every player would be slow and fill your disk. `SymlinkGame` fills each folder with **links** to the real files instead: they look like the files but take no space. `SymlinkExe = false` (a real copy of the .exe for each player) and `KeepSymLinkOnExit = false` (the folders are tidied away when you close Nucleus) are what Nucleus does anyway: the tested handler just says so.',
       'A link is still the same file, though: if two players write to it, they write to the same file. `FileSymlinkCopyInstead` lists files each player gets a **real copy** of. Boring Man keeps settings in `options.ini`, next to its .exe.',
       block(FOLDERS_L + COPY_L, lastLine(S.players) + '\n\n// A folder for each player'),
     ],
     task: 'Add the four lines.',
     notes: [
       { kind: 'why', text: 'How do you know which files need a copy? By testing: start two copies and see what they fight over. A later chapter is about exactly that.' },
+      { kind: 'odd', text: 'Nucleus matches these names as **part** of a file name, not the whole name: `"options.ini"` would also catch a `myoptions.ini`. Use names specific enough.' },
     ],
     start: S.players + '\n// A folder for each player\n',
     solution: S.folders,
@@ -325,7 +327,7 @@ const FIRST: Lesson[] = [
     kind: 'code',
     text: [
       'To move and size each copy\'s window, Nucleus first finds it by its title: `Game.Hook.ForceFocusWindowName`. Boring Man\'s window is called `Boring Man`.',
-      '`ResetWindows` puts each window in its place when the next copy starts, and `SetWindowHook` stops the game moving its own window after that. `RefreshWindowAfterStart` minimizes and restores each window once they\'re all open, which wakes some games up. `HideTaskbar = false` leaves the taskbar where it is.',
+      '`ResetWindows` puts each window in its place when the next copy starts, and `SetWindowHook` stops the game moving its own window after that. `RefreshWindowAfterStart` minimizes and restores each window once they\'re all open, which wakes some games up. `HideTaskbar = false` leaves the taskbar where it is, which Nucleus does anyway.',
       block(WINDOWS_L, lastLine(S.steam) + '\n\n// The windows'),
     ],
     task: 'Add the five lines.',
@@ -363,7 +365,7 @@ const FIRST: Lesson[] = [
     kind: 'code',
     text: [
       'Nucleus starts the copies one after another. `Game.PauseBetweenStarts` is how long it waits before the next, so each window is up before the next one opens. The tested handler waits 25.',
-      '`Game.HandlerInterval` is how often, in milliseconds, Nucleus checks on the windows while you play.',
+      '`Game.HandlerInterval` is how often, in milliseconds, Nucleus checks on the windows while you play. Leave it out and it\'s 0: Nucleus never checks, and everything that needs it (like keeping windows in place) stops.',
       block(TIMING_L, lastLine(S.focus) + '\n\n// Timing'),
     ],
     task: 'Add the two lines.',
@@ -388,6 +390,7 @@ const FIRST: Lesson[] = [
     task: 'Add the five lines.',
     notes: [
       { kind: 'pitfall', text: 'One keyboard means one keyboard player: Windows sends every key to the window in focus. Several keyboards and mice need Proto Input, which is a chapter of its own.' },
+      { kind: 'odd', text: 'Not every `false` here is the same. `XInputReroute` and `DInputEnabled` are off anyway, but `CustomDllEnabled` is **on** unless a handler turns it off: without that line, Nucleus would add its own XInput DLL as well as XInputPlus (next lesson).' },
     ],
     start: S.timing + '\n// Controllers and keyboard\n',
     solution: S.input,
@@ -425,7 +428,7 @@ const FIRST: Lesson[] = [
     ],
     task: 'Add the line.',
     notes: [
-      { kind: 'odd', text: 'Leave one out and the game may start with its real Steam DLL, or see every controller, even though everything else is right.' },
+      { kind: 'odd', text: 'Leave one out and the game may start with its real Steam DLL, or see every controller, even though everything else is right. Like the copy list, these match **part** of a file name.' },
     ],
     start: S.pads + '\n// Files Nucleus puts in each copy itself\n',
     solution: S.exclusions,
