@@ -168,7 +168,12 @@ const startSrc = fs.readFileSync(path.join(root, 'playground/src/start.html'), '
 const builtStart = path.join(root, 'playground/dist/pages/start/index.html');
 
 test('start page: every heading has its GitHub-style anchor, and in-page links point at ids that exist', () => {
-  const headings = [...startSrc.matchAll(/<(h[2-4]) id="([^"]+)" class="[^"]*\bhas-anchor\b[^"]*">([^<]+)<\/\1>/g)];
+  // Headings with their # link, and the titles of the folded parts (<summary><h3 id=…>: no link inside a
+  // summary, but the same GitHub-style id, and a link to it opens the part).
+  const headings = [
+    ...startSrc.matchAll(/<(h[2-4]) id="([^"]+)" class="[^"]*\bhas-anchor\b[^"]*">([^<]+)<\/\1>/g),
+    ...startSrc.matchAll(/<summary><(h[2-4]) id="([^"]+)">([^<]+)<\/\1><\/summary>/g),
+  ];
   assert.ok(headings.length >= 9, `${headings.length} headings`);
   for (const [, , id, text] of headings) assert.equal(id, githubSlug(text.replace(/&amp;/g, '&')), text);
   // Every section (h2) has the anchor class, so a new one gets its link.

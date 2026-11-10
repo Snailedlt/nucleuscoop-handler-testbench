@@ -52,6 +52,18 @@ a { color: var(--accent); }
 h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.15; margin: 6px 0 12px; }
 h2 { font-size: 22px; margin: 44px 0 12px; }
 h3 { font-size: 17px; margin: 0 0 6px; }
+/* Folded parts: the details, one click away. The heading is the summary: no # icon inside it (a link inside
+   a summary is nested interactive content), but its id stays, and a link to it opens the part (script below). */
+details.more { margin: 14px 0 0; border-top: 1px solid var(--line); padding-top: 10px; }
+details.more > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: ""; flex: none; width: 8px; height: 8px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+details.more[open] > summary::before { transform: rotate(45deg); }
+details.more > summary h3 { margin: 0; }
+details.more > summary:hover h3 { color: var(--accent); }
+details.more > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-sm); }
+details.more[open] > summary { margin-bottom: 10px; }
+@media (prefers-reduced-motion: reduce) { details.more > summary::before { transition: none; } }
 p { margin: 0 0 12px; }
 code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: var(--r-sm); }
 .kicker { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
@@ -143,22 +155,20 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
   __MASCOTS__
   <p class="kicker">Beta · testers wanted</p>
   <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
-  <p class="lede">Tools for VS Code, Notepad++ and the browser that check your handler the way Nucleus runs it, explain every option as you type, and show what each player gets, without starting Nucleus or the game. When it looks right, one click starts it in Nucleus.</p>
+  <p class="lede">Check your handler the way Nucleus runs it, with docs for every option as you type and what each player gets, before you start the game. In VS Code, Notepad++ or the browser.</p>
   <div class="ctas">
     <a class="btn primary" href="../?ref=start">Try it in the browser</a>
     <a class="btn" href="#try-it-in-5-minutes">Get it for VS Code or Notepad++</a>
     <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Send feedback</a>
   </div>
-  <p class="small">The workbench needs no install. Paste a handler, or open one of the verified Hub handlers.</p>
   </header>
 
   <section aria-labelledby="what-it-catches">
   <span id="catches" class="anchor-alias" aria-hidden="true"></span><h2 id="what-it-catches" class="has-anchor">What it catches</h2>
   <ul class="facts">
-    <li><strong>Lines Nucleus quietly ignores.</strong> A misspelled option or <code>Player.ProtoController5</code> (only 1–4 exist) runs without an error and does nothing. 16 verified Hub handlers have that one.</li>
-    <li><strong>Code Nucleus can't run.</strong> Its script engine (Jint 2.11.58) only takes ES5: arrow functions, template literals and <code>includes()</code> break the handler.</li>
-    <li><strong>Calls that stop the session.</strong> A misspelled <code>System.IO.File</code> call or a missing argument throws, and Nucleus ends the session. Options in the wrong format (<code>Game.CustomHotkeys</code>) or set too late (<code>Game.MaxPlayers</code> inside <code>Game.Play</code>) do nothing.</li>
-    <li><strong>Hub install pitfalls</strong>, <code>Context</code> used outside <code>Game.Play</code>, wrong value types, missing required fields, and more. Many have a one-click fix.</li>
+    <li><strong>Lines Nucleus quietly ignores</strong>: a misspelled option, or <code>Player.ProtoController5</code> (only 1–4 exist; 16 verified Hub handlers have it).</li>
+    <li><strong>Code Nucleus can't run</strong>: arrow functions, template literals, <code>includes()</code>. Its engine (Jint 2.11.58) only takes ES5.</li>
+    <li><strong>Calls that end the session</strong>: a misspelled <code>System.IO.File</code> call or a missing argument. Plus Hub install pitfalls, wrong value types and more, many with a one-click fix.</li>
   </ul>
   <p class="small">Every check is tested against the real Jint engine (__PROBES__ probes), and every week against the verified Hub handlers: no errors on any of them, and Try it agrees with the real engine.</p>
 
@@ -166,6 +176,16 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 
   <section aria-labelledby="see-it">
   <span id="see" class="anchor-alias" aria-hidden="true"></span><h2 id="see-it" class="has-anchor">See it</h2>
+  <span id="in-motion" class="anchor-alias" aria-hidden="true"></span>
+  <div class="videos">
+    <figure><video controls preload="none" playsinline muted poster="videos/workbench-poster.jpg" width="1280" height="800" aria-label="The workbench: a short demo with captions"><source src="videos/workbench.mp4" type="video/mp4"></video>
+      <figcaption><strong>The workbench,</strong> two minutes: checks, fixes, suggestions, Docs, Try it, the visual editor, the debugger, and Settings (light or dark, looks, code colours, the side rail). <a href="videos/workbench.mp4">Download</a></figcaption></figure>
+    <figure><video controls preload="none" playsinline muted poster="videos/vscode-poster.jpg" width="1280" height="800" aria-label="VS Code: a short demo with captions"><source src="videos/vscode.mp4" type="video/mp4"></video>
+      <figcaption><strong>VS Code,</strong> about a minute: problems, quick fixes, suggestions, parameter hints, the Docs panel and Try it. <a href="videos/vscode.mp4">Download</a></figcaption></figure>
+    <figure><video controls preload="none" playsinline muted poster="videos/notepadpp-poster.jpg" width="1400" height="900" aria-label="Notepad++: a short demo with captions"><source src="videos/notepadpp.mp4" type="video/mp4"></video>
+      <figcaption><strong>Notepad++,</strong> under a minute: the same checks, fixes, suggestions and docs, and the plugin's menu. <a href="videos/notepadpp.mp4">Download</a></figcaption></figure>
+  </div>
+  <details class="more"><summary><h3 id="screenshots">Screenshots</h3></summary>
   <div class="shots">
     <figure><a href="vscode-problems-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="vscode-problems-dark.png"><img src="vscode-problems-light.png" width="2160" height="1290" loading="lazy" alt="VS Code showing handler problems underlined, with the Problems panel listing them"></picture></a>
       <figcaption><strong>VS Code: checks as you type.</strong> Problems are underlined and listed, with quick fixes.</figcaption></figure>
@@ -178,33 +198,19 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
     <figure><a href="lines-tree-light.png" data-full><picture><source data-dark media="(prefers-color-scheme: dark)" srcset="lines-tree-dark.png"><img src="lines-tree-light.png" width="1600" height="800" loading="lazy" alt="The workbench's Lines list as a tree at System › IO › File, with the docs for File.Exists"></picture></a>
       <figcaption><strong>Lines:</strong> every name a handler can use, as a tree (Game, Context, System…), with docs and how many Hub handlers use it. Click to insert.</figcaption></figure>
   </div>
-  <h3 id="in-motion" class="has-anchor">In motion</h3>
-  <div class="videos">
-    <figure><video controls preload="none" playsinline muted poster="videos/workbench-poster.jpg" width="1280" height="800" aria-label="The workbench: a short demo with captions"><source src="videos/workbench.mp4" type="video/mp4"></video>
-      <figcaption><strong>The workbench,</strong> two minutes: checks, fixes, suggestions, Docs, Try it, the visual editor, the debugger, and Settings (light or dark, looks, code colours, the side rail). <a href="videos/workbench.mp4">Download</a></figcaption></figure>
-    <figure><video controls preload="none" playsinline muted poster="videos/vscode-poster.jpg" width="1280" height="800" aria-label="VS Code: a short demo with captions"><source src="videos/vscode.mp4" type="video/mp4"></video>
-      <figcaption><strong>VS Code,</strong> about a minute: problems, quick fixes, suggestions, parameter hints, the Docs panel and Try it. <a href="videos/vscode.mp4">Download</a></figcaption></figure>
-    <figure><video controls preload="none" playsinline muted poster="videos/notepadpp-poster.jpg" width="1400" height="900" aria-label="Notepad++: a short demo with captions"><source src="videos/notepadpp.mp4" type="video/mp4"></video>
-      <figcaption><strong>Notepad++,</strong> under a minute: the same checks, fixes, suggestions and docs, and the plugin's menu. <a href="videos/notepadpp.mp4">Download</a></figcaption></figure>
-  </div>
-  <h3 id="in-your-editor" class="after-shots has-anchor">In your editor</h3>
-<ul class="facts">
-<li><strong>Suggestions that know your handler</strong>: every option Nucleus has with its values, your own functions and variables, and the keys your <code>Game.AddOption</code> lines add. Parameter hints say what to pass.</li>
-<li><strong>Snippets and a template</strong>: type <code>handler</code> in an empty file, or <code>iniset</code>, <code>startargs</code>, <code>eachplayer</code>… where you need them.</li>
-<li><strong>Test in Nucleus Co-op</strong>: one click installs the handler and starts Nucleus with its game selected.</li>
-<li><strong>Format, rename, go to definition</strong>, and a getting-started guide in VS Code. Neovim, Helix, Zed and other editors get the same through <code>ncdev lsp</code>.</li>
-</ul>
-<h3 id="works-in-your-editor" class="has-anchor">Works in your editor</h3>
+  </details>
+  <span id="in-your-editor" class="anchor-alias" aria-hidden="true"></span>
+<h3 id="works-in-your-editor" class="after-shots has-anchor">Works in your editor</h3>
 <ul class="editors"><li><a class="ed" href="#try-it-in-5-minutes"><img src="editors/vscode.svg" alt="" width="40" height="40" loading="lazy"><span><strong>VS Code</strong><small>Extension · also VSCodium</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#notepad" rel="noopener"><img src="editors/notepadplusplus.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Notepad++</strong><small>Plugin, one command to install</small></span></a></li><li><a class="ed" href="../?ref=start"><img src="../icon.png" alt="" width="40" height="40" loading="lazy"><span><strong>Your browser</strong><small>The workbench, nothing to install</small></span></a></li></ul>
-<h3 id="any-editor-with-a-language-server-lsp" class="has-anchor">Any editor with a language server (LSP)</h3>
+<details class="more"><summary><h3 id="any-editor-with-a-language-server-lsp">Any editor with a language server (LSP)</h3></summary>
 <p>Most code editors get their smart features from a separate program called a <strong>language server</strong>, over a standard protocol (LSP). <code>ncdev lsp</code> is that program for Nucleus handlers: point your editor at it and it gets the same engine as VS Code and the workbench.</p>
 <ul class="facts">
 <li><strong>What you get</strong>: problems underlined as you type, hovers with the docs, suggestions and parameter hints, quick fixes (Fix all too), Format, rename, go to definition and references, and an outline of the handler.</li>
 <li><strong>What you need</strong>: <code>ncdev</code> (one file, nothing else to install: <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">download</a>) and a few lines in your editor's LSP settings; <a href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers">the config for each editor, and which we've tested</a>.</li>
-<li><strong>Also there</strong>: <code>ncdev dap</code> for step-through debugging in editors with a debug client, and <code>ncdev mcp</code> for AI agents.</li>
+<li><strong>Also there</strong>: <code>ncdev dap</code> for step-through debugging in editors with a debug client, <code>ncdev mcp</code> for AI agents, and an optional skill for writing handlers with Claude Code.</li>
 </ul>
-<ul class="editors dev"><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#neovim" rel="noopener"><img src="editors/neovim.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Neovim</strong><small>5 lines of Lua</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#helix" rel="noopener"><img src="editors/helix.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Helix</strong><small>6 lines of TOML</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/sublime.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Sublime Text</strong><small>LSP package + one entry</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/emacs.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Emacs</strong><small>One eglot line</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/kate.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Kate</strong><small>One LSP Client entry</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/jetbrains.svg" alt="" width="40" height="40" loading="lazy"><span><strong>JetBrains IDEs</strong><small>LSP4IJ plugin</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/zed.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Zed</strong><small>Needs a small extension</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/lsp.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Anything with LSP</strong><small><code>ncdev lsp</code> over stdio</small></span></a></li></ul>
-<h3 id="compare-the-editors" class="has-anchor">Compare the editors</h3>
+<ul class="editors dev"><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#neovim" rel="noopener"><img src="editors/neovim.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Neovim</strong><small>5 lines of Lua</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#helix" rel="noopener"><img src="editors/helix.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Helix</strong><small>6 lines of TOML</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/sublime.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Sublime Text</strong><small>LSP package + one entry</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/emacs.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Emacs</strong><small>One eglot line</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/kate.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Kate</strong><small>One LSP Client entry</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/jetbrains.svg" alt="" width="40" height="40" loading="lazy"><span><strong>JetBrains IDEs</strong><small>LSP4IJ plugin</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/zed.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Zed</strong><small>Needs a small extension</small></span></a></li><li><a class="ed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/lsp.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Anything with LSP</strong><small><code>ncdev lsp</code> over stdio</small></span></a></li></ul></details>
+<details class="more"><summary><h3 id="compare-the-editors">Compare the editors</h3></summary>
 <p class="small">One engine runs underneath all of them: the checks, suggestions and docs are the same. What differs is what each editor can show.</p>
 <div class="compare-wrap" tabindex="0" role="region" aria-label="Features by editor (scrolls sideways)">
 <table class="compare">
@@ -230,7 +236,8 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 </tbody>
 </table>
 </div>
-<h3 id="also-in-the-workbench" class="has-anchor">Also in the workbench</h3>
+</details>
+<details class="more"><summary><h3 id="also-in-the-workbench">Also in the workbench</h3></summary>
   <ul class="facts">
     <li><strong>Test all combinations</strong>: every player count, input setup and monitor size in one click, with what fails and why.</li>
     <li><strong>Whole packages</strong>: open a .zip or .nc and save it again with its Goldberg files, configs and DLLs.</li>
@@ -238,6 +245,7 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 <li><strong>Phones and desktops</strong>: symbol keys above the on-screen keyboard; VS Code's shortcuts, hovers and suggestions on a keyboard.</li>
     <li><strong>WakaTime</strong>, if you use it: your handler time in your dashboard (off by default; the code is never sent).</li>
   </ul>
+  </details>
 
   </section>
 
@@ -262,22 +270,26 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 
   <section aria-labelledby="want-to-help-build-it">
   <span id="help" class="anchor-alias" aria-hidden="true"></span><h2 id="want-to-help-build-it" class="has-anchor">Want to help build it?</h2>
-  <p>Handler authors know Nucleus better than any linter. Contributions are welcome, especially:</p>
-  <ul>
-    <li><strong>Option docs:</strong> better explanations and examples for <code>Game.*</code> options.</li>
-    <li><strong>New checks</strong> for mistakes you keep seeing in handlers.</li>
-    <li><strong>Jint probes:</strong> small scripts that pin down how Nucleus' engine really behaves.</li>
-  </ul>
+  <p>Handler authors know Nucleus better than any linter: better option docs, new checks for mistakes you keep seeing, and Jint probes (small scripts that pin down how Nucleus' engine behaves) are all welcome.</p>
   <div class="ctas">
     <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode">VS Code, Notepad++ and CLI</a>
     <a class="btn" href="https://github.com/Snailedlt/nucleuscoop-handler-testbench">Workbench and Jint testbench</a>
   </div>
-  <p class="small">Also included: <code>ncdev</code>, the same checks on the command line and a language server for other editors, and an optional skill for writing handlers with an AI agent (Claude Code).</p>
 
   </section>
 </main>
 <footer class="small">Beta. It checks the handler script, not the game: windows, focus and input still need a real test in Nucleus. Nothing on your computer changes until you press Install or Test in Nucleus.<p class="mascots-tease" style="margin:8px 0 0">Psst: meet <a href="__BASE__mascots/index.html">Duo and Nucli</a>, the mascots we are sketching for splitscreen.me and these tools. Early concepts; they will move in soon.</p><p style="margin:8px 0 0">Made by <a href="https://github.com/Snailedlt" rel="author">Snailedlt</a> (Jørgen KH).</p></footer>
 <script>
+// A link to a heading inside a folded part (#compare-the-editors…) opens that part first.
+(function () {
+  function reveal() {
+    var t = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    for (var d = t && t.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) d.open = true;
+    if (t && t.closest('details')) t.scrollIntoView();
+  }
+  addEventListener('hashchange', reveal);
+  reveal();
+})();
 // Screenshots follow the theme: the system's, or the one picked in the workbench (src/themed.ts does
 // the same there). A click opens the full-size image that is showing.
 (function () {
