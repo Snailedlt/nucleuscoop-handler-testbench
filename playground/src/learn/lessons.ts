@@ -48,6 +48,8 @@ export interface Lesson {
   /** Once the task is done: "Try it in Nucleus Co-op now" (folded), with the code so far to download, what to do
    *  and what you should see. Working code early, as often as a handler allows. */
   checkpoint?: { download: 'js' | 'zip'; steps: string[]; see: string };
+  /** More paragraphs (like `text`) after the steps and the download. */
+  after?: string[];
   /** test lessons: "what did you see?" and where each answer leads. */
   ask?: { question: string; answers: { label: string; reply: string }[] };
 }
@@ -110,24 +112,22 @@ const TOP = '// Boring Man Tutorial: a handler for Boring Man - Online Tactical 
 const NAME_L = 'Game.GUID = "Boring Man Tutorial";\nGame.GameName = "Boring Man Tutorial";\n';
 const DESCRIPTION_L = 'Game.Description = "Host a game in one instance and join in the others via direct connect. Press CTRL+T twice if an instance is behind the windows taskbar.";\n';
 const DESCRIPTION = '\n// What players read before they start\n' + DESCRIPTION_L;
-const GAME_L = 'Game.ExecutableName = "BoringManGame.exe";\nGame.ExecutableContext = ["maps"];\nGame.LauncherTitle = "";\nGame.StartArguments = "";\n';
+const GAME_L = 'Game.ExecutableName = "BoringManGame.exe";\nGame.MaxPlayers = 20;\n';
 const GAME = '\n// The game\n' + GAME_L;
-const PLAYERS_L = 'Game.MaxPlayers = 20;\nGame.MaxPlayersOneMonitor = 20;\n';
-const PLAYERS = '\n// How many players\n' + PLAYERS_L;
-const FOLDERS_L = 'Game.SymlinkGame = true;\nGame.SymlinkExe = false;\nGame.KeepSymLinkOnExit = false;\n';
+const FOLDERS_L = 'Game.SymlinkGame = true;\n';
 const COPY_L = 'Game.FileSymlinkCopyInstead = ["options.ini"];\n';
 const FOLDERS = '\n// A folder for each player\n' + FOLDERS_L + COPY_L;
 const ENV_L = 'Game.UseNucleusEnvironment = true;\nGame.UserProfileConfigPath = "AppData\\\\Local\\\\BoringManRewrite";\n';
 const ENV = '\n// Each player\'s own settings folder\n' + ENV_L;
 const STEAM_L = 'Game.UseGoldberg = true;\nGame.SteamID = "346120";\n';
 const STEAM = '\n// Steam\n' + STEAM_L;
-const WINDOWS_L = 'Game.Hook.ForceFocusWindowName = "Boring Man";\nGame.ResetWindows = true;\nGame.SetWindowHook = true;\nGame.RefreshWindowAfterStart = true;\nGame.HideTaskbar = false;\n';
+const WINDOWS_L = 'Game.Hook.ForceFocusWindowName = "Boring Man";\nGame.ResetWindows = true;\nGame.SetWindowHook = true;\nGame.RefreshWindowAfterStart = true;\n';
 const WINDOWS = '\n// The windows\n' + WINDOWS_L;
 const FOCUS_L = 'Game.HookFocus = true;\n';
 const FOCUS = '\n// Every window in focus\n' + FOCUS_L;
 const TIMING_L = 'Game.PauseBetweenStarts = 25;\nGame.HandlerInterval = 100;\n';
 const TIMING = '\n// Timing\n' + TIMING_L;
-const INPUT_L = 'Game.SupportsKeyboard = true;\nGame.Hook.XInputEnabled = true;\nGame.Hook.XInputReroute = false;\nGame.Hook.DInputEnabled = false;\nGame.Hook.CustomDllEnabled = false;\n';
+const INPUT_L = 'Game.SupportsKeyboard = true;\nGame.Hook.XInputEnabled = true;\nGame.Hook.CustomDllEnabled = false;\n';
 const INPUT = '\n// Controllers and keyboard\n' + INPUT_L;
 const ONE_PAD_L = 'Game.XInputPlusDll = ["xinput1_3.dll"];\nGame.UseDInputBlocker = true;\n';
 const EXCLUDE_L = 'Game.FileSymlinkExclusions = ["steam_api.dll", "steam_appid.txt", "dinput8.dll", "xinput1_3.dll"];\n';
@@ -139,8 +139,7 @@ const PLAY = '\n// Each player\'s settings\nGame.Play = function () {\n' + PLAY_
 const S: Record<string, string> = {};
 S.name = TOP + NAME_L;
 S.game = S.name + GAME;
-S.players = S.game + PLAYERS;
-S.folders = S.players + FOLDERS;
+S.folders = S.game + FOLDERS;
 S.environment = S.folders + ENV;
 S.steam = S.environment + STEAM;
 S.windows = S.steam + WINDOWS;
@@ -150,10 +149,49 @@ S.input = S.timing + INPUT;
 S.pads = S.input + ONE_PAD_L;
 S.exclusions = S.pads + EXCLUDE;
 S.description = TOP + NAME_L + DESCRIPTION + S.exclusions.slice((TOP + NAME_L).length);
-/** The finished handler: what the verified Hub handler does, setting for setting. */
+/** The finished handler: what the verified Hub handler does, without the lines that change nothing. */
 export const FINAL = S.description + PLAY;
 /** What the first full test runs: everything but Game.Play (the windows are full screen: the next lesson's bug). */
 const FIRST_TEST = S.description;
+
+/** The verified Hub handler as it was uploaded (its Hub.* lines left out), for the diff at the end. */
+const HUB_HANDLER = "Game.ExecutableContext = [\"maps\"];\nGame.FileSymlinkExclusions = [\"steam_api.dll\", \"steam_appid.txt\", \"dinput8.dll\", \"xinput1_3.dll\"];\nGame.FileSymlinkCopyInstead = [\"options.ini\"];\nGame.UseNucleusEnvironment = true;\nGame.UseGoldberg = true;\nGame.HandlerInterval = 100;\nGame.SymlinkExe = false;\nGame.SymlinkGame = true;\nGame.SupportsKeyboard = true;\nGame.ExecutableName = \"BoringManGame.exe\";\nGame.SteamID = \"346120\";\nGame.GUID = \"Boring Man\";\nGame.GameName = \"Boring Man - Online Tactical Stickman Combat\";\nGame.MaxPlayers = 20;\nGame.MaxPlayersOneMonitor = 20;\nGame.LauncherTitle = \"\";\nGame.HideTaskbar = false;\nGame.StartArguments = \"\";\nGame.Hook.ForceFocusWindowName = \"Boring Man\";\nGame.HookFocus = true;\nGame.SetWindowHook = true;\nGame.RefreshWindowAfterStart = true;\nGame.ResetWindows = true;\nGame.Hook.DInputEnabled = false;\nGame.UseDInputBlocker = true;\nGame.Hook.XInputEnabled = true;\nGame.Hook.XInputReroute = false;\nGame.Hook.CustomDllEnabled = false;\nGame.XInputPlusDll = [\"xinput1_3.dll\"];\nGame.Description = \"Host a game in one instance and join in the others via direct connect. Press CTRL+T twice if an instance is behind the windows taskbar.\";\nGame.UserProfileConfigPath = \"AppData\\\\Local\\\\BoringManRewrite\";\nGame.KeepSymLinkOnExit = false;\nGame.PauseBetweenStarts = 25;\n\nGame.Play = function() {\n  var VideoConfig = Context.EnvironmentPlayer + Context.UserProfileConfigPath + \"\\\\bm_settings.ini\";\n  Context.ModifySaveFile(VideoConfig, VideoConfig, Nucleus.SaveType.INI, [\n    new Nucleus.IniSaveInfo(\"Video\", \"Fullscreen\", '\"0\"')\n    //new Nucleus.IniSaveInfo(\"Resolution\", \"Fullscreen\", '\"11\"'),\n  ]);\n};\n";
+/** Why each line the tutorial leaves out can go (from the Nucleus source). */
+const DROPPED: [RegExp, string][] = [
+  [/ExecutableContext/, 'only tells games with the same .exe name apart, and no other handler uses `BoringManGame.exe`'],
+  [/MaxPlayersOneMonitor/, 'Nucleus never reads it'],
+  [/LauncherTitle|StartArguments/, 'empty is what Nucleus does anyway'],
+  [/SymlinkExe|KeepSymLinkOnExit|HideTaskbar|XInputReroute|DInputEnabled/, 'false is the default'],
+  [/^\s*\/\//, 'a comment'],
+];
+const norm = (l: string) => l.replace(/\s+/g, '').replace(/;$/, '');
+/** The Hub handler against the tutorial's: "- " lines it drops, "+ " lines it adds, the rest folded into "…". */
+function hubDiff(): string {
+  const mine = new Set(FINAL.split('\n').filter((l) => l.trim() && !l.trim().startsWith('//')).map(norm));
+  const out: string[] = [];
+  let same = 0;
+  const flush = () => { if (same) out.push('…'); same = 0; };
+  for (const l of HUB_HANDLER.replace(/\n$/, '').split('\n')) {
+    if (!l.trim()) continue;
+    if (mine.has(norm(l)) || /^(Game\.Play\s*=\s*function|\s*\}\s*;?\s*$|\s*\]\);?$|\s*Context\.ModifySaveFile|\s*new Nucleus\.IniSaveInfo|\s*var VideoConfig)/.test(l)) { same++; continue; }
+    flush();
+    out.push(`- ${l}`);
+    if (/^Game\.(GUID|GameName)\s*=/.test(l)) out.push(`+ ${FINAL.split('\n').find((x) => x.startsWith(l.split('=')[0].trim() + ' ='))}`);
+  }
+  flush();
+  return '```js\n' + out.join('\n') + '\n```';
+}
+/** The left-out lines, grouped by why: "`SymlinkExe`, `HideTaskbar`…: false is the default". */
+function droppedNotes(): string[] {
+  const by = new Map<string, string[]>();
+  for (const l of HUB_HANDLER.split('\n')) {
+    const hit = l.trim() && DROPPED.find(([re]) => re.test(l));
+    if (!hit) continue;
+    const name = /^\s*\/\//.test(l) ? 'a commented-out line' : `\`${(/Game\.([\w.]+)/.exec(l) ?? ['', l.trim()])[1]}\``;
+    by.set(hit[1], [...(by.get(hit[1]) ?? []), name]);
+  }
+  return [...by].map(([why, names]) => `${names.join(', ')}: ${why}`);
+}
 
 const STEAM_STORE = 'https://store.steampowered.com/app/346120/';
 const INSTALL = 'https://www.splitscreen.me/docs/installation';
@@ -217,19 +255,18 @@ const FIRST: Lesson[] = [
     kind: 'code',
     text: [
       'Nucleus needs the game\'s program. When you add a game, it looks for the file in `Game.ExecutableName`: Boring Man\'s is `BoringManGame.exe`.',
-      'Lots of games have an .exe with a common name, so `Game.ExecutableContext` lists something that sits next to the right one: Boring Man has a `maps` folder. Boring Man has no launcher window and needs no extra start options, so `LauncherTitle` and `StartArguments` stay empty.',
+      '`Game.MaxPlayers` is how many players Nucleus lets you add. Boring Man is light enough for lots: the tested handler allows 20.',
       block(GAME_L, lastLine(S.name) + '\n\n// The game'),
     ],
-    task: 'Add the four lines under `// The game`.',
+    task: 'Add the two lines under `// The game`.',
     notes: [
-      { kind: 'check', text: 'Check, under the code, lists what Nucleus would refuse. A handler needs `GUID`, `GameName` and `ExecutableName` to load at all, so Check waits until this lesson is done before it asks for them.' },
-      { kind: 'pitfall', text: '`ExecutableContext` is a list, in square brackets, even with one name in it. A plain `"maps"` isn\'t what Nucleus expects, and Check says so.' },
-      { kind: 'why', text: '`LauncherTitle = ""` and `StartArguments = ""` only write out what Nucleus does anyway. Lots of Hub handlers carry lines like these from a template; leaving them out changes nothing.' },
+      { kind: 'check', text: 'Check, under the code, lists what Nucleus would refuse. A handler needs `GUID`, `GameName` and `ExecutableName` to load at all, so Check waits until this lesson is done before it asks for them. Write the number without quotes, too: `"20"` is text, and Check says so.' },
+      { kind: 'why', text: 'Other handlers often have `Game.ExecutableContext`, `LauncherTitle = ""` or `StartArguments = ""` here. Boring Man doesn\'t need them: the last lesson shows what this handler leaves out, and why.' },
     ],
     start: S.name + '\n// The game\n',
     solution: S.game,
     allow: ['missing-required'],
-    check: (t) => wants(t, [['Game.ExecutableName', 'BoringManGame.exe'], ['Game.ExecutableContext', ['maps']], ['Game.LauncherTitle', ''], ['Game.StartArguments', '']]),
+    check: (t) => wants(t, [['Game.ExecutableName', 'BoringManGame.exe'], ['Game.MaxPlayers', 20]]),
     pane: 'check',
     checkpoint: {
       download: 'js',
@@ -242,43 +279,24 @@ const FIRST: Lesson[] = [
     },
   },
   {
-    id: 'players',
-    section: 'The game',
-    title: 'How many players',
-    kind: 'code',
-    text: [
-      '`Game.MaxPlayers` is how many players Nucleus lets you add. Boring Man is light enough for lots: the tested handler allows 20. `Game.MaxPlayersOneMonitor` is how many fit on one screen.',
-      block(PLAYERS_L, lastLine(S.game) + '\n\n// How many players'),
-    ],
-    task: 'Add both lines.',
-    notes: [
-      { kind: 'odd', text: '`MaxPlayersOneMonitor` is only shown as information in Nucleus: it doesn\'t stop anyone adding more players to one screen.' },
-      { kind: 'check', text: 'Write the number without quotes. `"20"` is text, and Check warns that Nucleus wants a number there.' },
-    ],
-    start: S.game + '\n// How many players\n',
-    solution: S.players,
-    check: (t) => wants(t, [['Game.MaxPlayers', 20], ['Game.MaxPlayersOneMonitor', 20]]),
-    pane: 'check',
-  },
-  {
     id: 'folders',
     section: 'Each player\'s copy',
     title: 'A folder for each player',
     kind: 'code',
     text: [
       'Two copies of a game in one folder get in each other\'s way. So Nucleus gives each player a folder of their own: `content\\Boring Man Tutorial\\Instance0`, `Instance1`, and so on.',
-      'Copying the whole game for every player would be slow and fill your disk. `SymlinkGame` fills each folder with **links** to the real files instead: they look like the files but take no space. `SymlinkExe = false` (a real copy of the .exe for each player) and `KeepSymLinkOnExit = false` (the folders are tidied away when you close Nucleus) are what Nucleus does anyway: the tested handler just says so.',
+      'Copying the whole game for every player would be slow and fill your disk. `Game.SymlinkGame = true` fills each folder with **links** to the real files instead: they look like the files but take no space. (The .exe itself is a real copy, and the folders go when you close Nucleus.)',
       'A link is still the same file, though: if two players write to it, they write to the same file. `FileSymlinkCopyInstead` lists files each player gets a **real copy** of. Boring Man keeps settings in `options.ini`, next to its .exe.',
-      block(FOLDERS_L + COPY_L, lastLine(S.players) + '\n\n// A folder for each player'),
+      block(FOLDERS_L + COPY_L, lastLine(S.game) + '\n\n// A folder for each player'),
     ],
-    task: 'Add the four lines.',
+    task: 'Add the two lines.',
     notes: [
       { kind: 'why', text: 'How do you know which files need a copy? By testing: start two copies and see what they fight over. A later chapter is about exactly that.' },
       { kind: 'odd', text: 'Nucleus matches these names as **part** of a file name, not the whole name: `"options.ini"` would also catch a `myoptions.ini`. Use names specific enough.' },
     ],
-    start: S.players + '\n// A folder for each player\n',
+    start: S.game + '\n// A folder for each player\n',
     solution: S.folders,
-    check: (t) => wants(t, [['Game.SymlinkGame', 'true'], ['Game.SymlinkExe', 'false'], ['Game.KeepSymLinkOnExit', 'false'], ['Game.FileSymlinkCopyInstead', ['options.ini']]]),
+    check: (t) => wants(t, [['Game.SymlinkGame', 'true'], ['Game.FileSymlinkCopyInstead', ['options.ini']]]),
     pane: 'check',
   },
   {
@@ -327,16 +345,16 @@ const FIRST: Lesson[] = [
     kind: 'code',
     text: [
       'To move and size each copy\'s window, Nucleus first finds it by its title: `Game.Hook.ForceFocusWindowName`. Boring Man\'s window is called `Boring Man`.',
-      '`ResetWindows` puts each window in its place when the next copy starts, and `SetWindowHook` stops the game moving its own window after that. `RefreshWindowAfterStart` minimizes and restores each window once they\'re all open, which wakes some games up. `HideTaskbar = false` leaves the taskbar where it is, which Nucleus does anyway.',
+      '`ResetWindows` puts each window in its place when the next copy starts, and `SetWindowHook` stops the game moving its own window after that. `RefreshWindowAfterStart` minimizes and restores each window once they\'re all open, which wakes some games up.',
       block(WINDOWS_L, lastLine(S.steam) + '\n\n// The windows'),
     ],
-    task: 'Add the five lines.',
+    task: 'Add the four lines.',
     notes: [
       { kind: 'odd', text: 'If every window ends up full screen or on top of the others, Nucleus may not have found them: the window name is the first thing to check.' },
     ],
     start: S.steam + '\n// The windows\n',
     solution: S.windows,
-    check: (t) => wants(t, [['Game.Hook.ForceFocusWindowName', 'Boring Man'], ['Game.ResetWindows', 'true'], ['Game.SetWindowHook', 'true'], ['Game.RefreshWindowAfterStart', 'true'], ['Game.HideTaskbar', 'false']]),
+    check: (t) => wants(t, [['Game.Hook.ForceFocusWindowName', 'Boring Man'], ['Game.ResetWindows', 'true'], ['Game.SetWindowHook', 'true'], ['Game.RefreshWindowAfterStart', 'true']]),
     pane: 'check',
   },
   {
@@ -384,17 +402,17 @@ const FIRST: Lesson[] = [
     kind: 'code',
     text: [
       '`Game.SupportsKeyboard = true` lets one player use the keyboard and mouse; everyone else gets a controller.',
-      'Controllers come in two kinds: **XInput** (Xbox-style, what most games and controllers use today) and the older **DirectInput**. Boring Man uses XInput, so `Hook.XInputEnabled` is on and the DirectInput one is off. `XInputReroute` and `CustomDllEnabled` are other ways of handing out controllers: off here.',
+      'Controllers come in two kinds: **XInput** (Xbox-style, what most games and controllers use today) and the older **DirectInput**. Boring Man uses XInput, so `Hook.XInputEnabled` is on. `Hook.CustomDllEnabled` is another way of handing out controllers, which this handler doesn\'t use: XInputPlus (next lesson) does that job.',
       block(INPUT_L, lastLine(S.timing) + '\n\n// Controllers and keyboard'),
     ],
-    task: 'Add the five lines.',
+    task: 'Add the three lines.',
     notes: [
       { kind: 'pitfall', text: 'One keyboard means one keyboard player: Windows sends every key to the window in focus. Several keyboards and mice need Proto Input, which is a chapter of its own.' },
-      { kind: 'odd', text: 'Not every `false` here is the same. `XInputReroute` and `DInputEnabled` are off anyway, but `CustomDllEnabled` is **on** unless a handler turns it off: without that line, Nucleus would add its own XInput DLL as well as XInputPlus (next lesson).' },
+      { kind: 'odd', text: '`CustomDllEnabled = false` looks like it could go, but it can\'t: it\'s **on** unless a handler turns it off, and then Nucleus would add its own XInput DLL as well as XInputPlus.' },
     ],
     start: S.timing + '\n// Controllers and keyboard\n',
     solution: S.input,
-    check: (t) => wants(t, [['Game.SupportsKeyboard', 'true'], ['Game.Hook.XInputEnabled', 'true'], ['Game.Hook.XInputReroute', 'false'], ['Game.Hook.DInputEnabled', 'false'], ['Game.Hook.CustomDllEnabled', 'false']]),
+    check: (t) => wants(t, [['Game.SupportsKeyboard', 'true'], ['Game.Hook.XInputEnabled', 'true'], ['Game.Hook.CustomDllEnabled', 'false']]),
     pane: 'check',
   },
   {
@@ -516,7 +534,7 @@ const FIRST: Lesson[] = [
     title: 'Test it again',
     kind: 'test',
     text: [
-      'Here\'s the finished handler, zipped the way Nucleus installs it. It does everything the tested Boring Man handler does. Drag it onto Nucleus Co-op: it replaces the first version.',
+      'Here\'s the finished handler, zipped the way Nucleus installs it. Drag it onto Nucleus Co-op: it replaces the first version.',
     ],
     steps: [
       'Download the zip (the button below) and drag it onto Nucleus Co-op.',
@@ -524,11 +542,13 @@ const FIRST: Lesson[] = [
       'Host a game in one window. In the other, join it with **direct connect** to `localhost`. Click a window to use the keyboard there.',
     ],
     notes: [
+      { kind: 'why', text: 'It does what the tested Boring Man handler on the Hub does, in fewer lines. Its own name aside, it leaves out lines that change nothing (in red above): ' + droppedNotes().join('; ') + '.' },
       { kind: 'odd', text: '**Windows still full screen:** start Boring Man once on its own, or delete the players\' folders in `C:\\Users\\you\\NucleusCoop` so Nucleus copies your settings again. **Both windows react to one controller:** the controller lessons. **A window behind the taskbar:** Ctrl+T twice, as your note says. **The game won\'t start a second copy:** the Steam lesson.' },
     ],
     start: FINAL,
     solution: FINAL,
     download: 'zip',
+    after: ['**The Hub handler next to yours.** Red lines are in the Hub one and not in yours; green ones are yours instead.', hubDiff()],
   },
 ];
 

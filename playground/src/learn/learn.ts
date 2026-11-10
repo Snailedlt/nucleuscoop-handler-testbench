@@ -37,9 +37,9 @@ function para(p: string): string {
   const m = /^```\w*\n([\s\S]*?)\n?```$/.exec(p.trim());
   if (!m) return `<p>${inline(p)}</p>`;
   const lines = m[1].split('\n').map((l) => {
-    const add = l.startsWith('+ ');
-    const text = add ? l.slice(2) : l;
-    return `<span class="ln${add ? ' add' : ''}${text.trim() === '…' ? ' gap' : ''}">${hlCode(text) || ' '}</span>`;
+    const add = l.startsWith('+ '), del = l.startsWith('- ');
+    const text = add || del ? l.slice(2) : l;
+    return `<span class="ln${add ? ' add' : ''}${del ? ' del' : ''}${text.trim() === '…' ? ' gap' : ''}">${add ? '<span class="sr-only">Added: </span>' : del ? '<span class="sr-only">Left out: </span>' : ''}${hlCode(text) || ' '}</span>`;
   });
   return `<pre class="lesson-code hl cm-s-default" tabindex="0" aria-label="Code to add (highlighted lines)">${lines.join('')}</pre>`;
 }
@@ -277,7 +277,7 @@ function renderLesson(focus = false) {
   const ask = l.ask ? `<fieldset class="ask"><legend>${inline(l.ask.question)}</legend>${l.ask.answers.map((a, i) => `<label><input type="radio" name="ask" value="${i}"> ${inline(a.label)}</label>`).join('')}<p class="ask-reply" role="status"></p></fieldset>` : '';
   const checkpoint = l.checkpoint ? `<details class="checkpoint" id="checkpoint" hidden><summary>Try it in Nucleus Co-op now</summary><ol>${l.checkpoint.steps.map((s) => `<li>${inline(s)}</li>`).join('')}</ol><p><button type="button" class="btn primary" id="cp-download">${dlLabel(l.checkpoint.download)}</button></p><p><strong>You should see:</strong> ${inline(l.checkpoint.see)}</p></details>` : '';
   const end = index === n - 1 ? `<div class="end"><h2>You've made a handler 🎉</h2><p>Each player gets their own folder, settings, Steam, window and controller. More chapters are on the way: finding out what a game needs, the tools, Proto Input, emulators, and more.</p></div>` : '';
-  $('#lesson-body').innerHTML = `<p class="kicker">${esc(l.section)}</p><h1 id="lesson-title" tabindex="-1">${inline(l.title)}</h1>${l.text.map(para).join('')}${steps}${l.footnote ? `<p class="footnote">${inline(l.footnote)}</p>` : ''}${dl}${ask}${l.kind === 'code' ? '<div id="task" class="task" role="status"></div>' : ''}${checkpoint}${notes}${end}`;
+  $('#lesson-body').innerHTML = `<p class="kicker">${esc(l.section)}</p><h1 id="lesson-title" tabindex="-1">${inline(l.title)}</h1>${l.text.map(para).join('')}${steps}${l.footnote ? `<p class="footnote">${inline(l.footnote)}</p>` : ''}${dl}${ask}${(l.after ?? []).map(para).join('')}${l.kind === 'code' ? '<div id="task" class="task" role="status"></div>' : ''}${checkpoint}${notes}${end}`;
   $('#back').toggleAttribute('disabled', index === 0);
   $('#next').textContent = index === n - 1 ? 'Done' : 'Next ›';
   $('#next').toggleAttribute('disabled', index === n - 1);
