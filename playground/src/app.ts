@@ -1323,6 +1323,7 @@ function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) 
   }
   clearNotice(); // it was about the handler before
   document.documentElement.classList.remove('busy'); // a Test all of the last handler no longer runs
+  setNoneOpen(false);
   packageFiles = [];
   storeFiles([]);
   pkgUI?.reset();
@@ -1358,6 +1359,24 @@ let tabs: Tab[] = [];
 let activeTab = '';
 let tabsReady = false;
 let lastClosed: { tab: Tab; index: number } | null = null;
+// Every handler closed: the tab strip is empty and the work area says so, with ways on (New, Open, Learn, Undo).
+// Underneath there is still one blank tab, which the next handler opened fills (loadSource reuses an empty tab).
+const NONE_KEY = 'nucleus-workbench-none-open';
+let noneOpen = false;
+function setNoneOpen(v: boolean) {
+  if (noneOpen === v) return;
+  noneOpen = v;
+  document.documentElement.classList.toggle('no-handler', v);
+  try { if (v) localStorage.setItem(NONE_KEY, '1'); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
+  const box = document.getElementById('no-handler');
+  if (box) {
+    box.hidden = !v;
+    const undo = box.querySelector<HTMLElement>('[data-nh=undo]');
+    if (undo) { undo.hidden = !lastClosed; undo.textContent = lastClosed ? `Reopen ${lastClosed.tab.meta.name}` : 'Reopen'; }
+  }
+  if (tabsReady) renderTabs();
+  if (v) box?.querySelector<HTMLElement>('[data-nh=new]')?.focus();
+}
 const newTabId = () => Math.random().toString(36).slice(2, 9);
 const activeT = () => tabs.find((x) => x.id === activeTab)!;
 const countsOf = (list: Diagnostic[]) => ({ e: list.filter((d) => d.severity === 'error').length, w: list.filter((d) => d.severity === 'warning').length });
@@ -1406,13 +1425,17 @@ function switchTab(id: string) {
 }
 /** A new, empty tab (the caller fills it, e.g. loadSource). */
 function openTab() {
+  if (noneOpen) { setNoneOpen(false); return; }
   stashTab();
   const x: Tab = { id: newTabId(), meta: { name: 'Untitled handler', kind: 'new' }, base: '', text: '', files: [] };
   tabs.splice(tabs.findIndex((y) => y.id === activeTab) + 1, 0, x);
   switchTab(x.id);
 }
 function closeTab(id: string) {
-  if (tabs.length < 2) return;
+  if (noneOpen) return;
+  // The last handler: a blank tab takes its place underneath, and the work area shows that nothing is open.
+  const last = tabs.length < 2;
+  if (last) openTab();
   const i = tabs.findIndex((x) => x.id === id);
   if (id === activeTab) {
     stashTab();
@@ -1423,16 +1446,26 @@ function closeTab(id: string) {
   try { localStorage.removeItem(textKey(gone.id)); localStorage.removeItem(filesKey(gone.id)); } catch { /* ignore */ }
   saveTabs();
   renderTabs();
+  if (last) { setNoneOpen(true); return; }
   notice(`Closed ${gone.meta.name}.`, { kind: 'info', action: { label: 'Undo', run: reopenClosed } });
 }
 function reopenClosed() {
   if (!lastClosed) return;
   const { tab, index } = lastClosed;
   lastClosed = null;
+  // From "nothing open": the blank tab underneath goes.
+  const blank = noneOpen ? activeTab : null;
+  if (blank) setNoneOpen(false);
   tabs.splice(Math.min(index, tabs.length), 0, tab);
   try { localStorage.setItem(textKey(tab.id), tab.text); } catch { /* ignore */ }
   storeFiles(tab.files, filesKey(tab.id));
   switchTab(tab.id);
+  if (blank) {
+    tabs = tabs.filter((x) => x.id !== blank);
+    try { localStorage.removeItem(textKey(blank)); localStorage.removeItem(filesKey(blank)); } catch { /* ignore */ }
+    saveTabs();
+    renderTabs();
+  }
   clearNotice();
 }
 function renderTabs() {
@@ -1442,9 +1475,9 @@ function renderTabs() {
   requestAnimationFrame(() => document.querySelector(`#tab-${activeTab}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
   const dot = (c?: { e: number; w: number }) => (!c ? '' : c.e ? ' e' : c.w ? ' w' : ' ok');
   const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
-  $('#htabs').innerHTML = tabs.map((x) => {
+  $('#htabs').innerHTML = noneOpen ? '' : tabs.map((x) => {
     const on = x.id === activeTab, c = on ? live : x.counts, name = on ? doc.name : x.meta.name, files = on ? packageFiles.length : x.files.length;
-    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}${tabs.length > 1 ? '. Delete closes it' : ''}</span>${tabs.length > 1 ? `<span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span>` : ''}</button></span>`;
+    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}. Delete closes it</span><span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span></button></span>`;
   }).join('');
 }
 function initTabs() {
@@ -1462,6 +1495,17 @@ function initTabs() {
   Object.assign(activeT(), { meta: doc, base: loadedText, files: packageFiles, cm: editor.getDoc() });
   tabsReady = true;
   saveTabs();
+  // Nothing was open last time (and nothing is asked for now): keep it that way.
+  try { if (localStorage.getItem(NONE_KEY) && tabs.length === 1 && !editor.getValue().trim() && !INITIAL_HASH) setNoneOpen(true); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
+  document.getElementById('no-handler')?.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-nh]');
+    if (!b) return;
+    const what = b.dataset.nh;
+    if (what === 'new') ($('#new-open') as HTMLButtonElement).click();
+    else if (what === 'open') showOpen();
+    else if (what === 'learn') openLearn();
+    else if (what === 'undo') reopenClosed();
+  });
   const strip = $('#htabs');
   const all = document.createElement('button');
   all.type = 'button';
@@ -2327,7 +2371,7 @@ $('#code-menu-phone').addEventListener('click', () => openMenu($('#code-menu-pho
 $('#doc-switch').addEventListener('click', () => openMenu($('#doc-switch'), 'Open handlers', [
   { kind: 'heading', label: 'Open handlers' },
   ...tabs.map((x) => ({ label: x.id === activeTab ? doc.name : x.meta.name, checked: x.id === activeTab, run: () => switchTab(x.id) })),
-  ...(tabs.length > 1 ? [{ label: `Close ${doc.name}`, run: () => closeTab(activeTab) }] : []),
+  ...(!noneOpen ? [{ label: `Close ${doc.name}`, run: () => closeTab(activeTab) }] : []),
   { kind: 'separator', label: '' },
   ...addItems(),
 ]));
@@ -2376,7 +2420,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     const i = tabs.findIndex((x) => x.id === activeTab);
     switchTab(tabs[(i + (e.code === 'BracketRight' ? 1 : -1) + tabs.length) % tabs.length].id);
-  } else if (e.altKey && !e.ctrlKey && e.code === 'KeyW' && tabs.length > 1) {
+  } else if (e.altKey && !e.ctrlKey && e.code === 'KeyW' && !noneOpen) {
     e.preventDefault();
     closeTab(activeTab);
   }

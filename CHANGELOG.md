@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Close every handler, the last one too.** Each tab has its ×; with nothing open, the workbench says so and offers New handler, Open, Learn and Reopen.
 - **Docs as pages.** Every option, Context member, enum and .NET call has its own page (`docs/Context.ModifySaveFile/` and so on), easy to link to and found by search engines; Docs in the workbench has **Open as a page** under each name.
 - **A first visit opens the New handler template**, not the common-mistakes handler (that one is still in Examples). The Fallout New Vegas Multiplayer example is gone: Hub handlers open with their files now, and its old link opens that Hub handler.
 - **Learn: making your first handler.** A page of its own (`learn/`) that walks you through a handler for Boring Man, a free game on Steam, line for line the tested one: why a handler is needed (try it on screen), getting ready, then a few lines at a time with a code block of what to add, suggestions as you type and Check beside the code. The Show me button fills in the answer and marks its new lines. Try it in Nucleus Co-op along the way; Try it in the browser comes in when the first real test finds a bug. The lessons are in a list on the left. Menu › Learn, the command palette, Getting started or the start page; old `#learn` links lead there.

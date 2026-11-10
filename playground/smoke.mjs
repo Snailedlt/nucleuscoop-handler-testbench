@@ -601,6 +601,28 @@ await m.ctx.close();
   await s.ctx.close();
 }
 {
+  // Every handler can be closed, the last one too: the work area says nothing is open, with ways on; Reopen brings
+  // it back, and opening anything fills the empty place (no extra blank tab).
+  const s = await page('light');
+  await s.p.goto(BASE + '#example-mistakes');
+  await s.p.waitForTimeout(900);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  const tabsNow = () => s.p.$$eval('#htabs [role=tab]', (l) => l.length);
+  for (let n = await tabsNow(); n > 0; n--) { await s.p.click('#htabs [aria-selected=true] .ht-x'); await s.p.waitForTimeout(250); }
+  check((await tabsNow()) === 0 && (await s.p.isVisible('#no-handler')) && !(await s.p.isVisible('#main')), 'tabs: the last handler closes too, and the page says nothing is open');
+  await axe(s.p, 'light, no handler open');
+  await s.p.click('[data-nh=undo]');
+  await s.p.waitForTimeout(400);
+  check((await tabsNow()) === 1 && !(await s.p.isVisible('#no-handler')), 'tabs: Reopen brings the last one back, with no blank tab left over');
+  await s.p.click('#htabs [aria-selected=true] .ht-x');
+  await s.p.waitForTimeout(250);
+  await s.p.goto(BASE + '#example-mistakes');
+  await s.p.waitForTimeout(900);
+  check((await tabsNow()) === 1 && (await s.p.isVisible('#main')), 'tabs: opening a handler from nothing open fills the place');
+  check(!s.errors.length, `tabs: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
+{
   // Learn (learn/): the intro scene step by step; a lesson ticks when its code is done; Solve; Try it; the test
   // lesson's download; the lesson list; axe in light and dark; nothing cut off on a phone. #learn in the workbench
   // leads there.
