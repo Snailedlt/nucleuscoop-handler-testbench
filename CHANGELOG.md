@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **See every view in light and dark.** The start page's screenshots are now one gallery: pick the workbench or Notepad++ and a view (and for the workbench, one of its four looks), then drag the slider across the picture to compare light and dark anywhere on it.
 - **Add text before or after every match.** In Find (Ctrl+F), Alt+Enter selects every match, as in VS Code; then → puts a cursor after each (← before each) and you type once for all of them. Ctrl+Shift+L does the same while Find is open, with its case, whole-word and regex options.
 - **Pin what you're testing.** In Help test this beta, Pin keeps a task in a small window in the code editor's bottom-right corner, with what to try, what to look for and Report, and lists it at the top of Help test this beta too. Drag it anywhere (or move it with the arrow keys; double-click its header to put it back), collapse it, tick it off; it stays where you put it. On a narrow screen it docks at the bottom.
 - **Notepad++ code colours.** *Settings › Theme and colours › Code colours* now has Notepad++: bold blue keywords, bold navy operators, green comments, and its dark mode's colours in dark (strings, numbers and dark comments adjusted a little for 4.5:1 contrast). VS Code's (Light+ / Dark+) is there too; point at a card to see what it is.

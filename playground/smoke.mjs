@@ -501,8 +501,22 @@ for (const theme of ['light', 'dark']) {
   await s.p.goto(BASE + 'start/');
   await s.p.evaluate(() => document.querySelectorAll('img').forEach((i) => (i.loading = 'eager')));
   await s.p.waitForTimeout(1500);
-  const shots = await s.p.$$eval('figure img', (l) => l.map((i) => [i.currentSrc.split('/').pop(), i.naturalWidth]));
-  check(shots.length > 0 && shots.every(([f, w]) => f.endsWith(`-${theme}.png`) && w > 0), `${theme}: start page screenshots load in the ${theme} theme`);
+  // The gallery: both halves load; a view, a tool and a look switch the pictures; the slider moves the seam.
+  const halves = () => s.p.$$eval('.ba img', (l) => l.map((i) => [i.currentSrc.split('/').pop(), i.naturalWidth]));
+  let h = await halves();
+  check(h.length === 2 && h[0][0].endsWith('-light.webp') && h[1][0].endsWith('-dark.webp') && h.every(([, w]) => w > 0), `${theme}: start page gallery shows the light and the dark screenshot (${h.map((x) => x[0]).join(', ')})`);
+  await s.p.click('.g-views button:last-child'); // Looks
+  await s.p.click('.g-looks button:nth-child(3)'); // Mac
+  await s.p.waitForTimeout(500);
+  h = await halves();
+  check(h.every(([f, w]) => /^workbench-look-mac-/.test(f) && w > 0), `${theme}: start page gallery: the looks switch the pictures (${h.map((x) => x[0]).join(', ')})`);
+  await s.p.click('.g-tabs button:last-child');
+  await s.p.waitForTimeout(500);
+  h = await halves();
+  check(h.every(([f, w]) => /^notepadpp-/.test(f) && w > 0) && (await s.p.isHidden('.g-looks')), `${theme}: start page gallery: another tool, its own views`);
+  await s.p.focus('.ba-range');
+  for (let i = 0; i < 5; i++) await s.p.keyboard.press('ArrowLeft');
+  check((await s.p.$eval('.ba-frame', (e) => e.style.getPropertyValue('--pos'))) === '45%', `${theme}: start page gallery: the arrow keys move the slider`);
   check((await s.p.getAttribute('.ctas a.btn.primary', 'href')) .replace(/\?ref=[\w.-]+$/, '').replace(/index\.html$/, '') === '../', `${theme}: the start page links to its own workbench (by its file in a preview: some hosts don't serve ../)`);
   await axe(s.p, `${theme}, start page`);
   check(!s.errors.length, `${theme}: start page has no page errors`);

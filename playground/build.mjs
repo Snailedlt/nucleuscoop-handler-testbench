@@ -588,11 +588,11 @@ fs.writeFileSync(
         + `<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) addEventListener('DOMContentLoaded', () => document.querySelectorAll('.hero-masc svg').forEach((s) => s.pauseAnimations()));</script>`;
     })()),
 );
-// Screenshots, each in light and dark (the page shows the viewer's theme).
-for (const [dir, names] of [
-  [path.join(here, '..', 'docs', 'images'), ['check', 'lines-tree']],
-  [path.join(coreRepo, 'docs', 'images'), ['vscode-problems', 'vscode-try-it', 'vscode-hover']],
-]) for (const n of names) for (const t of ['light', 'dark']) fs.copyFileSync(path.join(dir, `${n}-${t}.png`), path.join(startDir, `${n}-${t}.png`));
+// The gallery's screenshots (docs/images/gallery: <tool>-<view>-light/dark.webp, the workbench's looks as
+// workbench-look-<look>-…): each view in light and dark, compared with the slider on the page.
+fs.rmSync(path.join(startDir, 'gallery'), { recursive: true, force: true });
+fs.mkdirSync(path.join(startDir, 'gallery'), { recursive: true });
+for (const f of fs.readdirSync(path.join(here, '..', 'docs', 'images', 'gallery'))) if (f.endsWith('.webp')) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'gallery', f), path.join(startDir, 'gallery', f));
 fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
 // The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
 fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });

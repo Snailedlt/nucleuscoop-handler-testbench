@@ -174,7 +174,7 @@ test('start page: every heading has its GitHub-style anchor, and in-page links p
     ...startSrc.matchAll(/<(h[2-4]) id="([^"]+)" class="[^"]*\bhas-anchor\b[^"]*">([^<]+)<\/\1>/g),
     ...startSrc.matchAll(/<summary><(h[2-4]) id="([^"]+)">([^<]+)<\/\1><\/summary>/g),
   ];
-  assert.ok(headings.length >= 9, `${headings.length} headings`);
+  assert.ok(headings.length >= 8, `${headings.length} headings`);
   for (const [, , id, text] of headings) assert.equal(id, githubSlug(text.replace(/&amp;/g, '&')), text);
   // Every section (h2) has the anchor class, so a new one gets its link.
   for (const m of startSrc.matchAll(/<h2\b([^>]*)>/g)) assert.match(m[1], /has-anchor/, m[0]);
