@@ -16,6 +16,8 @@ export const MOVED_LINKS: MovedLink[] = [
   // The Reference tab became Docs (2026-11).
   { from: /^(?:reference|api|ref)$/i, to: () => 'docs', why: 'Reference is now called Docs' },
   { from: /^(?:reference|api|ref)-(.+)$/i, to: (m) => `docs-${m[1]}`, why: 'Reference is now called Docs' },
+  // The Fallout New Vegas Multiplayer example package: Hub handlers open with their files now (2026-11).
+  { from: /^package-nvmp$/i, to: () => 'hub-vnPXYhWMJJ3FNuQuS', why: 'the Fallout New Vegas Multiplayer example is the Hub handler now, which opens with its files' },
 ];
 
 /** The link's current address (`why`: it moved, and why), else the link as it is. `h` is the hash without "#", decoded. */

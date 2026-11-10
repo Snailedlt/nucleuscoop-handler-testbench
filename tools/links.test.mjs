@@ -44,6 +44,9 @@ test('every MOVED_LINKS entry leads to the new place and says why', () => {
     assert.equal(r.why, 'Reference is now called Docs');
     assert.match(links.movedNote(r.why), /^This is an older link: Reference is now called Docs\./);
   }
+  // The removed Fallout example package: its Hub handler, which opens with its files.
+  cases['package-nvmp'] = 'hub-vnPXYhWMJJ3FNuQuS';
+  assert.equal(links.followMoved('package-nvmp').to, 'hub-vnPXYhWMJJ3FNuQuS');
   // Every entry is exercised by the cases above.
   for (const m of links.MOVED_LINKS) assert.ok(Object.keys(cases).some((c) => m.from.test(c)), String(m.from));
   // Current links are left alone.
@@ -78,6 +81,7 @@ test('an unknown link says what it was and offers the way on, never a dead end',
   assert.deepEqual(note('hub-gone'), { text: "That Hub handler isn't one of the examples in this version of the workbench. It's still on the Hub.", action: { label: 'Open it on the Hub', to: 'hub', url: 'https://hub.splitscreen.me/handler/gone' } });
   assert.equal(note('probe-999').action.to, 'probes');
   assert.match(note('probe-999').text, /^There's no probe 999 in this version/);
+  assert.equal(links.followMoved('package-nvmp').to, 'hub-vnPXYhWMJJ3FNuQuS', 'the removed Fallout example leads to its Hub handler');
   for (const h of ['package-gone', 'template-gone', 'nonsense', 'reference2']) {
     const n = note(h);
     assert.equal(n.text, `The link "#${h}" is from another version of the workbench, or mistyped: it doesn't match anything here.`);
@@ -244,6 +248,12 @@ test('rules: every check the tools link to has its page', { skip: !fs.existsSync
   assert.ok(ids.length > 40, `${ids.length} rules`);
   const missing = ids.filter((id) => !fs.existsSync(path.join(root, 'playground/dist/pages/rules', id, 'index.html')));
   assert.deepEqual(missing, []);
+});
+
+test('docs: a page per name, linked from the workbench', { skip: !fs.existsSync(path.join(root, 'playground/dist/pages/docs/index.html')) && 'not built' }, () => {
+  for (const p of ['', 'Context/', 'Game.Play/', 'Context.ModifySaveFile/', 'Nucleus.SaveType/']) assert.ok(fs.existsSync(path.join(root, 'playground/dist/pages/docs', p, 'index.html')), `docs/${p}`);
+  const html = fs.readFileSync(path.join(root, 'playground/dist/pages/docs/Context.ModifySaveFile/index.html'), 'utf8');
+  assert.match(html, /href="\.\.\/\.\.\/#docs-Context\.ModifySaveFile"/, 'Open in the workbench');
 });
 
 test('learn: the lessons page is built, and the workbench and start page link to it', { skip: !fs.existsSync(path.join(root, 'playground/dist/pages/learn/index.html')) && 'not built' }, () => {

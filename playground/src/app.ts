@@ -167,7 +167,10 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
 }
 
 const STORE_KEY = 'nucleus-workbench-draft';
-let initial = BUGGY;
+// A first visit opens the New handler template: short, commented, and a starting point for anyone (Ctrl+A and type
+// works too). The common-mistakes handler stays one click away in Examples (#example-mistakes).
+const STARTER = '// New to handlers? Menu › Learn makes one with you, step by step.\n' + renderHandler({ gameName: 'My Game', executableName: 'MyGame.exe', features: [] });
+let initial = STARTER;
 // Files that came with the opened package (besides handler.js); saved with it, and kept over a reload.
 let packageFiles: PackageFile[] = storedFiles();
 // A package's pluginsInfo.txt (in its handler folder, Game.Folder): Nucleus adds each plugin as a
@@ -186,7 +189,7 @@ const simPlugins = () => {
   return t ? parsePluginsInfo(t) : undefined;
 };
 try {
-  initial = localStorage.getItem(STORE_KEY) || BUGGY;
+  initial = localStorage.getItem(STORE_KEY) || STARTER;
 } catch {
   /* storage unavailable */
 }
@@ -1140,7 +1143,7 @@ $('#sim-debug').addEventListener('click', () => debug.start());
 // ---------------------------------------------------------------------------
 // Docs (docs-ui.ts)
 
-const docs = initDocs({ selectTab, handlerHash: () => doc.hash, used: use });
+const docs = initDocs({ selectTab, handlerHash: () => doc.hash, used: use, pageUrl: (p) => siteUrl(`docs/${p}/`) });
 
 // ---------------------------------------------------------------------------
 // Probes: real Jint results vs the linter
@@ -1208,8 +1211,8 @@ let loadedText = editor.getValue();
 try {
   const saved = JSON.parse(localStorage.getItem(META_KEY) || 'null');
   if (saved?.name) doc = saved;
-  else if (initial === BUGGY) doc = { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' };
-  loadedText = localStorage.getItem(META_KEY + '-base') ?? (initial === BUGGY ? BUGGY : editor.getValue());
+  else if (initial === STARTER) doc = { name: 'My Game.js', kind: 'new' };
+  loadedText = localStorage.getItem(META_KEY + '-base') ?? editor.getValue();
 } catch {
   /* storage unavailable */
 }
@@ -2218,12 +2221,16 @@ const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#tes
 });
 // Tasks pinned from the guide float over the workbench while you test (testpins.ts).
 initTestPins(() => testGuide.open());
+/** A page of the site (start/, learn/, docs/…): next to the workbench on the site, the site's own from the one-file
+ *  workbench (the footer's start link says which, build.mjs). */
+function siteUrl(sub: string) {
+  const start = document.querySelector<HTMLAnchorElement>('a.link.start-link')?.href ?? 'start/';
+  return start.replace(/start\/?$/, sub);
+}
 // Learn (learn/, its own page): the lessons. Next to the start page on the site; the one-file workbench links to
 // the site's. A new tab from the menu (the workbench stays as it is); #learn links go there instead.
 function learnUrl(lesson?: string) {
-  // The footer's link: the one build.mjs points at the site's own start page (start/) or, in the one file, the site's.
-  const start = document.querySelector<HTMLAnchorElement>('a.link.start-link')?.href ?? 'start/';
-  return start.replace(/start\/?$/, 'learn/') + (lesson ? `#${lesson}` : '');
+  return siteUrl('learn/') + (lesson ? `#${lesson}` : '');
 }
 function openLearn() {
   window.open(learnUrl(), '_blank', 'noopener');

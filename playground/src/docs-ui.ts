@@ -52,6 +52,8 @@ export interface DocsDeps {
   handlerHash: () => string | undefined;
   /** Counts a use (feedback.ts). */
   used: (what: string) => void;
+  /** The address of a name's own docs page (docs/<name>/ on the site), to link to and share. */
+  pageUrl: (path: string) => string;
 }
 
 export interface DocsUI {
@@ -175,7 +177,7 @@ export function initDocs(deps: DocsDeps): DocsUI {
     if (one) {
       const g = groupOf(one.path);
       el.innerHTML = refBar([...(g ? [{ label: g.title, view: `group:${g.key}` }] : []), { label: one.path.slice(g && one.path.startsWith(g.key + '.') ? g.key.length + 1 : 0), code: true }])
-        + card(one);
+        + card(one) + (/^[A-Za-z_$][\w$.]*$/.test(one.path) ? `<p class="api-page"><a href="${esc(deps.pageUrl(one.path))}" target="_blank" rel="noopener">Open as a page</a> <span class="muted">(to link to or share)</span></p>` : '');
       return wireApiLinks(el);
     }
     let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];

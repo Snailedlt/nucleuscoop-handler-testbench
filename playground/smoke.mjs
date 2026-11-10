@@ -267,21 +267,6 @@ for (const theme of ['light', 'dark']) {
     await p.keyboard.press('Escape');
     await p.waitForTimeout(150);
   }
-  // An example package: the handler plus its files.
-  await p.keyboard.press('Control+k');
-  await p.fill('#open-dialog input', 'with its files');
-  await p.waitForTimeout(300);
-  await p.keyboard.press('Enter');
-  await p.waitForTimeout(1000);
-  const chip = await p.$('#files-open');
-  check(!!chip && /\+ \d+ files/.test(await chip.innerText()), `${theme}: the example package opens with its files`);
-  if (chip) {
-    await chip.click();
-    await p.waitForTimeout(300);
-    check((await p.$$('#files-panel .fp-open')).length > 1, `${theme}: the Files panel lists them`);
-    await axe(p, `${theme}, Files panel`);
-    await p.keyboard.press('Escape');
-  }
   // A Hub handler whose package has other files: they open in Files, big ones as placeholders (Hub badge, a card).
   {
     const pick = await p.evaluate(() => {

@@ -266,9 +266,9 @@ for (const h of hub.handlers) {
   if (f) h.files = f.files.length;
   else delete h.files;
 }
-// Example packages (examples/README.md): a verified Hub handler with the other files it ships.
+// Example packages (examples/README.md): handlers with the other files they ship. None for now: Hub handlers open
+// with their package files themselves (the Fallout New Vegas Multiplayer example went that way; #package-nvmp leads there).
 const EXAMPLE_PACKAGES = [
-  { id: 'nvmp', title: 'Fallout New Vegas Multiplayer, with its files', sub: 'A verified Hub handler (v21 by Talos91) whose package adds an NVMP folder with the scripts Game.Play runs.', name: 'Fallout New Vegas Multiplayer.js', hubId: 'vnPXYhWMJJ3FNuQuS' },
 ].map((e) => {
   const dir = path.join(here, 'examples', e.id);
   const files = [];
@@ -602,7 +602,7 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
   const { RULES, JS_RULES } = await import('data:text/javascript;base64,' + Buffer.from(lintAll.outputFiles[0].text).toString('base64'));
   const { writeRulePages } = await import('./rules-pages.mjs');
   const ruleIds = writeRulePages({ outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
-  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, `${PAGES_BASE}docs/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 }
 // Learn (learn/): the lessons, one page with its own small bundle (src/learn/): the editor, the checks and Try it,
 // without the rest of the workbench. ESLint's general rules stay out (the lessons only need Nucleus' own checks).
@@ -625,6 +625,18 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
     .replace('/*TOKENS*/', () => tokens)
     .replace('/*CODEMIRROR_CSS*/', () => cm('lib/codemirror.css'))
     .replace('/*LEARN_JS*/', () => learnJs.outputFiles[0].text.replace(/<\/script/gi, '<\\/script')));
+}
+// The Docs as pages (docs/, docs/<group>/, docs/<name>/), from the core's core/docspage.ts (docs-pages.mjs): linkable
+// and searchable, each with "Open in the workbench".
+let docValues = [];
+{
+  const mod = await esbuild.build({ stdin: { contents: "export { docsPage, docsView, docsValue, DOCS_GROUPS } from './docspage'; export { allEntries } from './lookup'; export { api } from './api';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const D = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
+  const { writeDocPages } = await import('./docs-pages.mjs');
+  docValues = writeDocPages({ outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
+  // Each docs page in the sitemap too (written with the rule pages above).
+  const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
+  if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
 }
 // The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
 fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });

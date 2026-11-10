@@ -5,5 +5,5 @@ Handlers the workbench opens with their other files, to show what a package (.zi
 folder, `Game.Folder`). Copied unchanged from verified handlers on hub.splitscreen.me; `build.mjs`
 inlines them into the page (listed in `EXAMPLE_PACKAGES` there).
 
-- `nvmp/`: Fallout New Vegas Multiplayer Mod, v21 (hub id vnPXYhWMJJ3FNuQuS), by its Hub
-  maintainer. `NVMP/` holds the scripts its `Game.Play` runs with `Context.RunAdditionalFiles`.
+None at the moment: Hub handlers open with their package files themselves. (`nvmp/`, Fallout New Vegas
+Multiplayer, was removed for that reason; its old link, `#package-nvmp`, opens the Hub handler.)
