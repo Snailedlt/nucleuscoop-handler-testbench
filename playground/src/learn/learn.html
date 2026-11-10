@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Learn: making your first Nucleus Co-op handler</title>
-<meta name="description" content="Learn to write a Nucleus Co-op handler step by step, in your browser: a few lines at a time, checked as you type, ending with a handler for a free game you test in Nucleus Co-op.">
+<meta name="description" content="Learn to write a Nucleus Co-op handler step by step, in your browser: a few lines at a time, checked as you type, ending with a handler for Boring Man, a free game on Steam, that you test in Nucleus Co-op.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#10a3e8">
 <link rel="icon" type="image/png" href="../icon.png">
@@ -46,8 +46,48 @@ button.link { background: none; border: 0; padding: 0; font: inherit; color: var
 .top .progress span { display: block; height: 100%; background: var(--accent); transition: width .2s; }
 @media (prefers-reduced-motion: reduce) { .top .progress span { transition: none; } }
 
-.learn { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 40%) minmax(0, 1fr); }
-.lesson { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
+.learn { flex: 1; min-height: 0; display: flex; }
+.lesson { flex: 0 0 38%; min-width: 320px; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
+.right { flex: 1; }
+/* The lesson list: a quiet drawer on the left, chapter › section › lesson (indented by level). */
+#drawer { flex: 0 0 0; width: 0; overflow: hidden; border-right: 1px solid transparent; background: var(--bg); transition: flex-basis .18s ease; }
+.learn.drawer-open #drawer { flex-basis: 256px; width: 256px; overflow: auto; border-right-color: var(--line); }
+@media (prefers-reduced-motion: reduce) { #drawer { transition: none; } }
+#drawer-list { list-style: none; margin: 0; padding: 12px 8px 24px; font-size: 14px; }
+#drawer-list ul, #drawer-list ol { list-style: none; margin: 0; padding: 0; }
+.d-chapter-title { display: block; padding: 4px 8px 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.d-section > summary { cursor: pointer; padding: 5px 8px; border-radius: var(--r-sm); font-weight: 600; color: var(--fg); list-style: none; display: flex; align-items: center; gap: 6px; }
+.d-section > summary::-webkit-details-marker { display: none; }
+.d-section > summary::before { content: ""; width: 6px; height: 6px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; flex: none; }
+.d-section[open] > summary::before { transform: rotate(45deg); }
+.d-section > summary:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.d-section ol { margin: 2px 0 6px 14px !important; border-left: 1px solid var(--line); }
+.d-section a { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px 4px 10px; margin-left: -1px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; }
+.d-section a:hover { color: var(--fg); }
+.d-section a[aria-current] { color: var(--fg); font-weight: 600; border-left-color: var(--accent); }
+.d-no { flex: none; width: 1.4em; text-align: right; font-size: 12px; }
+.learn:not(.drawer-open) #drawer { visibility: hidden; }
+.d-title { flex: 1; }
+.d-section .tick { color: #2e8540; font-weight: 700; }
+#drawer-toggle { display: inline-flex; align-items: center; gap: 6px; }
+#drawer-toggle svg { flex: none; }
+@media (max-width: 1100px) {
+  #drawer { position: fixed; z-index: 30; top: 49px; bottom: 0; left: 0; box-shadow: var(--sh-2); }
+  .learn.drawer-open #drawer { width: min(300px, 86vw); }
+}
+.kicker { margin: 0 0 4px !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); }
+.footnote { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+.rule-doc { margin: 8px 0 4px; padding: 8px 12px; border-left: 3px solid var(--line); background: var(--bg); border-radius: 0 var(--r-ctl) var(--r-ctl) 0; }
+.rule-doc p { margin: 0 0 6px; }
+.rule-doc .small { font-size: 13px; margin: 0 0 2px; }
+.rule-doc pre { margin: 0 0 8px; padding: 6px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); font: 13px/1.5 var(--mono); white-space: pre-wrap; }
+.try-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
+.try-head .pane-title { margin: 0; }
+.try-opts { display: flex; gap: 16px; align-items: center; font-size: 14px; }
+.try-opts label { display: inline-flex; gap: 6px; align-items: center; }
+.try-opts select { font: inherit; padding: 2px 6px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.lesson-nav .btn.show { border-color: var(--accent); color: var(--accent); }
+.lesson-no { font-size: 12px; color: var(--muted); margin-left: 4px; }
 #lesson { flex: 1; overflow: auto; padding: 20px 24px 8px; }
 #lesson h1 { font-size: 26px; line-height: 1.2; margin: 0 0 14px; }
 #lesson h1:focus { outline: none; }
@@ -125,13 +165,11 @@ li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
 .checkpoint ol { padding-left: 20px; margin: 0 0 10px; }
 .checkpoint li { margin: 0 0 6px; }
 /* The setup lesson: just the lesson, in the middle of the page. */
-.learn.solo { grid-template-columns: minmax(0, 1fr); }
 .learn.solo .right { display: none; }
-.learn.solo .lesson { border-right: 0; }
+.learn.solo .lesson { flex: 1; border-right: 0; }
 .learn.solo #lesson-body { max-width: 760px; margin: 0 auto; }
 .learn.solo .lesson-nav { justify-content: center; gap: 24px; }
 /* The first lesson takes the whole page: the scene with its text. */
-.learn.intro { grid-template-columns: minmax(0, 1fr); }
 .learn.intro .lesson { display: none; }
 .scene-title { font-size: 30px; margin: 0 0 10px; text-align: center; }
 #scene > p { font-size: 17px; }
@@ -152,7 +190,6 @@ li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
 .fixes { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .fixes li { padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, #2e8540 14%, var(--surface)); border: 1px solid color-mix(in srgb, #2e8540 45%, var(--line)); }
 .fixes li::before { content: "✓ "; color: #2e8540; font-weight: 700; }
-.fixes a { color: var(--fg); }
 @media (prefers-reduced-motion: no-preference) { .fixes li { animation: pop .3s ease both; animation-delay: calc(var(--i) * 120ms); } @keyframes pop { from { opacity: 0; transform: translateY(6px); } } }
 #scene > p { max-width: 56ch; text-align: center; }
 .scene-acts { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
@@ -162,21 +199,12 @@ li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
 #tip p { margin: 0 0 6px; } #tip pre { margin: 0 0 6px; white-space: pre-wrap; font: 13px/1.45 var(--mono); }
 
 /* The lesson list. */
-#menu { width: min(460px, calc(100% - 32px)); max-height: 80vh; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); color: var(--fg); padding: 0; box-shadow: var(--sh-2); }
-#menu::backdrop { background: rgba(0, 0, 0, .35); }
-#menu header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-#menu h2 { font-size: 17px; margin: 0; }
-#menu-list { list-style: none; margin: 0; padding: 8px 16px 16px; }
-#menu-list ol { list-style: none; padding: 0; margin: 6px 0 0; }
-#menu-list a { display: flex; gap: 8px; padding: 6px 8px; border-radius: var(--r-sm); text-decoration: none; color: var(--fg); }
-#menu-list a:hover { background: var(--bg); }
-#menu-list a[aria-current] { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); font-weight: 700; }
-#menu-list .tick { width: 1.2em; color: #2e8540; font-weight: 700; }
 
 /* A phone or a narrow window: the lesson, then the code under it. */
 @media (max-width: 860px) {
   body { height: auto; display: block; }
   .learn { display: block; }
+  .lesson { min-width: 0; }
   .lesson { border-right: 0; border-bottom: 1px solid var(--line); }
   #lesson { overflow: visible; padding: 16px; }
   .lesson-nav { position: sticky; bottom: 0; background: var(--surface); padding: 10px 16px; z-index: 5; }
@@ -189,21 +217,23 @@ li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
 </head>
 <body>
 <header class="top">
+  <button type="button" class="btn small" id="drawer-toggle" aria-controls="drawer" aria-expanded="false" title="The lesson list"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Lessons</button>
   <a class="home" href="../">Nucleus <span>Workbench</span></a>
   <div class="where"><span class="muted" aria-hidden="true">›</span> <strong id="chapter-title">Learn</strong> <span id="count" class="muted"></span><div class="progress" aria-hidden="true"><span id="bar"></span></div></div>
-  <button type="button" class="btn small" id="menu-open" aria-haspopup="dialog">Lessons</button>
 </header>
 <main class="learn">
+  <nav id="drawer" aria-label="All lessons"><ul id="drawer-list"></ul></nav>
   <section class="lesson" aria-labelledby="lesson-title">
     <div id="lesson"><div id="lesson-body"></div></div>
     <nav class="lesson-nav" aria-label="Lessons">
       <button type="button" class="btn" id="back">‹ Back</button>
+      <button type="button" class="btn show" id="show" data-act="show" hidden>Show me</button>
       <button type="button" class="btn" id="next">Next ›</button>
     </nav>
   </section>
   <section class="right" aria-label="Your handler">
     <div id="work">
-      <div class="code-bar"><span class="file">SRB2 Tutorial.js</span><span class="keys muted">Ctrl+Space suggestions · hover for docs</span><button type="button" class="btn small" id="reset" title="Back to how this lesson started">Reset</button></div>
+      <div class="code-bar"><span class="file">Boring Man Tutorial.js</span><span class="keys muted">Ctrl+Space suggestions · hover for docs</span><button type="button" class="btn small" id="reset" title="Back to how this lesson started">Reset</button></div>
       <div id="code"></div>
       <div id="pane" aria-live="polite"></div>
     </div>
@@ -211,7 +241,6 @@ li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
   </section>
 </main>
 <div id="tip" role="tooltip" hidden></div>
-<dialog id="menu" aria-labelledby="menu-title"><header><h2 id="menu-title">Lessons</h2><button type="button" class="btn small close">Close</button></header><ol id="menu-list"></ol></dialog>
 <noscript><p style="padding:16px">The lessons run in your browser and need JavaScript.</p></noscript>
 <script>/*LEARN_JS*/</script>
 </body>

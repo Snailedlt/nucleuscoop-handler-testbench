@@ -203,6 +203,10 @@ test('learn: every lesson starts unfinished, its solution passes, with no errors
   assert.ok(lint('Game.GUID = "a";\nGame.GameName = "a";\nGame.ExecutableName = "a.exe";\nGame.ExecutableContext = "srb2.pk3";\n').some((x) => x.severity !== 'hint'), 'ExecutableContext as plain text');
   assert.ok(lint('Game.GUID = "a";\nGame.GameName = "a";\nGame.ExecutableName = "a.exe";\nGame.MaxPlayers = "4";\n').some((x) => x.severity === 'warning' || x.severity === 'error'), 'MaxPlayers in quotes');
   // The tutorial test lesson hands over the handler without the pause settings (the bug the next lesson fixes).
-  const test1 = first.lessons.find((l) => l.id === 'test'), fix = first.lessons.find((l) => l.id === 'focus-lost');
-  assert.ok(!/pauseifunfocused/.test(test1.solution) && fix.check(test1.solution) !== null && /pauseifunfocused/.test(FINAL));
+  // The first full test runs without Game.Play (full-screen windows: the bug the next lesson fixes).
+  const test1 = first.lessons.find((l) => l.id === 'test'), fix = first.lessons.find((l) => l.id === 'fullscreen');
+  assert.ok(!/Game\.Play/.test(test1.solution) && fix.check(test1.solution) !== null && /Game\.Play/.test(FINAL));
+  // Every lesson has a section, and a section's lessons sit together (the lesson list groups them).
+  const order = first.lessons.map((l) => l.section).filter((s, i, a) => s !== a[i - 1]);
+  assert.equal(new Set(order).size, order.length, `sections out of order: ${order.join(', ')}`);
 });
