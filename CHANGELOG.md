@@ -17,6 +17,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **One header for the whole site.** The start page, Learn, Docs and the check pages share a bar with Workbench · Learn · Docs · Checks · Get the tools.
+- **A docs list beside every docs page**, like Learn's: groups that fold open (Game, Context, Player…), the page you're on marked, and a filter on top that finds names by name or by what they do ("save file" finds `Context.ModifySaveFile`). On a phone it folds into an **All docs** button.
 - **Votes and "Tell us what's wrong" on every docs page**, as in the workbench; editors' docs links now open these pages.
 - **An edited handler shows a dot on its tab**, as in VS Code (the × on hover), instead of "· edited" next to a name that wasn't there.
 - **Close every handler, the last one too.** Each tab has its ×; with nothing open, the workbench says so and offers New handler, Open, Learn and Reopen.

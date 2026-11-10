@@ -66,7 +66,7 @@ const folderOf = (v) => (/^[A-Za-z_$][\w$.]*$/.test(v) ? v : undefined);
 export function writeDocPages(o) {
   const style = o.startHtml.slice(o.startHtml.indexOf('<style>'), o.startHtml.indexOf('</style>') + 8);
   const themeScript = (o.startHtml.match(/<script>\/\* the workbench's theme choice[\s\S]*?<\/script>/) || [''])[0];
-  const head = (title, desc, canonical, up) => `<!doctype html>
+  const head = (title, desc, canonical, up, here0 = '') => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -84,14 +84,49 @@ ${style}
 pre.cfg { white-space: pre-wrap; overflow-wrap: anywhere; }
 .dlist { padding-left: 20px; } .dlist li { margin: 0 0 6px; }
 ${SITE_HEADER_CSS}${DOC_FEEDBACK_CSS}
+/* The docs list: a drawer on the left (groups › names, a filter on top), over the page on a narrow screen. */
+.docs-wrap { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 0 8px; }
+.docs-wrap > main { max-width: 900px; margin: 0; min-width: 0; }
+#docs-drawer { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow: auto; padding: 18px 8px 24px 16px; border-right: 1px solid var(--line); font-size: 14px; }
+.dn-toggle { display: none; }
+.dn-filter { position: sticky; top: -18px; z-index: 1; box-shadow: 0 -18px 0 var(--bg); width: 100%; padding: 7px 10px; margin: 0 0 10px; font: inherit; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); }
+#dn-list, #dn-list ul { list-style: none; margin: 0; padding: 0; }
+#dn-list details > summary { cursor: pointer; padding: 4px 6px; border-radius: var(--r-sm); font-weight: 600; list-style: none; display: flex; gap: 6px; align-items: center; }
+#dn-list details > summary::-webkit-details-marker { display: none; }
+#dn-list details > summary::before { content: ""; width: 6px; height: 6px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); flex: none; }
+#dn-list details[open] > summary::before { transform: rotate(45deg); }
+#dn-list .n { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: auto; }
+#dn-list details ul { margin: 2px 0 8px 12px; border-left: 1px solid var(--line); }
+#dn-list a { display: block; padding: 3px 8px; margin-left: -1px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; overflow-wrap: anywhere; }
+#dn-list a:hover { color: var(--fg); }
+#dn-list a[aria-current] { color: var(--fg); font-weight: 600; border-left-color: var(--accent); }
+#dn-list .hit small { display: block; color: var(--muted); font-size: 12px; }
+.dn-none { color: var(--muted); padding: 4px 8px; }
+@media (max-width: 900px) {
+  .docs-wrap { display: block; }
+  #docs-drawer { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .dn-toggle { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 600; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); cursor: pointer; }
+  #docs-drawer:not(.open) .dn-body { display: none; }
+  .dn-body { margin-top: 10px; }
+}
 table { border-collapse: collapse; margin: 0 0 16px; font-size: 14px; } th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
 </style>
 </head>
 <body>
 ${siteHeader(up, 'docs/')}
+<div class="docs-wrap">
+<nav id="docs-drawer" aria-label="All docs" data-base="${up}docs/" data-here="${esc(here0)}">
+<button type="button" class="dn-toggle" aria-expanded="false" aria-controls="dn-body">☰ All docs</button>
+<div class="dn-body" id="dn-body">
+<input class="dn-filter" type="search" placeholder="Filter: a name or a word" aria-label="Filter the docs">
+<ul id="dn-list">${o.groups.map((g) => `<li><a href="${up}docs/${g.key}/">${esc(g.title)}</a></li>`).join('')}</ul>
+</div>
+</nav>
 <main>
 `;
   const foot = (up) => `</main>
+</div>
+<script src="${up}docs/nav.js" defer></script>
 <footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="${up}rules/">Every check</a></footer>
 </body>
 </html>
@@ -127,8 +162,46 @@ ${page.path && o.docReviewUrl ? docFeedback(page.path, o.docReviewUrl(page.path)
 `;
     const dir = v ? path.join(o.outDir, v) : o.outDir;
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.html'), head(v ? `${title}: Nucleus Co-op handler docs` : 'Docs: every Nucleus Co-op handler option and call', first || 'Nucleus Co-op handler docs.', `${o.base}docs/${v ? `${v}/` : ''}`, up) + body + foot(up));
+    fs.writeFileSync(path.join(dir, 'index.html'), head(v ? `${title}: Nucleus Co-op handler docs` : 'Docs: every Nucleus Co-op handler option and call', first || 'Nucleus Co-op handler docs.', `${o.base}docs/${v ? `${v}/` : ''}`, up, v) + body + foot(up));
     written.push(v);
   }
+  // The list the drawer shows (nav.js): each group's names with their first line, for the filter.
+  const first = (d) => String(d ?? '').split('\n')[0].replace(/[`*\\_]/g, '').slice(0, 110);
+  const entries = o.allEntries(true).filter((e) => folderOf(e.path) && values.has(e.path));
+  const nav = o.groups.map((g) => ({ key: g.key, title: g.title, items: entries.filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path)).map((e) => ({ p: e.path, d: first(e.member.doc) })) }))
+    .concat([{ key: '', title: 'Nucleus values (enums)', items: (o.enums ?? []).map((n) => ({ p: `Nucleus.${n}`, d: '' })) }]);
+  fs.writeFileSync(path.join(o.outDir, 'nav.json'), JSON.stringify(nav));
+  fs.writeFileSync(path.join(o.outDir, 'nav.js'), NAV_JS);
   return written;
 }
+
+/** The drawer: groups as folds (the current one open, the page marked), and the filter (names and their first line). */
+const NAV_JS = `(function () {
+  var nav = document.getElementById('docs-drawer'); if (!nav) return;
+  var base = nav.dataset.base, here = nav.dataset.here, list = document.getElementById('dn-list'), q = nav.querySelector('.dn-filter');
+  var toggle = nav.querySelector('.dn-toggle');
+  toggle.addEventListener('click', function () { var o = nav.classList.toggle('open'); toggle.setAttribute('aria-expanded', String(o)); if (o) q.focus(); });
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function link(p, extra, label) { return '<a href="' + base + p + '/"' + (p === here ? ' aria-current="page"' : '') + '>' + esc(label || p) + (extra || '') + '</a>'; }
+  var groups = [];
+  function tree() {
+    list.innerHTML = groups.map(function (g) {
+      var open = g.key === here || g.items.some(function (i) { return i.p === here; });
+      return '<li><details' + (open ? ' open' : '') + '><summary>' + esc(g.title) + '<span class="n">' + g.items.length + '</span></summary><ul>' + g.items.map(function (i) { return '<li>' + link(i.p, '', g.key && i.p.indexOf(g.key + '.') === 0 ? i.p.slice(g.key.length + 1) : i.p) + '</li>'; }).join('') + '</ul></details></li>';
+    }).join('');
+    // The page's own entry in view, inside the drawer only (the page itself doesn't move).
+    var cur = list.querySelector('[aria-current]'); if (cur) nav.scrollTop = Math.max(0, cur.offsetTop - nav.clientHeight / 2);
+  }
+  function filter() {
+    var w = q.value.trim().toLowerCase().split(/\\s+/).filter(Boolean);
+    if (!w.length) return tree();
+    var hits = [];
+    groups.forEach(function (g) { g.items.forEach(function (i) { var t = (i.p + ' ' + i.d).toLowerCase(); if (w.every(function (x) { return t.indexOf(x) >= 0; })) hits.push(i); }); });
+    hits.sort(function (a, b) { var A = a.p.toLowerCase().indexOf(w[0]) >= 0 ? 0 : 1, B = b.p.toLowerCase().indexOf(w[0]) >= 0 ? 0 : 1; return A - B || a.p.localeCompare(b.p); });
+    list.innerHTML = hits.length ? hits.slice(0, 150).map(function (i) { return '<li class="hit">' + link(i.p, i.d ? '<small>' + esc(i.d) + '</small>' : '') + '</li>'; }).join('') : '<li class="dn-none">Nothing matches.</li>';
+  }
+  q.addEventListener('input', filter);
+  q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var a = list.querySelector('a'); if (a) location.href = a.href; } });
+  fetch(base + 'nav.json').then(function (r) { return r.json(); }).then(function (g) { groups = g; filter(); }).catch(function () {});
+})();
+`;
