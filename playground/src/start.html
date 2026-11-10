@@ -368,26 +368,26 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
   var LOOKS = [['www', 'splitscreen.me'], ['v3', 'v3.splitscreen.me'], ['mac', 'Mac style'], ['alpha8', 'Nucleus Co-op alpha 8']];
   var TOOLS = [
     { id: 'workbench', label: 'Workbench', views: [
-      ['check', 'Check', 'Check: every problem with why it matters, a hover with the docs, and fixes.'],
+      ['check', 'Problems', 'Problems (the Check tab): every problem with why it matters, a hover with the docs, and fixes.'],
       ['suggestions', 'Suggestions', 'Suggestions as you type, with each one\'s docs beside the list.'],
       ['try-it', 'Try it', 'Try it: each player\'s window, launch arguments and file changes, from a verified Hub handler.'],
+      ['debugger', 'Debugger', 'The debugger: step through each player, with the variables and what has happened so far.'],
       ['test-all', 'Test all', 'Test all: every player count, input setup and screen size in one click.'],
       ['form', 'Form', 'Form: the visual editor, with each option\'s docs one click away.'],
       ['blocks', 'Blocks', 'Blocks: Game.Play as steps you can read.'],
-      ['debugger', 'Debugger', 'The debugger: step through each player, with the variables and what has happened so far.'],
       ['look', 'Looks', 'Four looks to pick from in Settings, each in light and dark.']] },
     { id: 'vscode', label: 'VS Code', views: [
       ['problems-quickfix', 'Problems', 'Problems underlined and listed with why, and the fixes on Ctrl+.'],
-      ['hover-docs', 'Hover', 'Hover a name for its docs: every overload, what to pass, and a link to the full page.'],
       ['completion', 'Suggestions', 'Suggestions as you type, with each one\'s docs beside the list.'],
       ['try-it', 'Try it', 'Try it beside the code: each player\'s window, launch arguments and file changes.'],
       ['debugger', 'Debugger', 'Run and Debug: breakpoints, stepping and variables, per player.'],
+      ['hover-docs', 'Hover', 'Hover a name for its docs: every overload, what to pass, and a link to the full page.'],
       ['docs-panel', 'Docs', 'The Nucleus Docs panel, opened from a hover.']] },
     { id: 'notepadpp', label: 'Notepad++', views: [
       ['problem-hover', 'Problems', 'Problems underlined as you type, and what is wrong when you hover.'],
       ['suggestions', 'Suggestions', 'Suggestions, with the selected one\'s docs in the status bar.'],
-      ['panels', 'Panels', 'The Problems and Outline panels.'],
       ['try-it', 'Try it', 'Try it: what Nucleus sets up for each player, in a new tab.'],
+      ['panels', 'Panels', 'The Problems and Outline panels.'],
       ['menu', 'Menu', 'Everything else is in Plugins › Nucleus Co-op handlers.']] }
   ];
   TOOLS = TOOLS.filter(function (t) { return t.views.length; });
