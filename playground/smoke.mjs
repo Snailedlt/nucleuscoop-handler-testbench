@@ -505,6 +505,10 @@ for (const theme of ['light', 'dark']) {
   const halves = () => s.p.$$eval('.ba img', (l) => l.map((i) => [i.currentSrc.split('/').pop(), i.naturalWidth]));
   let h = await halves();
   check(h.length === 2 && h[0][0].endsWith('-light.webp') && h[1][0].endsWith('-dark.webp') && h.every(([, w]) => w > 0), `${theme}: start page gallery shows the light and the dark screenshot (${h.map((x) => x[0]).join(', ')})`);
+  await s.p.click('.ba-next');
+  await s.p.waitForTimeout(500);
+  h = await halves();
+  check(h.every(([f, w]) => /^workbench-suggestions-/.test(f) && w > 0) && /^2 of /.test(await s.p.textContent('.g-cap')), `${theme}: start page gallery: › goes to the next view, light and dark together (${h.map((x) => x[0]).join(', ')})`);
   await s.p.click('.g-views button:last-child'); // Looks
   await s.p.click('.g-looks button:nth-child(3)'); // Mac
   await s.p.waitForTimeout(500);

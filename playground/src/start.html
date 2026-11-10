@@ -70,6 +70,13 @@ h3 { font-size: 17px; margin: 0 0 6px; }
 .ba-range { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
 .ba-frame:has(.ba-range:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .g-cap { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+.g-cap .g-count { font-weight: 600; color: var(--fg); margin-right: 6px; }
+.ba-nav { position: absolute; top: 50%; z-index: 2; width: 44px; height: 44px; margin-top: -22px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--fg); font: 600 28px/1 var(--font); cursor: pointer; box-shadow: var(--sh-2); padding: 0 0 3px; }
+.ba-nav:hover { border-color: var(--accent); color: var(--accent); }
+.ba-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ba-prev { left: 10px; } .ba-next { right: 10px; }
+.ba-frame.loading img { opacity: .55; transition: opacity .15s; }
+@media (max-width: 560px) { .ba-nav { width: 34px; height: 34px; margin-top: -17px; font-size: 22px; } }
 .g-cap kbd { font-size: 12px; }
 /* Folded parts: the details, one click away. The heading is the summary: no # icon inside it (a link inside
    a summary is nested interactive content), but its id stays, and a link to it opens the part (script below). */
@@ -222,6 +229,8 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
         <img class="ba-dark" src="gallery/workbench-check-dark.webp" alt="" width="1920" height="1200">
         <div class="ba-line" aria-hidden="true"><span>☀</span><span>☾</span></div>
         <input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Light or dark: drag, or use the arrow keys, to compare">
+        <button class="ba-nav ba-prev" type="button" aria-label="Previous picture" hidden>‹</button>
+        <button class="ba-nav ba-next" type="button" aria-label="Next picture" hidden>›</button>
       </div>
       <figcaption class="g-cap">The workbench's Check: every problem with why, and a hover with the docs.</figcaption>
     </figure>
@@ -386,6 +395,27 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
   var light = G.querySelector('.ba-light'), dark = G.querySelector('.ba-dark'), cap = G.querySelector('.g-cap');
   var frame = G.querySelector('.ba-frame'), range = G.querySelector('.ba-range');
   var cur = { tool: TOOLS[0], view: TOOLS[0].views[0][0], look: 'www' };
+  var prev = G.querySelector('.ba-prev'), next = G.querySelector('.ba-next');
+  function srcOf(t, view) { return 'gallery/' + t.id + '-' + (view === 'look' ? 'look-' + cur.look : view); }
+  var cache = {};
+  function fetchPair(base) {
+    if (!cache[base]) cache[base] = Promise.all(['-light.webp', '-dark.webp'].map(function (end) {
+      return new Promise(function (ok) { var im = new Image(); im.onload = im.onerror = function () { ok(); }; im.src = base + end; });
+    }));
+    return cache[base];
+  }
+  var want = '';
+  function swap(base) {
+    want = base;
+    if (light.getAttribute('src') === base + '-light.webp') return;
+    frame.classList.add('loading');
+    fetchPair(base).then(function () {
+      if (want !== base) return; // another view was picked meanwhile
+      light.src = base + '-light.webp'; dark.src = base + '-dark.webp';
+      frame.classList.remove('loading');
+    });
+  }
+  function step(d) { var vs = cur.tool.views, i = vs.map(function (x) { return x[0]; }).indexOf(cur.view); cur.view = vs[(i + d + vs.length) % vs.length][0]; show(); }
   function btn(label, attrs, on) {
     var b = document.createElement('button'); b.type = 'button'; b.textContent = label;
     for (var k in attrs) b.setAttribute(k, attrs[k]);
@@ -394,11 +424,15 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
   function show() {
     var v = cur.tool.views.filter(function (x) { return x[0] === cur.view; })[0] || cur.tool.views[0];
     cur.view = v[0];
-    var base = 'gallery/' + cur.tool.id + '-' + (v[0] === 'look' ? 'look-' + cur.look : v[0]);
-    light.src = base + '-light.webp'; dark.src = base + '-dark.webp';
+    swap(srcOf(cur.tool, v[0]));
+    var at = cur.tool.views.indexOf(v), n = cur.tool.views.length;
+    prev.hidden = next.hidden = n < 2;
+    var nv = cur.tool.views[(at + 1) % n]; if (nv) fetchPair(srcOf(cur.tool, nv[0]));
     var name = cur.tool.label + ', ' + v[1] + (v[0] === 'look' ? ' (' + LOOKS.filter(function (l) { return l[0] === cur.look; })[0][1] + ')' : '');
     light.alt = name + ', light'; dark.alt = name + ', dark';
-    cap.textContent = v[2] + ' Drag to compare light and dark.';
+    cap.innerHTML = '';
+    var cnt = document.createElement('span'); cnt.className = 'g-count'; cnt.textContent = (at + 1) + ' of ' + n;
+    cap.appendChild(cnt); cap.appendChild(document.createTextNode(v[2] + ' Drag across the picture to compare light and dark; ‹ › for the next view.'));
     tabs.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.id === cur.tool.id)); b.tabIndex = b.dataset.id === cur.tool.id ? 0 : -1; });
     views.innerHTML = '';
     cur.tool.views.forEach(function (x) { views.appendChild(btn(x[1], { 'aria-pressed': String(x[0] === cur.view) }, function () { cur.view = x[0]; show(); })); });
@@ -415,8 +449,26 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
   LOOKS.forEach(function (l) { looks.appendChild(btn(l[1], { 'data-id': l[0] }, function () { cur.look = l[0]; show(); })); });
   function pos(v) { frame.style.setProperty('--pos', v + '%'); range.setAttribute('aria-valuetext', v <= 5 ? 'all dark' : v >= 95 ? 'all light' : Math.round(v) + '% light'); }
   range.addEventListener('input', function () { pos(+range.value); });
+  prev.addEventListener('click', function () { step(-1); });
+  next.addEventListener('click', function () { step(1); });
   pos(50);
   show();
+  // The first time the gallery comes into view, the seam sweeps once, to show that it moves.
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var io = new IntersectionObserver(function (es) {
+      if (!es[0].isIntersecting) return;
+      io.disconnect();
+      var t0 = null;
+      (function tick(t) {
+        if (t0 === null) t0 = t;
+        var k = Math.min(1, (t - t0) / 1400);
+        var v = 50 + 22 * Math.sin(k * Math.PI * 2) * (1 - k);
+        pos(v); range.value = String(Math.round(v));
+        if (k < 1) requestAnimationFrame(tick);
+      })(performance.now());
+    }, { threshold: 0.6 });
+    io.observe(frame);
+  }
 })();
 // The language-server editors: a click shows that editor's setup below the row.
 (function () {
