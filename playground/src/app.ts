@@ -20,7 +20,8 @@ import { ACTIONS, appActionFor, codeKeyMap, keyLabel, labelOf, binding, onBindin
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
 import { api, ownerLabel, Resolved } from '@core/api';
 import { resolveAt } from '@core/complete';
-import { completionsAt, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
+import { completionsAt, explainLine, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
+import { currentRunner } from './aiproviders';
 import { insertSnippet } from './snippet';
 import { renderHandler, FEATURES } from '@core/templates';
 import { simulate, parsePluginsInfo } from '@core/sim';
@@ -328,6 +329,7 @@ const editorHandlers: Record<string, (cm: any) => void> = {
     if (linePop.hidden) showLineProblems(c.line);
     if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
   },
+  explainLine: () => explainAtCursor(),
   suggest: (cm: any) => cm.showHint({ hint: hinter, completeSingle: false, explicit: true }),
   goToLine: () => showOpen('line'),
   definition: () => goToDefinition(),
@@ -574,7 +576,10 @@ function placeTip(from: { left: number; top: number; bottom: number }) {
 }
 function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
   if (!list.length && !doc) return void (tip.hidden = true);
-  tip.innerHTML = (list.length ? problemCard(list) : '') + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '') + fixBar(list);
+  // Explain this line: on request, a link at the bottom of the card (as in VS Code).
+  const explain = doc && !list.length ? `<div class="hv-bar"><button class="hv-link" type="button" data-hc-explain="${at}">Explain this line</button><span class="hv-key">${esc(labelOf('explainLine'))}</span></div>` : '';
+  tip.innerHTML = (list.length ? problemCard(list) : '') + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '') + fixBar(list) + explain;
+  tip.querySelector<HTMLButtonElement>('[data-hc-explain]')?.addEventListener('click', () => showExplanation(at));
   tip.classList.toggle('has-problems', list.length > 0);
   linkApiNames(tip);
   tip.hidden = false;
@@ -590,6 +595,54 @@ function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string
     codeNote(editor, editor.posFromIndex(Math.min(...fix.edits.map((e) => e.start))).line, `Fixed: ${fix.title.replace(/`/g, '')}.`, { action: undoAction });
   }));
   placeTip(editor.charCoords(editor.posFromIndex(anchorFrom), 'window'));
+}
+/** Explain this line (core/explain.ts): what the line does in plain words, the docs of its names, what Check says.
+ * With AI set up (Settings › AI), "Explain with AI" asks it for a longer answer, labelled AI-written. */
+let explainSample: any;
+async function explainRunner() {
+  if (explainSample === undefined) explainSample = await (window as any).claude?.use?.('sample')?.catch?.(() => null) ?? null;
+  return currentRunner(explainSample).runner;
+}
+function explainAtCursor() {
+  const c = editor.getCursor();
+  const line = editor.getLine(c.line);
+  if (!line.trim()) return codeNote(editor, c.line, 'An empty line: nothing to explain.', { mood: 'info' });
+  showExplanation(editor.indexFromPos({ line: c.line, ch: Math.max(c.ch, line.search(/\S/)) }));
+}
+function showExplanation(at: number) {
+  use('explain-line');
+  const text = editor.getValue();
+  const e = explainLine(text, at);
+  if (!e) return void (tip.hidden = true);
+  tip.innerHTML = `<div class="hv-sec hv-doc">${md(e.markdown)}</div><div class="hv-bar" hidden><button class="hv-link" type="button" data-hc-ai>Explain with AI</button></div>`;
+  tip.classList.remove('has-problems');
+  linkApiNames(tip);
+  tip.hidden = false;
+  const lineStart = editor.indexFromPos({ line: e.line, ch: 0 });
+  placeTip(editor.charCoords(editor.posFromIndex(lineStart + Math.max(0, e.text.search(/\S/))), 'window'));
+  const bar = tip.querySelector<HTMLElement>('.hv-bar')!;
+  void explainRunner().then((runner) => {
+    if (!runner || !tip.contains(bar)) return;
+    bar.hidden = false;
+    placeTip(editor.charCoords(editor.posFromIndex(lineStart + Math.max(0, e.text.search(/\S/))), 'window'));
+    const btn = bar.querySelector<HTMLButtonElement>('[data-hc-ai]')!;
+    btn.addEventListener('click', async () => {
+      use('explain-line-ai');
+      btn.disabled = true;
+      btn.textContent = `Asking ${runner.label}…`;
+      try {
+        const r = await runner.json(e.aiPrompt, {});
+        const answer = String(r?.explanation ?? '').trim();
+        if (!answer) throw new Error('No answer.');
+        bar.outerHTML = `<div class="hv-sec hv-doc"><p class="small">AI-written by ${esc(runner.label)}; check it against the docs.</p>${md(answer)}</div>`;
+        linkApiNames(tip);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Explain with AI';
+        notice(`${runner.label} couldn't explain it: ${(err as Error).message}`, { kind: 'error' });
+      }
+    });
+  });
 }
 const problemsAt = (at: number) => current.filter((d) => d.severity !== 'hint' && d.start <= at && at <= Math.max(d.end, d.start + 1));
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
@@ -1706,6 +1759,7 @@ function commandList(): OpenEntry[] {
   const c = (title: string, keys: string, keywords: string, run: () => void, sub?: string): OpenEntry => ({ group: 'Actions', title, keys, keywords, run, sub, icon: OI.command });
   const list: OpenEntry[] = [
     c('Format document', labelOf('format'), 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
+    c('Explain this line', labelOf('explainLine'), 'explain line what does this do help understand', () => setTimeout(() => (editor.focus(), explainAtCursor()), 0), 'What the line at the cursor does, in plain words'),
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
     c('Try it: simulate the handler', labelOf('tryIt'), 'run play simulate try', () => selectTab('simulate')),
     c('Go to line', labelOf('goToLine'), 'go to line number jump column', () => setTimeout(() => showOpen('line'), 0)),

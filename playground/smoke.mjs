@@ -173,6 +173,12 @@ for (const theme of ['light', 'dark']) {
   await p.keyboard.press('F2');
   await p.keyboard.type('run');
   check((await cmVal()) === 'function run() {}\nrun();\n', `${theme}: F2 renames every use`);
+  // Explain this line (Ctrl+Alt+E): plain words in the hover card.
+  await cmSet('Game.Play = function () {\n};\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
+  await p.keyboard.press('Control+Alt+e');
+  await p.waitForTimeout(200);
+  check(/once for each player/.test(await p.textContent('#tip')) && await p.isVisible('#tip'), `${theme}: Ctrl+Alt+E explains the line`);
+  await p.keyboard.press('Escape');
   // Find and replace (Ctrl+F, Ctrl+H, Ctrl+Alt+Enter), go to line (Ctrl+G), as in VS Code.
   await cmSet('var foo = 1;\nvar bar = foo;\n', { line: 0, ch: 5 }, { line: 0, ch: 5 });
   await p.keyboard.press('Control+f');

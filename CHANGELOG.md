@@ -16,6 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
+- **Explain this line.** **Ctrl+Alt+E**, *Explain this line* in the command palette, or the link under a hover says what the line does in plain words, with the docs of its names and what Check says. With AI set up, *Explain with AI* gives a longer answer, labelled AI-written.
 - **One header for the whole site.** The start page, Learn, Docs and the check pages share a bar with Workbench · Learn · Docs · Checks · Get the tools.
 - **A docs list beside every docs page**, like Learn's: groups that fold open (Game, Context, Player…), the page you're on marked, and a filter on top that finds names by name or by what they do ("save file" finds `Context.ModifySaveFile`). On a phone it folds into an **All docs** button.
 - **Votes and "Tell us what's wrong" on every docs page**, as in the workbench; editors' docs links now open these pages.

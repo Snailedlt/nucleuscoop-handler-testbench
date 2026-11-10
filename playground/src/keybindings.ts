@@ -41,6 +41,7 @@ export const ACTIONS: Action[] = [
   { id: 'prevProblem', label: 'Previous problem', group: 'Problems', keys: 'Shift+F8', where: 'app' },
   // In the code
   { id: 'quickFix', label: 'Problems and fixes on this line', group: 'Problems', keys: 'Ctrl+.', where: 'code' },
+  { id: 'explainLine', label: 'Explain this line', group: 'Problems', keys: 'Ctrl+Alt+E', where: 'code' },
   { id: 'find', label: 'Find', group: 'Find and navigate', keys: 'Ctrl+F', where: 'code' },
   { id: 'replace', label: 'Find and replace', group: 'Find and navigate', keys: 'Ctrl+H', mac: 'Cmd+Alt+F', where: 'code' },
   { id: 'findNext', label: 'Next match', group: 'Find and navigate', keys: 'F3', where: 'code' },
