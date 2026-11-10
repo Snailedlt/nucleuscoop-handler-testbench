@@ -71,6 +71,7 @@ export function routeLink(h: string, cat: LinkCatalog): LinkTarget {
   if (h === 'whats-new') return { kind: 'whats-new' };
   if (h === 'docs' || h.startsWith('docs-')) return { kind: 'docs', hash: h };
   if (h === 'dev') return { kind: 'dev' };
+  // #learn: the lessons (learn/ now); #learn-<chapter>/<lesson> keeps its place.
   if (h === 'learn' || h.startsWith('learn-')) return { kind: 'learn', lesson: h.slice(6) || undefined };
   if (h === 'example-mistakes') return { kind: 'example-mistakes' };
   if (h.startsWith('hub-')) {

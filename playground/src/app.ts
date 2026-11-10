@@ -1,4 +1,3 @@
-import { initTutorial } from './tutorial-ui';
 import { RULE_DOCS, ruleUrl } from '@core/ruledocs';
 import { initKeySettings } from './kbsettings';
 import { openFind } from './findwidget';
@@ -1401,12 +1400,7 @@ function switchTab(id: string) {
   renderTabs();
   if (!$('#panel-simulate').hidden) runSim();
   editor.focus();
-  onTabSwitched?.();
 }
-/** Set once the tutorial is set up (it follows which tab is showing); tabs switch before that, at start-up. */
-// var, not let: switchTab can run before this line does (no temporal dead zone).
-// eslint-disable-next-line no-var
-var onTabSwitched: (() => void) | undefined;
 /** A new, empty tab (the caller fills it, e.g. loadSource). */
 function openTab() {
   stashTab();
@@ -1704,7 +1698,7 @@ function commandList(): OpenEntry[] {
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
-    c('Tutorial: learn handlers step by step', '', 'tutorial learn lesson course beginner how to start guide teach', () => tutorial.start()),
+    c('Learn: making your first handler', '', 'tutorial learn lesson course beginner how to start guide teach', () => openLearn()),
     c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
     c('Help test this beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
     c('Move Files to the other side of the code', '', 'files panel left right side move swap', () => announce(`Files is now ${panels.flip('files')} of the code.`)),
@@ -2104,7 +2098,7 @@ const tips = initTips({
       selectTab('simulate');
     },
     share: () => copyLink(),
-    tutorial: () => tutorial.start(),
+    tutorial: () => openLearn(),
   },
   targets: {
     lines: () => $('#lines-toggle'),
@@ -2224,22 +2218,16 @@ const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#tes
 });
 // Tasks pinned from the guide float over the workbench while you test (testpins.ts).
 initTestPins(() => testGuide.open());
-// The tutorial (tutorial-ui.ts): its lessons open in a "Tutorial" tab, found by its hash.
-const tutorial = initTutorial({
-  editor,
-  open(text) {
-    const tab = tabs.find((x) => (x.id === activeTab ? doc.hash : x.meta.hash) === 'learn');
-    if (!tab) return loadSource(text, { name: 'Tutorial', kind: 'example', hash: 'learn' });
-    if (tab.id !== activeTab) switchTab(tab.id);
-    editor.setValue(text);
-    editor.focus();
-    editor.setCursor(editor.lineCount() - 1, 0);
-  },
-  inTutorialTab: () => doc.hash === 'learn',
-  showTab: (id) => selectTab(id === 'check' ? 'problems' : 'simulate'),
-  rerun: () => { if (!$('#panel-simulate').hidden) runSim(); },
-});
-onTabSwitched = () => tutorial.refresh();
+// Learn (learn/, its own page): the lessons. Next to the start page on the site; the one-file workbench links to
+// the site's. A new tab from the menu (the workbench stays as it is); #learn links go there instead.
+function learnUrl(lesson?: string) {
+  // The footer's link: the one build.mjs points at the site's own start page (start/) or, in the one file, the site's.
+  const start = document.querySelector<HTMLAnchorElement>('a.link.start-link')?.href ?? 'start/';
+  return start.replace(/start\/?$/, 'learn/') + (lesson ? `#${lesson}` : '');
+}
+function openLearn() {
+  window.open(learnUrl(), '_blank', 'noopener');
+}
 
 // ---------------------------------------------------------------------------
 // Code | Form | Blocks: the options as a form (formview.ts) and the callbacks as if / do steps (blocksview.ts), both
@@ -2323,7 +2311,7 @@ const appItems = (): MenuItem[] => [
   { label: 'Send feedback…', run: () => openReport(feedbackUrl()) },
   { kind: 'separator', label: '' },
   { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
-  { label: '📘 Tutorial: learn handlers step by step', run: () => tutorial.start() },
+  { label: '📘 Learn: making your first handler', run: () => openLearn() },
   ...(document.getElementById('test-open') ? [{ label: '🧪 Help test this beta', run: () => testGuide.open() }] : []),
 ];
 $('#tab-add').addEventListener('click', () => openMenu($('#tab-add'), 'New or open', addItems()));
@@ -2582,9 +2570,8 @@ function openFromHash(): boolean {
       docs.openHash(t.hash);
       return false; // opens no handler: the draft stays
     case 'learn':
-      // #learn (and #learn-<lesson>): the tutorial, in its own tab.
-      tutorial.start(t.lesson);
-      dropHash();
+      // #learn: the lessons moved to their own page (learn/); old links lead there.
+      location.replace(learnUrl(t.lesson));
       return true;
     case 'dev':
       // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
@@ -2641,12 +2628,12 @@ function flyTo(from: HTMLElement, to: HTMLElement) {
 function showWelcome() {
   const w = $('#welcome');
   w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
-    <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span><span class="w-learn">or <button class="link" type="button" data-w="learn">learn step by step</button> (8 short lessons)</span></div>`;
+    <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span><span class="w-learn">or <button class="link" type="button" data-w="learn">learn step by step</button> (a handler for a free game, from scratch)</span></div>`;
   w.hidden = false;
   w.querySelector('[data-w=open]')!.addEventListener('click', () => showOpen());
   w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
   w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
-  w.querySelector('[data-w=learn]')!.addEventListener('click', () => tutorial.start());
+  w.querySelector('[data-w=learn]')!.addEventListener('click', () => openLearn());
   w.querySelector('[data-w=close]')!.addEventListener('click', () => {
     flyTo(w, $('#welcome-open'));
     w.hidden = true;

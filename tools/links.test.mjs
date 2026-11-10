@@ -245,3 +245,10 @@ test('rules: every check the tools link to has its page', { skip: !fs.existsSync
   const missing = ids.filter((id) => !fs.existsSync(path.join(root, 'playground/dist/pages/rules', id, 'index.html')));
   assert.deepEqual(missing, []);
 });
+
+test('learn: the lessons page is built, and the workbench and start page link to it', { skip: !fs.existsSync(path.join(root, 'playground/dist/pages/learn/index.html')) && 'not built' }, () => {
+  const html = fs.readFileSync(path.join(root, 'playground/dist/pages/learn/index.html'), 'utf8');
+  assert.match(html, /<title>[^<]+<\/title>/);
+  assert.ok(html.length < 2_000_000, 'the page stays small (no ESLint in it)');
+  assert.match(fs.readFileSync(path.join(root, 'playground/dist/pages/start/index.html'), 'utf8'), /href="\.\.\/learn\/"/);
+});

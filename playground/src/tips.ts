@@ -149,7 +149,7 @@ const SHORTCUTS = T('Shortcut', [
   { id: 's-f8', text: 'F8 jumps to the next problem, Shift+F8 to the one before. Ctrl+. shows the fixes for the line you’re on.' },
   { id: 's-tryit', text: 'Ctrl+F5 runs Try it on the code as it is now (VS Code\'s Run Without Debugging); Ctrl+; then A tests all combinations.', action: { label: 'Try it', run: 'tryit' } },
   { id: 's-lines', text: 'Ctrl+B shows or hides Lines (Ctrl+Shift+L too, outside the code: in the code it selects every occurrence, as in VS Code).', action: { label: 'Show Lines', run: 'lines' } },
-  { id: 's-tutorial', text: 'New to handlers? The tutorial takes you from the three lines every handler needs to each player\'s own window and settings file, in 8 short lessons that check your code as you type.', action: { label: 'Start it', run: 'tutorial' } },
+  { id: 's-tutorial', text: 'New to handlers? Learn walks you through making your first one, for a free game, a few lines at a time, checked as you type. At the end, you test it in Nucleus Co-op.', action: { label: 'Start it', run: 'tutorial' } },
   { id: 's-find-all', text: 'Add the same text after every match: Ctrl+F, type what to find, Alt+Enter selects every match, then → puts a cursor after each (← before each) and you type once for all.' },
   { id: 's-edit', text: 'VS Code’s editing keys work: Ctrl+/ comments a line, Alt+↑/↓ moves it, Shift+Alt+↑/↓ copies it, Ctrl+D selects the next match.' },
   { id: 's-goto', text: 'Ctrl+G goes to a line number, handy with a line from a Nucleus error message.' },

@@ -602,7 +602,29 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
   const { RULES, JS_RULES } = await import('data:text/javascript;base64,' + Buffer.from(lintAll.outputFiles[0].text).toString('base64'));
   const { writeRulePages } = await import('./rules-pages.mjs');
   const ruleIds = writeRulePages({ outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
-  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}rules/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+}
+// Learn (learn/): the lessons, one page with its own small bundle (src/learn/): the editor, the checks and Try it,
+// without the rest of the workbench. ESLint's general rules stay out (the lessons only need Nucleus' own checks).
+{
+  const learnJs = await esbuild.build({
+    entryPoints: [path.join(here, 'src', 'learn', 'learn.ts')],
+    bundle: true, format: 'iife', platform: 'browser', target: 'es2020', minify: true, write: false,
+    alias: { '@core': path.join(coreRepo, 'src', 'core'), 'eslint/universal': path.join(coreRepo, 'src', 'core', 'eslint-stub.ts'), 'node:path': 'path-browserify', path: 'path-browserify' },
+    banner: { js: "var process = globalThis.process || { env: {}, argv: [], versions: {}, platform: 'browser', cwd: function () { return '/'; }, emitWarning: function () {}, nextTick: function (f) { Promise.resolve().then(f); } };" },
+    nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
+    logLevel: 'warning',
+  });
+  const startHtml = fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8');
+  const style = startHtml.slice(startHtml.indexOf('<style>') + 7);
+  const tokens = style.slice(0, style.indexOf('* { box-sizing'));
+  const learnDir = path.join(here, 'dist', 'pages', 'learn');
+  fs.mkdirSync(learnDir, { recursive: true });
+  fs.writeFileSync(path.join(learnDir, 'index.html'), fs.readFileSync(path.join(here, 'src', 'learn', 'learn.html'), 'utf8')
+    .replace('__HEAD__', () => NOINDEX + (PREVIEW ? '' : `<link rel="canonical" href="${PAGES_BASE}learn/">`))
+    .replace('/*TOKENS*/', () => tokens)
+    .replace('/*CODEMIRROR_CSS*/', () => cm('lib/codemirror.css'))
+    .replace('/*LEARN_JS*/', () => learnJs.outputFiles[0].text.replace(/<\/script/gi, '<\\/script')));
 }
 // The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
 fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });

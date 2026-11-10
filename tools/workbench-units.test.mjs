@@ -173,23 +173,36 @@ test("the saved file's name: the folder a Hub install makes (Game.GameName), els
   assert.equal(save.saveFileName('  Game.GameName = "Indented";', 'doc.js'), 'doc', 'Nucleus does not see an indented line');
 });
 
-// The tutorial (playground/src/tutorial.ts): each lesson starts unfinished, its solution finishes it, and the
-// solution is what people copy: no errors.
-test('tutorial: every lesson starts unfinished, its solution passes, with no errors', async () => {
-  const { LESSONS, solutionErrors } = await load('playground/src/tutorial.ts');
-  assert.ok(LESSONS.length >= 6, `${LESSONS.length} lessons`);
-  const ids = new Set();
-  for (const l of LESSONS) {
-    assert.ok(!ids.has(l.id), `two lessons called ${l.id}`);
-    ids.add(l.id);
-    assert.notEqual(l.check(l.start), null, `${l.id}: the starting code is already done`);
-    assert.equal(l.check(l.solution), null, `${l.id}: the solution doesn't pass`);
-    assert.ok(l.title && l.task && l.text.length, l.id);
-    assert.deepEqual(solutionErrors(l), [], `${l.id}: errors in the solution`);
+// Learn (playground/src/learn/lessons.ts): each code lesson starts unfinished and its solution passes; solutions
+// are what people copy (no errors); the finished handler has no warnings either; what the notes claim Check says,
+// it says.
+test('learn: every lesson starts unfinished, its solution passes, with no errors', async () => {
+  const { CHAPTERS, FINAL, solutionErrors, findLesson } = await load('playground/src/learn/lessons.ts');
+  const { lint } = await load(path.join(coreDir, 'src', 'core', 'lint.ts'));
+  const first = CHAPTERS.find((c) => c.id === 'first-handler');
+  assert.ok(first && first.lessons.length >= 10, 'the first chapter');
+  for (const ch of CHAPTERS) {
+    const ids = new Set();
+    for (const l of ch.lessons) {
+      assert.ok(/^[a-z0-9-]+$/.test(l.id) && !ids.has(l.id), `${ch.id}/${l.id}: a unique, readable id`);
+      ids.add(l.id);
+      assert.ok(l.title && l.text.length, l.id);
+      assert.ok((l.notes ?? []).length <= 3, `${l.id}: at most 3 notes`);
+      assert.deepEqual(solutionErrors(l), [], `${l.id}: errors in the solution`);
+      if (l.kind !== 'code') continue;
+      assert.ok(l.task && l.check && l.pane, `${l.id}: a task, a check and a pane`);
+      assert.notEqual(l.check(l.start), null, `${l.id}: the starting code is already done`);
+      assert.equal(l.check(l.solution), null, `${l.id}: the solution doesn't pass: ${l.check(l.solution)}`);
+    }
+    assert.equal(findLesson(`#${ch.id}/${ch.lessons[2].id}`).index, 2);
   }
-  // Each lesson starts where the one before ends (or from its own broken code, for the "fix it" lesson).
-  for (let i = 1; i < LESSONS.length; i++) {
-    const prev = LESSONS[i - 1].solution, cur = LESSONS[i].start;
-    assert.ok(cur.startsWith(prev.split('\nGame.Play')[0]) || cur === prev, `${LESSONS[i].id} doesn't continue from ${LESSONS[i - 1].id}`);
-  }
+  assert.equal(findLesson('#nonsense').index, 0, 'an unknown link opens the start');
+  const d = lint(FINAL).filter((x) => x.severity === 'error' || x.severity === 'warning');
+  assert.deepEqual(d.map((x) => `${x.rule}: ${x.message}`), [], 'the finished handler: no errors or warnings');
+  // Lesson notes say Check flags these.
+  assert.ok(lint('Game.GUID = "a";\nGame.GameName = "a";\nGame.ExecutableName = "a.exe";\nGame.ExecutableContext = "srb2.pk3";\n').some((x) => x.severity !== 'hint'), 'ExecutableContext as plain text');
+  assert.ok(lint('Game.GUID = "a";\nGame.GameName = "a";\nGame.ExecutableName = "a.exe";\nGame.MaxPlayers = "4";\n').some((x) => x.severity === 'warning' || x.severity === 'error'), 'MaxPlayers in quotes');
+  // The tutorial test lesson hands over the handler without the pause settings (the bug the next lesson fixes).
+  const test1 = first.lessons.find((l) => l.id === 'test'), fix = first.lessons.find((l) => l.id === 'focus-lost');
+  assert.ok(!/pauseifunfocused/.test(test1.solution) && fix.check(test1.solution) !== null && /pauseifunfocused/.test(FINAL));
 });

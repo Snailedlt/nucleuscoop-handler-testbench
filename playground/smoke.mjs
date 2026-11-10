@@ -616,36 +616,65 @@ await m.ctx.close();
   await s.ctx.close();
 }
 {
-  // The tutorial: #learn opens it in its own tab; a lesson is done when its code is; Show me, Next.
-  const s = await page('light');
-  await s.p.goto(BASE + '#learn');
-  await s.p.waitForTimeout(900);
-  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
-  check(await s.p.isVisible('#tutorial'), 'tutorial: #learn opens the lesson card');
-  check(/Tutorial/.test(await s.p.textContent('#htabs [aria-selected=true]')), 'tutorial: its code opens in a Tutorial tab');
-  check(!(await s.p.isVisible('#tutorial .tut-task.ok')), 'tutorial: lesson 1 starts unfinished');
-  // Typing the task's line finishes it.
-  await s.p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.replaceRange('Game.ExecutableName = "racer.exe";\n', { line: cm.lastLine(), ch: 0 }); });
-  await s.p.waitForTimeout(700);
-  check(await s.p.isVisible('#tutorial .tut-task.ok'), 'tutorial: doing the task ticks it');
-  await axe(s.p, 'light, tutorial card');
-  await s.p.click('#tutorial [data-tut=next]');
-  await s.p.waitForTimeout(500);
-  check(/2 of /.test(await s.p.textContent('#tutorial .tut-head')) && !(await s.p.isVisible('#tutorial .tut-task.ok')), 'tutorial: Next goes to lesson 2, unfinished');
-  await s.p.click('#tutorial [data-tut=show]');
-  await s.p.waitForTimeout(700);
-  check(await s.p.isVisible('#tutorial .tut-task.ok'), 'tutorial: Show me puts in the solution, which passes');
-  await s.p.reload();
-  await s.p.waitForTimeout(900);
-  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
-  check(await s.p.isHidden('#tutorial'), 'tutorial: nothing on screen until it is started again');
-  await s.p.keyboard.press('Control+Shift+P');
-  await s.p.keyboard.type('tutorial');
-  await s.p.keyboard.press('Enter');
-  await s.p.waitForTimeout(700);
-  check(/2 of /.test((await s.p.textContent('#tutorial .tut-head')) ?? ''), 'tutorial: the command palette resumes where you were');
-  check(!s.errors.length, `tutorial: no page errors ${s.errors.join(' ')}`);
-  await s.ctx.close();
+  // Learn (learn/): the intro scene step by step; a lesson ticks when its code is done; Solve; Try it; the test
+  // lesson's download; the lesson list; axe in light and dark; nothing cut off on a phone. #learn in the workbench
+  // leads there.
+  for (const theme of ['light', 'dark']) {
+    const s = await page(theme, { viewport: { width: 1366, height: 800 } });
+    await s.p.goto(BASE + 'learn/#first-handler/why');
+    await s.p.waitForTimeout(500);
+    check(await s.p.isVisible('#scene [data-scene=next]'), `learn ${theme}: the intro starts with one step`);
+    for (let i = 0; i < 3; i++) { await s.p.click('#scene [data-scene=next]'); await s.p.waitForTimeout(150); }
+    await s.p.waitForTimeout(1200); // the list's fade-in
+    check((await s.p.isVisible('#scene .fixes')) && (await s.p.isVisible('#scene [data-scene=go]')), `learn ${theme}: the intro ends with what a handler does`);
+    await axe(s.p, `${theme}, learn intro`);
+    await s.p.click('#scene [data-scene=go]');
+    await s.p.waitForTimeout(400);
+    check(/#first-handler\/name$/.test(s.p.url()) && !(await s.p.isVisible('#task.ok')), `learn ${theme}: lesson 1, unfinished`);
+    await s.p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.replaceRange('Game.GUID = "SRB2 Tutorial";\nGame.GameName = "SRB2 Tutorial";\n', { line: cm.lastLine(), ch: 0 }); });
+    await s.p.waitForTimeout(600);
+    check(await s.p.isVisible('#task.ok'), `learn ${theme}: typing the lines ticks the task`);
+    check(/Missing required/i.test(await s.p.textContent('#pane')), `learn ${theme}: Check shows what is still missing`);
+    await axe(s.p, `${theme}, learn code lesson`);
+    await s.p.goto(BASE + 'learn/#first-handler/controllers');
+    await s.p.waitForTimeout(500);
+    check(!(await s.p.isVisible('#task.ok')), `learn ${theme}: a lesson starts from its own code, unfinished`);
+    await s.p.click('#solve');
+    await s.p.waitForTimeout(600);
+    check((await s.p.isVisible('#task.ok')) && /use_mouse "On"/.test(await s.p.textContent('#pane')), `learn ${theme}: Solve passes, and Try it shows each player's settings`);
+    await s.p.click('#back');
+    await s.p.waitForTimeout(300);
+    check(/#first-handler\/settings$/.test(s.p.url()), `learn ${theme}: Back`);
+    await s.p.goto(BASE + 'learn/#first-handler/test');
+    await s.p.waitForTimeout(400);
+    const [dl] = await Promise.all([s.p.waitForEvent('download'), s.p.click('#download')]);
+    check(dl.suggestedFilename() === 'SRB2 Tutorial.js', `learn ${theme}: the test lesson downloads the handler`);
+    await axe(s.p, `${theme}, learn test lesson`);
+    await s.p.click('#menu-open');
+    check((await s.p.isVisible('#menu')) && (await s.p.$$('#menu-list a')).length >= 10, `learn ${theme}: the lesson list`);
+    await axe(s.p, `${theme}, learn lesson list`);
+    await s.p.keyboard.press('Escape');
+    check(!s.errors.length, `learn ${theme}: no page errors ${s.errors.join(' ')}`);
+    await s.ctx.close();
+  }
+  {
+    const s = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    for (const l of ['why', 'settings', 'test']) {
+      await s.p.goto(BASE + `learn/#first-handler/${l}`);
+      await s.p.waitForTimeout(400);
+      const wide = await s.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      check(wide <= 1, `learn phone ${l}: no sideways scrolling (${wide}px)`);
+    }
+    check(!s.errors.length, `learn phone: no page errors ${s.errors.join(' ')}`);
+    await s.ctx.close();
+  }
+  {
+    const s = await page('light');
+    await s.p.goto(BASE + '#learn');
+    await s.p.waitForURL(/learn\//, { timeout: 5000 }).catch(() => {});
+    check(/\/learn\//.test(s.p.url()), `learn: the workbench's #learn link leads to the lessons (${s.p.url()})`);
+    await s.ctx.close();
+  }
 }
 for (const theme of ['light', 'dark']) {
   // One page per check, and the list of them: they load, the examples are there, the filter works, accessible.

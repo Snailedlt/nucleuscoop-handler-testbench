@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn: making your first Nucleus Co-op handler</title>
+<meta name="description" content="Learn to write a Nucleus Co-op handler step by step, in your browser: a few lines at a time, checked as you type, ending with a handler for a free game you test in Nucleus Co-op.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#10a3e8">
+<link rel="icon" type="image/png" href="../icon.png">
+__HEAD__
+<script>/* the workbench's theme choice (Settings → Theme), applied before first paint */
+try { var m = localStorage.getItem('nucleus-workbench-dev-mode'); if (m === 'light' || m === 'dark') document.documentElement.dataset.theme = m; } catch (e) {}</script>
+<style>
+/*TOKENS*/
+/*CODEMIRROR_CSS*/
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--font); display: flex; flex-direction: column; }
+[hidden] { display: none !important; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: var(--r-sm); }
+.muted { color: var(--muted); font-weight: 400; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 16px; border-radius: var(--r-ctl); font: inherit; font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--surface); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.btn:hover:not([disabled]) { filter: brightness(1.06); }
+.btn[disabled] { opacity: .45; cursor: default; }
+.btn.small { min-height: 32px; padding: 4px 12px; font-size: 14px; }
+button.link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
+/* Code colours, the start page's (light and dark). */
+.cm-s-default .cm-keyword, .hl .cm-keyword, .cm-s-default .cm-atom, .hl .cm-atom { color: var(--hl-k); }
+.cm-s-default .cm-string, .hl .cm-string { color: var(--hl-s); }
+.cm-s-default .cm-comment, .hl .cm-comment { color: var(--hl-c); font-style: italic; }
+.cm-s-default .cm-number, .hl .cm-number { color: var(--hl-s); }
+.cm-s-default .cm-def, .hl .cm-def { color: var(--accent); }
+
+/* The bar: back to the workbench, the chapter, where you are, the lesson list. */
+.top { flex: none; display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .home { font-weight: 700; text-decoration: none; color: var(--fg); white-space: nowrap; }
+.top .home span { color: var(--accent); }
+.top .where { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.top .where strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#count { white-space: nowrap; }
+.top .progress { flex: none; width: 90px; height: 6px; border-radius: 3px; background: var(--code-bg); overflow: hidden; }
+.top .progress span { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+@media (prefers-reduced-motion: reduce) { .top .progress span { transition: none; } }
+
+.learn { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 40%) minmax(0, 1fr); }
+.lesson { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
+#lesson { flex: 1; overflow: auto; padding: 20px 24px 8px; }
+#lesson h1 { font-size: 26px; line-height: 1.2; margin: 0 0 14px; }
+#lesson h1:focus { outline: none; }
+#lesson p { margin: 0 0 12px; max-width: 62ch; }
+.lesson-nav { flex: none; display: flex; gap: 8px; justify-content: space-between; padding: 10px 24px; border-top: 1px solid var(--line); }
+.task { margin: 16px 0; padding: 12px 14px; border-radius: var(--r-pane); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.task.ok { border-color: #2e8540; background: color-mix(in srgb, #2e8540 10%, var(--surface)); }
+.task .hint { display: block; margin-top: 6px; font-size: 14px; color: var(--muted); }
+.note { margin: 12px 0; padding: 10px 14px; border-left: 4px solid var(--line); background: var(--bg); border-radius: 0 var(--r-ctl) var(--r-ctl) 0; font-size: 15px; }
+.note strong:first-child { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: 2px; }
+.note.pitfall { border-left-color: #c47a00; } .note.odd { border-left-color: #8a5cd0; } .note.why { border-left-color: var(--accent); } .note.alt { border-left-color: #2e8540; } .note.check { border-left-color: var(--muted); }
+.steps { padding-left: 0; list-style: none; counter-reset: step; margin: 14px 0; }
+.steps li { counter-increment: step; margin: 0 0 8px; }
+.steps label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.steps input { margin-top: 5px; width: 18px; height: 18px; flex: none; }
+.steps label > span::before { content: counter(step) ". "; font-weight: 700; }
+.steps input:checked + span { color: var(--muted); text-decoration: line-through; }
+.ask { margin: 16px 0; border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 14px; }
+.ask legend { font-weight: 700; padding: 0 4px; }
+.ask label { display: flex; gap: 8px; align-items: center; margin: 4px 0; cursor: pointer; }
+.ask-reply:empty { display: none; }
+.ask-reply { margin: 8px 0 0 !important; font-weight: 600; }
+.end { margin: 20px 0; padding: 14px 16px; border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.end h2 { margin: 0 0 6px; font-size: 20px; }
+
+/* The code, its toolbar and the one result pane. */
+.right { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+#work { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.code-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.code-bar .file { flex: 1; font-family: var(--mono); font-size: 14px; color: var(--muted); }
+#code { flex: 1; min-height: 160px; }
+#code .CodeMirror { height: 100%; font: 14px/1.5 var(--mono); background: var(--bg); color: var(--fg); }
+.CodeMirror-gutters { background: var(--bg); border-right: 1px solid var(--line); }
+.CodeMirror-linenumber { color: var(--muted); }
+.CodeMirror-cursor { border-left-color: var(--fg); }
+.CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent) !important; }
+.sq-error { text-decoration: wavy underline #d32f2f; text-decoration-skip-ink: none; }
+.sq-warning { text-decoration: wavy underline #c47a00; text-decoration-skip-ink: none; }
+#pane { flex: none; max-height: 42%; overflow: auto; border-top: 1px solid var(--line); background: var(--surface); padding: 10px 16px 14px; font-size: 15px; }
+.pane-title { font-size: 15px; margin: 0 0 8px; }
+.probs { list-style: none; padding: 0; margin: 0; }
+.prob { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.prob .sev { font-weight: 700; } .prob.error .sev { color: #d32f2f; } .prob.warning .sev { color: #b36b00; }
+.prob .about { font-size: 13px; margin-left: 6px; }
+.ok-line { color: #2e8540; font-weight: 600; margin: 0; }
+.bad-line { color: #d32f2f; font-weight: 600; }
+.players { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.player { border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 12px; }
+.player h3 { font-size: 15px; margin: 0 0 4px; }
+.player p { margin: 0 0 4px; font-size: 14px; }
+.player ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sq-error, :root:not([data-theme="light"]) .bad-line, :root:not([data-theme="light"]) .prob.error .sev { color: #ff7b72; text-decoration-color: #ff7b72; } :root:not([data-theme="light"]) .ok-line { color: #7ee787; } :root:not([data-theme="light"]) .prob.warning .sev { color: #e3b341; } }
+:root[data-theme="dark"] .bad-line, :root[data-theme="dark"] .prob.error .sev { color: #ff7b72; } :root[data-theme="dark"] .ok-line { color: #7ee787; } :root[data-theme="dark"] .prob.warning .sev { color: #e3b341; }
+
+/* The first lesson's scene: windows that fight, then get along. */
+#scene { flex: 1; overflow: auto; padding: 24px; display: flex; flex-direction: column; align-items: center; }
+.stage { position: relative; width: min(560px, 100%); aspect-ratio: 16 / 9; border: 10px solid #2b2f36; border-radius: 10px; background: #0f1720; overflow: hidden; margin-bottom: 18px; }
+.win { position: absolute; inset: 0; display: flex; flex-direction: column; background: linear-gradient(160deg, #1e5fbf, #2aa0e8); color: #fff; transition: all .45s ease; }
+.win .wt { flex: none; font: 12px var(--mono); padding: 3px 8px; background: rgba(0, 0, 0, .35); }
+.win .wb { flex: 1; display: grid; place-items: center; font-size: 34px; }
+.win .who { flex: none; font-size: 13px; font-weight: 700; padding: 4px 8px; background: rgba(0, 0, 0, .25); }
+.win.w2 { background: linear-gradient(160deg, #b8380e, #f08a1c); inset: 8% 0 0 8%; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.win.paused { filter: grayscale(.8) brightness(.7); }
+.win .pause { font-size: 16px; font-weight: 700; background: rgba(0, 0, 0, .55); padding: 6px 12px; border-radius: 6px; }
+#scene[data-step="2"] .w2 { z-index: 2; } #scene[data-step="2"] .w1 { z-index: 3; inset: 0 8% 8% 0; }
+#scene[data-step="3"] .w1 { inset: 0 50% 0 0; } #scene[data-step="3"] .w2 { inset: 0 0 0 50%; box-shadow: none; border-left: 2px solid #0f1720; }
+@media (prefers-reduced-motion: reduce) { .win { transition: none; } }
+.say { max-width: 56ch; text-align: center; font-size: 17px; min-height: 3.2em; }
+.fixes { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.fixes li { padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, #2e8540 14%, var(--surface)); border: 1px solid color-mix(in srgb, #2e8540 45%, var(--line)); }
+.fixes li::before { content: "✓ "; color: #2e8540; font-weight: 700; }
+.fixes a { color: var(--fg); }
+@media (prefers-reduced-motion: no-preference) { .fixes li { animation: pop .3s ease both; animation-delay: calc(var(--i) * 120ms); } @keyframes pop { from { opacity: 0; transform: translateY(6px); } } }
+#scene > p { max-width: 56ch; text-align: center; }
+.scene-acts { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* Docs on hover. */
+#tip { position: fixed; z-index: 50; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); box-shadow: var(--sh-2); font-size: 14px; max-height: 50vh; overflow: auto; }
+#tip p { margin: 0 0 6px; } #tip pre { margin: 0 0 6px; white-space: pre-wrap; font: 13px/1.45 var(--mono); }
+
+/* The lesson list. */
+#menu { width: min(460px, calc(100% - 32px)); max-height: 80vh; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); color: var(--fg); padding: 0; box-shadow: var(--sh-2); }
+#menu::backdrop { background: rgba(0, 0, 0, .35); }
+#menu header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+#menu h2 { font-size: 17px; margin: 0; }
+#menu-list { list-style: none; margin: 0; padding: 8px 16px 16px; }
+#menu-list ol { list-style: none; padding: 0; margin: 6px 0 0; }
+#menu-list a { display: flex; gap: 8px; padding: 6px 8px; border-radius: var(--r-sm); text-decoration: none; color: var(--fg); }
+#menu-list a:hover { background: var(--bg); }
+#menu-list a[aria-current] { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); font-weight: 700; }
+#menu-list .tick { width: 1.2em; color: #2e8540; font-weight: 700; }
+
+/* A phone or a narrow window: the lesson, then the code under it. */
+@media (max-width: 860px) {
+  body { height: auto; display: block; }
+  .learn { display: block; }
+  .lesson { border-right: 0; border-bottom: 1px solid var(--line); }
+  #lesson { overflow: visible; padding: 16px; }
+  .lesson-nav { position: sticky; bottom: 0; background: var(--surface); padding: 10px 16px; z-index: 5; }
+  #code { height: 55vh; }
+  #pane { max-height: none; }
+  .top .progress { display: none; }
+  #scene { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="home" href="../">Nucleus <span>Workbench</span></a>
+  <div class="where"><span class="muted" aria-hidden="true">›</span> <strong id="chapter-title">Learn</strong> <span id="count" class="muted"></span><div class="progress" aria-hidden="true"><span id="bar"></span></div></div>
+  <button type="button" class="btn small" id="menu-open" aria-haspopup="dialog">Lessons</button>
+</header>
+<main class="learn">
+  <section class="lesson" aria-labelledby="lesson-title">
+    <div id="lesson"><div id="lesson-body"></div></div>
+    <nav class="lesson-nav" aria-label="Lessons">
+      <button type="button" class="btn" id="back">‹ Back</button>
+      <button type="button" class="btn" id="next">Next ›</button>
+    </nav>
+  </section>
+  <section class="right" aria-label="Your handler">
+    <div id="work">
+      <div class="code-bar"><span class="file">SRB2 Tutorial.js</span><button type="button" class="btn small" id="reset" title="Back to how this lesson started">Reset</button><button type="button" class="btn small" id="solve" title="Fill in the answer">Solve</button></div>
+      <div id="code"></div>
+      <div id="pane" aria-live="polite"></div>
+    </div>
+    <div id="scene" hidden></div>
+  </section>
+</main>
+<div id="tip" role="tooltip" hidden></div>
+<dialog id="menu" aria-labelledby="menu-title"><header><h2 id="menu-title">Lessons</h2><button type="button" class="btn small close">Close</button></header><ol id="menu-list"></ol></dialog>
+<noscript><p style="padding:16px">The lessons run in your browser and need JavaScript.</p></noscript>
+<script>/*LEARN_JS*/</script>
+</body>
+</html>
