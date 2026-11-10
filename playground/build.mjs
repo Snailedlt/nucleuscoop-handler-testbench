@@ -642,6 +642,16 @@ let docValues = [];
   const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
   if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
 }
+// votes/: the anonymous votes for the maintainers (votes-page.mjs), from votes.json on the data branch
+// (tools/votes-report.mjs, daily in hub-sync.yml), or --votes <file>. Unlisted and not for search engines.
+{
+  const argVotes = process.argv.indexOf('--votes');
+  const file = argVotes > 0 ? path.resolve(process.argv[argVotes + 1]) : argData > 0 ? path.join(path.resolve(process.argv[argData + 1]), 'votes.json') : null;
+  if (file && fs.existsSync(file)) {
+    const { writeVotesPage } = await import('./votes-page.mjs');
+    writeVotesPage({ outDir: path.join(here, 'dist', 'pages', 'votes'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), votes: JSON.parse(fs.readFileSync(file, 'utf8')) });
+  }
+}
 // The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
 fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });
 for (const [dir, names] of [[path.join(here, '..', 'docs', 'videos'), ['workbench']], [path.join(coreRepo, 'docs', 'videos'), ['vscode', 'notepadpp']]])
