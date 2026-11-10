@@ -562,6 +562,8 @@ fs.writeFileSync(
     .replace('<meta name="viewport"', `${NOINDEX}<meta name="viewport"`)
     .replaceAll('__BASE__start/', PREVIEW ? '' : `${PAGES_BASE}start/`)
     .replaceAll('__BASE__', PREVIEW ? '../' : PAGES_BASE)
+    // A preview links the workbench by its file: some hosts (the Claude artifact) serve ../index.html but not ../.
+    .replaceAll("../?ref=", PREVIEW ? '../index.html?ref=' : '../?ref=')
     .replaceAll('__VSIX_URL__', escHtml(vsix.url))
     .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
     .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))

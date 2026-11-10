@@ -2917,9 +2917,10 @@ requestAnimationFrame(placeInk);
 {
   const links = [...document.querySelectorAll<HTMLAnchorElement>('a.start-link')];
   if (links.length && /^https?:/.test(location.protocol) && /^https:/.test(links[0].getAttribute('href') ?? '')) {
-    fetch('start/', { method: 'HEAD', cache: 'no-store' })
+    // The file itself, not the folder: some hosts (the Claude artifact) serve start/index.html but not start/.
+    fetch('start/index.html', { cache: 'no-store' })
       .then((r) => {
-        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) links.forEach((a) => (a.href = 'start/'));
+        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) links.forEach((a) => (a.href = 'start/index.html'));
       })
       .catch(() => {});
   }
