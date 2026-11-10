@@ -102,6 +102,39 @@ button.link { background: none; border: 0; padding: 0; font: inherit; color: var
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sq-error, :root:not([data-theme="light"]) .bad-line, :root:not([data-theme="light"]) .prob.error .sev { color: #ff7b72; text-decoration-color: #ff7b72; } :root:not([data-theme="light"]) .ok-line { color: #7ee787; } :root:not([data-theme="light"]) .prob.warning .sev { color: #e3b341; } }
 :root[data-theme="dark"] .bad-line, :root[data-theme="dark"] .prob.error .sev { color: #ff7b72; } :root[data-theme="dark"] .ok-line { color: #7ee787; } :root[data-theme="dark"] .prob.warning .sev { color: #e3b341; }
 
+/* Code blocks in the lessons: the lines to add highlighted (Svelte's diff), and the same lines in the editor after Show me. */
+.lesson-code { margin: 0 0 14px; padding: 10px 0; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 13px/1.55 var(--mono); overflow-x: auto; white-space: pre; }
+.lesson-code .ln { display: block; width: max-content; min-width: 100%; padding: 0 12px; min-height: 1.55em; }
+.lesson-code .ln.add { background: color-mix(in srgb, #2e8540 16%, transparent); box-shadow: inset 3px 0 #2e8540; }
+.lesson-code .ln.gap { color: var(--muted); }
+.diff-add { background: color-mix(in srgb, #2e8540 18%, transparent); }
+.task-acts { display: block; margin-top: 8px; }
+.task .btn.show { border-color: var(--accent); color: var(--accent); }
+.code-bar .keys { font-size: 12.5px; margin-right: 6px; }
+@media (max-width: 860px) { .code-bar .keys { display: none; } }
+/* Suggestions (CodeMirror's show-hint), in the page's colours. */
+.CodeMirror-hints { position: absolute; z-index: 60; list-style: none; margin: 0; padding: 4px; max-height: 18em; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: var(--sh-2); font: 13px var(--mono); }
+.CodeMirror-hint { display: flex; gap: 12px; justify-content: space-between; padding: 3px 8px; border-radius: 4px; color: var(--fg); cursor: pointer; white-space: pre; }
+.CodeMirror-hint .h-detail { color: var(--muted); font-family: var(--font); font-size: 12px; max-width: 26ch; overflow: hidden; text-overflow: ellipsis; }
+li.CodeMirror-hint-active { background: var(--accent); color: var(--accent-fg); }
+li.CodeMirror-hint-active .h-detail { color: inherit; opacity: .85; }
+/* "Try it in Nucleus Co-op now", once a lesson's code works (folded until asked for). */
+.checkpoint { margin: 0 0 16px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: var(--r-pane); padding: 0 14px; }
+.checkpoint summary { cursor: pointer; font-weight: 700; padding: 10px 0; color: var(--accent); }
+.checkpoint[open] { padding-bottom: 10px; }
+.checkpoint ol { padding-left: 20px; margin: 0 0 10px; }
+.checkpoint li { margin: 0 0 6px; }
+/* The setup lesson: just the lesson, in the middle of the page. */
+.learn.solo { grid-template-columns: minmax(0, 1fr); }
+.learn.solo .right { display: none; }
+.learn.solo .lesson { border-right: 0; }
+.learn.solo #lesson-body { max-width: 760px; margin: 0 auto; }
+.learn.solo .lesson-nav { justify-content: center; gap: 24px; }
+/* The first lesson takes the whole page: the scene with its text. */
+.learn.intro { grid-template-columns: minmax(0, 1fr); }
+.learn.intro .lesson { display: none; }
+.scene-title { font-size: 30px; margin: 0 0 10px; text-align: center; }
+#scene > p { font-size: 17px; }
 /* The first lesson's scene: windows that fight, then get along. */
 #scene { flex: 1; overflow: auto; padding: 24px; display: flex; flex-direction: column; align-items: center; }
 .stage { position: relative; width: min(560px, 100%); aspect-ratio: 16 / 9; border: 10px solid #2b2f36; border-radius: 10px; background: #0f1720; overflow: hidden; margin-bottom: 18px; }
@@ -170,7 +203,7 @@ button.link { background: none; border: 0; padding: 0; font: inherit; color: var
   </section>
   <section class="right" aria-label="Your handler">
     <div id="work">
-      <div class="code-bar"><span class="file">SRB2 Tutorial.js</span><button type="button" class="btn small" id="reset" title="Back to how this lesson started">Reset</button><button type="button" class="btn small" id="solve" title="Fill in the answer">Solve</button></div>
+      <div class="code-bar"><span class="file">SRB2 Tutorial.js</span><span class="keys muted">Ctrl+Space suggestions · hover for docs</span><button type="button" class="btn small" id="reset" title="Back to how this lesson started">Reset</button></div>
       <div id="code"></div>
       <div id="pane" aria-live="polite"></div>
     </div>
