@@ -68,6 +68,10 @@ p { margin: 0 0 12px; }
 code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: var(--r-sm); }
 .kicker { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 .lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
+/* The vibe-coded notice: first thing on the page, plain and calm (not an alarm). */
+.disclaimer { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 22px; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); font-size: 14px; line-height: 1.5; color: var(--fg); max-width: 72ch; }
+.disclaimer .di-ico { flex: none; font-size: 16px; line-height: 1.35; }
+.disclaimer p { margin: 0; }
 .ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
 .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: var(--r-ctl); font-weight: 700; text-decoration: none; border: 1px solid var(--line); color: var(--fg); background: var(--surface); box-shadow: var(--sh-1); transition: filter .12s, transform .12s, box-shadow .12s; }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
@@ -153,6 +157,7 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 <main>
   <header>
   __MASCOTS__
+  <aside class="disclaimer" aria-label="About how these tools are made"><span class="di-ico" aria-hidden="true">🤖</span><p><strong>Vibe-coded, and early.</strong> These tools were written mostly by an AI, with a person steering, and haven't been tested much by people yet. Automated tests check them against Nucleus' real script engine and the verified Hub handlers, but expect rough edges, and <a href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">tell us what you find</a>.</p></aside>
   <p class="kicker">Beta · testers wanted</p>
   <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
   <p class="lede">Check your handler the way Nucleus runs it, with docs for every option as you type and what each player gets, before you start the game. In VS Code, Notepad++ or the browser.</p>

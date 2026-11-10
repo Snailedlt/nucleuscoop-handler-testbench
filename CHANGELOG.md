@@ -31,6 +31,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **An honest note on the start page.** It now says up front that the tools are vibe-coded (written mostly by an AI, with a person steering) and not yet tested much by people, what the automated tests do cover, and where to report what you find.
 - **A shorter start page.** What it catches, the demo videos and the ways to get it come first; the screenshots, the language server (`ncdev lsp`: what it is, what your editor gets, what you need), the editor comparison and the workbench extras are one click away. Old section links still work and open their part.
 - **A tidier, more consistent workbench.** A link that opens a handler now shows which results tab is selected, and the code and results headers line up. Files, Lines and Code/Form/Blocks share one size and pressed look; Keyboard shortcuts and Help test this beta keep Close/Done in view; menu labels, dialog titles and the Open palette's corners match the rest, and the problem icons are easier to read.
 - **Beta testing in the anonymous counts.** When counts are on, opening Help test this beta and pinning, trying, opening and reporting a task are counted by the task's public id, so we see which tasks get tested and which get skipped. Nothing else about you or your code.
