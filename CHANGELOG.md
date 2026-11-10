@@ -31,6 +31,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **The start page explains the language server.** A short section says what `ncdev lsp` is in plain words, what your editor gets from it and what you need, with the editors we've tested.
 - **A tidier, more consistent workbench.** A link that opens a handler now shows which results tab is selected, and the code and results headers line up. Files, Lines and Code/Form/Blocks share one size and pressed look; Keyboard shortcuts and Help test this beta keep Close/Done in view; menu labels, dialog titles and the Open palette's corners match the rest, and the problem icons are easier to read.
 - **Beta testing in the anonymous counts.** When counts are on, opening Help test this beta and pinning, trying, opening and reporting a task are counted by the task's public id, so we see which tasks get tested and which get skipped. Nothing else about you or your code.
 - **Help test this beta, for this release.** New things to try: the Notepad++ plugin, your own editor through `ncdev lsp`, Docs links from hovers, an endless loop that no longer freezes the editor, and the first-visit choice. Developers' items come first, and nothing asks for phone testing any more.
