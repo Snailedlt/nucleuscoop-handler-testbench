@@ -153,6 +153,7 @@ const SHORTCUTS = T('Shortcut', [
   { id: 's-tutorial', text: 'New to handlers? Learn walks you through making your first one, for a free game, a few lines at a time, checked as you type. At the end, you test it in Nucleus Co-op.', action: { label: 'Start it', run: 'tutorial' } },
   { id: 's-find-all', text: 'Add the same text after every match: Ctrl+F, type what to find, Alt+Enter selects every match, then → puts a cursor after each (← before each) and you type once for all.' },
   { id: 's-edit', text: 'VS Code’s editing keys work: Ctrl+/ comments a line, Alt+↑/↓ moves it, Shift+Alt+↑/↓ copies it, Ctrl+D selects the next match.' },
+  { id: 's-explain', text: 'Not sure what a line does? Put the cursor on it and press Ctrl+Alt+E: what it does in plain words, the docs of its names, and what Check says about it.' },
   { id: 's-goto', text: 'Ctrl+G goes to a line number, handy with a line from a Nucleus error message.' },
   { id: 's-suggest', text: 'Type `.` after `Game`, `Context` or `Nucleus`, or press Ctrl+Space, for the names that exist there, with their docs.' },
   { id: 's-save', text: 'Ctrl+S saves the handler as a .zip Nucleus Co-op can install; Ctrl+Shift+S (or the arrow next to Save) picks .js or .nc. Ctrl+, opens Settings, and ? lists every shortcut.' },

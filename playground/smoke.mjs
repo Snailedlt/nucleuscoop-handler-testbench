@@ -178,6 +178,8 @@ for (const theme of ['light', 'dark']) {
   await p.keyboard.press('Control+Alt+e');
   await p.waitForTimeout(200);
   check(/once for each player/.test(await p.textContent('#tip')) && await p.isVisible('#tip'), `${theme}: Ctrl+Alt+E explains the line`);
+  { const r = await p.$eval('.CodeMirror', (e) => e.getBoundingClientRect()); await p.mouse.move(r.x + 200, r.y + 120); await p.waitForTimeout(500); }
+  check(await p.isVisible('#tip') && /once for each player/.test(await p.textContent('#tip')), `${theme}: the explanation stays while the mouse moves over the code`);
   await p.keyboard.press('Escape');
   // Find and replace (Ctrl+F, Ctrl+H, Ctrl+Alt+Enter), go to line (Ctrl+G), as in VS Code.
   await cmSet('var foo = 1;\nvar bar = foo;\n', { line: 0, ch: 5 }, { line: 0, ch: 5 });
@@ -451,6 +453,7 @@ for (const theme of ['light', 'dark']) {
     await p.fill('#api-q', 'Game.PlayersPerInstance');
     await p.waitForTimeout(400);
     check((await p.$$('#api-results pre.doc-code.hl .cm-number')).length > 0, `${theme}: Docs shows its example coloured like the code`);
+    check(/docs\/Game\.PlayersPerInstance\/$/.test((await p.getAttribute('#api-results .api-page a', 'href')) ?? ''), `${theme}: Docs' Open as a page leads to that name's docs page`);
     // Blocks: a code step is a small CodeMirror with the colours, and typing in it edits the handler.
     await p.click('[data-view-mode=blocks]');
     await p.waitForTimeout(800);
@@ -620,7 +623,7 @@ await m.ctx.close();
     check(await s.p.isVisible('#dn-list a[aria-current]'), `docs page ${theme}: the drawer lists the docs, this page marked`);
     await s.p.fill('.dn-filter', 'save file');
     await s.p.waitForTimeout(200);
-    check((await s.p.$$('#dn-list .hit')).length > 0 && /ModifySaveFile/.test(await s.p.textContent('#dn-list')), `docs page ${theme}: the filter finds names by name and by words`);
+    check((await s.p.$$('#dn-list .hit')).length > 0 && /ModifySaveFile/.test(await s.p.textContent('#dn-list .hit')), `docs page ${theme}: the filter finds names by name and by words, the name first`);
     await axe(s.p, `${theme}, docs page`);
     await s.p.goto(BASE + 'docs/');
     await axe(s.p, `${theme}, docs list`);

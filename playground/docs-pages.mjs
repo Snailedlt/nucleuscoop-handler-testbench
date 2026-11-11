@@ -197,7 +197,11 @@ const NAV_JS = `(function () {
     if (!w.length) return tree();
     var hits = [];
     groups.forEach(function (g) { g.items.forEach(function (i) { var t = (i.p + ' ' + i.d).toLowerCase(); if (w.every(function (x) { return t.indexOf(x) >= 0; })) hits.push(i); }); });
-    hits.sort(function (a, b) { var A = a.p.toLowerCase().indexOf(w[0]) >= 0 ? 0 : 1, B = b.p.toLowerCase().indexOf(w[0]) >= 0 ? 0 : 1; return A - B || a.p.localeCompare(b.p); });
+    // Best first: the words run together in the name ("save file" → ModifySaveFile), then every word in the name,
+    // then the first word in the name, then the rest (matched in the doc's first line).
+    var joined = w.join('');
+    function rank(i) { var n = i.p.toLowerCase(); return n.indexOf(joined) >= 0 ? 0 : w.every(function (x) { return n.indexOf(x) >= 0; }) ? 1 : n.indexOf(w[0]) >= 0 ? 2 : 3; }
+    hits.sort(function (a, b) { return rank(a) - rank(b) || a.p.length - b.p.length || a.p.localeCompare(b.p); });
     list.innerHTML = hits.length ? hits.slice(0, 150).map(function (i) { return '<li class="hit">' + link(i.p, i.d ? '<small>' + esc(i.d) + '</small>' : '') + '</li>'; }).join('') : '<li class="dn-none">Nothing matches.</li>';
   }
   q.addEventListener('input', filter);

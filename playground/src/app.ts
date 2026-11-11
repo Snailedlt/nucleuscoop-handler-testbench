@@ -576,8 +576,9 @@ function placeTip(from: { left: number; top: number; bottom: number }) {
 }
 function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
   if (!list.length && !doc) return void (tip.hidden = true);
-  // Explain this line: on request, a link at the bottom of the card (as in VS Code).
-  const explain = doc && !list.length ? `<div class="hv-bar"><button class="hv-link" type="button" data-hc-explain="${at}">Explain this line</button><span class="hv-key">${esc(labelOf('explainLine'))}</span></div>` : '';
+  // Explain this line: on request, a link at the bottom of the card (as in VS Code); not on a gutter marker (at -1).
+  tip.classList.remove('explain');
+  const explain = at >= 0 ? `<div class="hv-bar"><button class="hv-link" type="button" data-hc-explain="${at}">Explain this line</button><span class="hv-key">${esc(labelOf('explainLine'))}</span></div>` : '';
   tip.innerHTML = (list.length ? problemCard(list) : '') + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '') + fixBar(list) + explain;
   tip.querySelector<HTMLButtonElement>('[data-hc-explain]')?.addEventListener('click', () => showExplanation(at));
   tip.classList.toggle('has-problems', list.length > 0);
@@ -616,6 +617,7 @@ function showExplanation(at: number) {
   if (!e) return void (tip.hidden = true);
   tip.innerHTML = `<div class="hv-sec hv-doc">${md(e.markdown)}</div><div class="hv-bar" hidden><button class="hv-link" type="button" data-hc-ai>Explain with AI</button></div>`;
   tip.classList.remove('has-problems');
+  tip.classList.add('explain');
   linkApiNames(tip);
   tip.hidden = false;
   const lineStart = editor.indexFromPos({ line: e.line, ch: 0 });
@@ -646,7 +648,8 @@ function showExplanation(at: number) {
 }
 const problemsAt = (at: number) => current.filter((d) => d.severity !== 'hint' && d.start <= at && at <= Math.max(d.end, d.start + 1));
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
-  if (tip.contains(e.target as Node)) return;
+  // An explanation (Explain this line) stays until Esc, a click elsewhere, typing or scrolling.
+  if (tip.contains(e.target as Node) || (!tip.hidden && tip.classList.contains('explain'))) return;
   clearTimeout(tipTimer);
   tipTimer = window.setTimeout(() => {
     // Not over the "+" or while its menu is open: the menu says it already.
@@ -658,7 +661,7 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
       const line = editor.lineAtHeight(e.clientY, 'window');
       const list = lineProblems(line, mode === 'dev');
       if (!list.length) return void (tip.hidden = true);
-      return showHoverCard(text, 0, list, '', Math.min(...list.map((d) => d.start)));
+      return showHoverCard(text, -1, list, '', Math.min(...list.map((d) => d.start)));
     }
     if ((e.target as HTMLElement).closest?.('.CodeMirror-gutters')) return void (tip.hidden = true);
     const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
@@ -678,7 +681,8 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
     showHoverCard(text, at, list, doc, from);
   }, hoverDelay(280));
 });
-const hideTipSoon = () => { clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
+document.addEventListener('pointerdown', (e) => { if (!tip.hidden && tip.classList.contains('explain') && !tip.contains(e.target as Node)) tip.hidden = true; }, true);
+const hideTipSoon = () => { if (tip.classList.contains('explain')) return; clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
 editor.getWrapperElement().addEventListener('mouseleave', (e: MouseEvent) => {
   clearTimeout(tipTimer);
   if (!tip.contains(e.relatedTarget as Node)) hideTipSoon();
@@ -1602,7 +1606,10 @@ function initTabs() {
     else if (e.key === 'Delete') (e.preventDefault(), closeTab(activeTab));
   });
   // The dot follows Check.
-  editor.on('change', () => { clearTimeout(tabDotTimer); tabDotTimer = window.setTimeout(() => (renderTabs(), saveTabs()), 800); });
+  editor.on('change', () => {
+    // The edited dot at once (as VS Code); the counts and saving a moment later.
+    if (doc.kind !== 'draft' && doc.kind !== 'new' && !document.querySelector('.htab-w.on.edited')) renderTabs();
+    clearTimeout(tabDotTimer); tabDotTimer = window.setTimeout(() => (renderTabs(), saveTabs()), 800); });
 }
 let tabDotTimer = 0;
 
@@ -2326,7 +2333,8 @@ initTestPins(() => testGuide.open());
  *  workbench (the footer's start link says which, build.mjs). */
 function siteUrl(sub: string) {
   const start = document.querySelector<HTMLAnchorElement>('a.link.start-link')?.href ?? 'start/';
-  return start.replace(/start\/?$/, sub);
+  // The start link is start/ on the site and start/index.html in the one-file builds.
+  return start.replace(/start\/(index\.html)?$/, sub);
 }
 // Learn (learn/, its own page): the lessons. Next to the start page on the site; the one-file workbench links to
 // the site's. A new tab from the menu (the workbench stays as it is); #learn links go there instead.
@@ -2867,7 +2875,7 @@ type SaveKind = 'zip' | 'js' | 'nc';
 const SAVE_KEY = 'nucleus-workbench-save-format';
 const STEPS_KEY = 'nucleus-workbench-install-steps-seen';
 const saveKind = (): SaveKind => { try { const v = localStorage.getItem(SAVE_KEY); return v === 'js' || v === 'nc' ? v : 'zip'; } catch { return 'zip'; } };
-const SAVE_LABEL: Record<SaveKind, string> = { zip: 'For Nucleus Co-op (.zip)', js: 'The code only (.js)', nc: 'Package for VS Code (.nc)' };
+const SAVE_LABEL: Record<SaveKind, string> = { zip: 'For Nucleus Co-op (.zip)', js: 'The code only (.js)', nc: 'Package for the Hub (.nc)' };
 function syncSaveButton() {
   const k = saveKind();
   $('#code-menu-open').setAttribute('aria-label', `Save the handler: ${SAVE_LABEL[k]}`);
