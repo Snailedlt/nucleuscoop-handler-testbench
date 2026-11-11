@@ -45,6 +45,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **A new link preview.** Links to the site show the tools' new picture (Notepad++, VS Code and the workbench, "Catch it before Nucleus does") in Discord, Reddit and elsewhere.
 - **The real Notepad++ logo.** The editor tiles show Notepad++'s chameleon (from Devicon) instead of a placeholder.
 - **Fix with AI knows more.** It follows the same hard rules as the MCP server and Explain with AI, and can look up any check it doesn't understand before it answers.
 - **Help is one click away.** The docs, check and Learn pages end with a small box linking the SplitScreen.Me Discord and r/nucleuscoop, the footers link both, and the tools page links the editor poll.

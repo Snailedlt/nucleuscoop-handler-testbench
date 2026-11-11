@@ -473,9 +473,9 @@ const SEO = `${NOINDEX}${PREVIEW ? '' : `<link rel="canonical" href="${PAGES_BAS
 <meta property="og:title" content="Nucleus Handler Workbench">
 <meta property="og:description" content="${WB_DESC}">
 ${PREVIEW ? '' : `<meta property="og:url" content="${PAGES_BASE}">\n`}<meta property="og:image" content="${PREVIEW ? '' : PAGES_BASE}start/og.png">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="760">
-<meta property="og:image:alt" content="The workbench checking a verified Hub handler, each problem explained, with a one-click fix">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nucleus handler tools: Catch it before Nucleus does. Free tools for writing Nucleus Co-op handlers, shown in Notepad++, VS Code and the browser workbench.">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Nucleus Handler Workbench', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any (web browser)', browserRequirements: 'Requires JavaScript', description: WB_DESC, ...(PREVIEW ? {} : { url: PAGES_BASE }), offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, isAccessibleForFree: true })}</script>`;
 const standalone = (page, seo = '') => {
