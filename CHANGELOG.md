@@ -43,6 +43,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Learn's code editor works like the workbench's.** Hovering a problem shows it with its fixes; **Ctrl+.** lists the fixes for the line; parameter hints show while you type a call; **Ctrl+Alt+E** explains a line; **F8** goes to the next problem; **Shift+Alt+F** formats; and the workbench's keys work too (**Ctrl+/**, **Alt+↑/↓**, **Ctrl+F** and the rest). Each problem in Check has its fix as a button.
+- **Learn mentions two more options.** `Game.StartArguments` (a game's command line, often `-windowed`) and `Game.KeepSymLinkOnExit` are explained where they matter. The last lesson also says why the tutorial handler leaves default values out.
 - **Learn and Guided mode list the same checks as the editors.** Notes such as `"true"` where `true` belongs now show in Learn's Check and in the workbench's Guided mode, as they already did in Advanced mode, VS Code and the other editors. Notes never stop a lesson.
 - **Learn has things to try.** In "Point it at the game", a *Try this* note asks you to put the player count in quotes and see what Check says, with the answer folded away until you want it. "Give it a name" now says why each handler needs a GUID of its own.
 - **Votes and "Tell us what's wrong" on every check's page.** They work as on the docs pages, and the report opens the feedback form with the check filled in.

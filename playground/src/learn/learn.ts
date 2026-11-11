@@ -9,7 +9,12 @@ import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
 import 'codemirror/addon/hint/show-hint';
-import { hoverAt, completionsAt, type CompletionEntry } from '@core/features';
+import { hoverAt, completionsAt, explainLine, signatureHelpAt, type CompletionEntry } from '@core/features';
+import { formatHandler } from '@core/format';
+import type { Diagnostic } from '@core/lint';
+import { codeHandlers, fixedCodeKeys, vscodeMouse } from '../keys';
+import { codeKeyMap, labelOf } from '../keybindings';
+import { applyEditsToText } from '../fixfx';
 import { lint } from '@core/lint';
 import { RULE_DOCS } from '@core/ruledocs';
 import { zipBytes } from '@core/zipbytes';
@@ -62,8 +67,25 @@ const editor = CodeMirror($('#code'), {
   autoCloseBrackets: true,
   lineWrapping: true,
   screenReaderLabel: 'Handler code',
-  extraKeys: { 'Ctrl-Space': () => suggest(true), 'Ctrl-I': () => showDocsAtCursor(), Esc: () => hideTip(), Tab: (cm: any) => (cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('  ')) },
+  configureMouse: vscodeMouse,
 } as any);
+// The workbench's keys (keybindings.ts, VS Code's: Ctrl+/, Alt+Up, Ctrl+D, Ctrl+F…), plus the ones that show things here.
+editor.setOption('extraKeys', codeKeyMap(
+  {
+    ...codeHandlers,
+    suggest: () => suggest(true),
+    quickFix: () => quickFix(),
+    explainLine: () => explainAtCursor(),
+  },
+  {
+    ...fixedCodeKeys,
+    Esc: (cm: any) => { if (!tip.hidden) hideTip(); else cm.execCommand('singleSelectionTop'); },
+    'Ctrl-I': () => showDocsAtCursor(),
+    'Shift-Alt-F': () => formatCode(),
+    F8: () => gotoProblem(1),
+    'Shift-F8': () => gotoProblem(-1),
+  },
+));
 
 // ------------------------------------------------------------------------------------------------------------
 // Suggestions as you type (and Ctrl+Space), from the same core the editors use: Game.…, Context.…, values after =.
@@ -126,23 +148,120 @@ editor.on('inputRead', (cm: any, ch: any) => {
 // Docs on hover (and Ctrl+I at the cursor), from the same core the editors use.
 const tip = $('#tip');
 function hideTip() { tip.hidden = true; }
-function showDocs(offset: number, x: number, y: number) {
-  const h = hoverAt(editor.getValue(), offset);
-  if (!h) return hideTip();
-  // No way off the page from here: the docs' links become plain text.
-  tip.innerHTML = md(h.markdown).replace(/<a [^>]*>([\s\S]*?)<\/a>/g, '$1');
-  tip.hidden = false;
-  const w = Math.min(420, innerWidth - 16);
+// One card, as in the workbench and VS Code: the problems at that spot (with their fixes), then the name's docs.
+let shown: Diagnostic[] = [];
+const SEV: Record<string, string> = { error: 'Error', warning: 'Warning', info: 'Note' };
+function problemsAt(at: number, wholeLine = false): Diagnostic[] {
+  shown = listed(editor.getValue(), lesson()); // the code as it is now (Check redraws a moment after typing)
+  if (!wholeLine) return shown.filter((d) => d.start <= at && at <= Math.max(d.end, d.start + 1));
+  const line = editor.posFromIndex(at).line;
+  return shown.filter((d) => editor.posFromIndex(d.start).line === line);
+}
+function card(list: Diagnostic[], docs?: string): string {
+  const probs = list.map((d, i) => `<div class="tp-prob ${d.severity}"><strong>${SEV[d.severity] ?? ''}</strong> ${inline(d.message)}${(d.fixes ?? []).length ? `<div class="tp-fixes">${d.fixes!.slice(0, 3).map((f, j) => `<button type="button" class="link" data-fix="${i}:${j}">${inline(f.title)}</button>`).join('')}</div>` : ''}</div>`).join('');
+  return probs + (docs ? `${probs ? '<hr>' : ''}<div class="tp-doc">${docs}</div>` : '');
+}
+function placeAt(x: number, y: number) {
+  const w = Math.min(440, innerWidth - 16);
   tip.style.maxWidth = `${w}px`;
   tip.style.left = `${Math.max(8, Math.min(x, innerWidth - w - 8))}px`;
   tip.style.top = `${y + 18}px`;
   const r = tip.getBoundingClientRect();
   if (r.bottom > innerHeight - 8) tip.style.top = `${Math.max(8, y - r.height - 8)}px`;
 }
+function showCard(list: Diagnostic[], docs: string | undefined, x: number, y: number) {
+  if (!list.length && !docs) return hideTip();
+  tip.innerHTML = card(list, docs);
+  tip.hidden = false;
+  tip.querySelectorAll<HTMLButtonElement>('[data-fix]').forEach((b) => b.addEventListener('click', () => {
+    const [i, j] = b.dataset.fix!.split(':').map(Number);
+    applyFix(list[i], j);
+  }));
+  placeAt(x, y);
+}
+function applyFix(d: Diagnostic, j: number) {
+  const fix = d.fixes?.[j];
+  if (!fix) return;
+  hideTip();
+  replaceAll(applyEditsToText(editor.getValue(), fix.edits));
+  editor.focus();
+}
+// No way off the page from here: the docs' links become plain text.
+const docsAt = (offset: number) => { const h = hoverAt(editor.getValue(), offset); return h ? md(h.markdown).replace(/<a [^>]*>([\s\S]*?)<\/a>/g, '$1') : undefined; };
+function showDocs(offset: number, x: number, y: number) {
+  showCard(problemsAt(offset), docsAt(offset), x, y);
+}
 function showDocsAtCursor() {
   const c = editor.cursorCoords(true, 'window');
   showDocs(editor.indexFromPos(editor.getCursor()), c.left, c.top);
 }
+// Ctrl+.: the problems (and fixes) at the cursor, else on its line; the first fix gets the focus.
+function quickFix() {
+  const at = editor.indexFromPos(editor.getCursor());
+  const here = problemsAt(at);
+  const list = here.length ? here : problemsAt(at, true);
+  const c = editor.cursorCoords(true, 'window');
+  showCard(list, list.length ? undefined : docsAt(at), c.left, c.top);
+  tip.querySelector<HTMLElement>('[data-fix]')?.focus();
+}
+// Ctrl+Alt+E: what the line does, in plain words (core/explain.ts, as in the workbench and the editors).
+function explainAtCursor() {
+  const at = editor.indexFromPos(editor.getCursor());
+  const e = explainLine(editor.getValue(), at);
+  if (!e) return hideTip();
+  tip.innerHTML = `<div class="tp-doc">${md(e.markdown).replace(/<a [^>]*>([\s\S]*?)<\/a>/g, '$1')}</div>`;
+  tip.hidden = false;
+  const c = editor.charCoords({ line: e.line, ch: 0 }, 'window');
+  placeAt(c.left, c.top);
+}
+// F8 / Shift+F8: the next or previous problem.
+function gotoProblem(step: 1 | -1) {
+  shown = listed(editor.getValue(), lesson());
+  if (!shown.length) return;
+  const at = editor.indexFromPos(editor.getCursor());
+  const sorted = [...shown].sort((a, b) => a.start - b.start);
+  const next = step > 0 ? sorted.find((d) => d.start > at) ?? sorted[0] : [...sorted].reverse().find((d) => d.start < at) ?? sorted[sorted.length - 1];
+  editor.setCursor(editor.posFromIndex(next.start));
+  editor.focus();
+  const c = editor.cursorCoords(true, 'window');
+  showCard([next], undefined, c.left, c.top);
+}
+// Shift+Alt+F: Format Document, the same formatter (spacing and indentation; it never changes what the code does).
+function formatCode() {
+  const r = formatHandler(editor.getValue());
+  const c = editor.cursorCoords(true, 'window');
+  if (!r.ok) { tip.innerHTML = `<div class="tp-doc">${inline(r.reason)}</div>`; tip.hidden = false; return placeAt(c.left, c.top); }
+  if (r.changed) replaceAll(r.code);
+}
+/** The whole code replaced as one step Ctrl+Z undoes, the cursor kept where it was. */
+function replaceAll(text: string) {
+  const cur = editor.getCursor();
+  const d = editor.getDoc();
+  d.replaceRange(text, d.posFromIndex(0), d.posFromIndex(editor.getValue().length), '+fix');
+  editor.setCursor({ line: Math.min(cur.line, editor.lineCount() - 1), ch: cur.ch });
+}
+// Parameter hints while typing a call: the overload and the argument you're on (core signatureHelpAt).
+const sig = document.createElement('div');
+sig.id = 'sig';
+sig.setAttribute('role', 'status');
+sig.hidden = true;
+document.body.append(sig);
+function showSignature() {
+  const h = signatureHelpAt(editor.getValue(), editor.indexFromPos(editor.getCursor()));
+  const s0 = h?.signatures[h.activeSignature];
+  if (!h || !s0) return void (sig.hidden = true);
+  const p = s0.parameters[h.activeParameter];
+  const i = p ? s0.label.indexOf(p) : -1;
+  const label = i >= 0 ? `${esc(s0.label.slice(0, i))}<b>${esc(p)}</b>${esc(s0.label.slice(i + p.length))}` : esc(s0.label);
+  const pdoc = s0.parameterDocs?.[h.activeParameter];
+  sig.innerHTML = `<code>${label}</code>${h.signatures.length > 1 ? ` <span class="muted">(${h.activeSignature + 1} of ${h.signatures.length})</span>` : ''}${pdoc ? `<div class="sig-doc">${md(pdoc)}</div>` : ''}`;
+  sig.hidden = false;
+  const c = editor.cursorCoords(true, 'window');
+  sig.style.left = `${Math.max(8, Math.min(c.left, innerWidth - 460))}px`;
+  sig.style.top = `${Math.max(8, c.top - sig.offsetHeight - 6)}px`;
+}
+editor.on('cursorActivity', () => { if (!sig.hidden || /[(,]\s*$/.test(editor.getLine(editor.getCursor().line).slice(0, editor.getCursor().ch))) showSignature(); });
+editor.on('blur', () => (sig.hidden = true));
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
   clearTimeout(hoverTimer);
@@ -172,6 +291,7 @@ function renderCheck(text: string) {
   const blocking = problems(text, l);
   const rank = { error: 0, warning: 1, info: 2, hint: 3 } as Record<string, number>;
   const ds = listed(text, l).sort((a, b) => rank[a.severity] - rank[b.severity] || a.start - b.start);
+  shown = ds;
   marks.forEach((m) => m.clear());
   marks = ds.map((d) => editor.markText(editor.posFromIndex(d.start), editor.posFromIndex(Math.max(d.end, d.start + 1)), { className: `sq-${d.severity}`, attributes: { title: d.message } }));
   if (l.pane !== 'check') return;
@@ -179,11 +299,12 @@ function renderCheck(text: string) {
   // it says "nothing wrong so far", not that Nucleus can load it.
   // A handler without its name and exe can't load, even before Check starts asking for them (lessons 3 and 4).
   const hidden = lint(text).some((d) => d.severity === 'error') || !['GUID', 'GameName', 'ExecutableName'].every((k) => new RegExp(`^\\s*Game\\.${k}\\s*=\\s*"[^"]+"`, 'm').test(text));
-  $('#pane').innerHTML = `<h2 class="pane-title">Check</h2>${!blocking.length ? (hidden ? '<p class="ok-line">✓ Nothing wrong so far.</p>' : '<p class="ok-line">✓ No problems: Nucleus can load this handler.</p>') : ''}${ds.length ? `<ul class="probs">${ds.map((d, i) => `<li class="prob ${d.severity}"><button type="button" class="link goto" data-i="${i}">Line ${editor.posFromIndex(d.start).line + 1}</button> <span class="sev">${d.severity === 'error' ? 'Error' : d.severity === 'warning' ? 'Warning' : 'Note'}</span> ${inline(d.message)}${RULE_DOCS[d.rule] ? ` <button type="button" class="link about" data-rule="${esc(d.rule)}" aria-expanded="${openDocs.has(d.rule)}">${openDocs.has(d.rule) ? 'Less' : 'Why?'}</button>${openDocs.has(d.rule) ? ruleDoc(d.rule) : ''}` : ''}</li>`).join('')}</ul>` : ''}`;
+  $('#pane').innerHTML = `<h2 class="pane-title">Check</h2>${!blocking.length ? (hidden ? '<p class="ok-line">✓ Nothing wrong so far.</p>' : '<p class="ok-line">✓ No problems: Nucleus can load this handler.</p>') : ''}${ds.length ? `<ul class="probs">${ds.map((d, i) => `<li class="prob ${d.severity}"><button type="button" class="link goto" data-i="${i}">Line ${editor.posFromIndex(d.start).line + 1}</button> <span class="sev">${d.severity === 'error' ? 'Error' : d.severity === 'warning' ? 'Warning' : 'Note'}</span> ${inline(d.message)}${d.fixes?.length ? ` <button type="button" class="link fix" data-i="${i}">${inline(d.fixes[0].title)}</button>` : ''}${RULE_DOCS[d.rule] ? ` <button type="button" class="link about" data-rule="${esc(d.rule)}" aria-expanded="${openDocs.has(d.rule)}">${openDocs.has(d.rule) ? 'Less' : 'Why?'}</button>${openDocs.has(d.rule) ? ruleDoc(d.rule) : ''}` : ''}</li>`).join('')}</ul>` : ''}`;
   $('#pane').querySelectorAll<HTMLElement>('.goto').forEach((b) => b.addEventListener('click', () => {
     editor.focus();
     editor.setCursor(editor.posFromIndex(ds[Number(b.dataset.i)].start));
   }));
+  $('#pane').querySelectorAll<HTMLElement>('.fix').forEach((b) => b.addEventListener('click', () => applyFix(ds[Number(b.dataset.i)], 0)));
   $('#pane').querySelectorAll<HTMLElement>('.about').forEach((b) => b.addEventListener('click', () => {
     const id = b.dataset.rule!;
     if (openDocs.has(id)) openDocs.delete(id); else openDocs.add(id);

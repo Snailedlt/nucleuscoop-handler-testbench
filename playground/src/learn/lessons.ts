@@ -305,6 +305,7 @@ const FIRST: Lesson[] = [
     ],
     task: 'Add the two lines.',
     notes: [
+      { kind: 'alt', text: 'Nucleus deletes the links in `content\\Boring Man Tutorial` when you close it, and makes them again on the next start. `Game.KeepSymLinkOnExit = true` keeps them instead; most handlers leave it at its default, `false`.' },
       { kind: 'why', text: 'How do you know which files need a copy? By testing: start two copies and see what they fight over. A later chapter is about exactly that.' },
       { kind: 'odd', text: 'Nucleus matches these names as **part** of a file name, not the whole name: `"options.ini"` would also catch a `myoptions.ini`. Use names specific enough.' },
     ],
@@ -528,6 +529,7 @@ const FIRST: Lesson[] = [
     task: 'Add `Game.Play` at the end, then look at what each player gets in Try it.',
     notes: [
       { kind: 'odd', text: 'The value is `\'"0"\'`: the quotes are part of it. Boring Man writes `Fullscreen="0"` in its file, so the handler does too.' },
+      { kind: 'alt', text: 'Many games can be told on their command line instead: `Game.StartArguments = "-windowed";` starts every copy with `-windowed` (which argument works depends on the game). Boring Man keeps its window mode in its settings file, so this handler changes the file.' },
       { kind: 'pitfall', text: 'The file is only in a player\'s folder if Nucleus could copy yours: start Boring Man once on its own first (step 3 of "Get ready").' },
     ],
     start: S.description,
@@ -556,7 +558,7 @@ const FIRST: Lesson[] = [
       'Host a game in one window. In the other, join it with **direct connect** to `localhost`. Click a window to use the keyboard there.',
     ],
     notes: [
-      { kind: 'why', text: 'It does what the tested Boring Man handler on the Hub does, in fewer lines. Its own name aside, it leaves out lines that change nothing (in red above): ' + droppedNotes().join('; ') + '.' },
+      { kind: 'why', text: 'It does what the tested Boring Man handler on the Hub does, in fewer lines. Its own name aside, it leaves out lines that change nothing (in red above): ' + droppedNotes().join('; ') + '. Writing a default out does no harm, and many handlers do; this one leaves them out so that every line does something.' },
       { kind: 'odd', text: '**Windows still full screen:** start Boring Man once on its own, or delete the players\' folders in `C:\\Users\\you\\NucleusCoop` so Nucleus copies your settings again. **Both windows react to one controller:** the controller lessons. **A window behind the taskbar:** Ctrl+T twice, as your note says. **The game won\'t start a second copy:** the Steam lesson.' },
     ],
     start: FINAL,
