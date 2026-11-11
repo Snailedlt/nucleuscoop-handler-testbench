@@ -53,7 +53,9 @@ jobs:
       - name: ncdev.exe (with the Notepad++ plugin) and the plugin's zip, tested like a release
         working-directory: ext
         run: |
-          sudo apt-get install -y -qq g++-mingw-w64-x86-64-posix g++-mingw-w64-i686-posix >/dev/null
+          # A fresh package list, and one retry: the runner's list goes stale and mirrors blip.
+          pkgs="g++-mingw-w64-x86-64-posix g++-mingw-w64-i686-posix"
+          sudo apt-get update -qq && sudo apt-get install -y -qq $pkgs >/dev/null || { sleep 20; sudo apt-get update -qq && sudo apt-get install -y -qq $pkgs >/dev/null; }
           sh npp-plugin/build.sh
           node scripts/sea.mjs --require-plugin --targets win-x64,linux-x64
           node scripts/smoke-standalone.mjs dist-sea/ncdev-linux-x64
