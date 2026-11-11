@@ -17,7 +17,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### ✨ New
 
 - **A tools page: every tool in one place.** `tools/` has the workbench, VS Code, Notepad++, other editors through the language server, the `ncdev` command line and AI agents, with the downloads, the setup for each editor and the table comparing them. Each editor is a tile that opens its steps, one line each, labelled *Recommended* (VS Code), *Full support* (Notepad++), *Tested* or *Untested*. Old links to the downloads on the start page lead there.
-- **The start page introduces the tools.** It says what a handler is and what the tools catch, shows them, then presents the editors and the workbench, each with its video.
+- **The start page shows what the tools do.** A few short lines beside an animation: a typo in a handler gets underlined, the fix is applied, and Try it shows four players' windows (with optional sound effects). Below, what the tools catch, the screenshots, then the editors and the workbench, each with its video.
 - **Explain this line.** **Ctrl+Alt+E**, *Explain this line* in the command palette, or the link under a hover says what the line does in plain words, with the docs of its names and what Check says. With AI set up, *Explain with AI* gives a longer answer, labelled AI-written.
 - **One header for the whole site.** The start page, Learn, Docs and the check pages share a bar with Workbench · Learn · Docs · Checks · Get the tools.
 - **A docs list beside every docs page.** Like Learn's, it has groups that fold open (Game, Context, Player…), the page you're on marked, and a filter on top that finds names by name or by what they do ("save file" finds `Context.ModifySaveFile`). On a phone it folds into an **All docs** button.

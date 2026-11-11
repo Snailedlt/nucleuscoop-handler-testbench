@@ -106,7 +106,7 @@ Open http://localhost:8080/ in a **private window**, so it starts as a first vis
 Open http://localhost:8080/start/ (the home page).
 
 - [ ] 2.1 The header on every page (home, tools, Docs, a check's page, Learn): the logo goes home, then *Workbench*, *Learn*, *Docs*, *Get the tools*. Each goes to the right place, and the current one is marked (also *Learn* in Learn's own bar). The workbench has *Home*.
-- [ ] 2.2 The home page sells it: what a handler is, what it catches, the screenshots (matching your theme), the editors (with their videos), then the workbench (with its video). *Try it in the browser*, *Get the tools* and *Learn* go to the right places.
+- [ ] 2.2 The home page's top says what it does in a few short lines, beside an animation: a typo underlined, its fix, then four players' windows. *Sound* (off at first) adds effects, and it's remembered. Below: what it catches, the screenshots (matching your theme), the editors and the workbench with their videos. *Try it in the browser*, *Get the tools* and the Learn link go to the right places.
 - [ ] 2.3 http://localhost:8080/tools/ has every tool: the workbench, the editors (step 0.1), the command line and AI agents, and the table comparing them.
 - [ ] 2.4 Old links still work: http://localhost:8080/start/#get-vscode lands on the tools page with VS Code's steps open; `/start/#get-notepadpp` the same for Notepad++.
 - [ ] 2.5 Docs' list on the left has two sections, *Handler API* and *Checks*, each with an *All the docs* / *Every check* link on top. Each section folds; fold *Checks* and reload: it stays folded (unless you're on a check's page).

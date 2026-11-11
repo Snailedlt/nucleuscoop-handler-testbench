@@ -206,22 +206,88 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
 .tool-grid img, .tool-grid .tg-ico { grid-row: span 2; width: 36px; height: 36px; border-radius: 8px; }
 .tool-grid .tg-ico { display: grid; place-items: center; background: var(--code-bg); font: 700 14px/1 var(--mono); color: var(--accent); }
 .tool-grid small { color: var(--muted); font-size: 13.5px; line-height: 1.4; }
+
+/* The hero: a few short lines beside a live demo (a typo underlined, its fix, then Try it's four windows). */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 520px); gap: 28px 40px; align-items: center; margin: 4px 0 28px; }
+@media (max-width: 920px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+.hero h1 { font-size: clamp(32px, 5.4vw, 52px); letter-spacing: -.02em; margin: 8px 0 10px; }
+.hero .lede { font-size: 19px; margin: 0 0 14px; }
+.ticks { list-style: none; padding: 0; margin: 0 0 6px; display: grid; gap: 6px; font-size: 16px; }
+.ticks li { display: flex; align-items: flex-start; }
+.ticks li::before { flex: none; margin-top: 2px; content: "✓"; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 10px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 800; font-size: 12px; }
+.hero-learn { margin: 4px 0 0; font-size: 15px; }
+.disclaimer-line { margin: 14px 0 0; color: var(--muted); max-width: 60ch; }
+.hero-visual { position: relative; }
+.demo { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--code-bg); box-shadow: var(--sh-2), 0 20px 50px -24px color-mix(in srgb, var(--accent) 60%, transparent); overflow: hidden; min-height: 300px; }
+.d-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--surface); font-size: 12.5px; }
+.d-dots i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 50%; background: var(--line); }
+.d-file { font: 600 12.5px var(--mono); }
+.d-status { margin-left: auto; font-weight: 600; }
+.d-status > span { display: none; }
+.demo[data-stage="1"] .d-warn { display: inline; color: #b8860b; }
+.demo[data-stage="2"] .d-ok, .demo[data-stage="3"] .d-ok { display: inline; color: #1a7f37; }
+.d-code { margin: 0; padding: 14px 16px 18px; font: 14px/1.75 var(--mono); background: none; border: 0; white-space: pre; overflow: hidden; }
+.d-code .ln { display: inline-block; width: 1.6em; margin-right: 12px; text-align: right; color: var(--muted); opacity: .6; user-select: none; }
+.d-typed { display: inline; }
+.d-caret { display: inline-block; width: 2px; height: 1.1em; vertical-align: -.2em; background: var(--accent); animation: d-blink 1s steps(1) infinite; }
+@keyframes d-blink { 50% { opacity: 0; } }
+.d-good { display: none; }
+.demo[data-stage="2"] .d-bad, .demo[data-stage="3"] .d-bad { display: none; }
+.demo[data-stage="2"] .d-good, .demo[data-stage="3"] .d-good { display: inline; background: color-mix(in srgb, #2ea043 22%, transparent); border-radius: 3px; transition: background 1.2s; }
+.demo[data-stage="1"] .d-bad { text-decoration: wavy underline #d4a72c; text-decoration-skip-ink: none; text-underline-offset: 3px; }
+.d-card { position: absolute; left: 70px; top: 182px; width: min(360px, 78%); display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--sh-2); font-size: 13px; opacity: 0; transform: translateY(6px) scale(.98); transition: opacity .25s, transform .25s; pointer-events: none; }
+.d-card code { font-size: 11.5px; }
+.d-fix { justify-self: start; margin-top: 4px; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-fg); font-weight: 700; font-size: 12px; }
+.demo[data-stage="1"] .d-card { opacity: 1; transform: none; }
+.demo.pressing .d-fix { transform: scale(.94); }
+.d-try { position: absolute; inset: auto 12px 12px 12px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--sh-2); opacity: 0; transform: translateY(16px); transition: opacity .3s, transform .3s; }
+.demo[data-stage="3"] .d-try { opacity: 1; transform: none; }
+.d-try-h { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.d-screen { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; aspect-ratio: 16 / 7; padding: 5px; border-radius: 6px; background: #0b0d10; }
+.d-screen b { display: grid; place-items: center; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.d-screen b:nth-child(1) { background: linear-gradient(135deg, #1f6feb, #0b4fb3); } .d-screen b:nth-child(2) { background: linear-gradient(135deg, #d6336c, #a1194b); }
+.d-screen b:nth-child(3) { background: linear-gradient(135deg, #2f9e44, #1d6b2d); } .d-screen b:nth-child(4) { background: linear-gradient(135deg, #e8590c, #b4420a); }
+.d-screen b.on { opacity: 1; transform: none; }
+.d-sound { position: absolute; top: -34px; right: 0; font: 600 12px var(--sans, system-ui); padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.d-sound[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.hero-visual .hero-masc { position: absolute; float: none; left: -38px; bottom: -36px; margin: 0; pointer-events: none; }
+.hero-visual .hero-masc .masc { width: 84px !important; height: 84px !important; }
+@media (max-width: 920px) { .hero-visual { margin-top: 30px; } .hero-visual .hero-masc { display: none; } }
+@media (prefers-reduced-motion: reduce) { .d-caret { animation: none; } .d-card, .d-try, .d-screen b { transition: none; } }
 </style>
 </head>
 <body>
 <main>
-  <header>
-  __MASCOTS__
-  <aside class="disclaimer" aria-label="About how these tools are made"><span class="di-ico" aria-hidden="true">🤖</span><p><strong>Vibe-coded, and early.</strong> These tools were written mostly by an AI, with a person steering, and haven't been tested much by people yet. Automated tests check them against Nucleus' real script engine and the verified Hub handlers, but expect rough edges, and <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/issues/new?template=feedback.yml">tell us what you find</a>.</p></aside>
-  <p class="kicker">Beta · testers wanted</p>
-  <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
-  <p class="lede">A Nucleus Co-op handler tells Nucleus how to run a game once for each player. These tools check yours the way Nucleus runs it, explain every option as you type, and show what each player gets, before you start the game. In your browser, VS Code, Notepad++ or any editor.</p>
+  <header class="hero">
+  <div class="hero-text">
+  <p class="kicker">Nucleus Co-op handler tools · Beta</p>
+  <h1>Catch it before Nucleus&nbsp;does.</h1>
+  <p class="lede">Checks, docs and a per-player preview for your handlers.</p>
+  <ul class="ticks">
+    <li>Mistakes underlined as you type</li>
+    <li>Every option explained, right where you use it</li>
+    <li>Each player's setup, before you press Play</li>
+  </ul>
   <div class="ctas">
     <a class="btn primary" href="../?ref=start">Try it in the browser</a>
     <a class="btn" href="../tools/">Get the tools</a>
-    <a class="btn" href="../learn/">Learn: your first handler</a>
   </div>
-  <p class="small">New to handlers? <a href="../learn/">Make your first one, step by step</a>: a handler for a free game, a few lines at a time, checked as you type, then tested in Nucleus Co-op. Already write them? <a href="../tools/">Get the tools for your editor</a>.</p>
+  <p class="hero-learn">New to handlers? <a href="../learn/">Make your first one, step by step →</a></p>
+  <p class="disclaimer-line small"><span aria-hidden="true">🤖</span> <strong>Vibe-coded, and early:</strong> written mostly by an AI with a person steering, tested against Nucleus' real script engine. Expect rough edges, and <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/issues/new?template=feedback.yml">tell us what you find</a>.</p>
+  </div>
+  <div class="hero-visual">
+    <div class="demo no-copy" id="demo" data-stage="0" role="img" aria-label="Animation: a line of a handler is typed with a misspelled option. It gets underlined, a card explains that Nucleus would ignore it and offers the fix, the fix is applied, then Try it shows four players' windows side by side.">
+      <div class="d-bar" aria-hidden="true"><span class="d-dots"><i></i><i></i><i></i></span><span class="d-file">Raft.js</span><span class="d-status"><span class="d-warn">1 thing to fix</span><span class="d-ok">✓ Ready for Nucleus</span></span></div>
+      <pre class="d-code hl" aria-hidden="true"><span class="ln">1</span><span class="cm-nucleus-obj">Game</span>.<span class="cm-nucleus-prop">GUID</span> = <span class="cm-string">"Raft"</span>;
+<span class="ln">2</span><span class="cm-nucleus-obj">Game</span>.<span class="cm-nucleus-prop">ExecutableName</span> = <span class="cm-string">"Raft.exe"</span>;
+<span class="ln">3</span><span class="cm-nucleus-obj">Game</span>.<span class="cm-nucleus-prop">MaxPlayers</span> = <span class="cm-number">4</span>;
+<span class="ln">4</span><span class="d-typed"><span class="cm-nucleus-obj">Game</span>.<span class="d-name"><span class="d-bad">IgnoreWindowBordercheck</span><span class="d-good cm-nucleus-prop">IgnoreWindowBorderCheck</span></span> = <span class="cm-atom">true</span>;</span><span class="d-caret"></span></pre>
+      <div class="d-card" aria-hidden="true"><strong>⚠ Nucleus ignores this line</strong><span>It has no option <code>IgnoreWindowBordercheck</code>. Did you mean <code>IgnoreWindowBorderCheck</code>?</span><span class="d-fix">Change to IgnoreWindowBorderCheck</span></div>
+      <div class="d-try" aria-hidden="true"><span class="d-try-h">Try it · 4 players</span><div class="d-screen"><b>Player 1</b><b>Player 2</b><b>Player 3</b><b>Player 4</b></div></div>
+    </div>
+    __MASCOTS__
+    <button type="button" class="d-sound" id="demo-sound" aria-pressed="false" title="Sound effects for the animation">🔈 Sound</button>
+  </div>
   </header>
 
   <section aria-labelledby="what-it-catches">
@@ -306,6 +372,67 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
 </main>
 <footer class="small">Beta. It checks the handler script, not the game: windows, focus and input still need a real test in Nucleus. Nothing on your computer changes until you press Install or Test in Nucleus.<p class="mascots-tease" style="margin:8px 0 0">Psst: meet <a href="__BASE__mascots/index.html">Duo and Nucli</a>, the mascots we are sketching for splitscreen.me and these tools. Early concepts; they will move in soon.</p><p style="margin:8px 0 0">Made by <a href="https://github.com/Snailedlt" rel="author">Snailedlt</a> (Jørgen KH).</p></footer>
 <script>
+// The hero's demo: type a line with a typo, underline it, show the card, apply the fix, then Try it's four windows; on a
+// loop while it's on screen. Reduced motion: the end state, still. Sound (off by default, remembered): small blips
+// made with Web Audio, no files.
+(function () {
+  var demo = document.getElementById('demo'), btn = document.getElementById('demo-sound');
+  if (!demo) return;
+  var typed = demo.querySelector('.d-typed'), wins = demo.querySelectorAll('.d-screen b');
+  var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var KEY = 'nucleus-start-sound', sound = false, ctx = null;
+  try { sound = localStorage.getItem(KEY) === '1'; } catch (e) {}
+  function paintBtn() { btn.setAttribute('aria-pressed', String(sound)); btn.textContent = (sound ? '🔊' : '🔈') + ' Sound'; }
+  paintBtn();
+  btn.addEventListener('click', function () { sound = !sound; try { localStorage.setItem(KEY, sound ? '1' : '0'); } catch (e) {} paintBtn(); if (sound) tone(660, .08, 'sine', .05); });
+  function tone(f, d, type, vol, f2) {
+    if (!sound) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+      g.gain.setValueAtTime(vol || .04, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + d + .02);
+    } catch (e) {}
+  }
+  var full = typed.innerHTML, text = typed.textContent;
+  function stage(n) { demo.dataset.stage = String(n); }
+  function showWins(k) { wins.forEach(function (w, i) { w.classList.toggle('on', i < k); }); }
+  if (still) { typed.innerHTML = full; stage(3); showWins(4); return; }
+  var timers = [], running = false, visible = true;
+  function later(f, ms) { timers.push(setTimeout(f, ms)); }
+  function stop() { timers.forEach(clearTimeout); timers = []; running = false; }
+  function typeTo(n) {
+    // The typed part of line 4: the first n characters of its text, keeping its colours.
+    var left = n, out = '';
+    var walker = document.createElement('div'); walker.innerHTML = full;
+    (function cut(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (c) {
+        if (c.nodeType === 3) { if (left <= 0) c.textContent = ''; else { c.textContent = c.textContent.slice(0, left); left -= c.textContent.length; } }
+        else if (c.classList && c.classList.contains('d-good')) { /* the fix: not typed */ }
+        else cut(c);
+      });
+    })(walker);
+    typed.innerHTML = walker.innerHTML;
+  }
+  function run() {
+    if (running || !visible) return;
+    running = true; stage(0); showWins(0);
+    var chars = text.replace('IgnoreWindowBorderCheck', '').length, t = 300;
+    for (var i = 0; i <= chars; i++) (function (k) { later(function () { typeTo(k); if (k && k % 2) tone(1800 + Math.random() * 400, .02, 'square', .012); }, t + k * 55); })(i);
+    t += chars * 55 + 500;
+    later(function () { typed.innerHTML = full; stage(1); tone(330, .25, 'triangle', .05, 220); }, t);
+    later(function () { demo.classList.add('pressing'); tone(880, .06, 'sine', .04); }, t + 1900);
+    later(function () { demo.classList.remove('pressing'); stage(2); tone(660, .12, 'sine', .05, 990); later(function () { tone(990, .16, 'sine', .04, 1320); }, 110); }, t + 2100);
+    later(function () { stage(3); }, t + 3300);
+    for (var w = 0; w < 4; w++) (function (k) { later(function () { showWins(k + 1); tone(520 + k * 130, .09, 'sine', .045); }, t + 3700 + k * 260); })(w);
+    later(function () { running = false; run(); }, t + 8500);
+  }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { visible = es[0].isIntersecting && !document.hidden; if (visible) run(); else stop(); }, { threshold: .3 }).observe(demo);
+    document.addEventListener('visibilitychange', function () { visible = !document.hidden; if (visible) run(); else stop(); });
+  } else run();
+})();
 // The gallery: tools, their views (the workbench's looks too), and the light/dark slider.
 (function () {
   var G = document.getElementById('gallery');

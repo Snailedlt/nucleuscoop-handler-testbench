@@ -468,7 +468,7 @@ for (const theme of ['light', 'dark']) {
     const at = await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; const r = cm.charCoords({ line: 5, ch: 6 }, 'window'); return { x: r.left + 2, y: (r.top + r.bottom) / 2 }; });
     await p.mouse.move(at.x, at.y);
     await p.waitForTimeout(900);
-    check(await p.isVisible('#tip') && (await p.$$('#tip code.hl .cm-property')).length > 0, `${theme}: the hover card shows code in the editor's colours`);
+    check(await p.isVisible('#tip') && (await p.$$('#tip code.hl :is(.cm-property, .cm-nucleus-prop)')).length > 0, `${theme}: the hover card shows code in the editor's colours`);
     await p.mouse.move(5, 5);
     await p.click('[role=tab][data-tab=api]');
     await p.fill('#api-q', 'Game.PlayersPerInstance');
