@@ -24,6 +24,12 @@ const PREVIEW = process.argv.includes('--preview');
 const NOINDEX = PREVIEW ? '<meta name="robots" content="noindex, nofollow">\n' : '';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+// A Windows checkout made before .gitattributes (eol=lf) has CRLF files, which the build's line-based parsing
+// can't read. Say how to fix it instead of failing somewhere deep inside.
+if (fs.readFileSync(path.join(here, '..', 'probes', 'expected.txt'), 'utf8').includes('\r')) {
+  console.error('This checkout has Windows (CRLF) line endings; the build needs LF. Fix it once, in nucleuscoop-handler-testbench\n(this discards uncommitted changes there):\n\n  git rm -r -q --cached . && git reset -q --hard\n');
+  process.exit(1);
+}
 const argCore = process.argv.indexOf('--core');
 const coreRepo = path.resolve(argCore > 0 ? process.argv[argCore + 1] : process.env.SPLITSCREENME_VSCODE ?? path.join(here, '..', '..', 'splitscreenme-vscode'));
 if (!fs.existsSync(path.join(coreRepo, 'src', 'core', 'lint.ts'))) {
