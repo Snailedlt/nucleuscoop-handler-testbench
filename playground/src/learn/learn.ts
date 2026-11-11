@@ -43,7 +43,7 @@ function para(p: string): string {
   });
   return `<pre class="lesson-code hl cm-s-default" tabindex="0" aria-label="Code to add (highlighted lines)">${lines.join('')}</pre>`;
 }
-const NOTE: Record<NoteKind, string> = { pitfall: 'Pitfall', why: 'Why this way', alt: 'Another way', odd: 'If you see something odd', check: 'What Check says' };
+const NOTE: Record<NoteKind, string> = { pitfall: 'Pitfall', why: 'Why this way', alt: 'Another way', odd: 'If you see something odd', check: 'What Check says', try: 'Try this' };
 const testEvent = (name: string, detail: string) => { try { (window as any).goatcounter?.count?.({ path: `learn-${name}-${detail}`, title: `Learn: ${name}`, event: true }); } catch { /* no counter */ } };
 
 let chapter: Chapter = CHAPTERS[0];
@@ -272,7 +272,7 @@ function renderLesson(focus = false) {
   $('#chapter-title').textContent = chapter.title;
   $('#count').textContent = `${index + 1} of ${n}`;
   $('#bar').style.width = `${Math.round(((index + 1) / n) * 100)}%`;
-  const notes = (l.notes ?? []).map((x) => `<div class="note ${x.kind}"><strong>${NOTE[x.kind]}</strong> ${inline(x.text)}</div>`).join('');
+  const notes = (l.notes ?? []).map((x) => `<div class="note ${x.kind}"><strong>${NOTE[x.kind]}</strong> ${inline(x.text)}${x.answer ? `<details class="answer"><summary>What happens, and why</summary><p>${inline(x.answer)}</p></details>` : ''}</div>`).join('');
   const steps = l.steps ? `<ol class="steps">${l.steps.map((s, i) => `<li><label><input type="checkbox" data-step="${i}"> <span>${inline(s)}</span></label></li>`).join('')}</ol>` : '';
   const dl = l.download ? `<p><button type="button" class="btn primary" id="download">${dlLabel(l.download)}</button></p>` : '';
   const ask = l.ask ? `<fieldset class="ask"><legend>${inline(l.ask.question)}</legend>${l.ask.answers.map((a, i) => `<label><input type="radio" name="ask" value="${i}"> ${inline(a.label)}</label>`).join('')}<p class="ask-reply" role="status"></p></fieldset>` : '';

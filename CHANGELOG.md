@@ -43,6 +43,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Learn has things to try.** In "Point it at the game", a *Try this* note asks you to put the player count in quotes and see what Check says, with the answer folded away until you want it. "Give it a name" now says why each handler needs a GUID of its own.
 - **Votes and "Tell us what's wrong" on every check's page.** They work as on the docs pages, and the report opens the feedback form with the check filled in.
 - **Visits to the start page, Learn, docs and checks are counted too.** One anonymous count per visit, with the site or link it came from, under the same rules as the workbench (off with Do Not Track or Settings › Privacy).
 - **An honest note on the start page.** It now says up front that the tools are vibe-coded (written mostly by an AI, with a person steering) and not yet tested much by people, what the automated tests do cover, and where to report what you find.

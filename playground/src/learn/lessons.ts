@@ -10,8 +10,9 @@
 import { lint, type Diagnostic } from '@core/lint';
 import { simulate, type SimResult } from '@core/sim';
 
-export type NoteKind = 'pitfall' | 'why' | 'alt' | 'odd' | 'check';
-export interface Note { kind: NoteKind; text: string }
+export type NoteKind = 'pitfall' | 'why' | 'alt' | 'odd' | 'check' | 'try';
+/** `answer`: for a 'try' note, what happens and why, folded away until the learner opens it. */
+export interface Note { kind: NoteKind; text: string; answer?: string }
 
 export interface Lesson {
   /** Part of the lesson's link (learn/#<chapter>/<id>): never change it once published. */
@@ -245,6 +246,7 @@ const FIRST: Lesson[] = [
     task: 'Add the two lines. Type them: suggestions pop up as you go, and Tab or Enter takes one.',
     notes: [
       { kind: 'why', text: 'The GUID becomes a folder: `Nucleus Co-op\\content\\Boring Man Tutorial`. Keep it to letters, numbers and spaces, and don\'t change it later: a new GUID is a new folder, and Nucleus starts over.' },
+      { kind: 'pitfall', text: 'Give each handler a GUID of its own. When two handlers have the same GUID, Nucleus keeps only the one it reads last, so the other disappears from its list. The Boring Man handler on the Hub uses `"Boring Man"`, so `"Boring Man Tutorial"` lets you install both side by side.' },
     ],
     start: TOP + '\n',
     solution: S.name,
@@ -264,7 +266,12 @@ const FIRST: Lesson[] = [
     ],
     task: 'Add the two lines under `// The game`.',
     notes: [
-      { kind: 'check', text: 'Check, under the code, lists what Nucleus would refuse. A handler needs `GUID`, `GameName` and `ExecutableName` to load at all, so Check waits until this lesson is done before it asks for them. Write the number without quotes, too: `"20"` is text, and Check says so.' },
+      { kind: 'check', text: 'Check, under the code, lists what Nucleus would refuse. A handler needs `GUID`, `GameName` and `ExecutableName` to load at all, so Check waits until this lesson is done before it asks for them.' },
+      {
+        kind: 'try',
+        text: 'Once the lesson is done, put the number in quotes: `Game.MaxPlayers = "20";`. What does Check say? Then take the quotes away again.',
+        answer: 'Check warns that `Game.MaxPlayers` expects a number, not the string `"20"`, and offers to fix it. In quotes, `"20"` is text, even though it looks like a number. Nucleus wants a number here, so write it without quotes. Text goes in quotes (`"BoringManGame.exe"`); numbers and `true`/`false` don\'t.',
+      },
       { kind: 'why', text: 'Other handlers often have `Game.ExecutableContext`, `LauncherTitle = ""` or `StartArguments = ""` here. Boring Man doesn\'t need them: the last lesson shows what this handler leaves out, and why.' },
     ],
     start: S.name + '\n// The game\n',
