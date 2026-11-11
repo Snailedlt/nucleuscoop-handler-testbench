@@ -106,7 +106,7 @@ code, kbd { font-family: var(--mono); font-size: .9em; background: var(--code-bg
 .btn:focus-visible, a:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 .small { font-size: 14px; color: var(--muted); }
 .shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
-.videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+.videos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
 .videos video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: contain; background: #000; }
 @media (max-width: 900px) { .videos { grid-template-columns: minmax(0, 1fr); } }
 .after-shots { margin-top: 28px; }
@@ -181,13 +181,21 @@ body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; 
 .editors .ed[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .ed-steps { margin: 0 0 14px; }
 .ed-step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 12px 16px; }
-.ed-step h4 { margin: 0 0 6px; font-size: 15px; }
+.ed-step h3, .ed-step h4 { margin: 0 0 6px; font-size: 15px; }
 .ed-step ol { padding-left: 1.3em; margin: 0; display: grid; gap: 6px; }
 pre.cfg { margin: 6px 0 2px; padding: 8px 10px; background: var(--code-bg); border-radius: var(--r-sm); overflow-x: auto; font: 13px/1.45 var(--mono); }
 pre.cfg code { background: none; padding: 0; font-size: inherit; }
 .hk { color: var(--hl-k); } .hs { color: var(--hl-s); } .hc { color: var(--hl-c); font-style: italic; }
 .editors.dev .ed { padding: 8px 10px; }
 .editors.dev img { width: 34px; height: 34px; padding: 4px; }
+.videos.one { grid-template-columns: minmax(0, 760px); }
+.tool-grid { list-style: none; padding: 0; margin: 22px 0 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.tool-grid.four { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.tool-grid a { display: grid; grid-template-columns: 36px 1fr; gap: 2px 12px; align-items: center; height: 100%; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); color: var(--fg); text-decoration: none; }
+.tool-grid a:hover { border-color: var(--accent); }
+.tool-grid img, .tool-grid .tg-ico { grid-row: span 2; width: 36px; height: 36px; border-radius: 8px; }
+.tool-grid .tg-ico { display: grid; place-items: center; background: var(--code-bg); font: 700 14px/1 var(--mono); color: var(--accent); }
+.tool-grid small { color: var(--muted); font-size: 13.5px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -197,13 +205,13 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
   <aside class="disclaimer" aria-label="About how these tools are made"><span class="di-ico" aria-hidden="true">🤖</span><p><strong>Vibe-coded, and early.</strong> These tools were written mostly by an AI, with a person steering, and haven't been tested much by people yet. Automated tests check them against Nucleus' real script engine and the verified Hub handlers, but expect rough edges, and <a href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">tell us what you find</a>.</p></aside>
   <p class="kicker">Beta · testers wanted</p>
   <h1>Write Nucleus Co-op handlers with fewer guesses</h1>
-  <p class="lede">Check your handler the way Nucleus runs it, with docs for every option as you type and what each player gets, before you start the game. In VS Code, Notepad++ or the browser.</p>
+  <p class="lede">A Nucleus Co-op handler tells Nucleus how to run a game once for each player. These tools check yours the way Nucleus runs it, explain every option as you type, and show what each player gets, before you start the game. In your browser, VS Code, Notepad++ or any editor.</p>
   <div class="ctas">
-    <a class="btn primary" href="../?ref=start">Try it in the browser</a>
-    <a class="btn" href="#try-it-in-5-minutes">Get it for VS Code or Notepad++</a>
-    <a class="btn" href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Send feedback</a>
+    <a class="btn primary" href="../?ref=start">Open the workbench</a>
+    <a class="btn" href="../tools/">Get the tools</a>
+    <a class="btn" href="../learn/">Learn: your first handler</a>
   </div>
-  <p class="small">New to handlers? <a href="../learn/">Make your first one, step by step</a>: a handler for a free game, a few lines at a time, checked as you type, then tested in Nucleus Co-op.</p>
+  <p class="small">New to handlers? <a href="../learn/">Make your first one, step by step</a>: a handler for a free game, a few lines at a time, checked as you type, then tested in Nucleus Co-op. Already write them? <a href="../tools/">Get the tools for your editor</a>.</p>
   </header>
 
   <section aria-labelledby="what-it-catches">
@@ -236,84 +244,35 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
       <figcaption class="g-cap">The workbench's Check: every problem with why, and a hover with the docs.</figcaption>
     </figure>
   </div>
+  </section>
+
+  <section aria-labelledby="works-in-your-editor">
+  <span id="in-your-editor" class="anchor-alias" aria-hidden="true"></span><h2 id="works-in-your-editor" class="has-anchor">In the editor you already use</h2>
+  <p>Problems underlined as you type, each with why it matters and often a one-click fix. Every option's docs on hover. Suggestions that know what Nucleus has, Try it for each player, and <strong>Test in Nucleus Co-op</strong>, which installs the handler and starts Nucleus for you.</p>
+  <ul class="tool-grid four">
+    <li><a href="../tools/#get-vscode"><img src="editors/vscode.svg" alt="" width="36" height="36"><strong>VS Code</strong><small>The extension: also VSCodium, Copilot's agent tools and a debugger.</small></a></li>
+    <li><a href="../tools/#get-notepadpp"><img src="editors/notepadplusplus.svg" alt="" width="36" height="36"><strong>Notepad++</strong><small>A plugin, set up with one command.</small></a></li>
+    <li><a href="../tools/#any-editor-with-a-language-server-lsp"><img src="editors/lsp.svg" alt="" width="36" height="36"><strong>Neovim, Helix, JetBrains…</strong><small>Any editor with a language server.</small></a></li>
+    <li><a href="../tools/#command-line"><span class="tg-ico" aria-hidden="true">&gt;_</span><strong>Command line and AI agents</strong><small><code>ncdev</code> for a whole folder; a kit for Claude Code, Copilot and Cursor.</small></a></li>
+  </ul>
   <span id="in-motion" class="anchor-alias" aria-hidden="true"></span>
   <div class="videos">
-    <figure><video controls preload="none" playsinline muted poster="videos/workbench-poster.jpg" width="1280" height="800" aria-label="The workbench: a short demo with captions"><source src="videos/workbench.mp4" type="video/mp4"></video>
-      <figcaption><strong>The workbench,</strong> two minutes: checks, fixes, suggestions, Docs, Try it, the visual editor, the debugger, and Settings (light or dark, looks, code colours, the side rail). <a href="videos/workbench.mp4">Download</a></figcaption></figure>
     <figure><video controls preload="none" playsinline muted poster="videos/vscode-poster.jpg" width="1280" height="800" aria-label="VS Code: a short demo with captions"><source src="videos/vscode.mp4" type="video/mp4"></video>
       <figcaption><strong>VS Code,</strong> about a minute: problems, quick fixes, suggestions, parameter hints, the Docs panel and Try it. <a href="videos/vscode.mp4">Download</a></figcaption></figure>
     <figure><video controls preload="none" playsinline muted poster="videos/notepadpp-poster.jpg" width="1400" height="900" aria-label="Notepad++: a short demo with captions"><source src="videos/notepadpp.mp4" type="video/mp4"></video>
       <figcaption><strong>Notepad++,</strong> under a minute: the same checks, fixes, suggestions and docs, and the plugin's menu. <a href="videos/notepadpp.mp4">Download</a></figcaption></figure>
   </div>
-  <span id="in-your-editor" class="anchor-alias" aria-hidden="true"></span>
-<h3 id="works-in-your-editor" class="after-shots has-anchor">Works in your editor</h3>
-<ul class="editors"><li><a class="ed" href="#get-vscode"><img src="editors/vscode.svg" alt="" width="40" height="40" loading="lazy"><span><strong>VS Code</strong><small>Extension · also VSCodium</small></span></a></li><li><a class="ed" href="#get-notepadpp"><img src="editors/notepadplusplus.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Notepad++</strong><small>Plugin, one command to install</small></span></a></li><li><a class="ed" href="../?ref=start"><img src="../icon.png" alt="" width="40" height="40" loading="lazy"><span><strong>Your browser</strong><small>The workbench, nothing to install</small></span></a></li></ul>
-<h3 id="any-editor-with-a-language-server-lsp" class="has-anchor">Any editor with a language server (LSP)</h3>
-<p>Most editors get their smart features from a separate program, a <strong>language server</strong> (LSP). <code>ncdev lsp</code> is that program for handlers: problems as you type, hovers with the docs, suggestions, fixes, Format, rename and go to definition. Get <code>ncdev</code> (one file, nothing else to install: <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">download</a>, and put it on your PATH), then pick your editor:</p>
-<ul class="editors dev"><li><a class="ed" data-ed="neovim" href="https://github.com/Snailedlt/splitscreenme-vscode#neovim" rel="noopener"><img src="editors/neovim.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Neovim</strong><small>5 lines of Lua</small></span></a></li><li><a class="ed" data-ed="helix" href="https://github.com/Snailedlt/splitscreenme-vscode#helix" rel="noopener"><img src="editors/helix.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Helix</strong><small>6 lines of TOML</small></span></a></li><li><a class="ed" data-ed="sublime" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/sublime.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Sublime Text</strong><small>LSP package + one entry</small></span></a></li><li><a class="ed" data-ed="emacs" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/emacs.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Emacs</strong><small>One eglot line</small></span></a></li><li><a class="ed" data-ed="kate" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/kate.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Kate</strong><small>One LSP Client entry</small></span></a></li><li><a class="ed" data-ed="jetbrains" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/jetbrains.svg" alt="" width="40" height="40" loading="lazy"><span><strong>JetBrains IDEs</strong><small>LSP4IJ plugin</small></span></a></li><li><a class="ed" data-ed="zed" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/zed.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Zed</strong><small>Needs a small extension</small></span></a></li><li><a class="ed" data-ed="any" href="https://github.com/Snailedlt/splitscreenme-vscode#your-own-editor-for-experienced-developers" rel="noopener"><img src="editors/lsp.svg" alt="" width="40" height="40" loading="lazy"><span><strong>Anything with LSP</strong><small><code>ncdev lsp</code> over stdio</small></span></a></li></ul>
-<div class="ed-steps" id="ed-steps"><div class="ed-step" id="setup-neovim" hidden><h4>Neovim 0.11+</h4><ol><li>Add to your <code>init.lua</code>:
-<pre class="cfg"><code>vim.lsp.config(<span class="hs">'nucleus'</span>, {
-  cmd = { <span class="hs">'ncdev'</span>, <span class="hs">'lsp'</span> },
-  filetypes = { <span class="hs">'javascript'</span> },
-  root_markers = { <span class="hs">'handlers'</span>, <span class="hs">'.git'</span> },
-})
-vim.lsp.enable(<span class="hs">'nucleus'</span>)</code></pre></li>
-<li>Open a handler: problems show within a second. Older Neovim: <a href="https://github.com/Snailedlt/splitscreenme-vscode#neovim">the setup for it</a>.</li></ol></div><div class="ed-step" id="setup-helix" hidden><h4>Helix</h4><ol><li>Add to <code>languages.toml</code>:
-<pre class="cfg"><code>[<span class="hk">language-server.nucleus</span>]
-command = <span class="hs">"ncdev"</span>
-args = [<span class="hs">"lsp"</span>]
+  <div class="ctas"><a class="btn primary" href="../tools/">Get the tools</a></div>
+  </section>
 
-[[<span class="hk">language</span>]]
-name = <span class="hs">"javascript"</span>
-language-servers = [<span class="hs">"typescript-language-server"</span>, <span class="hs">"nucleus"</span>]</code></pre></li>
-<li>Open a handler (<code>:lsp-restart</code> if Helix was already open).</li></ol></div><div class="ed-step" id="setup-sublime" hidden><h4>Sublime Text</h4><ol><li>Install the <a href="https://packagecontrol.io/packages/LSP">LSP</a> package (Package Control).</li>
-<li><strong>Preferences › Package Settings › LSP › Settings</strong>, add:
-<pre class="cfg"><code>{ <span class="hs">"clients"</span>: { <span class="hs">"nucleus"</span>: {
-  <span class="hs">"enabled"</span>: <span class="hk">true</span>,
-  <span class="hs">"command"</span>: [<span class="hs">"ncdev"</span>, <span class="hs">"lsp"</span>],
-  <span class="hs">"selector"</span>: <span class="hs">"source.js"</span>
-} } }</code></pre></li>
-<li>Open a handler.</li></ol></div><div class="ed-step" id="setup-emacs" hidden><h4>Emacs 29+ (eglot)</h4><ol><li>Add to your init file:
-<pre class="cfg"><code>(with-eval-after-load <span class="hs">'eglot</span>
-  (add-to-list <span class="hs">'eglot-server-programs</span>
-               <span class="hs">'((js-mode js-ts-mode) . ("ncdev" "lsp"))</span>))</code></pre></li>
-<li>Open a handler and run <kbd>M-x eglot</kbd>.</li></ol></div><div class="ed-step" id="setup-kate" hidden><h4>Kate</h4><ol><li><strong>Settings › Configure Kate › LSP Client › User Server Settings</strong>, add:
-<pre class="cfg"><code>{ <span class="hs">"servers"</span>: { <span class="hs">"nucleus"</span>: {
-  <span class="hs">"command"</span>: [<span class="hs">"ncdev"</span>, <span class="hs">"lsp"</span>],
-  <span class="hs">"highlightingModeRegex"</span>: <span class="hs">"^JavaScript$"</span>
-} } }</code></pre></li>
-<li>Open a handler. (Kate runs one server per language: this one takes over <code>.js</code> files.)</li></ol></div><div class="ed-step" id="setup-jetbrains" hidden><h4>JetBrains IDEs</h4><ol><li>Install the <a href="https://plugins.jetbrains.com/plugin/23257-lsp4ij">LSP4IJ</a> plugin.</li>
-<li><strong>Settings › Languages &amp; Frameworks › Language Servers › +</strong>: name <code>Nucleus</code>, command <code>ncdev lsp</code>, and under Mappings the file pattern <code>*.js</code>.</li>
-<li>Open a handler.</li></ol></div><div class="ed-step" id="setup-zed" hidden><h4>Zed</h4><ol><li>Zed only starts language servers that an extension provides, so it needs a small Zed extension first; <a href="https://github.com/Snailedlt/splitscreenme-vscode/blob/main/PORTING.md#zed-settingsjson">how, in PORTING.md</a>.</li></ol></div><div class="ed-step" id="setup-any" hidden><h4>Any other editor</h4><ol><li>Point its LSP client at <code>ncdev lsp</code> (stdio) for JavaScript files. It only answers for handler files, so your usual JavaScript server keeps working.</li>
-<li>Settings, Fix all, Try it and the debugger (<code>ncdev dap</code>) for each editor: <a href="https://github.com/Snailedlt/splitscreenme-vscode/blob/main/PORTING.md">PORTING.md</a>.</li></ol></div></div>
-<details class="more"><summary><h3 id="compare-the-editors">Compare the editors</h3></summary>
-<p class="small">One engine runs underneath all of them: the checks, suggestions and docs are the same. What differs is what each editor can show.</p>
-<div class="compare-wrap" tabindex="0" role="region" aria-label="Features by editor (scrolls sideways)">
-<table class="compare">
-<thead><tr><th scope="col">Feature</th><th scope="col">VS Code</th><th scope="col">Notepad++</th><th scope="col">Workbench</th><th scope="col">Other editors (LSP)</th></tr></thead>
-<tbody>
-<tr><th scope="row">Problems as you type, with the why</th><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Quick fixes and Fix all</th><td>✅</td><td>✅<small>Alt+Enter</small></td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Suggestions, snippets, New handler</th><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Hover docs and parameter hints</th><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Docs for every option and function</th><td>✅<small>panel</small></td><td>✅<small>API reference</small></td><td>✅<small>Docs tab</small></td><td>✅<small>links here</small></td></tr>
-<tr><th scope="row">Format (never moves a line)</th><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Go to definition, references, rename</th><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Outline</th><td>✅</td><td>✅<small>panel</small></td><td class="no">—</td><td>✅</td></tr>
-<tr><th scope="row">Try it (each player's setup)</th><td>✅</td><td>✅</td><td>✅</td><td>✅<small>command</small></td></tr>
-<tr><th scope="row">Debugger, per player</th><td>✅</td><td class="no">—</td><td>✅</td><td>✅<small><code>ncdev dap</code></small></td></tr>
-<tr><th scope="row">Visual editor (Form, Blocks, Lines)</th><td class="no">—</td><td class="no">—</td><td>✅</td><td class="no">—</td></tr>
-<tr><th scope="row">Checks against the game's folder</th><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-<tr><th scope="row">Browse and open Hub handlers</th><td>✅</td><td>✅</td><td>✅</td><td><small><code>ncdev hub</code></small></td></tr>
-<tr><th scope="row">Package as .nc for the Hub</th><td>✅</td><td>✅</td><td>✅</td><td>✅<small>command</small></td></tr>
-<tr><th scope="row">Install into Nucleus Co-op</th><td>✅</td><td>✅</td><td>✅<small>Chrome, Edge</small></td><td>✅<small>command</small></td></tr>
-<tr><th scope="row">Test in Nucleus Co-op (starts it)</th><td>✅</td><td>✅</td><td class="no">—<small>a browser can't</small></td><td>✅<small>command</small></td></tr>
-<tr><th scope="row">What to install</th><td><small>the extension</small></td><td><small><code>ncdev setup notepad++</code></small></td><td><small>nothing</small></td><td><small><code>ncdev</code></small></td></tr>
-</tbody>
-</table>
-</div>
-</details>
-<details class="more"><summary><h3 id="also-in-the-workbench">Also in the workbench</h3></summary>
+  <section aria-labelledby="the-workbench">
+  <h2 id="the-workbench" class="has-anchor">Or skip installing: the workbench</h2>
+  <p>Everything above in a browser tab, nothing to install, and nothing leaves your browser. Open your handler, an example or any Hub handler. And for when code isn't your thing yet, a <strong>visual editor</strong> beside the code: options as a form, <code>Game.Play</code> as steps, and every name a handler can use in a list, each with its docs.</p>
+  <div class="videos one">
+    <figure><video controls preload="none" playsinline muted poster="videos/workbench-poster.jpg" width="1280" height="800" aria-label="The workbench: a short demo with captions"><source src="videos/workbench.mp4" type="video/mp4"></video>
+      <figcaption><strong>The workbench,</strong> two minutes: checks, fixes, suggestions, Docs, Try it, the visual editor, the debugger, and Settings (light or dark, looks, code colours, the side rail). <a href="videos/workbench.mp4">Download</a></figcaption></figure>
+  </div>
+  <details class="more" open><summary><h3 id="also-in-the-workbench">Also in the workbench</h3></summary>
   <ul class="facts">
     <li><strong>Test all combinations</strong>: every player count, input setup and monitor size in one click, with what fails and why.</li>
     <li><strong>Whole packages</strong>: open a .zip or .nc and save it again with its Goldberg files, configs and DLLs.</li>
@@ -322,32 +281,7 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
     <li><strong>WakaTime</strong>, if you use it: your handler time in your dashboard (off by default; the code is never sent).</li>
   </ul>
   </details>
-
-  </section>
-
-  <section aria-labelledby="try-it-in-5-minutes">
-  <span id="install" class="anchor-alias" aria-hidden="true"></span><h2 id="try-it-in-5-minutes" class="has-anchor">Try it in 5 minutes</h2>
-  <div class="cards steps">
-    <div class="card" id="get-vscode"><h3><img src="editors/vscode.svg" alt="" width="22" height="22">VS Code</h3>
-      <ol>
-        <li>Download <a id="vsix" href="__VSIX_URL__"><strong id="vsix-name">__VSIX_NAME__</strong></a> (<span id="vsix-tag">__VSIX_TAG__</span>, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
-        <li>In VS Code: <kbd>Ctrl+Shift+P</kbd> → <strong>Extensions: Install from VSIX…</strong> → pick the file.</li>
-        <li>Open a handler (a <code>.js</code> in Nucleus' <code>handlers</code> folder). Problems are underlined as you type; hover a name for its docs; <kbd>Ctrl+.</kbd> on a problem for its fixes.</li>
-        <li>Press <strong>▷</strong> at the editor's top right (<strong>Nucleus: Try It</strong>) to see each player's setup, then <strong>Test in Nucleus Co-op</strong> to play it.</li>
-      </ol></div>
-    <div class="card" id="get-notepadpp"><h3><img src="editors/notepadplusplus.svg" alt="" width="22" height="22">Notepad++</h3>
-      <ol>
-        <li>Download <a id="ncdev" href="__NCDEV_URL__"><code>ncdev.exe</code></a> (__VSIX_TAG__, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
-        <li>Close Notepad++. In a terminal <strong>as administrator</strong>, where <code>ncdev.exe</code> is, run <code>ncdev setup notepad++</code>. (A portable Notepad++: add <code>--path "C:\path\to\Notepad++"</code>, no administrator needed.)</li>
-        <li>Start Notepad++ and open a handler. Problems are underlined; hover for the docs; <kbd>Alt+Enter</kbd> for fixes.</li>
-        <li><strong>Plugins › Nucleus Co-op handlers</strong> has Fix all, Try it and Test in Nucleus Co-op.</li>
-      </ol></div>
-    <div class="card"><h3>Tell us where it's wrong</h3>
-      <ul><li>A warning on code that works</li><li>A real bug it missed</li><li>Try it saying something Nucleus doesn't do</li><li>A suggestion or hint that's missing or confusing</li></ul>
-      <p><a href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Feedback form</a>, or reply where you found this link.</p></div>
-  </div>
-  <p class="small">Or skip installing: <a href="../?ref=start">open the workbench</a>. Another editor? <a href="#any-editor-with-a-language-server-lsp">Use the language server</a>. More detail: the <a href="https://github.com/Snailedlt/splitscreenme-vscode/blob/main/TESTING.md">testing guide</a>.</p>
-
+  <div class="ctas"><a class="btn primary" href="../?ref=start">Open the workbench</a><a class="btn" href="../learn/">Learn: make your first handler</a></div>
   </section>
 
   <section aria-labelledby="want-to-help-build-it">
@@ -471,24 +405,11 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
     io.observe(frame);
   }
 })();
-// The language-server editors: a click shows that editor's setup below the row.
+// Sections that moved to the tools page (tools/): an old link to one of them goes there.
 (function () {
-  var box = document.getElementById('ed-steps');
-  if (!box) return;
-  var links = document.querySelectorAll('a.ed[data-ed]');
-  links.forEach(function (a) {
-    a.setAttribute('role', 'button');
-    a.setAttribute('aria-expanded', 'false');
-    a.setAttribute('aria-controls', 'setup-' + a.dataset.ed);
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
-      var open = a.getAttribute('aria-expanded') !== 'true';
-      links.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
-      box.querySelectorAll('.ed-step').forEach(function (d) { d.hidden = true; });
-      if (open) { a.setAttribute('aria-expanded', 'true'); document.getElementById('setup-' + a.dataset.ed).hidden = false; }
-    });
-    a.addEventListener('keydown', function (e) { if (e.key === ' ') { e.preventDefault(); a.click(); } });
-  });
+  var MOVED = ['install', 'try-it-in-5-minutes', 'get-vscode', 'get-notepadpp', 'any-editor-with-a-language-server-lsp', 'compare-the-editors', 'setup-neovim', 'setup-helix', 'setup-sublime', 'setup-emacs', 'setup-kate', 'setup-jetbrains', 'setup-zed', 'setup-any'];
+  var h = decodeURIComponent(location.hash.slice(1));
+  if (MOVED.indexOf(h) >= 0) location.replace('../tools/#' + h);
 })();
 // A link to a heading inside a folded part (#compare-the-editors…) opens that part first.
 (function () {
@@ -509,31 +430,6 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
   document.querySelectorAll('a[data-full]').forEach(function (a) {
     a.addEventListener('click', function () { var i = a.querySelector('img'); if (i && i.currentSrc) a.href = i.currentSrc; });
   });
-})();
-// The link above is the newest release when the site was built; this swaps in the newest one now
-// (pre-releases included), so a new release shows up without a rebuild. Keeps the built link on any error.
-// A local test site (build.mjs --test-build) keeps its test build.
-(function () {
-  if (!window.fetch || document.getElementById('vsix').dataset.pinned) return;
-  fetch('https://api.github.com/repos/Snailedlt/splitscreenme-vscode/releases?per_page=10', { headers: { accept: 'application/vnd.github+json' } })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (list) {
-      if (!Array.isArray(list)) return;
-      for (var i = 0; i < list.length; i++) {
-        var rel = list[i];
-        if (rel.draft) continue;
-        for (var j = 0; j < rel.assets.length; j++) {
-          var a = rel.assets[j];
-          if (!/\.vsix$/.test(a.name) || !/^https:\/\/github\.com\//.test(a.browser_download_url)) continue;
-          document.getElementById('vsix').href = a.browser_download_url;
-          document.getElementById('vsix-name').textContent = a.name;
-          document.getElementById('vsix-tag').textContent = rel.tag_name;
-          for (var k = 0; k < rel.assets.length; k++) if (rel.assets[k].name === 'ncdev.exe') document.getElementById('ncdev').href = rel.assets[k].browser_download_url;
-          return;
-        }
-      }
-    })
-    .catch(function () {});
 })();
 </script>
 <script>/* The workbench links carry where this visit came from (the ?ref= tag of the link followed, else the site),

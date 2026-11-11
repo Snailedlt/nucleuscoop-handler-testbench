@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { siteHeader, SITE_HEADER_CSS, docFeedback, DOC_FEEDBACK_CSS, docFeedbackScript } from './site-chrome.mjs';
+import { DRAWER_CSS, docsDrawer } from './docs-pages.mjs';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** `code` and **bold** in the plain-words texts. */
@@ -41,7 +42,7 @@ export function writeRulePages(o) {
   const themeScript = (startHtml.match(/<script>\/\* the workbench's theme choice[\s\S]*?<\/script>/) || [''])[0];
   const ids = Object.keys(RULES).filter((id) => RULE_DOCS[id]);
   const kind = (id) => (id in JS_RULES ? 'js' : 'nucleus');
-  const head = (title, desc, canonical, up) => `<!doctype html>
+  const head = (title, desc, canonical, up, here = '') => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -71,14 +72,19 @@ ${SITE_HEADER_CSS}
 .ruleset strong { font-size: 15px; } .ruleset code { font-size: 12px; } .ruleset small { flex-basis: 100%; color: var(--muted); font-size: 13.5px; }
 .rsearch { width: 100%; max-width: 420px; padding: 8px 12px; font: inherit; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); }
 ${DOC_FEEDBACK_CSS}
+${DRAWER_CSS}
 .pn { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; font-size: 14px; }
 </style>
 </head>
 <body>
-${siteHeader(up, 'rules/')}
+${siteHeader(up, 'docs/')}
+<div class="docs-wrap">
+${docsDrawer(up, here, `<li><a href="${up}rules/">Every check</a></li>`)}
 <main>
 `;
   const foot = (up) => `</main>
+</div>
+<script src="${up}docs/nav.js" defer></script>
 <footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Something wrong on this page?</a></footer>
 </body>
 </html>
@@ -92,7 +98,7 @@ ${siteHeader(up, 'rules/')}
     const prev = ids[i - 1], next = ids[i + 1];
     const js = kind(id) === 'js';
     const off = `"splitscreenme.lint.rules": { "${id}": "off" }`;
-    const body = `<p class="crumbs"><a href="../../start/">Nucleus handler tools</a> › <a href="../">Checks</a></p>
+    const body = `<p class="crumbs"><a href="../../start/">Nucleus handler tools</a> › <a href="../../docs/">Docs</a> › <a href="../">Checks</a></p>
 <h1>${inline(d.title)}</h1>
 <p class="rmeta"><span class="sev ${r.severity}">${SEV[r.severity]}</span><code>${esc(id)}</code><span>${js ? `A general JavaScript mistake (ESLint's <code>${esc(id)}</code>)` : 'A Nucleus check'} · ${esc(SEV_WHAT[r.severity])}</span></p>
 <h2>Why it matters</h2>
@@ -107,12 +113,12 @@ ${docFeedback(id, ruleReportUrl(id, `${o.base}rules/${id}/`), esc, 'rule')}${doc
 <nav class="pn" aria-label="Other checks">${prev ? `<a href="../${encodeURIComponent(prev)}/">‹ ${inline(RULE_DOCS[prev].title)}</a>` : '<span></span>'}${next ? `<a href="../${encodeURIComponent(next)}/">${inline(RULE_DOCS[next].title)} ›</a>` : ''}</nav>
 `;
     fs.mkdirSync(path.join(outDir, id), { recursive: true });
-    fs.writeFileSync(path.join(outDir, id, 'index.html'), head(`${d.title.replace(/`/g, '')} (${id}): Nucleus handler check`, firstSentence(d.why.replace(/`/g, '')), `${o.base}rules/${id}/`, '../../') + body + foot('../../'));
+    fs.writeFileSync(path.join(outDir, id, 'index.html'), head(`${d.title.replace(/`/g, '')} (${id}): Nucleus handler check`, firstSentence(d.why.replace(/`/g, '')), `${o.base}rules/${id}/`, '../../', id) + body + foot('../../'));
   });
   // The list: the Nucleus checks, then the general JavaScript ones; a filter box.
   const group = (title, which) => `<h2>${title}</h2>
 <ul class="ruleset">${ids.filter((id) => kind(id) === which).map((id) => `<li data-q="${esc((id + ' ' + RULE_DOCS[id].title + ' ' + RULE_DOCS[id].why).toLowerCase())}"><a href="${encodeURIComponent(id)}/"><strong>${inline(RULE_DOCS[id].title)}</strong><span class="sev ${RULES[id].severity}">${SEV[RULES[id].severity]}</span><code>${esc(id)}</code><small>${inline(firstSentence(RULE_DOCS[id].why))}</small></a></li>`).join('')}</ul>`;
-  const list = `<p class="crumbs"><a href="../start/">Nucleus handler tools</a> › Checks</p>
+  const list = `<p class="crumbs"><a href="../start/">Nucleus handler tools</a> › <a href="../docs/">Docs</a> › Checks</p>
 <h1>Every check</h1>
 <p class="lede">What the tools check in a handler, one page each: what it means, why Nucleus cares, an example and the fix. The same checks run in VS Code, Notepad++, the workbench and <code>ncdev lint</code>.</p>
 <p><input class="rsearch" type="search" placeholder="Filter: a word, an option, a rule name" aria-label="Filter the checks"></p>
@@ -128,6 +134,8 @@ ${group('General JavaScript mistakes', 'js')}
 })();
 </script>
 `;
-  fs.writeFileSync(path.join(outDir, 'index.html'), head('Every check: Nucleus handler tools', 'What the Nucleus handler tools check, one page each: what it means, why, an example and the fix.', `${o.base}rules/`, '../') + list + foot('../'));
-  return ids;
+  fs.writeFileSync(path.join(outDir, 'index.html'), head('Every check: Nucleus handler tools', 'What the Nucleus handler tools check, one page each: what it means, why, an example and the fix.', `${o.base}rules/`, '../', '@checks') + list + foot('../'));
+  // For the docs list (docs/nav.json): the Checks section, the Nucleus checks then the JavaScript ones.
+  const items = (which) => ids.filter((id) => kind(id) === which).map((id) => ({ p: id, t: RULE_DOCS[id].title.replace(/`/g, ''), d: firstSentence(RULE_DOCS[id].why.replace(/`/g, '')).slice(0, 110), u: `rules/${id}/` }));
+  return { ids, nav: [{ key: 'rules-nucleus', title: 'Nucleus checks', items: items('nucleus') }, { key: 'rules-js', title: 'General JavaScript mistakes', items: items('js') }] };
 }

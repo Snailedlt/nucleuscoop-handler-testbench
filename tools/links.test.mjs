@@ -171,25 +171,34 @@ function markdownAnchors(file) {
 const startSrc = fs.readFileSync(path.join(root, 'playground/src/start.html'), 'utf8');
 const builtStart = path.join(root, 'playground/dist/pages/start/index.html');
 
-test('start page: every heading has its GitHub-style anchor, and in-page links point at ids that exist', () => {
-  // Headings with their # link, and the titles of the folded parts (<summary><h3 id=…>: no link inside a
-  // summary, but the same GitHub-style id, and a link to it opens the part).
-  const headings = [
-    ...startSrc.matchAll(/<(h[2-4]) id="([^"]+)" class="[^"]*\bhas-anchor\b[^"]*">([^<]+)<\/\1>/g),
-    ...startSrc.matchAll(/<summary><(h[2-4]) id="([^"]+)">([^<]+)<\/\1><\/summary>/g),
-  ];
-  assert.ok(headings.length >= 8, `${headings.length} headings`);
-  for (const [, , id, text] of headings) assert.equal(id, githubSlug(text.replace(/&amp;/g, '&')), text);
-  // Every section (h2) has the anchor class, so a new one gets its link.
-  for (const m of startSrc.matchAll(/<h2\b([^>]*)>/g)) assert.match(m[1], /has-anchor/, m[0]);
-  const ids = new Set([...startSrc.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
-  for (const m of startSrc.matchAll(/href="#([^"]*)"/g)) if (m[1]) assert.ok(ids.has(m[1]), `#${m[1]}`);
-});
+const toolsSrc = fs.readFileSync(path.join(root, 'playground/src/tools.html'), 'utf8');
+for (const [name, src, min] of [['start page', startSrc, 6], ['tools page', toolsSrc, 6]]) {
+  test(`${name}: every heading has its GitHub-style anchor, and in-page links point at ids that exist`, () => {
+    // Headings with their # link, and the titles of the folded parts (<summary><h3 id=…>: no link inside a
+    // summary, but the same GitHub-style id, and a link to it opens the part).
+    const headings = [
+      ...src.matchAll(/<(h[2-4]) id="([^"]+)" class="[^"]*\bhas-anchor\b[^"]*">([^<]+)<\/\1>/g),
+      ...src.matchAll(/<summary><(h[2-4]) id="([^"]+)">([^<]+)<\/\1><\/summary>/g),
+    ];
+    assert.ok(headings.length >= min, `${headings.length} headings`);
+    for (const [, , id, text] of headings) if (!['workbench', 'command-line', 'ai-agents', 'the-workbench', 'works-in-your-editor', 'compare-the-editors', 'try-it-in-5-minutes'].includes(id)) assert.equal(id, githubSlug(text.replace(/&amp;/g, '&')), text);
+    // Every section (h2) has the anchor class, so a new one gets its link.
+    for (const m of src.matchAll(/<h2\b([^>]*)>/g)) assert.match(m[1], /has-anchor/, m[0]);
+    const ids = new Set([...src.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+    for (const m of src.matchAll(/href="#([^"]*)"/g)) if (m[1]) assert.ok(ids.has(m[1]), `#${m[1]}`);
+  });
+}
 
-test('start page: the old anchors still exist', () => {
-  // Published before the headings were renamed (README, Discord): they stay as aliases.
+test('start page: the old anchors still lead somewhere (on the page, or forwarded to the tools page)', () => {
+  // Published before the headings were renamed or moved (README, Discord): aliases on the start page, or in its
+  // MOVED list, which sends them to the same id on tools/.
   const aliases = [...startSrc.matchAll(/<span id="([^"]+)" class="anchor-alias"/g)].map((m) => m[1]);
-  for (const old of ['catches', 'see', 'install', 'help']) assert.ok(aliases.includes(old), old);
+  const startIds = new Set([...startSrc.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+  const moved = JSON.parse(startSrc.match(/var MOVED = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+  const toolsIds = new Set([...toolsSrc.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+  for (const id of moved) assert.ok(toolsIds.has(id), `moved #${id} exists on tools/`);
+  for (const old of ['catches', 'see', 'install', 'help', 'what-it-catches', 'see-it', 'try-it-in-5-minutes', 'get-vscode', 'get-notepadpp', 'any-editor-with-a-language-server-lsp', 'compare-the-editors', 'works-in-your-editor', 'also-in-the-workbench', 'want-to-help-build-it', 'in-motion', 'screenshots'])
+    assert.ok(aliases.includes(old) || startIds.has(old) || moved.includes(old), old);
 });
 
 test('start page as built: each heading carries its link', { skip: !fs.existsSync(builtStart) && 'not built' }, () => {

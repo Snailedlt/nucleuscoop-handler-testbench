@@ -510,7 +510,7 @@ fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(page
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'icon.png'), Buffer.from(fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim(), 'base64'));
 // For search engines (submit it in Search Console: a project site can't have its own robots.txt).
 if (PREVIEW) fs.rmSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), { force: true });
-else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}tools/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 fs.rmSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true, force: true }); // only this build's handlers
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
@@ -549,7 +549,7 @@ try {
   if (asset) vsix = { url: asset.browser_download_url, name: asset.name, tag: TEST_BUILD ? `test build, ${rel.name.replace(/^Test build:\s*/, '')}` : rel.tag_name };
   const exe = rel?.assets.find((a) => a.name === 'ncdev.exe');
   if (exe) ncdevUrl = exe.browser_download_url;
-  if (TEST_BUILD) console.log(`start page: the test build (${rel.name})`);
+  if (TEST_BUILD) console.log(`tools page: the test build (${rel.name})`);
 } catch (e) {
   if (TEST_BUILD) throw new Error(`--test-build: ${e.message}`);
   console.warn(`start page: no release info (${e.message}), linking the releases page`);
@@ -570,15 +570,32 @@ const hlStatic = (() => {
 })();
 const ANCHOR_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg>';
 const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-fs.writeFileSync(
-  path.join(startDir, 'index.html'),
-  fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8')
-    // __BASE__ is the site's root: absolute on the live site; in a preview, relative to start/ (and
+// The start page (start/) and the tools page (tools/): the same look (start.html's head and styles), each its own
+// body. tools.html is only the body; it gets start.html's head with its own title, description and address.
+const startSrc = fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8');
+const toolsSrc = (() => {
+  const head = startSrc.slice(0, startSrc.indexOf('<body>'));
+  const title = 'Get the tools: Nucleus Co-op handlers in VS Code, Notepad++, the browser and more';
+  const desc = 'Every Nucleus Co-op handler tool in one place: the browser workbench, VS Code, Notepad++, other editors through a language server, the ncdev command line and AI agents.';
+  return head
+    .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*"/, `$1${desc}"`)
+    .replace(/(<meta (?:property="og|name="twitter):title" content=")[^"]*"/g, `$1Get the tools: Nucleus Co-op handler tools"`)
+    .replace(/(<meta (?:property="og|name="twitter):description" content=")[^"]*"/g, `$1${desc}"`)
+    .replace(/__BASE__start\/"/g, '__BASE__tools/"')
+    .replace(/(content="__BASE__)tools\/og\.png"/g, '$1start/og.png"')
+    + '<body>\n' + fs.readFileSync(path.join(here, 'src', 'tools.html'), 'utf8');
+})();
+const toolsDir = path.join(here, 'dist', 'pages', 'tools');
+fs.mkdirSync(toolsDir, { recursive: true });
+const renderSitePage = (src, section) =>
+  src
+    // __BASE__ is the site's root: absolute on the live site; in a preview, relative to the page (and
     // the lines that only make sense with an absolute address are left out).
-    .replace(/^.*__BASE__(?:start\/)?".*\n/gm, (l) => (PREVIEW && /rel="canonical"|og:url/.test(l) ? '' : l))
+    .replace(/^.*__BASE__(?:[a-z]+\/)?".*\n/gm, (l) => (PREVIEW && /rel="canonical"|og:url/.test(l) ? '' : l))
     .replace('<meta name="viewport"', `${NOINDEX}<meta name="viewport"`)
     // The site's header (site-chrome.mjs), as on the other pages.
-    .replace('<body>\n<main>', () => `<body>\n${siteHeader('../', 'start/')}\n<main>`)
+    .replace('<body>\n<main>', () => `<body>\n${siteHeader('../', section)}\n<main>`)
     .replace('</style>', () => `${SITE_HEADER_CSS}</style>`)
     .replaceAll('__BASE__start/', PREVIEW ? '' : `${PAGES_BASE}start/`)
     .replaceAll('__BASE__', PREVIEW ? '../' : PAGES_BASE)
@@ -608,8 +625,9 @@ fs.writeFileSync(
       return `<style>${css} .hero-masc { float: right; display: flex; align-items: flex-end; gap: 0; margin: 0 0 8px 16px; } .hero-masc .masc { display: block; width: 132px; height: 132px; } .hero-masc .masc svg { width: 100%; height: 100%; overflow: visible; } .hero-masc .masc + .masc { width: 112px; height: 112px; margin-left: -18px; } @media (max-width: 640px) { .hero-masc { float: none; justify-content: center; margin: 0 0 4px; } .hero-masc .masc { width: 104px; height: 104px; } .hero-masc .masc + .masc { width: 88px; height: 88px; } }</style>`
         + `<div class="hero-masc" aria-hidden="true"><span class="masc">${svg.idle}</span><span class="masc">${svg['n-idle']}</span></div>`
         + `<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) addEventListener('DOMContentLoaded', () => document.querySelectorAll('.hero-masc svg').forEach((s) => s.pauseAnimations()));</script>`;
-    })()),
-);
+    })());
+fs.writeFileSync(path.join(startDir, 'index.html'), renderSitePage(startSrc, 'start/'));
+fs.writeFileSync(path.join(toolsDir, 'index.html'), renderSitePage(toolsSrc, 'tools/'));
 // The gallery's screenshots (docs/images/gallery: <tool>-<view>-light/dark.webp, the workbench's looks as
 // workbench-look-<look>-…): each view in light and dark, compared with the slider on the page.
 fs.rmSync(path.join(startDir, 'gallery'), { recursive: true, force: true });
@@ -617,14 +635,17 @@ fs.mkdirSync(path.join(startDir, 'gallery'), { recursive: true });
 for (const f of fs.readdirSync(path.join(here, '..', 'docs', 'images', 'gallery'))) if (f.endsWith('.webp')) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'gallery', f), path.join(startDir, 'gallery', f));
 fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
 // One page per check (rules/<id>/) and the list of them (rules/), from the core's core/ruledocs.ts (rules-pages.mjs).
+// The checks for the docs list's Checks section (rules-pages.mjs), handed to the docs pages below.
+let checksNav = [];
 {
   const mod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'ruledocs.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
   const { RULE_DOCS } = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
   const lintAll = await esbuild.build({ stdin: { contents: "export { RULES } from './lint'; export { JS_RULES } from './jsrules';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
   const { RULES, JS_RULES } = await import('data:text/javascript;base64,' + Buffer.from(lintAll.outputFiles[0].text).toString('base64'));
   const { writeRulePages } = await import('./rules-pages.mjs');
-  const ruleIds = writeRulePages({ outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX, feedbackSite });
-  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, `${PAGES_BASE}docs/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  let ruleIds;
+  ({ ids: ruleIds, nav: checksNav } = writeRulePages({ outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX, feedbackSite }));
+  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}tools/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, `${PAGES_BASE}docs/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 }
 // Learn (learn/): the lessons, one page with its own small bundle (src/learn/): the editor, the checks and Try it,
 // without the rest of the workbench. ESLint's general rules stay out (the lessons only need Nucleus' own checks).
@@ -655,7 +676,7 @@ let docValues = [];
   const mod = await esbuild.build({ stdin: { contents: "export { docsPage, docsView, docsValue, DOCS_GROUPS } from './docspage'; export { allEntries } from './lookup'; export { api, docReviewUrl } from './api';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
   const D = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
   const { writeDocPages } = await import('./docs-pages.mjs');
-  docValues = writeDocPages({ outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), docReviewUrl: D.docReviewUrl, feedbackSite, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
+  docValues = writeDocPages({ checks: checksNav, outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), docReviewUrl: D.docReviewUrl, feedbackSite, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
   // Each docs page in the sitemap too (written with the rule pages above).
   const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
   if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
@@ -729,7 +750,7 @@ for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.en
       else if (e.name === 'index.html') fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<\/body>/i, () => `${script}\n</body>`));
     }
   };
-  for (const sub of ['start', 'learn', 'docs', 'rules']) add(path.join(here, 'dist', 'pages', sub));
+  for (const sub of ['start', 'tools', 'learn', 'docs', 'rules']) add(path.join(here, 'dist', 'pages', sub));
 }
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).

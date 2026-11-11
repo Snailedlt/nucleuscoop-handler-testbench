@@ -8,7 +8,7 @@ Tick the boxes as you go. Anything odd: write it down with the step number (a sc
 
 ## 0. Run the site and get the tools from it (15 min)
 
-You run the site on your PC, then download the VS Code extension and `ncdev.exe` from its start page, like a user would. The start page's download links point to the **test build**: the real files, built by GitHub from the branch going into this release ([the test-build pre-release](https://github.com/Snailedlt/nucleuscoop-handler-testbench/releases/tag/test-build), in the testbench repo so no installed tool ever offers it to anyone).
+You run the site on your PC, then download the VS Code extension and `ncdev.exe` from its tools page, like a user would. The tools page's download links point to the **test build**: the real files, built by GitHub from the branch going into this release ([the test-build pre-release](https://github.com/Snailedlt/nucleuscoop-handler-testbench/releases/tag/test-build), in the testbench repo so no installed tool ever offers it to anyone).
 
 You need [Git](https://git-scm.com/downloads) and [Node.js](https://nodejs.org/) 22 or newer. In a terminal, in a folder of your choice (both repos must sit side by side):
 
@@ -28,17 +28,17 @@ cd splitscreenme-vscode && npm ci && cd ..
 cd nucleuscoop-handler-testbench/playground && npm ci && node build.mjs --preview --test-build
 ```
 
-The build takes a minute or two and ends by printing which test build its start page links to. (If it stops with `GitHub API 403`, GitHub's hourly limit for unsigned-in requests from your address is used up: wait a bit and run it again.) Then serve the site (the pages link to each other, which doesn't work from `file://`):
+The build takes a minute or two and ends by printing which test build its tools page links to. (If it stops with `GitHub API 403`, GitHub's hourly limit for unsigned-in requests from your address is used up: wait a bit and run it again.) Then serve the site (the pages link to each other, which doesn't work from `file://`):
 
 ```bash
 npx --yes http-server dist/pages -p 8080 -c-1
 ```
 
-Open http://localhost:8080/ (the workbench). The other pages are `/start/`, `/learn/`, `/docs/` and `/rules/`. Nothing you do on this site is counted: a preview build has the anonymous counts switched off.
+Open http://localhost:8080/ (the workbench). The other pages are `/start/` (home), `/tools/`, `/learn/`, `/docs/` and `/rules/`. Nothing you do on this site is counted: a preview build has the anonymous counts switched off.
 
 This guide is on the local site too, at http://localhost:8080/test-guide/ (only in a `--test-build` build, linked from nowhere): mark each step ✓ or ✗ there, add a note to a ✗, and **Copy the problems** gives you a list to paste to me. The marks stay in that browser; open the guide in a normal window, not the private one.
 
-**Get the tools, as a user would** (http://localhost:8080/start/, *Get the tools* in the header):
+**Get the tools, as a user would** (http://localhost:8080/tools/, *Get the tools* in the header):
 
 - [ ] 0.1 The VS Code card's download link gives `splitscreenme-vscode-v0.6.0-test.vsix` and says it's the test build. In VS Code: Ctrl+Shift+P › *Extensions: Install from VSIX…* › that file. Reload when asked.
 - [ ] 0.2 The Notepad++ card's `ncdev.exe` link downloads it straight away (no detour through GitHub's release list). Windows may warn that it's unrecognised (it isn't signed): *More info › Run anyway*.
@@ -90,14 +90,15 @@ Open http://localhost:8080/ in a **private window**, so it starts as a first vis
 
 ---
 
-## 2. Start page (5 min)
+## 2. Home, tools and the header (8 min)
 
-Open http://localhost:8080/start/.
+Open http://localhost:8080/start/ (the home page).
 
-- [ ] 2.1 The new header at the top: *Workbench*, *Learn*, *Docs*, *Checks*, *Get the tools*. Each goes to the right place, and the current page is marked.
-- [ ] 2.2 The videos play; the screenshots match the theme (light/dark).
-- [ ] 2.3 The install steps and the feature table (VS Code / Notepad++ / workbench / other editors) read right.
-- [ ] 2.4 *Try it in the browser* opens the workbench; *Make your first one, step by step* opens Learn.
+- [ ] 2.1 The header on every page (home, tools, Docs, a check's page): the logo goes home, then *Workbench*, *Learn*, *Docs*, *Get the tools*. Each goes to the right place, and the current one is marked. Learn's bar has the same links; the workbench has *Home*.
+- [ ] 2.2 The home page sells it: what a handler is, what it catches, the screenshots (matching your theme), the editors (with their videos), then the workbench (with its video). *Open the workbench*, *Get the tools* and *Learn* go to the right places.
+- [ ] 2.3 http://localhost:8080/tools/ has every tool: workbench, VS Code, Notepad++, other editors (click one: its setup opens), the command line and AI agents, and the table comparing them. Its download links are the test build.
+- [ ] 2.4 An old link still works: http://localhost:8080/start/#get-vscode lands on the VS Code part of the tools page.
+- [ ] 2.5 Docs' list on the left has two sections, *Handler API* and *Checks*. A check's page (open one from the list) shows the same list with that check marked.
 
 ---
 

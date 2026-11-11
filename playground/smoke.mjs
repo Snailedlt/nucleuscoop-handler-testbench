@@ -539,6 +539,24 @@ for (const theme of ['light', 'dark']) {
   check((await s.p.getAttribute('.ctas a.btn.primary', 'href')) .replace(/\?ref=[\w.-]+$/, '').replace(/index\.html$/, '') === '../', `${theme}: the start page links to its own workbench (by its file in a preview: some hosts don't serve ../)`);
   await axe(s.p, `${theme}, start page`);
   check(!s.errors.length, `${theme}: start page has no page errors`);
+  // The tools page: the downloads, a language-server editor's setup on a click, and old start-page links forwarded.
+  await s.p.goto(BASE + 'tools/');
+  await s.p.waitForTimeout(600);
+  const dl = await s.p.$$eval('#vsix, #ncdev', (a) => a.map((x) => x.getAttribute('href')));
+  check(dl.length === 2 && dl.every((h) => /^https:\/\/github\.com\//.test(h)), `${theme}: tools page links the .vsix and ncdev.exe (${dl.join(', ')})`);
+  await s.p.click('a.ed[data-ed="neovim"]');
+  check(await s.p.isVisible('#setup-neovim'), `${theme}: tools page: a language-server editor shows its setup`);
+  await axe(s.p, `${theme}, tools page`);
+  await s.p.goto(BASE + 'start/#get-notepadpp');
+  await s.p.waitForTimeout(500);
+  check(/\/tools\/#get-notepadpp$/.test(s.p.url()), `${theme}: an old start-page link to the downloads goes to the tools page (${s.p.url()})`);
+  // Every page has the way home (the brand) and to the workbench in its header.
+  for (const u of ['start/', 'tools/', 'docs/', 'docs/Game.Play/', 'rules/', 'rules/syntax-error/', 'learn/']) {
+    await s.p.goto(BASE + u);
+    const nav = await s.p.evaluate(() => ({ home: [...document.querySelectorAll('header a, .top a, nav a')].some((a) => /\/start\/$/.test(a.href)), wb: [...document.querySelectorAll('header a, .top a, nav a')].some((a) => a.textContent.trim() === 'Workbench') }));
+    check(nav.home && nav.wb, `${theme}: ${u} links home and to the workbench from its header`);
+  }
+  check(!s.errors.length, `${theme}: tools page and the headers: no page errors ${s.errors.join(' ')}`);
   await s.ctx.close();
 }
 
@@ -654,7 +672,7 @@ await m.ctx.close();
     await s.ctx.close();
   }
   const ph = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  for (const u of ['docs/Context.ModifySaveFile/', 'rules/', 'start/']) {
+  for (const u of ['docs/Context.ModifySaveFile/', 'rules/', 'rules/syntax-error/', 'start/', 'tools/']) {
     await ph.p.goto(BASE + u);
     const wide = await ph.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     check(wide <= 1, `phone ${u}: no sideways scrolling, header included (${wide}px)`);

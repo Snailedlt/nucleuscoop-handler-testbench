@@ -4,7 +4,7 @@ run-name: Test build of splitscreenme-vscode ${{ inputs.branch || 'claude/brave-
 # inside) and the plugin's zip from a splitscreenme-vscode branch, the way its Release workflow does, and publishes
 # them here as the pre-release `test-build` (replaced each run). A local site built with
 #   node build.mjs --preview --test-build
-# links its downloads to it, so testers get the tools from the start page like real users, just the newer version.
+# links its downloads to it, so testers get the tools from the tools page like real users, just the newer version.
 # It lives in this repo on purpose: the tools' update checks (ncdev update, the Notepad++ plugin, the live start
 # page) only read splitscreenme-vscode's releases, so a test build never reaches anyone who didn't ask for it.
 on:
@@ -66,7 +66,7 @@ jobs:
           cat > notes.md <<EOF
           **For testing only: not released.** splitscreenme-vscode \`$BRANCH\` at [\`$SHA\`](https://github.com/Snailedlt/splitscreenme-vscode/commit/$SHA) (version $VER), built like a release.
 
-          Get it the way users will: build the site with \`node build.mjs --preview --test-build\`, serve \`dist/pages\` and download from its start page (\`/start/\`). The steps are in the test guide.
+          Get it the way users will: build the site with \`node build.mjs --preview --test-build\`, serve \`dist/pages\` and download from its tools page (\`/tools/\`). The steps are in the test guide.
           EOF
           gh release create test-build "splitscreenme-vscode-v$VER-test.vsix" ncdev.exe NcDev.zip --prerelease --target "$GITHUB_SHA" --title "Test build: v$VER ($SHA)" --notes-file notes.md
       - name: Summary

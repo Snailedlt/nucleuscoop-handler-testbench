@@ -5,15 +5,16 @@
 const SECTIONS = [
   ['', 'Workbench', 'Write and check a handler in the browser'],
   ['learn/', 'Learn', 'Make your first handler, step by step'],
-  ['docs/', 'Docs', 'Every option and call'],
-  ['rules/', 'Checks', 'What the tools check, and why'],
-  ['start/', 'Get the tools', 'VS Code, Notepad++, other editors'],
+  ['docs/', 'Docs', 'Every option and call, and every check'],
+  ['tools/', 'Get the tools', 'VS Code, Notepad++, the command line and other editors'],
 ];
+/** The sections, for pages with a bar of their own (Learn): the same links in the same order. */
+export const SITE_SECTIONS = SECTIONS;
 
 /** The site header. `up`: the path back to the site root ('../', '../../'); `here`: the section's path ('docs/'). */
 export function siteHeader(up, here) {
   return `<header class="site-nav" role="banner"><nav aria-label="Site">
-  <a class="sn-brand" href="${up}start/">Nucleus <span>handler tools</span></a>
+  <a class="sn-brand" href="${up}start/" title="Home: what these tools are"><img src="${up}icon.png" alt="" width="22" height="22">Nucleus <span>handler tools</span></a>
   <ul>${SECTIONS.map(([p, label, title]) => `<li><a href="${up}${p}" title="${title}"${p === here ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}</ul>
 </nav></header>`;
 }
@@ -23,6 +24,7 @@ export const SITE_HEADER_CSS = `
 .site-nav nav { max-width: 980px; margin: 0 auto; padding: 8px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; }
 .sn-brand { font-weight: 700; text-decoration: none; color: var(--fg); white-space: nowrap; margin-right: auto; }
 .sn-brand span { color: var(--accent); }
+.sn-brand img { vertical-align: -5px; margin-right: 8px; border-radius: 4px; }
 .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 2px 4px; }
 .site-nav ul a { display: inline-block; padding: 6px 10px; border-radius: var(--r-ctl); color: var(--muted); text-decoration: none; font-size: 15px; }
 .site-nav ul a:hover { color: var(--fg); background: var(--bg); }
