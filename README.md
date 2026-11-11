@@ -191,3 +191,7 @@ tools/fetch_verified.py  version-verified Hub downloads + manifest
 probes/                  engine behaviour probes + expected results
 playground/              browser workbench (build.mjs → dist/workbench.html)
 ```
+
+## Contributing
+
+Want to help, with or without code? Start with [CONTRIBUTING.md](CONTRIBUTING.md).
