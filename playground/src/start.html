@@ -195,7 +195,8 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .editors .ed-tag.ok { color: #7ee787; } }
 :root[data-theme="dark"] .editors .ed-tag.ok { color: #7ee787; }
 .editors .ed.full { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
-.editors .ed-tag.full { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.editors .ed-tag.full { color: var(--accent); border-color: currentColor; }
+.editors .ed-tag.rec { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .editors .ed:has(.ed-tag) > span:not(.ed-tag) { padding-top: 10px; }
 .videos.one { grid-template-columns: minmax(0, 760px); }
 .tool-grid { list-style: none; padding: 0; margin: 22px 0 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
@@ -259,7 +260,7 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
   <span id="in-your-editor" class="anchor-alias" aria-hidden="true"></span><h2 id="works-in-your-editor" class="has-anchor">In the editor you already use</h2>
   <p>Problems underlined as you type, each with why it matters and often a one-click fix. Every option's docs on hover. Suggestions that know what Nucleus has, Try it for each player, and <strong>Test in Nucleus Co-op</strong>, which installs the handler and starts Nucleus for you.</p>
   <ul class="tool-grid four">
-    <li><a href="../tools/#get-vscode"><img src="editors/vscode.svg" alt="" width="36" height="36"><strong>VS Code</strong><small>The extension: also VSCodium, Copilot's agent tools and a debugger.</small></a></li>
+    <li><a href="../tools/#get-vscode"><img src="editors/vscode.svg" alt="" width="36" height="36"><strong>VS Code</strong><small>Recommended: the extension, also VSCodium, with a debugger and Copilot's agent tools.</small></a></li>
     <li><a href="../tools/#get-notepadpp"><img src="editors/notepadplusplus.svg" alt="" width="36" height="36"><strong>Notepad++</strong><small>A plugin, set up with one command.</small></a></li>
     <li><a href="../tools/#in-your-editor"><img src="editors/lsp.svg" alt="" width="36" height="36"><strong>Neovim, Helix, JetBrains…</strong><small>Any editor with a language server.</small></a></li>
     <li><a href="../tools/#command-line"><span class="tg-ico" aria-hidden="true">&gt;_</span><strong>Command line and AI agents</strong><small><code>ncdev</code> for a whole folder; a kit for Claude Code, Copilot and Cursor.</small></a></li>

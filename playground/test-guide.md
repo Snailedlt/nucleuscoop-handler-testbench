@@ -50,7 +50,7 @@ This guide is on the local site too, at http://localhost:8080/test-guide/ (only 
 
 **Get the tools, as a user would** (http://localhost:8080/tools/, *Get the tools* in the header):
 
-- [ ] 0.1 Under *In your editor*, VS Code and Notepad++ are highlighted as *Full support*; Neovim says *Tested*, the other editors *Untested*. Clicking a tile opens its steps (one line each); clicking it again closes them.
+- [ ] 0.1 Under *In your editor*, VS Code is highlighted as *Recommended* and Notepad++ as *Full support*; Neovim says *Tested*, the other editors *Untested*. Clicking a tile opens its steps (one line each); clicking it again closes them.
 - [ ] 0.2 VS Code's steps: the download gives `splitscreenme-vscode-v0.6.0-test.vsix` and says it's the test build. In VS Code: Ctrl+Shift+P › *Extensions: Install from VSIX…* › that file. Reload when asked.
 - [ ] 0.3 Notepad++'s steps: `ncdev.exe` downloads straight away (Windows may warn it's unrecognised, as it isn't signed: *More info › Run anyway*). Close Notepad++; in PowerShell **as administrator**, in its folder, run the step's command exactly as shown (`.\ncdev setup notepad++`). Start Notepad++: *Plugins › Nucleus Co-op handlers* is there.
 - [ ] 0.4 The steps read right for a newcomer, and none is longer than a line or two.
