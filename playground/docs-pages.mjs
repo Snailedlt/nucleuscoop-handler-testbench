@@ -90,10 +90,12 @@ export const DRAWER_CSS = `/* The docs list: a drawer on the left (groups › na
   #docs-drawer:not(.open) .dn-body { display: none; }
   .dn-body { margin-top: 10px; }
 }
-/* Sections of the list (Handler API, Checks): a heading that links to the section's own page. */
-#dn-list .dn-sec { margin: 14px 0 4px; } #dn-list .dn-sec:first-child { margin-top: 2px; }
-#dn-list .dn-sec > a { padding: 2px 6px; border: 0; margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-#dn-list .dn-sec > a[aria-current] { color: var(--fg); }
+/* Sections of the list (Handler API, Checks): folds of their own, with a quieter, uppercase title. */
+#dn-list .dn-sec { margin: 0 0 6px; }
+#dn-list .dn-sec > details > summary { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 4px; }
+#dn-list .dn-sec > details > summary:hover { color: var(--fg); }
+#dn-list .dn-sec > details > ul { margin: 0 0 6px; border: 0; }
+#dn-list .dn-all > a { font-weight: 600; }
 `;
 export function docsDrawer(up, here, fallback = '') {
   return `<nav id="docs-drawer" aria-label="All docs and checks" data-root="${up}" data-base="${up}docs/" data-here="${esc(here)}">
@@ -200,14 +202,28 @@ const NAV_JS = `(function () {
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function link(p, extra, label, u) { return '<a href="' + (u ? root + u : base + p + '/') + '"' + (p === here ? ' aria-current="page"' : '') + '>' + esc(label || p) + (extra || '') + '</a>'; }
   var groups = [];
+  // The sections (Handler API, Checks) fold too; the ones folded are remembered. The page's own section stays open.
+  var CLOSED_KEY = 'nucleus-docs-closed-sections';
+  function closed() { try { return JSON.parse(localStorage.getItem(CLOSED_KEY) || '[]'); } catch (e) { return []; } }
   function tree() {
-    var lastSec = '';
-    list.innerHTML = groups.map(function (g) {
-      // Section headings; the docs index is '@api', the checks index '@checks'.
-      var sec = g.sec && g.sec !== lastSec ? (lastSec = g.sec, '<li class="dn-sec"><a href="' + root + SECS[g.sec][1] + '"' + (here === '@' + g.sec ? ' aria-current="page"' : '') + '>' + SECS[g.sec][0] + '</a></li>') : '';
-      var open = g.key === here || g.items.some(function (i) { return i.p === here; });
-      return sec + '<li><details' + (open ? ' open' : '') + '><summary>' + esc(g.title) + '<span class="n">' + g.items.length + '</span></summary><ul>' + g.items.map(function (i) { return '<li>' + link(i.p, '', i.t || (g.key && i.p.indexOf(g.key + '.') === 0 ? i.p.slice(g.key.length + 1) : i.p), i.u) + '</li>'; }).join('') + '</ul></details></li>';
+    var shut = closed(), secs = [];
+    groups.forEach(function (g) { var s = g.sec || 'api'; if (secs.indexOf(s) < 0) secs.push(s); });
+    list.innerHTML = secs.map(function (s) {
+      var gs = groups.filter(function (g) { return (g.sec || 'api') === s; });
+      var mine = here === '@' + s || gs.some(function (g) { return g.key === here || g.items.some(function (i) { return i.p === here; }); });
+      var inner = '<li class="dn-all"><a href="' + root + SECS[s][1] + '"' + (here === '@' + s ? ' aria-current="page"' : '') + '>' + (s === 'checks' ? 'Every check' : 'All the docs') + '</a></li>' + gs.map(function (g) {
+        var open = g.key === here || g.items.some(function (i) { return i.p === here; });
+        return '<li><details' + (open ? ' open' : '') + '><summary>' + esc(g.title) + '<span class="n">' + g.items.length + '</span></summary><ul>' + g.items.map(function (i) { return '<li>' + link(i.p, '', i.t || (g.key && i.p.indexOf(g.key + '.') === 0 ? i.p.slice(g.key.length + 1) : i.p), i.u) + '</li>'; }).join('') + '</ul></details></li>';
+      }).join('');
+      return '<li class="dn-sec"><details data-sec="' + s + '"' + (mine || shut.indexOf(s) < 0 ? ' open' : '') + '><summary>' + SECS[s][0] + '</summary><ul>' + inner + '</ul></details></li>';
     }).join('');
+    list.querySelectorAll('details[data-sec]').forEach(function (d) {
+      d.addEventListener('toggle', function () {
+        var c = closed().filter(function (x) { return x !== d.dataset.sec; });
+        if (!d.open) c.push(d.dataset.sec);
+        try { localStorage.setItem(CLOSED_KEY, JSON.stringify(c)); } catch (e) {}
+      });
+    });
     // The page's own entry in view, inside the drawer only (the page itself doesn't move).
     var cur = list.querySelector('[aria-current]'); if (cur) nav.scrollTop = Math.max(0, cur.offsetTop - nav.clientHeight / 2);
   }

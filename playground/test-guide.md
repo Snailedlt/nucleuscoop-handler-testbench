@@ -1,6 +1,6 @@
 # Testing 0.6.0 before release
 
-About 2¼–3 hours for everything. Short on time? Do section 0 and the parts marked ⭐ (about an hour): nothing automated can reach them.
+About 2½–3¼ hours for everything. Short on time? Do section 0 and the parts marked ⭐ (about an hour): nothing automated can reach them.
 
 Tick the boxes as you go. Anything odd: write it down with the step number (a screenshot helps).
 
@@ -50,10 +50,10 @@ This guide is on the local site too, at http://localhost:8080/test-guide/ (only 
 
 **Get the tools, as a user would** (http://localhost:8080/tools/, *Get the tools* in the header):
 
-- [ ] 0.1 The VS Code card's download link gives `splitscreenme-vscode-v0.6.0-test.vsix` and says it's the test build. In VS Code: Ctrl+Shift+P › *Extensions: Install from VSIX…* › that file. Reload when asked.
-- [ ] 0.2 The Notepad++ card's `ncdev.exe` link downloads it straight away (no detour through GitHub's release list). Windows may warn that it's unrecognised (it isn't signed): *More info › Run anyway*.
-- [ ] 0.3 Close Notepad++. Follow the card's next step: in a terminal **as administrator**, in the folder with `ncdev.exe`, run `.\ncdev.exe setup notepad++`. Start Notepad++: *Plugins › Nucleus Co-op handlers* is there.
-- [ ] 0.4 The steps on both cards read right for a newcomer, in that order.
+- [ ] 0.1 Under *In your editor*, VS Code and Notepad++ are highlighted as *Full support*; Neovim says *Tested*, the other editors *Untested*. Clicking a tile opens its steps (one line each); clicking it again closes them.
+- [ ] 0.2 VS Code's steps: the download gives `splitscreenme-vscode-v0.6.0-test.vsix` and says it's the test build. In VS Code: Ctrl+Shift+P › *Extensions: Install from VSIX…* › that file. Reload when asked.
+- [ ] 0.3 Notepad++'s steps: `ncdev.exe` downloads straight away (Windows may warn it's unrecognised, as it isn't signed: *More info › Run anyway*). Close Notepad++; in PowerShell **as administrator**, in its folder, run the step's command exactly as shown (`.\ncdev setup notepad++`). Start Notepad++: *Plugins › Nucleus Co-op handlers* is there.
+- [ ] 0.4 The steps read right for a newcomer, and none is longer than a line or two.
 
 To test a newer build later: run the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run), then `git pull` in both folders (and `git -C .assets pull` in `playground`) and run the build command again.
 
@@ -97,18 +97,20 @@ Open http://localhost:8080/ in a **private window**, so it starts as a first vis
 - [ ] 1.18 Shift+Alt+F formats; Ctrl+Z undoes it.
 - [ ] 1.19 Ctrl+Shift+S › save as *For Nucleus Co-op (.zip)* and *Package for the Hub (.nc)*. Both files download.
 - [ ] 1.20 Switch light/dark (Settings › Theme). Everything stays readable.
+- [ ] 1.21 Write `Game.SymlinkGame = "true";` (in quotes). Check lists it as a **note** (it works, but `true` is clearer), with a fix, in both Guided and Advanced mode (Settings).
 
 ---
 
-## 2. Home, tools and the header (8 min)
+## 2. Home, tools, Docs and the header (10 min)
 
 Open http://localhost:8080/start/ (the home page).
 
-- [ ] 2.1 The header on every page (home, tools, Docs, a check's page): the logo goes home, then *Workbench*, *Learn*, *Docs*, *Get the tools*. Each goes to the right place, and the current one is marked. Learn's bar has the same links; the workbench has *Home*.
-- [ ] 2.2 The home page sells it: what a handler is, what it catches, the screenshots (matching your theme), the editors (with their videos), then the workbench (with its video). *Open the workbench*, *Get the tools* and *Learn* go to the right places.
-- [ ] 2.3 http://localhost:8080/tools/ has every tool: workbench, VS Code, Notepad++, other editors (click one: its setup opens), the command line and AI agents, and the table comparing them. Its download links are the test build.
-- [ ] 2.4 An old link still works: http://localhost:8080/start/#get-vscode lands on the VS Code part of the tools page.
-- [ ] 2.5 Docs' list on the left has two sections, *Handler API* and *Checks*. A check's page (open one from the list) shows the same list with that check marked.
+- [ ] 2.1 The header on every page (home, tools, Docs, a check's page, Learn): the logo goes home, then *Workbench*, *Learn*, *Docs*, *Get the tools*. Each goes to the right place, and the current one is marked (also *Learn* in Learn's own bar). The workbench has *Home*.
+- [ ] 2.2 The home page sells it: what a handler is, what it catches, the screenshots (matching your theme), the editors (with their videos), then the workbench (with its video). *Try it in the browser*, *Get the tools* and *Learn* go to the right places.
+- [ ] 2.3 http://localhost:8080/tools/ has every tool: the workbench, the editors (step 0.1), the command line and AI agents, and the table comparing them.
+- [ ] 2.4 Old links still work: http://localhost:8080/start/#get-vscode lands on the tools page with VS Code's steps open; `/start/#get-notepadpp` the same for Notepad++.
+- [ ] 2.5 Docs' list on the left has two sections, *Handler API* and *Checks*, each with an *All the docs* / *Every check* link on top. Each section folds; fold *Checks* and reload: it stays folded (unless you're on a check's page).
+- [ ] 2.6 A check's page (open one from the list) shows the same list with that check marked, and at the bottom 👍/👎 and *Tell us what's wrong*, which opens the feedback form with the check filled in.
 
 ---
 
@@ -129,9 +131,9 @@ On each lesson:
 
 - [ ] 3.3 The text is clear to a beginner. Note anything confusing, with the lesson number.
 - [ ] 3.4 *Show me* (between *Back* and *Next*) fills in the answer, with the new lines marked; it then turns into *Reset*.
-- [ ] 3.5 *Check* never shows an error for something the lessons haven't reached yet. When all is fine it says "✓ Nothing wrong so far."
+- [ ] 3.5 *Check* never shows an error for something the lessons haven't reached yet. When all is fine it says "✓ Nothing wrong so far." Write `"true"` for a `true` (lesson 5): Check adds a **Note**, and the lesson still counts as done.
 - [ ] 3.6 Code blocks in the text: added lines green, removed lines red.
-- [ ] 3.7 In the editor, suggestions appear as you type (and with Ctrl+Space); hovering a name shows its docs.
+- [ ] 3.7 The editor works like the workbench's: suggestions as you type (and Ctrl+Space); hovering a name shows its docs, hovering a problem shows it with its fix; **Ctrl+.** lists the line's fixes (Enter applies, Ctrl+Z undoes); parameter hints inside `Context.GetFolder(`; **Ctrl+Alt+E** explains a line; **F8** goes to the next problem; **Shift+Alt+F** formats; Ctrl+/ comments a line. Problems in Check have their fix as a button.
 - [ ] 3.8 "Why?" on a problem opens the explanation in place, without leaving the page.
 
 **Specific lessons**
@@ -140,7 +142,7 @@ On each lesson:
 - [ ] 3.10 Lesson 16: *Try it* appears here for the first time. Change the players (1–4) and the keyboard checkbox; the results change.
 - [ ] 3.11 Lesson 17: the comparison with the Hub handler shows what was dropped (−) and added (+), with "…" for unchanged parts, and the reasons.
 - [ ] 3.12 Download the finished handler (the zip in lesson 15 or 17). Keep it for step 4. (Lesson 4's "Try it in Nucleus Co-op now" also gives a zip now, ready to drag onto Nucleus.)
-- [ ] 3.13 In lesson 4, write `Game.MaxPlayers = "20";` (in quotes): the task box says to change it, not that the line is missing.
+- [ ] 3.13 In lesson 4, the *Try this* note asks you to write `Game.MaxPlayers = "20";`: do it. The task box says to change it (not that the line is missing), Check warns, and the note's *What happens, and why* explains it. The intro (lesson 1) says Boring Man is the name of a game; lesson 3 says why a GUID must be your own.
 
 ---
 
@@ -170,13 +172,18 @@ Open http://localhost:8080/docs/Game.Play/.
 - [ ] 5.4 At the bottom: 👍/👎 work (click again to take it back), and *Tell us what's wrong* opens the doc review form on GitHub.
 - [ ] 5.5 *Open in the workbench* opens that entry in the workbench.
 - [ ] 5.6 Make the window narrow (phone width): the drawer becomes a "☰ All docs" button.
-- [ ] 5.7 Open http://localhost:8080/rules/ and one check's page: the header is there, the examples read right.
+- [ ] 5.7 Open http://localhost:8080/rules/ and one check's page: the header and the list on the left are there, the examples read right.
 
 ---
 
 ## 6. VS Code (20–30 min)
 
 Open a folder with a handler, e.g. the one from Learn, or Ctrl+Shift+P › *Nucleus: Browse Handlers on the Hub…*.
+
+**A folder you don't trust yet (new)** ⭐
+
+- [ ] 6.0a Open a folder VS Code hasn't seen (say *No, I don't trust the authors* when it asks, so *Restricted Mode* shows in the status bar). Open a handler: problems, suggestions and hovers all work. *Nucleus: Install…* and *Test in Nucleus Co-op* ask you to trust the folder first. Then trust it (*Manage* in the bar).
+- [ ] 6.0b Colours: `Game`, `Context` and `Nucleus` are coloured as objects, properties, methods (`GetFolder`) and values (`Nucleus.Folder.InstancedGameFolder`) each their own colour; a name that doesn't exist (`Game.wrongName`) stays plain, with its underline.
 
 **Explain this line (new)** ⭐
 

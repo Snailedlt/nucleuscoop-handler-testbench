@@ -16,7 +16,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### ✨ New
 
-- **A tools page: every tool in one place.** `tools/` has the workbench, VS Code, Notepad++, other editors through the language server, the `ncdev` command line and AI agents, with the downloads, the setup for each editor and the table comparing them. Old links to the downloads on the start page lead there.
+- **A tools page: every tool in one place.** `tools/` has the workbench, VS Code, Notepad++, other editors through the language server, the `ncdev` command line and AI agents, with the downloads, the setup for each editor and the table comparing them. Each editor is a tile that opens its steps, one line each, labelled *Full support* (VS Code, Notepad++), *Tested* or *Untested*. Old links to the downloads on the start page lead there.
 - **The start page introduces the tools.** It says what a handler is and what the tools catch, shows them, then presents the editors and the workbench, each with its video.
 - **Explain this line.** **Ctrl+Alt+E**, *Explain this line* in the command palette, or the link under a hover says what the line does in plain words, with the docs of its names and what Check says. With AI set up, *Explain with AI* gives a longer answer, labelled AI-written.
 - **One header for the whole site.** The start page, Learn, Docs and the check pages share a bar with Workbench · Learn · Docs · Checks · Get the tools.
@@ -45,7 +45,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
-- **Docs and checks in one list.** The list beside the docs has two sections, *Handler API* and *Checks*, and each check's page shows it too, with that check marked. The header's *Docs* covers both.
+- **Docs and checks in one list.** The list beside the docs has two sections, *Handler API* and *Checks*, which fold (and stay folded), and each check's page shows it too, with that check marked. The header's *Docs* covers both.
 - **The same header everywhere.** Every page has the way home (the logo) and to the workbench, Learn, Docs and the tools; Learn's bar has the same links and keeps them on narrower windows.
 - **Learn's code editor works like the workbench's.** Hovering a problem shows it with its fixes; **Ctrl+.** lists the fixes for the line; parameter hints show while you type a call; **Ctrl+Alt+E** explains a line; **F8** goes to the next problem; **Shift+Alt+F** formats; and the workbench's keys work too (**Ctrl+/**, **Alt+↑/↓**, **Ctrl+F** and the rest). Each problem in Check has its fix as a button.
 - **Learn mentions two more options.** `Game.StartArguments` (a game's command line, often `-windowed`) and `Game.KeepSymLinkOnExit` are explained where they matter. The last lesson also says why the tutorial handler leaves default values out.

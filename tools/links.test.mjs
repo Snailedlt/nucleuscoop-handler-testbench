@@ -172,7 +172,7 @@ const startSrc = fs.readFileSync(path.join(root, 'playground/src/start.html'), '
 const builtStart = path.join(root, 'playground/dist/pages/start/index.html');
 
 const toolsSrc = fs.readFileSync(path.join(root, 'playground/src/tools.html'), 'utf8');
-for (const [name, src, min] of [['start page', startSrc, 6], ['tools page', toolsSrc, 6]]) {
+for (const [name, src, min] of [['start page', startSrc, 6], ['tools page', toolsSrc, 5]]) {
   test(`${name}: every heading has its GitHub-style anchor, and in-page links point at ids that exist`, () => {
     // Headings with their # link, and the titles of the folded parts (<summary><h3 id=…>: no link inside a
     // summary, but the same GitHub-style id, and a link to it opens the part).
