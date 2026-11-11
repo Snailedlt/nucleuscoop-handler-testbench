@@ -337,7 +337,7 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
       </ol></div>
     <div class="card" id="get-notepadpp"><h3><img src="editors/notepadplusplus.svg" alt="" width="22" height="22">Notepad++</h3>
       <ol>
-        <li>Download <code>ncdev.exe</code> from the <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">newest release</a>.</li>
+        <li>Download <a id="ncdev" href="__NCDEV_URL__"><code>ncdev.exe</code></a> (__VSIX_TAG__, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
         <li>Close Notepad++. In a terminal <strong>as administrator</strong>, where <code>ncdev.exe</code> is, run <code>ncdev setup notepad++</code>. (A portable Notepad++: add <code>--path "C:\path\to\Notepad++"</code>, no administrator needed.)</li>
         <li>Start Notepad++ and open a handler. Problems are underlined; hover for the docs; <kbd>Alt+Enter</kbd> for fixes.</li>
         <li><strong>Plugins › Nucleus Co-op handlers</strong> has Fix all, Try it and Test in Nucleus Co-op.</li>
@@ -512,8 +512,9 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
 })();
 // The link above is the newest release when the site was built; this swaps in the newest one now
 // (pre-releases included), so a new release shows up without a rebuild. Keeps the built link on any error.
+// A local test site (build.mjs --test-build) keeps its test build.
 (function () {
-  if (!window.fetch) return;
+  if (!window.fetch || document.getElementById('vsix').dataset.pinned) return;
   fetch('https://api.github.com/repos/Snailedlt/splitscreenme-vscode/releases?per_page=10', { headers: { accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (list) {
@@ -527,6 +528,7 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
           document.getElementById('vsix').href = a.browser_download_url;
           document.getElementById('vsix-name').textContent = a.name;
           document.getElementById('vsix-tag').textContent = rel.tag_name;
+          for (var k = 0; k < rel.assets.length; k++) if (rel.assets[k].name === 'ncdev.exe') document.getElementById('ncdev').href = rel.assets[k].browser_download_url;
           return;
         }
       }

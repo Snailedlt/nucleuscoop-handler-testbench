@@ -1,0 +1,81 @@
+name: Test build
+run-name: Test build of splitscreenme-vscode ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
+# The tools as they'll be released, before they are: builds the real .vsix, ncdev.exe (with the Notepad++ plugin
+# inside) and the plugin's zip from a splitscreenme-vscode branch, the way its Release workflow does, and publishes
+# them here as the pre-release `test-build` (replaced each run). A local site built with
+#   node build.mjs --preview --test-build
+# links its downloads to it, so testers get the tools from the start page like real users, just the newer version.
+# It lives in this repo on purpose: the tools' update checks (ncdev update, the Notepad++ plugin, the live start
+# page) only read splitscreenme-vscode's releases, so a test build never reaches anyone who didn't ask for it.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'splitscreenme-vscode branch to build (empty: the branch being tested for the next release)'
+        required: false
+        default: ''
+  push:
+    branches: [preview-ux]
+    paths: ['.github/workflows/test-build.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: test-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: The extension, at the branch's newest commit
+        run: git clone --quiet --depth 1 --branch "$BRANCH" https://github.com/Snailedlt/splitscreenme-vscode ext
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and test it
+        working-directory: ext
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+      - name: The .vsix
+        working-directory: ext
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          SHA=$(git rev-parse --short HEAD)
+          echo "VER=$VER" >> "$GITHUB_ENV"; echo "SHA=$SHA" >> "$GITHUB_ENV"
+          npx vsce package --no-dependencies -o "../splitscreenme-vscode-v$VER-test.vsix"
+      - name: ncdev.exe (with the Notepad++ plugin) and the plugin's zip, tested like a release
+        working-directory: ext
+        run: |
+          sudo apt-get install -y -qq g++-mingw-w64-x86-64-posix g++-mingw-w64-i686-posix >/dev/null
+          sh npp-plugin/build.sh
+          node scripts/sea.mjs --require-plugin --targets win-x64,linux-x64
+          node scripts/smoke-standalone.mjs dist-sea/ncdev-linux-x64
+          cp dist-sea/ncdev.exe ../ncdev.exe
+          (cd dist-sea && zip -q -X ../../NcDev.zip NcDev.dll)
+      - name: Publish the test-build pre-release (replacing the last one)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete test-build --yes --cleanup-tag 2>/dev/null || true
+          cat > notes.md <<EOF
+          **For testing only: not released.** splitscreenme-vscode \`$BRANCH\` at [\`$SHA\`](https://github.com/Snailedlt/splitscreenme-vscode/commit/$SHA) (version $VER), built like a release.
+
+          Get it the way users will: build the site with \`node build.mjs --preview --test-build\`, serve \`dist/pages\` and download from its start page (\`/start/\`). The steps are in the test guide.
+          EOF
+          gh release create test-build "splitscreenme-vscode-v$VER-test.vsix" ncdev.exe NcDev.zip --prerelease --target "$GITHUB_SHA" --title "Test build: v$VER ($SHA)" --notes-file notes.md
+      - name: Summary
+        run: |
+          {
+            echo "## Test build: v$VER ($BRANCH @ $SHA)"
+            echo
+            echo "https://github.com/${{ github.repository }}/releases/tag/test-build"
+            echo
+            echo "Local site with these downloads: \`node build.mjs --preview --test-build\` in playground/, then serve dist/pages."
+          } >> "$GITHUB_STEP_SUMMARY"
