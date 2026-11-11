@@ -3,19 +3,15 @@
 // the API lookup, so it can verify its fix before answering.
 import { lint, Diagnostic, lineOf, type LintOptions } from '@core/lint';
 import { lookup, search } from '@core/lookup';
+import { aiHardRulesText, ruleDocText } from '@core/airules';
 
 export interface AiFixResult {
   code: string;
   changes: string[];
 }
 
-const RULES = `Nucleus Co-op runs handlers with Jint 2.11.58. Hard rules:
-- ES5 JavaScript only: no arrow functions, template strings, classes, spread/rest, destructuring, default parameters, for...of, ?. or ??, and no trailing comma in a call. let/const parse but act like var; prefer var.
-- Only use options that exist in the Nucleus API (check with lookup_api). Unknown members are silently ignored. Member names are case-sensitive except the first letter.
-- Context, Player, PlayerList, Handler and ProtoInput exist only inside callbacks such as Game.Play = function () { ... }; never use them at the top level.
-- Game.GUID, Game.GameName and Game.ExecutableName are required. GameName and ExecutableName must each be on their own unindented line, double-quoted, with no other double quote on the line.
-- List options take arrays (Game.KillMutex = ["name"]). Booleans are true/false, not strings. For enum options use the enum value (Game.DPIHandling = Nucleus.DPIHandling.True), never a boolean.
-- Don't add Hub.* metadata lines.`;
+// The same hard rules the MCP server and Explain with AI use (core/airules.ts).
+const RULES = aiHardRulesText();
 
 function lineList(text: string, diags: Diagnostic[]) {
   return diags
@@ -32,7 +28,7 @@ ${RULES}
 
 Task: fix the problems the linter reports below${instruction.trim() ? `, and also: ${instruction.trim()}` : ''}. Keep everything else as it is: the same options, values, comments, order and formatting. Make the smallest changes that fix the problems. Don't invent options or values the author didn't ask for; if a fix needs information you don't have (for example a missing executable name), use an obvious placeholder and say so in "changes".
 
-Before answering, call lint_handler with your complete fixed code and keep fixing until it reports no errors. Use lookup_api to check any option or method name you are unsure about.
+Before answering, call lint_handler with your complete fixed code and keep fixing until it reports no errors. Use lookup_api to check any option or method name you are unsure about, and explain_check when a reported problem is unclear.
 
 Linter problems in the current handler:
 ${lineList(code, diags) || '- none reported'}
@@ -60,6 +56,15 @@ export function pageTools() {
           warnings: diags.filter((d) => d.severity === 'warning').length,
           problems: diags.slice(0, 40).map((d) => ({ line: lineOf(code, d.start) + 1, severity: d.severity, rule: d.rule, message: d.message.replace(/`/g, '') })),
         };
+      },
+    },
+    {
+      name: 'explain_check',
+      description:
+        'Explains one of the checks lint_handler reports, by its rule id (e.g. "type-mismatch"): why Nucleus cares, how to fix it, and a wrong and a right example. Use it when a problem is unclear.',
+      inputSchema: { type: 'object', properties: { rule: { type: 'string', description: 'The rule id from lint_handler.' } }, required: ['rule'] },
+      execute(input: { [k: string]: unknown }) {
+        return ruleDocText(String(input.rule ?? ''), 'workbench-ai') ?? { found: false, note: 'No check with that id; use the rule ids lint_handler returns.' };
       },
     },
     {

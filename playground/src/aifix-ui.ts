@@ -83,7 +83,7 @@ export function initFixes(deps: FixesDeps): void {
       ? pageTools().map((t) => ({
           ...t,
           execute: (input: { [k: string]: unknown }) => {
-            aiStatus(t.name === 'lint_handler' ? `${who} is checking its fix with the linter…` : `${who} is looking up ${String(input.query ?? '').slice(0, 40)}…`);
+            aiStatus(t.name === 'lint_handler' ? `${who} is checking its fix with the linter…` : t.name === 'explain_check' ? `${who} is reading about the check ${String(input.rule ?? '').slice(0, 40)}…` : `${who} is looking up ${String(input.query ?? '').slice(0, 40)}…`);
             return t.execute(input);
           },
         }))

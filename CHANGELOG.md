@@ -45,6 +45,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **The real Notepad++ logo.** The editor tiles show Notepad++'s chameleon (from Devicon) instead of a placeholder.
+- **Fix with AI knows more.** It follows the same hard rules as the MCP server and Explain with AI, and can look up any check it doesn't understand before it answers.
 - **Help is one click away.** The docs, check and Learn pages end with a small box linking the SplitScreen.Me Discord and r/nucleuscoop, the footers link both, and the tools page links the editor poll.
 - **Feedback goes to the right place.** The workbench's *Report a problem*, the site's pages and Learn open a feedback form in the workbench's own repository, with *Where* filled in from where you are; a wrong or missing check goes to the checks' form.
 - **Docs' start in the workbench shows what handlers really use.** The names every handler has come first, then the most used names of each object (Game, Context, Player…) with the share of the 896 Hub handlers that use them, and a link to all the docs as pages.
