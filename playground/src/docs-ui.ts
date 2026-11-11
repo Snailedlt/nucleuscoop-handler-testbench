@@ -75,17 +75,23 @@ export function initDocs(deps: DocsDeps): DocsUI {
   function renderApiHome(el: HTMLElement) {
     const all = allEntries(true);
     const usage = USAGE.counts as Record<string, number>;
-    const top = Object.entries(usage)
-      .filter(([p]) => !/^Game\.(GUID|GameName|ExecutableName|Play|Hub)$/.test(p) && all.some((e) => e.path === p && e.member.kind !== 'object'))
-      .slice(0, 14);
+    const known = new Set(all.filter((e) => e.member.kind !== 'object').map((e) => e.path));
+    const pct = (n: number) => `${Math.round((100 * n) / USAGE.handlers)}%`;
+    const chip = (p: string) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${usage[p] ?? 0} of ${USAGE.handlers} Hub handlers">${esc(p)}${usage[p] ? ` <span class="pct">${pct(usage[p])}</span>` : ''}</button>`;
+    // What every handler has (Nucleus needs the first three to load it), then the most used names of each object.
+    const BASICS = ['Game.GUID', 'Game.GameName', 'Game.ExecutableName', 'Game.MaxPlayers', 'Game.Play'];
+    const byGroup = API_GROUPS.filter((g) => g.key !== 'AI').map((g) => ({ g, top: Object.keys(usage).filter((p) => !BASICS.includes(p) && known.has(p) && g.match(p)).slice(0, 8) })).filter((x) => x.top.length);
     const enums = Object.keys(api.enums).sort();
     el.innerHTML = `<div class="api-home">
-      <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
+      <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here. <a href="${esc(deps.pageUrl('').replace(/\/\/$/, '/'))}" target="_blank" rel="noopener">All the docs as pages ↗</a></p>
       ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check AI-written docs <span class="count">${unchecked().size}</span></span><span class="d">AI wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
       <h3 class="api-h">Browse</h3>
       <div class="api-groups">${API_GROUPS.filter((g) => g.key !== 'AI').map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
+      <h3 class="api-h">Every handler has</h3>
+      <div class="api-chips">${BASICS.map(chip).join('')}</div>
       <h3 class="api-h">Most used in Hub handlers</h3>
-      <div class="api-chips">${top.map(([p, n]) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${n} of ${USAGE.handlers} Hub handlers">${esc(p)}</button>`).join('')}</div>
+      <p class="muted api-note">How many of the ${USAGE.handlers} Hub handlers use each name (counted ${esc(USAGE.takenAt)}).</p>
+      ${byGroup.map(({ g, top }) => `<h4 class="api-h4">${esc(g.title)}</h4><div class="api-chips">${top.map(chip).join('')}</div>`).join('')}
       <h3 class="api-h">Nucleus values (enums)</h3>
       <div class="api-chips">${enums.map((n) => `<button type="button" class="api-chip" data-q="Nucleus.${esc(n)}">Nucleus.${esc(n)}</button>`).join('')}</div>
       <h3 class="api-h">Try a search</h3>
