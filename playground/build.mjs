@@ -5,7 +5,7 @@
 //
 // The core is imported from a checkout of splitscreenme-vscode (src/core), so the
 // page always runs the same linter as the extension.
-import { siteHeader, SITE_HEADER_CSS, siteVisitScript, COPY_CSS, COPY_SCRIPT } from './site-chrome.mjs';
+import { siteHeader, SITE_HEADER_CSS, siteVisitScript, COPY_CSS, COPY_SCRIPT, COMMUNITY, COMMUNITY_CSS, withCommunity } from './site-chrome.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -453,6 +453,8 @@ function pageHtml(inlineHub) {
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
     .replace(/(<a class="link start-link[^"]*" href=")[^"]*"/g, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
+    .replaceAll('__DISCORD_INVITE__', COMMUNITY.discord)
+    .replaceAll('__REDDIT__', COMMUNITY.reddit)
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
     .replace('/*THEMES*/', () => themesCSS)
     .replace('/*CODEMIRROR_CSS*/', () => css)
@@ -761,7 +763,8 @@ for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.en
 // The site's own pages count one anonymous visit with where it came from (site-chrome.mjs siteVisitScript), as the
 // workbench does, so the `?ref=` on links to the start page, Learn, docs and checks shows up under Campaigns.
 // Every site page also gets: keyboard shortcuts drawn as keys (src/kbd.ts, the same as Learn's), and a Copy button
-// on its code blocks and inline commands (site-chrome.mjs COPY_SCRIPT).
+// on its code blocks and inline commands (site-chrome.mjs COPY_SCRIPT), and the community links where it asks for
+// them (<!--COMMUNITY--> box, <!--COMMUNITY_FOOTER--> links; site-chrome.mjs COMMUNITY).
 {
   const script = siteVisitScript(feedbackSite);
   const kb = await esbuild.build({ stdin: { contents: "export { kbdify, KEYS_CSS } from './kbd'; export { SEM_STATIC_CSS } from './semcss';", resolveDir: path.join(here, 'src'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'error' });
@@ -770,11 +773,11 @@ for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.en
     const b = html.search(/<body[^>]*>/i), e = html.lastIndexOf('</body>');
     if (b < 0 || e < 0) return html;
     // Inline code that is clearly code (Game.Play, a call, a string) coloured like the editor; then the keys.
-    const body = kbdify(html.slice(b, e).replace(/<code>([^<]*)<\/code>/g, (m, inner) => {
+    const body = kbdify(withCommunity(html.slice(b, e)).replaceAll('__EDITOR_POLL__', COMMUNITY.editorPoll).replaceAll('__DISCORD_INVITE__', COMMUNITY.discord).replace(/<code>([^<]*)<\/code>/g, (m, inner) => {
       const t = inner.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
       return hlSem.looksLikeCode(t) ? `<code class="hl">${hlSem(t)}</code>` : m;
     }));
-    return html.slice(0, b).replace('</style>', () => `${KEYS_CSS}\n${COPY_CSS}\n${HL_CSS}\n${SEM_STATIC_CSS}</style>`) + body + `${COPY_SCRIPT}\n${script ?? ''}\n` + html.slice(e);
+    return html.slice(0, b).replace('</style>', () => `${KEYS_CSS}\n${COPY_CSS}\n${HL_CSS}\n${SEM_STATIC_CSS}\n${COMMUNITY_CSS}</style>`) + body + `${COPY_SCRIPT}\n${script ?? ''}\n` + html.slice(e);
   };
   const add = (d) => {
     if (!fs.existsSync(d)) return;

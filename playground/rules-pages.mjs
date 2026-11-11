@@ -86,10 +86,11 @@ ${siteHeader(up, 'docs/')}
 ${docsDrawer(up, here, `<li><a href="${up}rules/">Every check</a></li>`)}
 <main>
 `;
-  const foot = (up) => `</main>
+  const foot = (up) => `<!--COMMUNITY-->
+</main>
 </div>
 <script src="${up}docs/nav.js" defer></script>
-<footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/issues/new?template=feedback.yml&amp;area=Docs+and+check+pages">Something wrong on this page?</a></footer>
+<footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/issues/new?template=feedback.yml&amp;area=Docs+and+check+pages">Something wrong on this page?</a> · <!--COMMUNITY_FOOTER--></footer>
 </body>
 </html>
 `;

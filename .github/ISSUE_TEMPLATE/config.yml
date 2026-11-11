@@ -3,3 +3,6 @@ contact_links:
   - name: A wrong or missing check, VS Code, Notepad++, ncdev or another editor
     url: https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml
     about: The checks and the editor tools live in splitscreenme-vscode.
+  - name: A question about writing a handler
+    url: https://discord.gg/XxGMkqCf4r
+    about: Ask other handler authors on the SplitScreen.Me Discord, or on r/nucleuscoop (https://www.reddit.com/r/nucleuscoop/).

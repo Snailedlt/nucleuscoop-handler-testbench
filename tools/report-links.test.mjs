@@ -33,7 +33,9 @@ test('checksum gives what the issue bot expects', async () => {
 
 /** The issue form's field ids and the "Where" dropdown's options. */
 function form(file) {
-  const y = fs.readFileSync(path.join(core, '.github/ISSUE_TEMPLATE', file), 'utf8');
+  // The workbench's own form (feedback.yml) lives in this repository; the checks' forms in splitscreenme-vscode.
+  const own = path.join(root, '.github/ISSUE_TEMPLATE', file);
+  const y = fs.readFileSync(fs.existsSync(own) ? own : path.join(core, '.github/ISSUE_TEMPLATE', file), 'utf8');
   return { ids: new Set([...y.matchAll(/^\s+id: (\S+)/gm)].map((m) => m[1])), text: y };
 }
 
@@ -44,7 +46,7 @@ test('the feedback links fill fields the forms have', { skip: !core && 'no split
   const keys = [...init.matchAll(/(\w+):/g)].map((m) => m[1]).concat([...src.matchAll(/(?:q|u\.searchParams)\.set\('(\w+)'/g)].map((m) => m[1]));
   const f = form(template);
   for (const k of new Set(keys)) if (!['template', 'title'].includes(k)) assert.ok(f.ids.has(k), `${template} has a field "${k}" (feedbackUrl fills it)`);
-  const area = init.match(/area: '([^']+)'/)[1];
+  const area = init.match(/area: (?:opts\.area \?\? )?'([^']+)'/)[1];
   assert.ok(f.text.includes(`- ${area}`), `${template}'s Where list has "${area}"`);
   // withContext adds the details to the doc review link too.
   assert.ok(form('doc-review.yml').ids.has('context'), 'doc-review.yml has a field "context"');

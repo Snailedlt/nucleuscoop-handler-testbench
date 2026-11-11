@@ -147,10 +147,11 @@ ${siteHeader(up, 'docs/')}
 ${docsDrawer(up, here0, o.groups.map((g) => `<li><a href="${up}docs/${g.key}/">${esc(g.title)}</a></li>`).join(''))}
 <main>
 `;
-  const foot = (up) => `</main>
+  const foot = (up) => `<!--COMMUNITY-->
+</main>
 </div>
 <script src="${up}docs/nav.js" defer></script>
-<footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="${up}rules/">Every check</a></footer>
+<footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="${up}rules/">Every check</a> · <!--COMMUNITY_FOOTER--></footer>
 </body>
 </html>
 `;
