@@ -53,9 +53,8 @@ jobs:
       - name: ncdev.exe (with the Notepad++ plugin) and the plugin's zip, tested like a release
         working-directory: ext
         run: |
-          sh scripts/install-mingw.sh
-          sh npp-plugin/build.sh
-          node scripts/sea.mjs --require-plugin --targets win-x64,linux-x64
+          npm run build
+          sh scripts/build-native.sh win-x64,linux-x64
           node scripts/smoke-standalone.mjs dist-sea/ncdev-linux-x64
           cp dist-sea/ncdev.exe ../ncdev.exe
           (cd dist-sea && zip -q -X ../../NcDev.zip NcDev.dll)
