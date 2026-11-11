@@ -17,6 +17,7 @@ for t in ['light', 'dark']:
     os.remove(src)
 
 # The social preview (docs/images/og.png) is drawn from design/promo/og.html: node design/promo/render.mjs.
+img = os.path.join(ch, '..')
 
 # Desktop shots are taken at 2× and stored at 1.5× (1920 px wide): sharp, and half the bytes.
 for n in ['check', 'fix-all', 'try-it']:
