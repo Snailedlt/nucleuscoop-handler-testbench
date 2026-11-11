@@ -25,7 +25,17 @@ cd splitscreenme-vscode && npm ci && cd ..
 ```
 
 ```bash
-cd nucleuscoop-handler-testbench/playground && npm ci && node build.mjs --preview --test-build
+cd nucleuscoop-handler-testbench/playground && npm ci
+```
+
+The mascot download packs live on their own branch; get them once (a later `git -C .assets pull` updates them):
+
+```bash
+git clone -q --depth 1 --branch assets https://github.com/Snailedlt/nucleuscoop-handler-testbench .assets
+```
+
+```bash
+node build.mjs --preview --test-build --assets .assets
 ```
 
 The build takes a minute or two and ends by printing which test build its tools page links to. (If it stops with `GitHub API 403`, GitHub's hourly limit for unsigned-in requests from your address is used up: wait a bit and run it again.) Then serve the site (the pages link to each other, which doesn't work from `file://`):
@@ -45,7 +55,7 @@ This guide is on the local site too, at http://localhost:8080/test-guide/ (only 
 - [ ] 0.3 Close Notepad++. Follow the card's next step: in a terminal **as administrator**, in the folder with `ncdev.exe`, run `.\ncdev.exe setup notepad++`. Start Notepad++: *Plugins › Nucleus Co-op handlers* is there.
 - [ ] 0.4 The steps on both cards read right for a newcomer, in that order.
 
-To test a newer build later: run the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run), then `git pull` in both folders and run the build command again.
+To test a newer build later: run the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run), then `git pull` in both folders (and `git -C .assets pull` in `playground`) and run the build command again.
 
 ---
 
