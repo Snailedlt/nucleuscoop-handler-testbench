@@ -85,7 +85,11 @@ function wants(t: string, list: Want[]): string | null {
   const ok = ([p, v]: Want) => (Array.isArray(v) ? v.every((x) => (listOf(t, p) ?? []).map((f) => f.toLowerCase()).includes(x.toLowerCase())) : v === 'true' ? isTrue(t, p) : v === 'false' ? isFalse(t, p) : typeof v === 'number' ? num(t, p) === v : str(t, p) === v);
   const show = ([p, v]: Want) => `${p} = ${Array.isArray(v) ? JSON.stringify(v).replace(/,/g, ', ') : typeof v === 'string' && v !== 'true' && v !== 'false' ? `"${v}"` : v};`;
   const miss = list.filter((w) => !ok(w));
-  return miss.length ? `Still to add: ${miss.map(show).join(' ')}` : firstProblem(t);
+  if (!miss.length) return firstProblem(t);
+  // A line that's there with another value ("20" in quotes, a typo) says what to change, not that it's missing.
+  const there = (p: string) => new RegExp(`^\\s*${pathRe(p)}\\s*=`, 'm').test(noComments(t));
+  const add = miss.filter(([p]) => !there(p)), change = miss.filter(([p]) => there(p));
+  return [add.length ? `Still to add: ${add.map(show).join(' ')}` : '', change.length ? `Not quite yet: make it ${change.map(show).join(' ')}` : ''].filter(Boolean).join(' ');
 }
 /** Try it: `players` players, the first on the keyboard (or none). */
 export const run = (text: string, players = 2, keyboard = true): SimResult => simulate(text, { players, width: 1920, height: 1080, keyboardPlayer: keyboard ? 0 : -1 });
@@ -269,10 +273,9 @@ const FIRST: Lesson[] = [
     check: (t) => wants(t, [['Game.ExecutableName', 'BoringManGame.exe'], ['Game.MaxPlayers', 20]]),
     pane: 'check',
     checkpoint: {
-      download: 'js',
+      download: 'zip',
       steps: [
-        'Download your handler (the button below): `Boring Man Tutorial.js`.',
-        'Rename it to `handler.js` and zip it: right-click › **Compress to ZIP file** (Windows 11), or **Send to › Compressed (zipped) folder**. That zip is what Nucleus installs.',
+        'Download your handler (the button below): `Boring Man Tutorial.zip`, zipped the way Nucleus installs it.',
         'Drag the zip onto Nucleus Co-op\'s window. When it asks to add the game, say yes and pick `BoringManGame.exe` in the folder from "Get ready".',
       ],
       see: '**Boring Man Tutorial** in Nucleus\' list, with the game found. Don\'t start it yet: the copies would get in each other\'s way. The next lessons sort that out.',

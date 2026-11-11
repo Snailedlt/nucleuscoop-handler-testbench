@@ -175,7 +175,8 @@ function renderCheck(text: string) {
   if (l.pane !== 'check') return;
   // The same code gets the same answer in every lesson: when Check leaves something out (lines a lesson soon adds),
   // it says "nothing wrong so far", not that Nucleus can load it.
-  const hidden = lint(text).some((d) => d.severity === 'error');
+  // A handler without its name and exe can't load, even before Check starts asking for them (lessons 3 and 4).
+  const hidden = lint(text).some((d) => d.severity === 'error') || !['GUID', 'GameName', 'ExecutableName'].every((k) => new RegExp(`^\\s*Game\\.${k}\\s*=\\s*"[^"]+"`, 'm').test(text));
   $('#pane').innerHTML = `<h2 class="pane-title">Check</h2>${ds.length ? `<ul class="probs">${ds.map((d, i) => `<li class="prob ${d.severity}"><button type="button" class="link goto" data-i="${i}">Line ${editor.posFromIndex(d.start).line + 1}</button> <span class="sev">${d.severity === 'error' ? 'Error' : 'Warning'}</span> ${inline(d.message)}${RULE_DOCS[d.rule] ? ` <button type="button" class="link about" data-rule="${esc(d.rule)}" aria-expanded="${openDocs.has(d.rule)}">${openDocs.has(d.rule) ? 'Less' : 'Why?'}</button>${openDocs.has(d.rule) ? ruleDoc(d.rule) : ''}` : ''}</li>`).join('')}</ul>` : hidden ? '<p class="ok-line">✓ Nothing wrong so far.</p>' : '<p class="ok-line">✓ No problems: Nucleus can load this handler.</p>'}`;
   $('#pane').querySelectorAll<HTMLElement>('.goto').forEach((b) => b.addEventListener('click', () => {
     editor.focus();

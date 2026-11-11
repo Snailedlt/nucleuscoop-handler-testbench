@@ -173,6 +173,13 @@ for (const theme of ['light', 'dark']) {
   await p.keyboard.press('F2');
   await p.keyboard.type('run');
   check((await cmVal()) === 'function run() {}\nrun();\n', `${theme}: F2 renames every use`);
+  // Ctrl+.: the line's problems and fixes, even with the cursor on a name that has docs of its own.
+  await cmSet('Game.GUID = "a";\nGame.GameName = "a";\nGame.ExecutableName = "a.exe";\nGame.MaxPlayers = "4";\n', { line: 3, ch: 0 }, { line: 3, ch: 0 });
+  await p.waitForTimeout(400);
+  await p.keyboard.press('Control+.');
+  await p.waitForTimeout(300);
+  check(await p.isVisible('[data-lp-fix]'), `${theme}: Ctrl+. on a name shows the line's fixes, not only the name's docs`);
+  await p.keyboard.press('Escape');
   // Explain this line (Ctrl+Alt+E): plain words in the hover card.
   await cmSet('Game.Play = function () {\n};\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
   await p.keyboard.press('Control+Alt+e');
@@ -685,6 +692,9 @@ await m.ctx.close();
     check(await s.p.isVisible('#task.ok'), `learn ${theme}: typing the lines ticks the task`);
     check(/Nothing wrong so far/.test(await s.p.textContent('#pane')), `learn ${theme}: Check leaves out the lines a lesson soon adds, and says so`);
     await axe(s.p, `${theme}, learn code lesson`);
+    await s.p.goto(BASE + 'learn/#first-handler/name');
+    await s.p.waitForTimeout(400);
+    check(/Nothing wrong so far/.test(await s.p.textContent('#pane')), `learn ${theme}: a handler without its name and exe never reads as loadable`);
     await s.p.goto(BASE + 'learn/#first-handler/game');
     await s.p.waitForTimeout(400);
     check(!(await s.p.isVisible('#checkpoint')), `learn ${theme}: no Nucleus checkpoint before the code works`);
@@ -693,7 +703,7 @@ await m.ctx.close();
     check(await s.p.isVisible('#checkpoint summary'), `learn ${theme}: Try it in Nucleus Co-op, once it works`);
     await s.p.click('#checkpoint summary');
     const [cpd] = await Promise.all([s.p.waitForEvent('download'), s.p.click('#cp-download')]);
-    check(cpd.suggestedFilename() === 'Boring Man Tutorial.js', `learn ${theme}: the checkpoint downloads the handler so far`);
+    check(cpd.suggestedFilename() === 'Boring Man Tutorial.zip', `learn ${theme}: the checkpoint downloads the handler so far, zipped for Nucleus`);
     await s.p.goto(BASE + 'learn/#first-handler/fullscreen');
     await s.p.waitForTimeout(500);
     check(!(await s.p.isVisible('#task.ok')), `learn ${theme}: a lesson starts from its own code, unfinished`);

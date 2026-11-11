@@ -325,7 +325,11 @@ const editorHandlers: Record<string, (cm: any) => void> = {
   // The problems (and fixes) at the cursor, else on its line; from the keyboard straight to its first button.
   quickFix: (cm: any) => {
     const c = cm.getCursor();
-    showLineProblems(c.line, cm.indexFromPos(c));
+    const at = cm.indexFromPos(c);
+    // The problem at the cursor (with the name's docs); else every problem on the line; only then the name's docs.
+    const here = lineProblems(c.line, true).some((d) => d.start <= at && at <= Math.max(d.end, d.start + 1));
+    if (here || !lineProblems(c.line, false).length) showLineProblems(c.line, at);
+    else showLineProblems(c.line);
     if (linePop.hidden) showLineProblems(c.line);
     if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
   },
@@ -620,6 +624,8 @@ function showExplanation(at: number) {
   tip.classList.add('explain');
   linkApiNames(tip);
   tip.hidden = false;
+  // Asked for from the keyboard, so read it out too (the hover card itself isn't a live region).
+  announce(tip.innerText.replace(/\s+/g, ' ').slice(0, 600));
   const lineStart = editor.indexFromPos({ line: e.line, ch: 0 });
   placeTip(editor.charCoords(editor.posFromIndex(lineStart + Math.max(0, e.text.search(/\S/))), 'window'));
   const bar = tip.querySelector<HTMLElement>('.hv-bar')!;
@@ -1430,6 +1436,9 @@ function setNoneOpen(v: boolean) {
     box.hidden = !v;
     const undo = box.querySelector<HTMLElement>('[data-nh=undo]');
     if (undo) { undo.hidden = !lastClosed; undo.textContent = lastClosed ? `Reopen ${lastClosed.tab.meta.name}` : 'Reopen'; }
+    // The Open key as it is now (Settings › Keyboard can change it).
+    const kbd = box.querySelector<HTMLElement>('[data-nh=open] kbd');
+    if (kbd) kbd.textContent = labelOf('open');
   }
   if (tabsReady) renderTabs();
   if (v) box?.querySelector<HTMLElement>('[data-nh=new]')?.focus();
