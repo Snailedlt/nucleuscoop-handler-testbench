@@ -45,6 +45,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Shortcuts look like keys, and code has a Copy button.** Every keyboard shortcut on the site and in Learn is drawn as keys (<kbd>Ctrl</kbd>+<kbd>Space</kbd>), and code blocks and commands (such as the Notepad++ setup, portable one included) have a Copy button.
 - **Docs and checks in one list.** The list beside the docs has two sections, *Handler API* and *Checks*, which fold (and stay folded), and each check's page shows it too, with that check marked. The header's *Docs* covers both.
 - **The same header everywhere.** Every page has the way home (the logo) and to the workbench, Learn, Docs and the tools; Learn's bar has the same links and keeps them on narrower windows.
 - **Learn's code editor works like the workbench's.** Hovering a problem shows it with its fixes; **Ctrl+.** lists the fixes for the line; parameter hints show while you type a call; **Ctrl+Alt+E** explains a line; **F8** goes to the next problem; **Shift+Alt+F** formats; and the workbench's keys work too (**Ctrl+/**, **Alt+↑/↓**, **Ctrl+F** and the rest). Each problem in Check has its fix as a button.

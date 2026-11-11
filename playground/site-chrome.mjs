@@ -110,3 +110,37 @@ export function siteVisitScript(site) {
 })();
 </script>`;
 }
+
+/**
+ * A Copy button on every code block (`pre`) and every command written inline (`code.cmd`), on the site's own pages.
+ * The button says what it copies, and "Copied" is spoken (a live region) as well as shown.
+ */
+export const COPY_CSS = `
+.copy-wrap { position: relative; }
+.copy-wrap > pre { padding-right: 64px; }
+.copy-btn { position: absolute; top: 6px; right: 6px; font: 600 12px/1 var(--sans, system-ui, sans-serif); padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-sm, 4px); background: var(--surface); color: var(--fg); cursor: pointer; opacity: .85; }
+.copy-btn:hover, .copy-btn:focus-visible { opacity: 1; border-color: var(--accent); }
+.copy-btn.inline { position: static; margin-left: 4px; padding: 2px 6px; font-size: 11px; vertical-align: .1em; }
+.copy-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+`;
+export const COPY_SCRIPT = `<script>
+(function () {
+  var live = document.createElement('span'); live.className = 'copy-live'; live.setAttribute('role', 'status'); document.body.appendChild(live);
+  function button(text, label, inline) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy-btn' + (inline ? ' inline' : ''); b.textContent = 'Copy'; b.setAttribute('aria-label', label);
+    b.addEventListener('click', function () {
+      var done = function () { b.textContent = 'Copied'; live.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; live.textContent = ''; }, 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(text()).then(done, function () {}); else { var t = document.createElement('textarea'); t.value = text(); document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) {} t.remove(); }
+    });
+    return b;
+  }
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.no-copy, .CodeMirror') || (pre.parentNode && pre.parentNode.querySelector(':scope > .copy, :scope > .copy-btn'))) return;
+    var wrap = document.createElement('div'); wrap.className = 'copy-wrap'; pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
+    wrap.appendChild(button(function () { return pre.innerText.replace(/\\n$/, ''); }, 'Copy the code'));
+  });
+  document.querySelectorAll('code.cmd').forEach(function (c) {
+    c.after(button(function () { return c.innerText; }, 'Copy the command: ' + c.innerText, true));
+  });
+})();
+</script>`;

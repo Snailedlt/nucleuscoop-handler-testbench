@@ -35,8 +35,8 @@
 <li>In VS Code: <kbd>Ctrl+Shift+P</kbd> › <strong>Extensions: Install from VSIX…</strong> › the file.</li>
 <li>Open a handler: problems are underlined, hover for docs, <kbd>Ctrl+.</kbd> for fixes, <strong>▷</strong> for Try it.</li></ol></div><div class="ed-step" id="setup-notepadpp" hidden><h3>Notepad++</h3><ol>
 <li>Download <a id="ncdev" href="__NCDEV_URL__"><code>ncdev.exe</code></a> and close Notepad++.</li>
-<li>In PowerShell <strong>as administrator</strong>, in its folder: <code>.\ncdev setup notepad++</code></li>
-<li>Open a handler: everything is under <strong>Plugins › Nucleus Co-op handlers</strong>.</li></ol><p class="small">A portable Notepad++: add <code>--path "C:\path\to\Notepad++"</code> (no administrator needed).</p></div><div class="ed-step" id="setup-neovim" hidden><h3>Neovim 0.11+</h3><ol><li>Add to your <code>init.lua</code>:
+<li>In PowerShell <strong>as administrator</strong>, in its folder: <code class="cmd">.\ncdev setup notepad++</code></li>
+<li>Open a handler: everything is under <strong>Plugins › Nucleus Co-op handlers</strong>.</li></ol><p class="small">A portable Notepad++ (no administrator needed): <code class="cmd">.\ncdev setup notepad++ --path "C:\path\to\Notepad++"</code></p></div><div class="ed-step" id="setup-neovim" hidden><h3>Neovim 0.11+</h3><ol><li>Add to your <code>init.lua</code>:
 <pre class="cfg"><code>vim.lsp.config(<span class="hs">'nucleus'</span>, {
   cmd = { <span class="hs">'ncdev'</span>, <span class="hs">'lsp'</span> },
   filetypes = { <span class="hs">'javascript'</span> },
@@ -91,7 +91,7 @@ ncdev hub search "borderlands"  <span class="hc"># how other handlers did it</sp
   <h2 id="ai-agents" class="has-anchor">AI agents</h2>
   <p>Agents guess option names from memory, and Nucleus quietly ignores the wrong ones. The agent kit gives them the real API and the same checks, so what they write loads and works.</p>
   <ul class="facts">
-    <li><strong>Claude Code:</strong> <code>/plugin marketplace add Snailedlt/splitscreenme-vscode</code>, then <code>/plugin install nucleus-coop@splitscreenme</code>. Its skill loads when you ask about handlers.</li>
+    <li><strong>Claude Code:</strong> <code class="cmd">/plugin marketplace add Snailedlt/splitscreenme-vscode</code>, then <code class="cmd">/plugin install nucleus-coop@splitscreenme</code>. Its skill loads when you ask about handlers.</li>
     <li><strong>VS Code (Copilot agent mode):</strong> nothing to set up. The extension brings the tools; turn them on under <strong>MCP Servers</strong> in the Extensions view.</li>
     <li><strong>Claude Desktop, Cursor and other MCP clients:</strong> <code>ncdev mcp</code> serves the tools (check, fix, Try it, API lookup, Hub search). <a href="https://github.com/Snailedlt/splitscreenme-vscode#mcp-server-claude-desktop-cursor-vs-code-copilot-">The setup</a>.</li>
     <li><strong>Any agent in your handler folder:</strong> <a href="https://github.com/Snailedlt/splitscreenme-vscode#any-agent-in-your-handler-folder">the agent kit</a> (the skill, the API reference and a one-file command-line tool).</li>

@@ -5,7 +5,7 @@
 //
 // The core is imported from a checkout of splitscreenme-vscode (src/core), so the
 // page always runs the same linter as the extension.
-import { siteHeader, SITE_HEADER_CSS, siteVisitScript } from './site-chrome.mjs';
+import { siteHeader, SITE_HEADER_CSS, siteVisitScript, COPY_CSS, COPY_SCRIPT } from './site-chrome.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -740,17 +740,27 @@ for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.en
 }
 // The site's own pages count one anonymous visit with where it came from (site-chrome.mjs siteVisitScript), as the
 // workbench does, so the `?ref=` on links to the start page, Learn, docs and checks shows up under Campaigns.
+// Every site page also gets: keyboard shortcuts drawn as keys (src/kbd.ts, the same as Learn's), and a Copy button
+// on its code blocks and inline commands (site-chrome.mjs COPY_SCRIPT).
 {
   const script = siteVisitScript(feedbackSite);
+  const kb = await esbuild.build({ entryPoints: [path.join(here, 'src', 'kbd.ts')], bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'error' });
+  const { kbdify, KEYS_CSS } = await import('data:text/javascript;base64,' + Buffer.from(kb.outputFiles[0].text).toString('base64'));
+  const page = (html) => {
+    const b = html.search(/<body[^>]*>/i), e = html.lastIndexOf('</body>');
+    if (b < 0 || e < 0) return html;
+    const body = kbdify(html.slice(b, e));
+    return html.slice(0, b).replace('</style>', () => `${KEYS_CSS}\n${COPY_CSS}</style>`) + body + `${COPY_SCRIPT}\n${script ?? ''}\n` + html.slice(e);
+  };
   const add = (d) => {
-    if (!script || !fs.existsSync(d)) return;
+    if (!fs.existsSync(d)) return;
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const f = path.join(d, e.name);
       if (e.isDirectory()) add(f);
-      else if (e.name === 'index.html') fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<\/body>/i, () => `${script}\n</body>`));
+      else if (e.name === 'index.html') fs.writeFileSync(f, page(fs.readFileSync(f, 'utf8')));
     }
   };
-  for (const sub of ['start', 'tools', 'learn', 'docs', 'rules']) add(path.join(here, 'dist', 'pages', sub));
+  for (const sub of ['start', 'tools', 'learn', 'docs', 'rules', 'test-guide', 'votes']) add(path.join(here, 'dist', 'pages', sub));
 }
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).

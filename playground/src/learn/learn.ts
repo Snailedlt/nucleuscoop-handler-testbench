@@ -11,6 +11,7 @@ import 'codemirror/addon/edit/closebrackets';
 import 'codemirror/addon/hint/show-hint';
 import { hoverAt, completionsAt, explainLine, signatureHelpAt, type CompletionEntry } from '@core/features';
 import { formatHandler } from '@core/format';
+import { kbdify } from '../kbd';
 import type { Diagnostic } from '@core/lint';
 import { codeHandlers, fixedCodeKeys, vscodeMouse } from '../keys';
 import { codeKeyMap, labelOf } from '../keybindings';
@@ -355,9 +356,9 @@ function status() {
   if (ok && !saved.done.includes(keyOf(l))) { saved.done.push(keyOf(l)); save(); testEvent('done', l.id); renderDrawer(); }
   const task = $('#task');
   task.classList.toggle('ok', ok);
-  task.innerHTML = ok
+  task.innerHTML = kbdify(ok
     ? `<strong>✓ Done.</strong> ${l.pane === 'tryit' ? 'Look at what each player gets in Try it, then go on.' : 'Go on when you\'re ready.'}`
-    : `<strong>Your turn:</strong> ${inline(l.task!)}${miss && touched ? `<span class="hint">${inline(miss)}</span>` : ''}`;
+    : `<strong>Your turn:</strong> ${inline(l.task!)}${miss && touched ? `<span class="hint">${inline(miss)}</span>` : ''}`);
   $('#next').classList.toggle('primary', ok);
   const cp = document.getElementById('checkpoint');
   if (cp) cp.hidden = !ok;
@@ -401,7 +402,7 @@ function renderLesson(focus = false) {
   const ask = l.ask ? `<fieldset class="ask"><legend>${inline(l.ask.question)}</legend>${l.ask.answers.map((a, i) => `<label><input type="radio" name="ask" value="${i}"> ${inline(a.label)}</label>`).join('')}<p class="ask-reply" role="status"></p></fieldset>` : '';
   const checkpoint = l.checkpoint ? `<details class="checkpoint" id="checkpoint" hidden><summary>Try it in Nucleus Co-op now</summary><ol>${l.checkpoint.steps.map((s) => `<li>${inline(s)}</li>`).join('')}</ol><p><button type="button" class="btn primary" id="cp-download">${dlLabel(l.checkpoint.download)}</button></p><p><strong>You should see:</strong> ${inline(l.checkpoint.see)}</p></details>` : '';
   const end = index === n - 1 ? `<div class="end"><h2>You've made a handler 🎉</h2><p>Each player gets their own folder, settings, Steam, window and controller. More chapters are on the way: finding out what a game needs, the tools, Proto Input, emulators, and more.</p></div>` : '';
-  $('#lesson-body').innerHTML = `<p class="kicker">${esc(l.section)}</p><h1 id="lesson-title" tabindex="-1">${inline(l.title)}</h1>${l.text.map(para).join('')}${steps}${l.footnote ? `<p class="footnote">${inline(l.footnote)}</p>` : ''}${dl}${ask}${(l.after ?? []).map(para).join('')}${l.kind === 'code' ? '<div id="task" class="task" role="status"></div>' : ''}${checkpoint}${notes}${end}`;
+  $('#lesson-body').innerHTML = kbdify(`<p class="kicker">${esc(l.section)}</p><h1 id="lesson-title" tabindex="-1">${inline(l.title)}</h1>${l.text.map(para).join('')}${steps}${l.footnote ? `<p class="footnote">${inline(l.footnote)}</p>` : ''}${dl}${ask}${(l.after ?? []).map(para).join('')}${l.kind === 'code' ? '<div id="task" class="task" role="status"></div>' : ''}${checkpoint}${notes}${end}`);
   $('#back').toggleAttribute('disabled', index === 0);
   $('#next').textContent = index === n - 1 ? 'Done' : 'Next ›';
   $('#next').toggleAttribute('disabled', index === n - 1);
