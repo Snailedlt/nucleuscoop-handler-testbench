@@ -1,6 +1,6 @@
 # Testing 0.6.0 before release
 
-About 2½–3¼ hours for everything. Short on time? Do section 0 and the parts marked ⭐ (about an hour): nothing automated can reach them.
+About 2¾–3½ hours for everything. Short on time? Do section 0 and the parts marked ⭐ (about an hour): nothing automated can reach them.
 
 Tick the boxes as you go. Anything odd: write it down with the step number (a screenshot helps).
 
@@ -104,6 +104,8 @@ Open http://localhost:8080/ in a **private window**, so it starts as a first vis
 - [ ] 1.19 Ctrl+Shift+S › save as *For Nucleus Co-op (.zip)* and *Package for the Hub (.nc)*. Both files download.
 - [ ] 1.20 Switch light/dark (Settings › Theme). Everything stays readable.
 - [ ] 1.21 Write `Game.SymlinkGame = "true";` (in quotes). Check lists it as a **note** (it works, but `true` is clearer), with a fix, in both Guided and Advanced mode (Settings).
+- [ ] 1.22 The footer has *Questions? Discord · r/nucleuscoop*; each opens in a new tab (Discord as an invite to the SplitScreen.Me server).
+- [ ] 1.23 (Only with AI set up, Settings › AI.) Write `Game.KillMutex = "x";` and press *Fix with AI*. While it works, the status may say it's *reading about the check*; the fix it offers wraps the value in `[ ]` and passes Check.
 
 ---
 
@@ -117,6 +119,11 @@ Open http://localhost:8080/start/ (the home page).
 - [ ] 2.4 Old links still work: http://localhost:8080/start/#get-vscode lands on the tools page with VS Code's steps open; `/start/#get-notepadpp` the same for Notepad++.
 - [ ] 2.5 Docs' list on the left has two sections, *Handler API* and *Checks*, each with an *All the docs* / *Every check* link on top. Each section folds; fold *Checks* and reload: it stays folded (unless you're on a check's page).
 - [ ] 2.6 A check's page (open one from the list) shows the same list with that check marked, and at the bottom 👍/👎 and *Tell us what's wrong*, which opens the feedback form with the check filled in.
+- [ ] 2.7 Under that, and at the end of every Docs page, a box: *Stuck, or not sure? Ask other handler authors:* with **Discord** and **r/nucleuscoop** buttons (their logos). Both open in a new tab. Learn has the same box under its lesson list (*Lessons*).
+- [ ] 2.8 The footers of home, tools, Docs and a check's page say *Questions? Discord · r/nucleuscoop*, with working links.
+- [ ] 2.9 On the tools page, under the editor tiles: *Vote in the editor poll on Discord* opens the poll, *join the server* the invite.
+- [ ] 2.10 Notepad++'s tile (home and tools page) shows its green chameleon logo, not "N++".
+- [ ] 2.11 http://localhost:8080/start/og.png is the new link preview (*Catch it before Nucleus does.*, the three editors). Discord and Reddit only show it after the release is live.
 
 ---
 
@@ -214,6 +221,7 @@ Open a folder with a handler, e.g. the one from Learn, or Ctrl+Shift+P › *Nucl
 - [ ] 6.12 *Nucleus: Test in Nucleus Co-op* (Windows only; also the ▷ above the code) installs the handler and starts Nucleus Co-op with the game selected.
 - [ ] 6.13 *Nucleus: What's New* shows 0.6.0, with Explain this line in it.
 - [ ] 6.14 Notice it if VS Code's own JavaScript suggestions mix in with ours (known: issue #30).
+- [ ] 6.15 *Nucleus: Open Documentation…* lists *Ask for help: SplitScreen.Me Discord* and *Ask for help: r/nucleuscoop*; each opens.
 
 ---
 
@@ -238,6 +246,18 @@ Open a handler `.js` in Notepad++.
 - [ ] 7.10 *Check for updates* in the plugin's menu says it's the newest (or offers 0.6.0 after the release).
 
 - [ ] 7.11 *Plugins › Nucleus Co-op handlers › Explain this line* with the cursor on a few lines: the explanation shows as a tip at the line, in plain text. On an empty line the status bar says there's nothing to explain.
+
+---
+
+## 7b. The command line and AI agents (10 min)
+
+These need `ncdev.exe` from a test build made after 2026-11-11 (see *To get the latest changes later* in section 0: re-run the Test build workflow first). In PowerShell, in the folder with `ncdev.exe`; use any handler, e.g. the one from Learn.
+
+- [ ] 7b.1 `.\ncdev --help` ends with where to ask: the Discord invite and r/nucleuscoop.
+- [ ] 7b.2 `.\ncdev rules type-mismatch` explains that check: why, the fix, a *Wrong* and a *Right* example, and its page. `.\ncdev rules nope` says there's no such check.
+- [ ] 7b.3 `.\ncdev explain MyGame.js --line 5` (a line with a `Game.` setting) says what it does, the docs of the names on it, and any problem on it.
+- [ ] 7b.4 `.\ncdev debug MyGame.js --break 8 --watch Context.Width`, with line 8 inside `Game.Play`: it stops there once per player, with the variables and `Context.Width` for each.
+- [ ] 7b.5 (Optional, if you use an AI agent with MCP, e.g. Claude Code: `claude mcp add nucleus -- C:\path\to\ncdev.exe mcp`.) Ask it to explain a check, explain a line and debug a line of your handler: it uses `nucleus_rules`, `nucleus_explain` and `nucleus_debug`, and its answers match what the commands above print.
 
 ---
 
