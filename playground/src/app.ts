@@ -168,8 +168,8 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
 }
 
 const STORE_KEY = 'nucleus-workbench-draft';
-// A first visit opens the New handler template: short, commented, and a starting point for anyone (Ctrl+A and type
-// works too). The common-mistakes handler stays one click away in Examples (#example-mistakes).
+// New handler… starts from this template: short, commented, and a starting point for anyone. The common-mistakes
+// handler is in Examples (#example-mistakes).
 const STARTER = '// New to handlers? Menu › Learn makes one with you, step by step.\n' + renderHandler({ gameName: 'My Game', executableName: 'MyGame.exe', features: [] });
 let initial = STARTER;
 // Files that came with the opened package (besides handler.js); saved with it, and kept over a reload.
@@ -189,8 +189,12 @@ const simPlugins = () => {
   const t = pluginsText();
   return t ? parsePluginsInfo(t) : undefined;
 };
+// A first visit (nothing kept in this browser, no link to a handler) starts on the home page: what a handler is, and
+// the ways on (New, Open, Learn). The template is one click away (New handler…).
+let firstVisit = false;
 try {
-  initial = localStorage.getItem(STORE_KEY) || STARTER;
+  firstVisit = !localStorage.getItem(STORE_KEY) && !localStorage.getItem('nucleus-workbench-tabs') && !location.hash;
+  initial = firstVisit ? '' : localStorage.getItem(STORE_KEY) || STARTER;
 } catch {
   /* storage unavailable */
 }
@@ -1426,10 +1430,26 @@ let lastClosed: { tab: Tab; index: number } | null = null;
 // Underneath there is still one blank tab, which the next handler opened fills (loadSource reuses an empty tab).
 const NONE_KEY = 'nucleus-workbench-none-open';
 let noneOpen = false;
+// Getting started shows the home page over open handlers too (they stay in their tabs): Esc, a tab or any of its
+// buttons goes back.
+let homeOver = false;
+function showHome(v: boolean) {
+  if (homeOver === v || (v && noneOpen)) return;
+  homeOver = v;
+  document.documentElement.classList.toggle('no-handler', v || noneOpen);
+  const box = document.getElementById('no-handler')!;
+  box.hidden = !(v || noneOpen);
+  box.querySelector<HTMLElement>('[data-nh=back]')!.hidden = !v;
+  $('#nh-title').textContent = v ? 'Getting started' : 'No handler open';
+  if (v) box.querySelector<HTMLElement>('[data-nh=new]')?.focus();
+  else editor.refresh();
+}
 function setNoneOpen(v: boolean) {
   if (noneOpen === v) return;
+  if (homeOver) showHome(false);
   noneOpen = v;
   document.documentElement.classList.toggle('no-handler', v);
+  $('#nh-title').textContent = firstVisit ? 'Welcome to the workbench' : 'No handler open';
   try { if (v) localStorage.setItem(NONE_KEY, '1'); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
   const box = document.getElementById('no-handler');
   if (box) {
@@ -1565,17 +1585,20 @@ function initTabs() {
   tabsReady = true;
   saveTabs();
   // Nothing was open last time (and nothing is asked for now): keep it that way.
-  try { if (localStorage.getItem(NONE_KEY) && tabs.length === 1 && !editor.getValue().trim() && !INITIAL_HASH) setNoneOpen(true); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
+  try { if ((firstVisit || localStorage.getItem(NONE_KEY)) && tabs.length === 1 && !editor.getValue().trim() && !INITIAL_HASH) setNoneOpen(true); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
   document.getElementById('no-handler')?.addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-nh]');
     if (!b) return;
     const what = b.dataset.nh;
+    showHome(false);
     if (what === 'new') ($('#new-open') as HTMLButtonElement).click();
     else if (what === 'open') showOpen();
     else if (what === 'learn') openLearn();
     else if (what === 'undo') reopenClosed();
   });
   const strip = $('#htabs');
+  strip.addEventListener('click', () => showHome(false), true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && homeOver && !document.querySelector('dialog[open]')) { e.preventDefault(); showHome(false); editor.focus(); } });
   const all = document.createElement('button');
   all.type = 'button';
   all.id = 'tab-all';
@@ -2733,46 +2756,6 @@ try {
 } catch {
   /* ignore */
 }
-// Something put away flies to where it now lives (a ghost of it shrinks into the link), and the link pulses, so you
-// see where to find it again. With motion off, only the pulse.
-function flyTo(from: HTMLElement, to: HTMLElement) {
-  const pulse = () => { to.classList.remove('moved-here'); void to.offsetWidth; to.classList.add('moved-here'); setTimeout(() => to.classList.remove('moved-here'), 1800); };
-  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
-  if (document.documentElement.dataset.motionUi === 'off' || !b.width || !a.width) return pulse();
-  const ghost = document.createElement('div');
-  ghost.className = 'fly-ghost';
-  ghost.setAttribute('aria-hidden', 'true');
-  Object.assign(ghost.style, { left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px` });
-  document.body.append(ghost);
-  const anim = ghost.animate([
-    { transform: 'translate(0, 0) scale(1)', opacity: 1, borderRadius: '8px' },
-    { transform: `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(${b.width / a.width}, ${b.height / a.height})`, opacity: 0.2, borderRadius: '999px' },
-  ], { duration: 520, easing: 'cubic-bezier(.5, 0, .2, 1)' });
-  anim.onfinish = () => { ghost.remove(); pulse(); };
-}
-function showWelcome() {
-  const w = $('#welcome');
-  w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
-    <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span><span class="w-learn">or <button class="link" type="button" data-w="learn">learn step by step</button> (a handler for a free game, from scratch)</span></div>`;
-  w.hidden = false;
-  w.querySelector('[data-w=open]')!.addEventListener('click', () => showOpen());
-  w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
-  w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
-  w.querySelector('[data-w=learn]')!.addEventListener('click', () => openLearn());
-  w.querySelector('[data-w=close]')!.addEventListener('click', () => {
-    flyTo(w, $('#welcome-open'));
-    w.hidden = true;
-    editor.refresh();
-    announce('Closed. Getting started, at the bottom, brings it back.');
-    try {
-      localStorage.setItem(WELCOME_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-  });
-  editor.refresh();
-}
-if (!welcomed) showWelcome();
 // What feedback forms say about the open handler: its name and where it came from, a link only to an unedited example
 // or Hub handler, never the code itself.
 setReportState(() => ({
@@ -2787,9 +2770,8 @@ const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
   setLayout,
   done: (exp) => {
     if (exp === 'developer') {
-      // "I write code" starts compact: no tip bar, no Getting started banner (both stay a click away: Settings, the footer).
+      // "I write code" starts compact: no tip bar (a click away in Settings), and a home page without the intro.
       tips.set(false);
-      $('#welcome').hidden = true;
       try {
         localStorage.setItem(WELCOME_KEY, '1');
       } catch {
@@ -2797,7 +2779,7 @@ const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
       }
       editor.refresh();
     }
-    if (exp) announce(exp === 'developer' ? 'Advanced mode is on: tips are off (Settings › Tips and help).' : 'Guided: tips and plain words. Getting started is above the code.');
+    if (exp) announce(exp === 'developer' ? 'Advanced mode is on: tips are off (Settings › Tips and help).' : 'Guided: tips and plain words. Getting started, at the bottom, shows the way round.');
     editor.focus();
   },
 });
@@ -2806,12 +2788,13 @@ if (!welcomed && !firstRunDone() && !INITIAL_HASH) {
   if (testGuide.needed()) testGuide.open(); else firstRun.open();
 }
 $('#fr-again').addEventListener('click', () => { ($('#settings-dialog') as HTMLDialogElement).close(); firstRun.open(); });
+// Getting started: the home page (what a handler is, the four steps, New / Open / Learn), over the open handlers.
 $('#welcome-open').addEventListener('click', () => {
-  if (narrow()) setView('code');
-  showWelcome();
-  const w = $('#welcome');
-  w.classList.remove('welcome-in'); void w.offsetWidth; w.classList.add('welcome-in'); // unfolds where it lives
-  w.querySelector<HTMLElement>('button, a')?.focus();
+  if (noneOpen) {
+    const box = $('#no-handler');
+    box.classList.remove('welcome-in'); void box.offsetWidth; box.classList.add('welcome-in');
+    box.querySelector<HTMLElement>('[data-nh=new]')?.focus();
+  } else showHome(true);
 });
 
 let startTab = 'problems';

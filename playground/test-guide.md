@@ -55,14 +55,14 @@ Open http://localhost:8080/ in a **private window**, so it starts as a first vis
 
 **First visit**
 
-- [ ] 1.1 The starter template ("New handler") opens, not an empty editor or an example.
+- [ ] 1.1 The home page opens (*Welcome to the workbench*): what a handler is, four steps, and *New handler…*, *Open a handler or example…* and *Learn*. No handler is open yet. *New handler…* makes one from the template.
 - [ ] 1.2 *Help test this beta* asks two questions (how much you code, how well you know handlers), then shows what to test. Close it with Esc; the footer link *Help test this beta* brings it back.
 
 **Tabs**
 
 - [ ] 1.3 Open an example (Ctrl+P › "mistakes") and type something. Its tab shows a dot instead of the × at once; hovering the tab shows the × again. (A brand-new handler never gets the dot: there's nothing to compare it with.)
 - [ ] 1.4 Open a second handler (Ctrl+P › any example). Close both tabs with their ×.
-- [ ] 1.5 With nothing open you see a page with *New handler*, *Open*, *Learn* and *Reopen*. *Reopen* brings the last closed handler back.
+- [ ] 1.5 With nothing open you see the home page again (*No handler open*), now with *Reopen*, which brings the last closed handler back. With a handler open, *Getting started* in the footer shows the home page over it; Esc goes back to the code. There's no *New here?* box above the code any more.
 
 **Explain this line (new)** ⭐
 

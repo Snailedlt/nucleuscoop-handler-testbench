@@ -328,6 +328,20 @@ for (const theme of ['light', 'dark']) {
     await q.waitForTimeout(300);
     check((await q.$$('#test-body .tg-list > .tg-item')).length >= 3 && await q.isVisible('#tg-change'), `${theme}: the answers show the recommendations, with Change`);
     await axe(q, `${theme}, tester recommendations`);
+    // Behind the questions: the home page, not a handler (what a handler is, the steps, New / Open / Learn).
+    await q.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+    check(await q.isVisible('#no-handler .nh-intro') && (await q.textContent('#nh-title')) === 'Welcome to the workbench' && await q.isHidden('#main'), `${theme}: a first visit starts on the home page`);
+    await axe(q, `${theme}, home page`);
+    await q.click('[data-nh=new]');
+    await q.fill('#new-name', 'Smoke Game');
+    await q.fill('#new-exe', 'Smoke.exe');
+    await q.click('#new-dialog button[type=submit]');
+    await q.waitForTimeout(600);
+    check(await q.isHidden('#no-handler') && await q.isVisible('#main') && !(await q.$('#welcome')), `${theme}: New handler… leaves the home page for the code, with no welcome box above it`);
+    await q.click('#welcome-open');
+    check(await q.isVisible('#no-handler') && (await q.textContent('#nh-title')) === 'Getting started' && await q.isVisible('[data-nh=back]'), `${theme}: Getting started shows the home page over the open handler`);
+    await q.keyboard.press('Escape');
+    check(await q.isHidden('#no-handler') && await q.isVisible('#main'), `${theme}: Esc goes back to the code`);
     await fresh.close();
   }
   // One handler per tab: another handler opens a new tab; one that's already open switches to its tab.
@@ -559,6 +573,8 @@ await m.ctx.close();
   await s.ctx.addInitScript(() => {
     try {
       localStorage.setItem('nucleus-workbench-tester-profile', JSON.stringify({ coding: 'dev', nucleus: 'expert' }));
+      // A handler open (a first visit starts on the home page, without the code editor this corner belongs to).
+      if (!localStorage.getItem('nucleus-workbench-draft')) localStorage.setItem('nucleus-workbench-draft', 'Game.GUID = "Pins";\n');
     } catch {}
   });
   await s.p.goto(BASE);
@@ -770,6 +786,7 @@ for (const theme of ['light', 'dark']) {
   // preview) must not shrink the page for an on-screen keyboard that isn't there.
   const s = await page('dark', { viewport: { width: 1600, height: 730 } }); // a mouse (fine pointer) ...
   await s.ctx.addInitScript(() => Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 10 })); // ... and a touch screen
+  await s.ctx.addInitScript(() => { try { if (!localStorage.getItem('nucleus-workbench-draft')) localStorage.setItem('nucleus-workbench-draft', 'Game.GUID = "Frame";\n'); } catch {} }); // a handler open, as in the claude.ai preview
   await s.p.setContent(`<style>body{margin:0}</style><iframe src="${BASE}" style="border:0;width:100vw;height:100vh"></iframe>`);
   await s.p.waitForTimeout(1200);
   const f = s.p.frames()[1];

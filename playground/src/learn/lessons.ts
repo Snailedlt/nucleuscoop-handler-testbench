@@ -559,7 +559,7 @@ export const CHAPTERS: Chapter[] = [
   {
     id: 'first-handler',
     title: 'Making your first handler',
-    blurb: 'Write a handler for Boring Man, a free game on Steam, a few lines at a time, and test it in Nucleus Co-op.',
+    blurb: 'Write a handler for “Boring Man”, a free shooter game on Steam, a few lines at a time, and test it in Nucleus Co-op.',
     lessons: FIRST,
   },
 ];

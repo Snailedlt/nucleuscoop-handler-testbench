@@ -95,6 +95,13 @@ html.no-handler #main { display: none; }
 .no-handler[hidden] { display: none; }
 .no-handler h2 { margin: 0; font-size: 20px; }
 .no-handler .nh-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+.no-handler .nh-intro { max-width: 920px; }
+.no-handler .nh-intro p { max-width: 640px; margin-left: auto; margin-right: auto; }
+.no-handler .nh-intro p { margin: 8px 0 0; }
+.nh-steps { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin: 12px 0 0; padding: 0; font-size: 14px; }
+.nh-steps b { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 12px; margin-right: 4px; }
+/* Advanced mode starts compact: just the ways on. */
+:root[data-mode="dev"] .no-handler .nh-intro { display: none; }
 .main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) 12px minmax(0, 1fr); gap: 0; }
 @media (min-width: 861px) { .main:has(#lines:not([hidden])) { grid-template-columns: minmax(0, 1.5fr) 12px minmax(0, 1fr); } }
 /* Resizable panes: a size set by dragging wins over the defaults above (double-click resets) */
@@ -998,21 +1005,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .tip-line { font-size: 11.5px; margin-left: auto; }
 .problem.current { outline: 2px solid var(--accent); outline-offset: 1px; }
 .fixable { font-size: 11px; color: var(--ok); font-weight: 600; }
-/* Getting started: at the top of the code, where reading starts. Closed, the footer's Getting started brings it back. */
-#welcome { border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); padding: 8px 12px; font-size: 13px; }
-#welcome[hidden] { display: none; }
-/* Where a put-away thing now lives (flyTo in app.ts): a short glow on the link. */
-:root:not([data-motion-ui="off"]) #welcome.welcome-in { animation: welcome-in .35s cubic-bezier(.2, .8, .2, 1); transform-origin: top; }
+/* Getting started on the home page: its intro unfolds where it lives. */
 @keyframes welcome-in { from { opacity: 0; transform: scaleY(.6); } }
-.fly-ghost { position: fixed; z-index: 95; pointer-events: none; transform-origin: top left; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-.moved-here { animation: moved-here 1.6s ease-out; border-radius: 4px; }
-@keyframes moved-here { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
-#welcome .w-head { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
-#welcome .w-head > span { flex: 1; min-width: 0; }
-#welcome .w-head strong { color: var(--fg); }
-#welcome .w-head .btn.icon { width: 26px; padding: 2px 0; flex: none; }
-#welcome .w-steps { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
-#welcome .w-steps b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 11px; margin-right: 2px; }
+:root:not([data-motion-ui="off"]) .no-handler.welcome-in .nh-intro { animation: welcome-in .35s cubic-bezier(.2, .8, .2, 1); transform-origin: top; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 /* A notice at the top of the code pane (src/toast.ts notice()): problems that need reading stay there until dismissed. */
 #notice { display: flex; align-items: flex-start; gap: 10px; margin: 8px 10px 0; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-left: 3px solid var(--tk); border-radius: var(--r-pane); background: var(--surface-2); font-size: 13.5px; line-height: 1.4; }
@@ -2125,8 +2120,11 @@ footer .made-by { margin-left: auto; }
   <div id="updated" role="status" hidden><span id="updated-text"></span> <button class="link" type="button" id="updated-open">What's new</button><button class="btn icon" type="button" id="updated-close" aria-label="Dismiss">×</button></div>
   <section id="no-handler" class="no-handler" role="main" aria-labelledby="nh-title" hidden>
     <h2 id="nh-title">No handler open</h2>
-    <p class="muted">Start a new one, open yours, an example or a Hub handler, or learn how they work.</p>
-    <div class="nh-acts"><button type="button" class="btn primary" data-nh="new">New handler…</button><button type="button" class="btn" data-nh="open">Open… <kbd>Ctrl+P</kbd></button><button type="button" class="btn" data-nh="learn">Learn: make your first one</button><button type="button" class="btn" data-nh="undo" hidden>Reopen</button></div>
+    <div class="nh-intro">
+      <p class="muted">A handler is the file that tells Nucleus Co-op how to run a game split-screen (it goes in Nucleus' <code>handlers</code> folder). Here you write one, check it and try it, then save it for Nucleus.</p>
+      <ol class="nh-steps"><li><b>1</b> Start one, or open yours</li><li><b>2</b> Fix what Nucleus would reject</li><li><b>3</b> Try it per player</li><li><b>4</b> Save it for Nucleus</li></ol>
+    </div>
+    <div class="nh-acts"><button type="button" class="btn primary" data-nh="new">New handler…</button><button type="button" class="btn" data-nh="open" title="Your own handler (.js, .zip, .nc), an example, or one from the Hub">Open a handler or example… <kbd>Ctrl+P</kbd></button><button type="button" class="btn" data-nh="learn">Learn: make your first one</button><button type="button" class="btn" data-nh="undo" hidden>Reopen</button><button type="button" class="btn" data-nh="back" hidden>Back to the code <kbd>Esc</kbd></button></div>
   </section>
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
@@ -2136,7 +2134,6 @@ footer .made-by { margin-left: auto; }
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
-      <div id="welcome" hidden></div>
       <div id="file-strip" role="tablist" aria-label="Files in this package" hidden></div>
       <div class="code-row">
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>

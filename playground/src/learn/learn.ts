@@ -367,7 +367,7 @@ $('#drawer').addEventListener('keydown', (e) => { if (e.key === 'Escape' && matc
 const scene = (() => {
   const el = $('#scene');
   const STEPS = [
-    { say: 'This is Boring Man on your PC: one copy, one window, one player.', act: 'Start a second copy' },
+    { say: 'Say you want to play a game called “Boring Man”. Here it is on your PC: one copy, one window, one player.', act: 'Start a second copy' },
     { say: 'Steam won\'t run a second copy at all. And if it did, both would want the whole screen, share the same settings, and listen to every controller.', act: 'Click the second window' },
     { say: 'Now the first one is behind, and Windows sends your keys only to the window in front. Player 1 is stuck.', act: 'Let Nucleus Co-op handle it' },
     { say: 'Nucleus gives each copy its own folder, settings and Steam, puts each window on its part of the screen, gives each its own controller, and keeps them all listening. The **handler** is what tells it how, for one game.', act: '' },
