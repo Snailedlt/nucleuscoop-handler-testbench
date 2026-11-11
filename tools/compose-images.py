@@ -16,9 +16,7 @@ for t in ['light', 'dark']:
     out.save(os.path.join(ch, f'2026-11-05-phones-{t}.png'), optimize=True)
     os.remove(src)
 
-# The social preview (og:image): Check on a verified Hub handler, dark, 1280×760.
-img = os.path.join(ch, '..')
-Image.open(os.path.join(img, 'check-dark.png')).convert('RGB').resize((1280, 760), Image.LANCZOS).save(os.path.join(img, 'og.png'), optimize=True)
+# The social preview (docs/images/og.png) is drawn from design/promo/og.html: node design/promo/render.mjs.
 
 # Desktop shots are taken at 2× and stored at 1.5× (1920 px wide): sharp, and half the bytes.
 for n in ['check', 'fix-all', 'try-it']:
