@@ -22,6 +22,8 @@ if (!token || !/^[a-z0-9-]{2,50}$/.test(site)) {
 // GOATCOUNTER_API: another address for the API (the tests use a local stand-in).
 const api = process.env.GOATCOUNTER_API || `https://${site}.goatcounter.com/api/v0`;
 const day = (d) => d.toISOString().slice(0, 10);
+// The API takes datetimes (RFC 3339), from the start of the first day to the end of today.
+const stamp = (d, end) => `${day(d)}T${end ? '23:59:59' : '00:00:00'}Z`;
 const end = new Date();
 const start = new Date(end.getTime() - 365 * 864e5);
 
@@ -30,7 +32,7 @@ async function allHits() {
   const seen = [];
   const hits = [];
   for (let page = 0; page < 200; page++) {
-    const q = new URLSearchParams({ start: day(start), end: day(end), limit: '100' });
+    const q = new URLSearchParams({ start: stamp(start), end: stamp(end, true), limit: '100' });
     for (const id of seen) q.append('exclude_paths', String(id));
     const r = await fetch(`${api}/stats/hits?${q}`, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
     if (r.status === 429) { await new Promise((ok) => setTimeout(ok, 2000)); page--; continue; }
@@ -42,6 +44,13 @@ async function allHits() {
   return hits;
 }
 
+// First a cheap call that says whether the site and the token are right, with a message that says which.
+{
+  const r = await fetch(`${api}/me`, { headers: { Authorization: `Bearer ${token}` } });
+  if (r.status === 404) throw new Error(`No GoatCounter site answers at ${api} (404). Check FEEDBACK_GOATCOUNTER: it should be the site's code, the part before .goatcounter.com in its address.`);
+  if (r.status === 401 || r.status === 403) throw new Error(`GoatCounter refused the token (${r.status}: ${(await r.text()).slice(0, 120)}). Make one under the site's Settings › API with "Read statistics".`);
+  if (!r.ok) throw new Error(`GoatCounter ${r.status} on /me: ${(await r.text()).slice(0, 200)}`);
+}
 const hits = await allHits();
 /** vote/<kind>/<id>/<up|down|undo-up|undo-down> → per item: up and down, undos taken off. */
 const votes = { doc: new Map(), tip: new Map() };

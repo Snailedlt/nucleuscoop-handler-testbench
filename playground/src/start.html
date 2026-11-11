@@ -535,7 +535,7 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
 })();
 </script>
 <script>/* The workbench links carry where this visit came from (the ?ref= tag of the link followed, else the site),
-   for the workbench's anonymous counts; nothing is sent from this page. */
+   for the workbench's feature counts. The visit itself is counted once by the script build.mjs adds (siteVisitScript). */
 try {
   var q = new URLSearchParams(location.search), ref = q.get('ref') || q.get('utm_source');
   if (!ref && document.referrer) { var h = new URL(document.referrer).host; if (h && h !== location.host) ref = h; }

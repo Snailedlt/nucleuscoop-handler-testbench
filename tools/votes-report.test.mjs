@@ -17,7 +17,7 @@ test('votes-report: sums the votes from every page of the API', async () => {
     { hits: [{ path_id: 4, path: '/vote/tip/s-tutorial/up', count: 2 }, { path_id: 5, path: '/use/try-it', count: 9 }, { path_id: 6, path: '/visit', count: 50 }], more: false },
   ];
   let calls = 0, auth = '';
-  const srv = http.createServer((req, res) => { auth = req.headers.authorization; const p = pages[Math.min(calls++, 1)]; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(p)); });
+  const srv = http.createServer((req, res) => { auth = req.headers.authorization; if (req.url.startsWith('/me')) return void res.end('{"user":{}}'); assert.match(req.url, /start=\d{4}-\d\d-\d\dT00%3A00%3A00Z/); const p = pages[Math.min(calls++, 1)]; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(p)); });
   await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'votes-'));
   try {

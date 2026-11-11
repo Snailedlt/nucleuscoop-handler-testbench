@@ -5,7 +5,7 @@
 //
 // The core is imported from a checkout of splitscreenme-vscode (src/core), so the
 // page always runs the same linter as the extension.
-import { siteHeader, SITE_HEADER_CSS } from './site-chrome.mjs';
+import { siteHeader, SITE_HEADER_CSS, siteVisitScript } from './site-chrome.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -691,6 +691,20 @@ for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.en
   const packs = argAssets > 0 ? path.join(path.resolve(process.argv[argAssets + 1]), 'mascots', 'packs') : path.join(src, 'packs');
   if (fs.existsSync(packs)) { fs.mkdirSync(path.join(dst, 'packs'), { recursive: true }); for (const f of fs.readdirSync(packs)) if (f.endsWith('.zip')) fs.copyFileSync(path.join(packs, f), path.join(dst, 'packs', f)); }
   else console.warn('No mascot packs (the assets branch, --assets <dir>): the Downloads buttons will lead nowhere.');
+}
+// The site's own pages count one anonymous visit with where it came from (site-chrome.mjs siteVisitScript), as the
+// workbench does, so the `?ref=` on links to the start page, Learn, docs and checks shows up under Campaigns.
+{
+  const script = siteVisitScript(feedbackSite);
+  const add = (d) => {
+    if (!script || !fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) add(f);
+      else if (e.name === 'index.html') fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<\/body>/i, () => `${script}\n</body>`));
+    }
+  };
+  for (const sub of ['start', 'learn', 'docs', 'rules']) add(path.join(here, 'dist', 'pages', sub));
 }
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).

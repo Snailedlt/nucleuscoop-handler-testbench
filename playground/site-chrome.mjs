@@ -74,3 +74,37 @@ export function docFeedbackScript(site) {
 })();
 </script>`;
 }
+
+/**
+ * One anonymous "visit" count per visit on the site's own pages (start, Learn, docs, rules), with where it came from:
+ * the other site (only its address, never the page) and the link's `?ref=` tag (GoatCounter's Campaigns). The same
+ * rules and the same per-tab record as the workbench (feedback.ts `countVisit`), so a visit that moves on to the
+ * workbench is counted once. Off with Do Not Track, Global Privacy Control or Settings › Privacy in the workbench.
+ */
+export function siteVisitScript(site) {
+  if (!site) return '';
+  return `<script>
+(function () {
+  var site = ${JSON.stringify(site)}, KEY = 'nucleus-workbench-visit', v = null;
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  try { v = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
+  if (!v) {
+    v = {};
+    try {
+      var q = new URLSearchParams(location.search), ref = q.get('ref') || q.get('utm_source');
+      if (ref && /^[\\w.-]{1,40}$/.test(ref)) v.ref = ref;
+      if (document.referrer) { var u = new URL(document.referrer); if (u.host && u.host !== location.host) v.from = u.protocol + '//' + u.host; }
+      if (ref) { q.delete('ref'); q.delete('utm_source'); var s = q.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '') + location.hash); }
+    } catch (e) {}
+  }
+  var off = navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true || get('nucleus-workbench-feedback-off') === '1' || get('skipgc') === 't';
+  if (!v.counted && !off) {
+    v.counted = true;
+    var url = 'https://' + site + '.goatcounter.com/count?p=' + encodeURIComponent('/visit') + '&e=true&s=' + encodeURIComponent(screen.width + ',' + screen.height + ',' + (window.devicePixelRatio || 1))
+      + (v.from ? '&r=' + encodeURIComponent(v.from) : '') + (v.ref ? '&q=' + encodeURIComponent('?ref=' + v.ref) : '') + '&rnd=' + Math.random().toString(36).slice(2);
+    try { navigator.sendBeacon ? navigator.sendBeacon(url) : fetch(url, { mode: 'no-cors', keepalive: true }); } catch (e) {}
+  }
+  try { sessionStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {}
+})();
+</script>`;
+}
