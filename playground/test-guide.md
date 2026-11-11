@@ -55,7 +55,13 @@ This guide is on the local site too, at http://localhost:8080/test-guide/ (only 
 - [ ] 0.3 Notepad++'s steps: `ncdev.exe` downloads straight away (Windows may warn it's unrecognised, as it isn't signed: *More info › Run anyway*). Close Notepad++; in PowerShell **as administrator**, in its folder, run the step's command exactly as shown (`.\ncdev setup notepad++`). Start Notepad++: *Plugins › Nucleus Co-op handlers* is there.
 - [ ] 0.4 The steps read right for a newcomer, and none is longer than a line or two.
 
-To test a newer build later: run the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run), then `git pull` in both folders (and `git -C .assets pull` in `playground`) and run the build command again.
+**To get the latest changes later**, one line in `nucleuscoop-handler-testbench/playground` (in Git Bash, or PowerShell 7) updates both repos and the packs, rebuilds and serves:
+
+```bash
+git -C ../../splitscreenme-vscode pull && npm --prefix ../../splitscreenme-vscode ci && git pull && npm ci && git -C .assets pull && node build.mjs --preview --test-build --assets .assets && npx --yes http-server dist/pages -p 8080 -c-1
+```
+
+That updates the site. The downloads on the tools page (the `.vsix` and `ncdev.exe`) only change when the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) runs again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run): run it first when the tools changed, then the line above.
 
 ---
 
