@@ -39,7 +39,7 @@
     <div class="card" id="get-notepadpp"><h3><img src="../start/editors/notepadplusplus.svg" alt="" width="22" height="22">Notepad++</h3>
       <ol>
         <li>Download <a id="ncdev" href="__NCDEV_URL__"><code>ncdev.exe</code></a> (__VSIX_TAG__, <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">all releases</a>).</li>
-        <li>Close Notepad++. In a terminal <strong>as administrator</strong>, where <code>ncdev.exe</code> is, run <code>ncdev setup notepad++</code>. (A portable Notepad++: add <code>--path "C:\path\to\Notepad++"</code>, no administrator needed.)</li>
+        <li>Close Notepad++. In a terminal <strong>as administrator</strong>, in the folder with <code>ncdev.exe</code>, run <code>.\ncdev setup notepad++</code> (PowerShell needs the <code>.\</code>; Command Prompt doesn't). (A portable Notepad++: add <code>--path "C:\path\to\Notepad++"</code>, no administrator needed.)</li>
         <li>Start Notepad++ and open a handler. Problems are underlined; hover for the docs; <kbd>Alt+Enter</kbd> for fixes.</li>
         <li><strong>Plugins › Nucleus Co-op handlers</strong> has Fix all, Try it and Test in Nucleus Co-op.</li>
       </ol></div>
@@ -94,7 +94,7 @@ language-servers = [<span class="hs">"typescript-language-server"</span>, <span 
   <section aria-labelledby="command-line">
   <h2 id="command-line" class="has-anchor">The command line: ncdev</h2>
   <p><code>ncdev</code> (Nucleus Co-op dev tools) is the same engine on the command line: check a handler or a whole <code>handlers</code> folder, fix and format it, Try it, look up an option, search the Hub, and package or install a handler. It also runs the servers for other editors and AI agents.</p>
-  <p><strong>Windows, nothing else to install:</strong> download <a href="__NCDEV_URL__"><code>ncdev.exe</code></a> and run it from a terminal. <code>ncdev update</code> keeps it current. <strong>With Node.js 18+:</strong> <code>nucleus.js</code> from <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">a release</a> does the same (<code>node nucleus.js lint MyGame.js</code>).</p>
+  <p><strong>Windows, nothing else to install:</strong> download <a href="__NCDEV_URL__"><code>ncdev.exe</code></a> and run it from a terminal in its folder (in PowerShell, as <code>.\ncdev</code>). <code>ncdev update</code> keeps it current. <strong>With Node.js 18+:</strong> <code>nucleus.js</code> from <a href="https://github.com/Snailedlt/splitscreenme-vscode/releases">a release</a> does the same (<code>node nucleus.js lint MyGame.js</code>).</p>
 <pre class="cfg" tabindex="0" aria-label="Examples of ncdev commands"><code>ncdev lint MyGame.js            <span class="hc"># every problem, with line and why</span>
 ncdev lint handlers --fix       <span class="hc"># apply the safe fixes in a whole folder</span>
 ncdev format MyGame.js --write  <span class="hc"># indentation and spacing, never what it does</span>
