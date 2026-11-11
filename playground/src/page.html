@@ -564,6 +564,7 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 600; }
 .cm-s-default .cm-keyword { color: var(--kw); font-weight: var(--kw-weight, normal); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
+:is(.cm-s-default, .hl) span.cm-nucleus-obj, :is(.cm-s-default, .hl) span.cm-nucleus-val { color: var(--num); } :is(.cm-s-default, .hl) span.cm-nucleus-prop, :is(.cm-s-default, .hl) span.cm-nucleus-fn { color: var(--prop); }
 .cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
 .cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--op, var(--code-muted, var(--muted))); font-weight: var(--op-weight, normal); }
 /* Tokens other file types use (batch, PowerShell, ini, xml, yaml): mapped onto the same code colours. */

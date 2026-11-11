@@ -568,6 +568,30 @@ const hlStatic = (() => {
     return out;
   };
 })();
+// The code colours of the site's own pages (the www look's, AA on their code background, light and dark), for the
+// highlighted code (.hl) on every page.
+const HL_CSS = `.hl .cm-keyword { color: var(--kw); } .hl .cm-string { color: var(--str); } .hl .cm-number, .hl .cm-atom { color: var(--num); } .hl .cm-property { color: var(--prop); } .hl .cm-comment { color: var(--cmt); }
+:root { --kw: #6f2db8; --str: #b0175a; --num: #0f6f6d; --prop: #0b5c8a; --cmt: #5c636c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; } }
+:root[data-theme="dark"] { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; }
+`;
+// Code coloured like the editors: CodeMirror's tokens, Nucleus names by what they are (src/semhl.ts, the core's
+// semantic tokens). For the start page's inline code, the docs and checks pages' code blocks, and the site pass below.
+const hlSem = await (async () => {
+  const m = await esbuild.build({
+    stdin: { contents: "export { semHighlight } from './semhl'; export { looksLikeCodeText } from './codetext';", resolveDir: path.join(here, 'src'), loader: 'ts' },
+    bundle: true, format: 'esm', platform: 'node', write: false, logLevel: 'error',
+    alias: { '@core': path.join(coreRepo, 'src', 'core'), 'eslint/universal': path.join(coreRepo, 'src', 'core', 'eslint-stub.ts') },
+    nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
+  });
+  const { semHighlight, looksLikeCodeText } = await import('data:text/javascript;base64,' + Buffer.from(m.outputFiles[0].text).toString('base64'));
+  const req = createRequire(import.meta.url);
+  const CM = req('codemirror/addon/runmode/runmode.node.js');
+  req('codemirror/mode/javascript/javascript.js');
+  const f = (src) => semHighlight(src, CM.runMode);
+  f.looksLikeCode = looksLikeCodeText;
+  return f;
+})();
 const ANCHOR_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg>';
 const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 // The start page (start/) and the tools page (tools/): the same look (start.html's head and styles), each its own
@@ -611,12 +635,8 @@ const renderSitePage = (src, section) =>
     .replace(/<(h[2-4]) id="([^"]+)" class="([^"]*\bhas-anchor\b[^"]*)">([^<]+)<\/\1>/g, (m, h, id, cls, text) => `<${h} id="${id}" class="${cls}">${text}<a class="anchor" href="#${id}" aria-label="Link to this section: ${text}">${ANCHOR_SVG}</a></${h}>`)
     // Code in the text coloured like the workbench's editor (issue #12): CodeMirror's runMode at build time, the
     // www look's code colours (AA on this page's code background, light and dark).
-    .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlStatic(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
-    .replace('</style>', `.hl .cm-keyword { color: var(--kw); } .hl .cm-string { color: var(--str); } .hl .cm-number, .hl .cm-atom { color: var(--num); } .hl .cm-property { color: var(--prop); } .hl .cm-comment { color: var(--cmt); }
-:root { --kw: #6f2db8; --str: #b0175a; --num: #0f6f6d; --prop: #0b5c8a; --cmt: #5c636c; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; } }
-:root[data-theme="dark"] { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; }
-</style>`)
+    .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlSem(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
+    .replace('</style>', () => `${HL_CSS}</style>`)
     // Duo and Nucli say hello in the header (the same drawings as the workbench, src/mascots.gen.ts).
     .replace('__MASCOTS__', (() => {
       const gen = fs.readFileSync(path.join(here, 'src', 'mascots.gen.ts'), 'utf8');
@@ -644,7 +664,7 @@ let checksNav = [];
   const { RULES, JS_RULES } = await import('data:text/javascript;base64,' + Buffer.from(lintAll.outputFiles[0].text).toString('base64'));
   const { writeRulePages } = await import('./rules-pages.mjs');
   let ruleIds;
-  ({ ids: ruleIds, nav: checksNav } = writeRulePages({ outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX, feedbackSite }));
+  ({ ids: ruleIds, nav: checksNav } = writeRulePages({ hl: hlSem, outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX, feedbackSite }));
   if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}tools/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, `${PAGES_BASE}docs/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 }
 // Learn (learn/): the lessons, one page with its own small bundle (src/learn/): the editor, the checks and Try it,
@@ -676,7 +696,7 @@ let docValues = [];
   const mod = await esbuild.build({ stdin: { contents: "export { docsPage, docsView, docsValue, DOCS_GROUPS } from './docspage'; export { allEntries } from './lookup'; export { api, docReviewUrl } from './api';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
   const D = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
   const { writeDocPages } = await import('./docs-pages.mjs');
-  docValues = writeDocPages({ checks: checksNav, outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), docReviewUrl: D.docReviewUrl, feedbackSite, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
+  docValues = writeDocPages({ hl: hlSem, checks: checksNav, outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), docReviewUrl: D.docReviewUrl, feedbackSite, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
   // Each docs page in the sitemap too (written with the rule pages above).
   const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
   if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
@@ -744,13 +764,17 @@ for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.en
 // on its code blocks and inline commands (site-chrome.mjs COPY_SCRIPT).
 {
   const script = siteVisitScript(feedbackSite);
-  const kb = await esbuild.build({ entryPoints: [path.join(here, 'src', 'kbd.ts')], bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'error' });
-  const { kbdify, KEYS_CSS } = await import('data:text/javascript;base64,' + Buffer.from(kb.outputFiles[0].text).toString('base64'));
+  const kb = await esbuild.build({ stdin: { contents: "export { kbdify, KEYS_CSS } from './kbd'; export { SEM_STATIC_CSS } from './semcss';", resolveDir: path.join(here, 'src'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'error' });
+  const { kbdify, KEYS_CSS, SEM_STATIC_CSS } = await import('data:text/javascript;base64,' + Buffer.from(kb.outputFiles[0].text).toString('base64'));
   const page = (html) => {
     const b = html.search(/<body[^>]*>/i), e = html.lastIndexOf('</body>');
     if (b < 0 || e < 0) return html;
-    const body = kbdify(html.slice(b, e));
-    return html.slice(0, b).replace('</style>', () => `${KEYS_CSS}\n${COPY_CSS}</style>`) + body + `${COPY_SCRIPT}\n${script ?? ''}\n` + html.slice(e);
+    // Inline code that is clearly code (Game.Play, a call, a string) coloured like the editor; then the keys.
+    const body = kbdify(html.slice(b, e).replace(/<code>([^<]*)<\/code>/g, (m, inner) => {
+      const t = inner.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+      return hlSem.looksLikeCode(t) ? `<code class="hl">${hlSem(t)}</code>` : m;
+    }));
+    return html.slice(0, b).replace('</style>', () => `${KEYS_CSS}\n${COPY_CSS}\n${HL_CSS}\n${SEM_STATIC_CSS}</style>`) + body + `${COPY_SCRIPT}\n${script ?? ''}\n` + html.slice(e);
   };
   const add = (d) => {
     if (!fs.existsSync(d)) return;

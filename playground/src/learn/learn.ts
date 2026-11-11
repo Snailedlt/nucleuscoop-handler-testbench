@@ -12,6 +12,7 @@ import 'codemirror/addon/hint/show-hint';
 import { hoverAt, completionsAt, explainLine, signatureHelpAt, type CompletionEntry } from '@core/features';
 import { formatHandler } from '@core/format';
 import { kbdify } from '../kbd';
+import { semanticMarks } from '../semmarks';
 import type { Diagnostic } from '@core/lint';
 import { codeHandlers, fixedCodeKeys, vscodeMouse } from '../keys';
 import { codeKeyMap, labelOf } from '../keybindings';
@@ -71,6 +72,7 @@ const editor = CodeMirror($('#code'), {
   configureMouse: vscodeMouse,
 } as any);
 // The workbench's keys (keybindings.ts, VS Code's: Ctrl+/, Alt+Up, Ctrl+D, Ctrl+F…), plus the ones that show things here.
+semanticMarks(editor); // Nucleus names in their own colours, as in the workbench (semmarks.ts)
 editor.setOption('extraKeys', codeKeyMap(
   {
     ...codeHandlers,

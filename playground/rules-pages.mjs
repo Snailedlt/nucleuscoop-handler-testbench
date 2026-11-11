@@ -10,7 +10,10 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 /** `code` and **bold** in the plain-words texts. */
 const inline = (t) => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 /** Handler code, coloured: comments, strings, keywords and numbers (the start page's .hk/.hs/.hc colours). */
+// The build's highlighter (build.mjs hlSem: the editor's colours, Nucleus names by what they are) when given; else this one.
+let HL = null;
 function hl(code) {
+  if (HL) return HL(code);
   const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`]*`)|\b(var|let|const|function|return|if|else|for|while|switch|case|break|new|true|false|null|undefined|typeof|try|catch|finally|in|this|throw|continue)\b|\b(0x[0-9a-fA-F]+|\d+(?:\.\d+)?)\b/g;
   let out = '', last = 0;
   for (let m; (m = re.exec(code)); ) {
@@ -36,6 +39,7 @@ const SEV_WHAT = {
 const ruleReportUrl = (id, page) => 'https://github.com/Snailedlt/splitscreenme-vscode/issues/new?' + new URLSearchParams({ template: 'tester-feedback.yml', title: `Check ${id}: `, area: 'Linter (a wrong or missing warning)', what: `About the check \`${id}\` (${page}):\n\n` }).toString();
 
 export function writeRulePages(o) {
+  HL = o.hl ?? null;
   const { outDir, startHtml, RULES, RULE_DOCS, JS_RULES } = o;
   // The start page's look (its tokens, light/dark, type), so the pages feel like the same site.
   const style = startHtml.slice(startHtml.indexOf('<style>'), startHtml.indexOf('</style>') + 8);
@@ -104,7 +108,7 @@ ${docsDrawer(up, here, `<li><a href="${up}rules/">Every check</a></li>`)}
 <h2>Why it matters</h2>
 <p>${inline(d.why)}</p>
 ${d.bad ? `<h2>Example</h2>
-<div class="ex"><div class="wrong"><h3>✗ Wrong</h3><pre class="cfg"><code>${hl(d.bad)}</code></pre></div><div class="right"><h3>✓ Right</h3><pre class="cfg"><code>${hl(d.good)}</code></pre></div></div>` : `<p class="small">${inline(d.noExample || '')}</p>`}
+<div class="ex"><div class="wrong"><h3>✗ Wrong</h3><pre class="cfg hl"><code>${hl(d.bad)}</code></pre></div><div class="right"><h3>✓ Right</h3><pre class="cfg hl"><code>${hl(d.good)}</code></pre></div></div>` : `<p class="small">${inline(d.noExample || '')}</p>`}
 <h2>How to fix it</h2>
 <p>${inline(d.fix)}</p>
 <h2>Turn it off, or change how it shows</h2>

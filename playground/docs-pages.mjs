@@ -8,7 +8,10 @@ import { siteHeader, SITE_HEADER_CSS, docFeedback, DOC_FEEDBACK_CSS, docFeedback
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** Code, coloured: comments, strings, keywords and numbers (the start page's .hk/.hs/.hc colours). */
+// The build's highlighter (build.mjs hlSem: the editor's colours, Nucleus names by what they are) when given; else this one.
+let HL = null;
 function hl(code) {
+  if (HL) return HL(code);
   const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`]*`)|\b(var|let|const|function|return|if|else|for|while|new|true|false|null|undefined|typeof|in|this|string|number|boolean|void|any)\b|\b(0x[0-9a-fA-F]+|\d+(?:\.\d+)?)\b/g;
   let out = '', last = 0;
   for (let m; (m = re.exec(code)); ) {
@@ -38,7 +41,7 @@ function mdToHtml(md, href) {
   const out = [];
   const chunks = md.split(/```\w*\n([\s\S]*?)```/g);
   chunks.forEach((c, i) => {
-    if (i % 2) { out.push(`<pre class="cfg"><code>${hl(c.replace(/\n$/, ''))}</code></pre>`); return; }
+    if (i % 2) { out.push(`<pre class="cfg hl"><code>${hl(c.replace(/\n$/, ''))}</code></pre>`); return; }
     for (const block of c.split(/\n{2,}/)) {
       const b = block.trim();
       if (!b) continue;
@@ -90,12 +93,17 @@ export const DRAWER_CSS = `/* The docs list: a drawer on the left (groups › na
   #docs-drawer:not(.open) .dn-body { display: none; }
   .dn-body { margin-top: 10px; }
 }
-/* Sections of the list (Handler API, Checks): folds of their own, with a quieter, uppercase title. */
-#dn-list .dn-sec { margin: 0 0 6px; }
-#dn-list .dn-sec > details > summary { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 6px 6px 4px; }
-#dn-list .dn-sec > details > summary:hover { color: var(--fg); }
-#dn-list .dn-sec > details > ul { margin: 0 0 6px; border: 0; }
-#dn-list .dn-all > a { font-weight: 600; }
+/* Three levels, each clearly its own: a section (Handler API, Checks) is a heading in the accent colour with a rule
+   above it; its groups (Game, Context…) are bold; the names in a group are indented under a line. */
+#dn-list .dn-sec { margin: 0 0 4px; }
+#dn-list .dn-sec + .dn-sec { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+#dn-list .dn-sec > details > summary { font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); padding: 6px 6px; }
+#dn-list .dn-sec > details > summary::before { border-color: var(--accent); }
+#dn-list .dn-sec > details > ul { margin: 2px 0 6px 6px; padding-left: 4px; border: 0; }
+#dn-list .dn-sec > details > ul > li > details > summary { font-size: 14px; }
+#dn-list .dn-sec > details > ul > li > details > ul { margin-left: 14px; }
+#dn-list .dn-sec > details > ul > li > details > ul a { font-size: 13.5px; }
+#dn-list .dn-all > a { font-weight: 600; color: var(--fg); }
 `;
 export function docsDrawer(up, here, fallback = '') {
   return `<nav id="docs-drawer" aria-label="All docs and checks" data-root="${up}" data-base="${up}docs/" data-here="${esc(here)}">
@@ -108,6 +116,7 @@ export function docsDrawer(up, here, fallback = '') {
 }
 
 export function writeDocPages(o) {
+  HL = o.hl ?? null;
   const style = o.startHtml.slice(o.startHtml.indexOf('<style>'), o.startHtml.indexOf('</style>') + 8);
   const themeScript = (o.startHtml.match(/<script>\/\* the workbench's theme choice[\s\S]*?<\/script>/) || [''])[0];
   const head = (title, desc, canonical, up, here0 = '') => `<!doctype html>

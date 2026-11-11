@@ -16,6 +16,7 @@ import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
+import { semanticMarks } from './semmarks';
 import { codeHandlers, fixedCodeKeys, foldRange, keysByPosition, lineCommentFold, selectReferences, vscodeMouse } from './keys';
 import { ACTIONS, appActionFor, codeKeyMap, keyLabel, labelOf, binding, onBindingsChange, type Group } from './keybindings';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
@@ -702,6 +703,7 @@ editor.getWrapperElement().addEventListener('mouseenter', () => clearTimeout(tip
 tip.addEventListener('mouseenter', () => { clearTimeout(tipHideTimer); clearTimeout(tipTimer); });
 tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperElement().contains(e.relatedTarget as Node)) hideTipSoon(); });
 editor.on('change', () => (tip.hidden = true));
+semanticMarks(editor); // Game, Context and the rest in their own colours, as in VS Code (semmarks.ts)
 editor.on('scroll', () => (tip.hidden = true));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
 

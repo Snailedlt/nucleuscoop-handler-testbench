@@ -45,6 +45,8 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Nucleus names in their own colours everywhere.** As in VS Code, `Game`, `Context` and `Nucleus` are coloured as objects, with their properties and methods in their own colour, in the workbench's editor, Learn's editor, hovers and every code block on the docs and check pages.
+- **The docs list's levels are easier to tell apart.** Its sections (*Handler API*, *Checks*) are headings in the accent colour, the groups under them are bold, and the names are indented under a line.
 - **Shortcuts look like keys, and code has a Copy button.** Every keyboard shortcut on the site and in Learn is drawn as keys (<kbd>Ctrl</kbd>+<kbd>Space</kbd>), and code blocks and commands (such as the Notepad++ setup, portable one included) have a Copy button.
 - **Docs and checks in one list.** The list beside the docs has two sections, *Handler API* and *Checks*, which fold (and stay folded), and each check's page shows it too, with that check marked. The header's *Docs* covers both.
 - **The same header everywhere.** Every page has the way home (the logo) and to the workbench, Learn, Docs and the tools; Learn's bar has the same links and keeps them on narrower windows.
