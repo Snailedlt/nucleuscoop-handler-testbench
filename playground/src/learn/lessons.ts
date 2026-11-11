@@ -8,6 +8,7 @@
 // Im_awesome04's) line by line. The finished handler does exactly what that one does; only its name differs, so it
 // never replaces the Hub one for someone who has both.
 import { lint, type Diagnostic } from '@core/lint';
+import { inProblemList } from '../checklist';
 import { simulate, type SimResult } from '@core/sim';
 
 export type NoteKind = 'pitfall' | 'why' | 'alt' | 'odd' | 'check' | 'try';
@@ -78,6 +79,9 @@ function listOf(t: string, path: string): string[] | undefined {
 }
 /** The problems Check shows in a lesson: errors and warnings, minus the ones about lines a lesson soon adds. */
 export const problems = (text: string, l?: Lesson): Diagnostic[] => lint(text).filter((d) => (d.severity === 'error' || d.severity === 'warning') && !(l?.allow ?? []).includes(d.rule));
+/** What Check lists: the workbench's list (checklist.ts), so infos too (`"true"` where `true` belongs). Only errors and
+ *  warnings (problems) stand in the way of finishing a lesson. */
+export const listed = (text: string, l?: Lesson): Diagnostic[] => lint(text).filter((d) => inProblemList(d) && !(l?.allow ?? []).includes(d.rule));
 export const errors = (text: string) => lint(text).filter((d) => d.severity === 'error');
 const firstProblem = (t: string, l?: Lesson) => { const e = problems(t, l)[0]; return e ? `Check shows a problem on line ${t.slice(0, e.start).split('\n').length}: ${e.message}` : null; };
 type Want = [string, string | number | string[]];

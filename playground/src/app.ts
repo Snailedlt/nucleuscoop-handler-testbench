@@ -1,4 +1,5 @@
 import { RULE_DOCS, ruleUrl } from '@core/ruledocs';
+import { inProblemList } from './checklist';
 import { initKeySettings } from './kbsettings';
 import { openFind } from './findwidget';
 import { hasCredit, withCredit, withoutCredit } from './credit';
@@ -874,7 +875,7 @@ function renderProblems(text: string) {
   const simple = mode === 'simple';
   const rank = { error: 0, warning: 1, info: 2, hint: 3 } as Record<string, number>;
   // Errors first (they stop Nucleus), then in line order.
-  const list = (simple ? current.filter((d) => d.severity === 'error' || d.severity === 'warning') : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter)))
+  const list = (simple ? current.filter(inProblemList) : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter)))
     .slice()
     .sort((a, b) => rank[a.severity] - rank[b.severity] || a.start - b.start);
   shownProblems = list;

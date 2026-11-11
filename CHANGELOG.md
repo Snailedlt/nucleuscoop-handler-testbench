@@ -43,6 +43,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Learn and Guided mode list the same checks as the editors.** Notes such as `"true"` where `true` belongs now show in Learn's Check and in the workbench's Guided mode, as they already did in Advanced mode, VS Code and the other editors. Notes never stop a lesson.
 - **Learn has things to try.** In "Point it at the game", a *Try this* note asks you to put the player count in quotes and see what Check says, with the answer folded away until you want it. "Give it a name" now says why each handler needs a GUID of its own.
 - **Votes and "Tell us what's wrong" on every check's page.** They work as on the docs pages, and the report opens the feedback form with the check filled in.
 - **Visits to the start page, Learn, docs and checks are counted too.** One anonymous count per visit, with the site or link it came from, under the same rules as the workbench (off with Do Not Track or Settings › Privacy).

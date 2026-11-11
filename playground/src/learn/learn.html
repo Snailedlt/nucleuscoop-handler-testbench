@@ -134,6 +134,10 @@ button.link { background: none; border: 0; padding: 0; font: inherit; color: var
 .CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent) !important; }
 .sq-error { text-decoration: wavy underline #d32f2f; text-decoration-skip-ink: none; }
 .sq-warning { text-decoration: wavy underline #c47a00; text-decoration-skip-ink: none; }
+.sq-info { text-decoration: underline dotted #1f6feb; text-decoration-thickness: 2px; text-decoration-skip-ink: none; }
+.prob.info .sev { color: #0b5cad; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .prob.info .sev { color: #6cb6ff; } }
+:root[data-theme="dark"] .prob.info .sev { color: #6cb6ff; }
 #pane { flex: none; max-height: 42%; overflow: auto; border-top: 1px solid var(--line); background: var(--surface); padding: 10px 16px 14px; font-size: 15px; }
 .pane-title { font-size: 15px; margin: 0 0 8px; }
 .probs { list-style: none; padding: 0; margin: 0; }

@@ -15,7 +15,7 @@ import { RULE_DOCS } from '@core/ruledocs';
 import { zipBytes } from '@core/zipbytes';
 import { md, esc } from '../dom';
 import { hlHtml, hlCode } from '../codehl';
-import { CHAPTERS, FILE_NAME, findLesson, lessonNumber, problems, run, type Chapter, type Lesson, type NoteKind } from './lessons';
+import { CHAPTERS, FILE_NAME, findLesson, listed, lessonNumber, problems, run, type Chapter, type Lesson, type NoteKind } from './lessons';
 
 const KEY = 'nucleus-learn';
 interface Saved { done: string[]; last?: string; drawer?: boolean; open?: string[] }
@@ -169,7 +169,9 @@ function ruleDoc(id: string): string {
 }
 function renderCheck(text: string) {
   const l = lesson();
-  const ds = problems(text, l);
+  const blocking = problems(text, l);
+  const rank = { error: 0, warning: 1, info: 2, hint: 3 } as Record<string, number>;
+  const ds = listed(text, l).sort((a, b) => rank[a.severity] - rank[b.severity] || a.start - b.start);
   marks.forEach((m) => m.clear());
   marks = ds.map((d) => editor.markText(editor.posFromIndex(d.start), editor.posFromIndex(Math.max(d.end, d.start + 1)), { className: `sq-${d.severity}`, attributes: { title: d.message } }));
   if (l.pane !== 'check') return;
@@ -177,7 +179,7 @@ function renderCheck(text: string) {
   // it says "nothing wrong so far", not that Nucleus can load it.
   // A handler without its name and exe can't load, even before Check starts asking for them (lessons 3 and 4).
   const hidden = lint(text).some((d) => d.severity === 'error') || !['GUID', 'GameName', 'ExecutableName'].every((k) => new RegExp(`^\\s*Game\\.${k}\\s*=\\s*"[^"]+"`, 'm').test(text));
-  $('#pane').innerHTML = `<h2 class="pane-title">Check</h2>${ds.length ? `<ul class="probs">${ds.map((d, i) => `<li class="prob ${d.severity}"><button type="button" class="link goto" data-i="${i}">Line ${editor.posFromIndex(d.start).line + 1}</button> <span class="sev">${d.severity === 'error' ? 'Error' : 'Warning'}</span> ${inline(d.message)}${RULE_DOCS[d.rule] ? ` <button type="button" class="link about" data-rule="${esc(d.rule)}" aria-expanded="${openDocs.has(d.rule)}">${openDocs.has(d.rule) ? 'Less' : 'Why?'}</button>${openDocs.has(d.rule) ? ruleDoc(d.rule) : ''}` : ''}</li>`).join('')}</ul>` : hidden ? '<p class="ok-line">✓ Nothing wrong so far.</p>' : '<p class="ok-line">✓ No problems: Nucleus can load this handler.</p>'}`;
+  $('#pane').innerHTML = `<h2 class="pane-title">Check</h2>${!blocking.length ? (hidden ? '<p class="ok-line">✓ Nothing wrong so far.</p>' : '<p class="ok-line">✓ No problems: Nucleus can load this handler.</p>') : ''}${ds.length ? `<ul class="probs">${ds.map((d, i) => `<li class="prob ${d.severity}"><button type="button" class="link goto" data-i="${i}">Line ${editor.posFromIndex(d.start).line + 1}</button> <span class="sev">${d.severity === 'error' ? 'Error' : d.severity === 'warning' ? 'Warning' : 'Note'}</span> ${inline(d.message)}${RULE_DOCS[d.rule] ? ` <button type="button" class="link about" data-rule="${esc(d.rule)}" aria-expanded="${openDocs.has(d.rule)}">${openDocs.has(d.rule) ? 'Less' : 'Why?'}</button>${openDocs.has(d.rule) ? ruleDoc(d.rule) : ''}` : ''}</li>`).join('')}</ul>` : ''}`;
   $('#pane').querySelectorAll<HTMLElement>('.goto').forEach((b) => b.addEventListener('click', () => {
     editor.focus();
     editor.setCursor(editor.posFromIndex(ds[Number(b.dataset.i)].start));
