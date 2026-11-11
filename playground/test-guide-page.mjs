@@ -37,7 +37,7 @@ function render(md) {
       continue;
     }
     let m;
-    if ((m = /^- \[ \] (\d+\.\d+[a-z]?) (.*)$/.exec(l))) {
+    if ((m = /^- \[ \] (\d+[a-z]?\.\d+[a-z]?) (.*)$/.exec(l))) {
       if (list !== 'steps') { close(); out.push('<ul class="steps">'); list = 'steps'; }
       out.push(`<li class="step" data-step="${m[1]}"><span class="marks"><button type="button" class="mark ok" aria-pressed="false" title="Passed">✓</button><button type="button" class="mark bad" aria-pressed="false" title="A problem">✗</button></span><span class="num">${m[1]}</span> <span class="text">${inline(m[2])}</span></li>`);
       continue;
