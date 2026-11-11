@@ -43,6 +43,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Votes and "Tell us what's wrong" on every check's page.** They work as on the docs pages, and the report opens the feedback form with the check filled in.
 - **Visits to the start page, Learn, docs and checks are counted too.** One anonymous count per visit, with the site or link it came from, under the same rules as the workbench (off with Do Not Track or Settings › Privacy).
 - **An honest note on the start page.** It now says up front that the tools are vibe-coded (written mostly by an AI, with a person steering) and not yet tested much by people, what the automated tests do cover, and where to report what you find.
 - **A shorter start page.** What it catches, the demo videos and the ways to get it come first; the screenshots, the language server (`ncdev lsp`: what it is, what your editor gets, what you need), the editor comparison and the workbench extras are one click away. Old section links still work and open their part.
@@ -70,6 +71,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **No more dark box above the docs filter.** The list beside the docs now has a plain background, so nothing shows above its filter box.
 - **Find no longer freezes on long handlers.** Thousands of matches used to be marked one by one on every keystroke; now only the lines on screen are highlighted and typing in Find stays quick. Moving the cursor near the end of a very long handler froze the editor too; fixed.
 - **Header buttons line up.** Share, Save and the menu are one height, and the ▾ and + beside the tabs sit level with them; the tabs no longer grow a scroll bar (scroll them with the wheel or a trackpad, or pick one from ▾).
 - **The ▾ beside the tabs shows when it should.** The list of open handlers is there whenever two or more are open; it used to show on first load even with one tab, then come and go.

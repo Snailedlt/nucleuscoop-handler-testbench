@@ -10,8 +10,8 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 export function writeVotesPage({ outDir, startHtml, votes }) {
   const style = startHtml.slice(startHtml.indexOf('<style>'), startHtml.indexOf('</style>') + 8);
   const themeScript = (startHtml.match(/<script>\/\* the workbench's theme choice[\s\S]*?<\/script>/) || [''])[0];
-  const table = (rows, link) => rows.length
-    ? `<table><thead><tr><th>Name</th><th>👍</th><th>👎</th></tr></thead><tbody>${rows.map((x) => `<tr><td>${link ? `<a href="../docs/${esc(x.id)}/"><code>${esc(x.id)}</code></a>` : `<code>${esc(x.id)}</code>`}</td><td>${x.up}</td><td>${x.down}</td></tr>`).join('')}</tbody></table>`
+  const table = (rows, link = '') => rows.length
+    ? `<table><thead><tr><th>Name</th><th>👍</th><th>👎</th></tr></thead><tbody>${rows.map((x) => `<tr><td>${link ? `<a href="../${link}/${esc(x.id)}/"><code>${esc(x.id)}</code></a>` : `<code>${esc(x.id)}</code>`}</td><td>${x.up}</td><td>${x.down}</td></tr>`).join('')}</tbody></table>`
     : '<p class="small">No votes yet.</p>';
   const html = `<!doctype html>
 <html lang="en">
@@ -34,11 +34,13 @@ td:nth-child(n+2), th:nth-child(n+2) { width: 4.5em; text-align: right; }
 ${siteHeader('../', '')}
 <main>
 <h1>Votes</h1>
-<p class="lede">For maintainers: the anonymous 👍/👎 on the docs and tips, and how often features are used, ${esc(votes.from)} to ${esc(votes.to)} (updated daily). The docs people mark wrong or unclear come first.</p>
+<p class="lede">For maintainers: the anonymous 👍/👎 on the docs, tips and checks, and how often features are used, ${esc(votes.from)} to ${esc(votes.to)} (updated daily). The docs people mark wrong or unclear come first.</p>
 <h2>Docs</h2>
-${table(votes.docs ?? [], true)}
+${table(votes.docs ?? [], 'docs')}
 <h2>Tips</h2>
-${table(votes.tips ?? [], false)}
+${table(votes.tips ?? [])}
+<h2>Checks</h2>
+${table(votes.rules ?? [], 'rules')}
 <h2>Features used</h2>
 ${(votes.use ?? []).length ? `<table><thead><tr><th>Feature</th><th>Visits</th><th></th></tr></thead><tbody>${votes.use.map((u) => `<tr><td><code>${esc(u.feature)}</code></td><td>${u.count}</td><td></td></tr>`).join('')}</tbody></table>` : '<p class="small">Nothing counted yet.</p>'}
 </main>

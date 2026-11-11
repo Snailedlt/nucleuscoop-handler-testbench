@@ -87,7 +87,7 @@ ${SITE_HEADER_CSS}${DOC_FEEDBACK_CSS}
 /* The docs list: a drawer on the left (groups › names, a filter on top), over the page on a narrow screen. */
 .docs-wrap { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 0 8px; }
 .docs-wrap > main { max-width: 900px; margin: 0; min-width: 0; }
-#docs-drawer { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow: auto; padding: 18px 8px 24px 16px; border-right: 1px solid var(--line); font-size: 14px; }
+#docs-drawer { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow: auto; padding: 18px 8px 24px 16px; border-right: 1px solid var(--line); background: var(--bg); font-size: 14px; }
 .dn-toggle { display: none; }
 .dn-filter { position: sticky; top: -18px; z-index: 1; box-shadow: 0 -18px 0 var(--bg); width: 100%; padding: 7px 10px; margin: 0 0 10px; font: inherit; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); }
 #dn-list, #dn-list ul { list-style: none; margin: 0; padding: 0; }

@@ -3,7 +3,7 @@
 // each problem to its page; Discord helpers can link one too. Called by build.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
-import { siteHeader, SITE_HEADER_CSS } from './site-chrome.mjs';
+import { siteHeader, SITE_HEADER_CSS, docFeedback, DOC_FEEDBACK_CSS, docFeedbackScript } from './site-chrome.mjs';
 
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** `code` and **bold** in the plain-words texts. */
@@ -31,6 +31,9 @@ const SEV_WHAT = {
 /**
  * @param {{ outDir: string, startHtml: string, RULES: Record<string, {severity: string, description: string}>, RULE_DOCS: Record<string, any>, JS_RULES: Record<string, unknown>, base: string, preview: boolean, noindex: string }} o
  */
+/** "Tell us what's wrong" on a check's page: the tester feedback form, set to the linter and naming the check. */
+const ruleReportUrl = (id, page) => 'https://github.com/Snailedlt/splitscreenme-vscode/issues/new?' + new URLSearchParams({ template: 'tester-feedback.yml', title: `Check ${id}: `, area: 'Linter (a wrong or missing warning)', what: `About the check \`${id}\` (${page}):\n\n` }).toString();
+
 export function writeRulePages(o) {
   const { outDir, startHtml, RULES, RULE_DOCS, JS_RULES } = o;
   // The start page's look (its tokens, light/dark, type), so the pages feel like the same site.
@@ -67,6 +70,7 @@ ${SITE_HEADER_CSS}
 .ruleset li a:hover { border-color: var(--accent); }
 .ruleset strong { font-size: 15px; } .ruleset code { font-size: 12px; } .ruleset small { flex-basis: 100%; color: var(--muted); font-size: 13.5px; }
 .rsearch { width: 100%; max-width: 420px; padding: 8px 12px; font: inherit; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); }
+${DOC_FEEDBACK_CSS}
 .pn { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; font-size: 14px; }
 </style>
 </head>
@@ -99,6 +103,7 @@ ${d.bad ? `<h2>Example</h2>
 <p>${inline(d.fix)}</p>
 <h2>Turn it off, or change how it shows</h2>
 <p class="small">Each check can be shown as an error, warning, info or hint, or turned off. VS Code: <code>${esc(off)}</code> in your settings. Notepad++: <strong>Plugins › Nucleus Co-op handlers › Settings</strong>. Command line: <code>ncdev lint --rule ${esc(id)}=off</code>. Other editors: the <code>lint.rules</code> setting of <code>ncdev lsp</code>.</p>
+${docFeedback(id, ruleReportUrl(id, `${o.base}rules/${id}/`), esc, 'rule')}${docFeedbackScript(o.feedbackSite ?? null)}
 <nav class="pn" aria-label="Other checks">${prev ? `<a href="../${encodeURIComponent(prev)}/">‹ ${inline(RULE_DOCS[prev].title)}</a>` : '<span></span>'}${next ? `<a href="../${encodeURIComponent(next)}/">${inline(RULE_DOCS[next].title)} ›</a>` : ''}</nav>
 `;
     fs.mkdirSync(path.join(outDir, id), { recursive: true });

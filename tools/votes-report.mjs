@@ -1,5 +1,5 @@
 // The anonymous votes and feature counts (playground/src/feedback.ts and the docs pages send them to GoatCounter as
-// events: "vote/doc/<name>/up", "vote/tip/<id>/down", "use/<feature>"), summed for the maintainers: which docs people
+// events: "vote/doc/<name>/up", "vote/tip/<id>/down", "vote/rule/<id>/up", "use/<feature>"), summed for the maintainers: which docs people
 // find wrong, which tips help, which features get used. Read from GoatCounter's API with a token, so the counts stay
 // in one place; nothing personal is in them (feedback.ts says what is sent).
 //
@@ -53,10 +53,10 @@ async function allHits() {
 }
 const hits = await allHits();
 /** vote/<kind>/<id>/<up|down|undo-up|undo-down> → per item: up and down, undos taken off. */
-const votes = { doc: new Map(), tip: new Map() };
+const votes = { doc: new Map(), tip: new Map(), rule: new Map() };
 const use = [];
 for (const { path: p, count } of hits) {
-  const v = /^vote\/(doc|tip)\/(.+)\/(up|down|undo-up|undo-down)$/.exec(p);
+  const v = /^vote\/(doc|tip|rule)\/(.+)\/(up|down|undo-up|undo-down)$/.exec(p);
   if (v) {
     const m = votes[v[1]];
     const it = m.get(v[2]) ?? { id: v[2], up: 0, down: 0 };
@@ -68,12 +68,12 @@ for (const { path: p, count } of hits) {
   if (u) use.push({ feature: u[1], count });
 }
 const sorted = (m) => [...m.values()].map((x) => ({ ...x, up: Math.max(0, x.up), down: Math.max(0, x.down) })).sort((a, b) => b.down - a.down || b.up - a.up || a.id.localeCompare(b.id));
-const report = { takenAt: new Date().toISOString(), from: day(start), to: day(end), site, docs: sorted(votes.doc), tips: sorted(votes.tip), use: use.sort((a, b) => b.count - a.count) };
+const report = { takenAt: new Date().toISOString(), from: day(start), to: day(end), site, docs: sorted(votes.doc), tips: sorted(votes.tip), rules: sorted(votes.rule), use: use.sort((a, b) => b.count - a.count) };
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'votes.json'), JSON.stringify(report, null, 1) + '\n');
-console.log(`votes-report: ${report.docs.length} docs, ${report.tips.length} tips, ${report.use.length} features (${report.from} to ${report.to}).`);
+console.log(`votes-report: ${report.docs.length} docs, ${report.tips.length} tips, ${report.rules.length} checks, ${report.use.length} features (${report.from} to ${report.to}).`);
 
 if (process.env.GITHUB_STEP_SUMMARY) {
   const rows = (list) => list.slice(0, 30).map((x) => `| \`${x.id}\` | ${x.up} | ${x.down} |`).join('\n');
-  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Votes, last 12 months\n\nMost 👎 first. The full list is \`votes.json\` on the \`data\` branch, and on the site's votes/ page.\n\n### Docs\n\n| Name | 👍 | 👎 |\n|---|---|---|\n${rows(report.docs)}\n\n### Tips\n\n| Tip | 👍 | 👎 |\n|---|---|---|\n${rows(report.tips)}\n`);
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Votes, last 12 months\n\nMost 👎 first. The full list is \`votes.json\` on the \`data\` branch, and on the site's votes/ page.\n\n### Docs\n\n| Name | 👍 | 👎 |\n|---|---|---|\n${rows(report.docs)}\n\n### Tips\n\n| Tip | 👍 | 👎 |\n|---|---|---|\n${rows(report.tips)}\n\n### Checks\n\n| Check | 👍 | 👎 |\n|---|---|---|\n${rows(report.rules)}\n`);
 }
