@@ -45,6 +45,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🛠️ Improved
 
+- **Feedback goes to the right place.** The workbench's *Report a problem*, the site's pages and Learn open a feedback form in the workbench's own repository, with *Where* filled in from where you are; a wrong or missing check goes to the checks' form.
 - **Docs' start in the workbench shows what handlers really use.** The names every handler has come first, then the most used names of each object (Game, Context, Player…) with the share of the 896 Hub handlers that use them, and a link to all the docs as pages.
 - **Nucleus names in their own colours everywhere.** As in VS Code, `Game`, `Context` and `Nucleus` are coloured as objects, with their properties and methods in their own colour, in the workbench's editor, Learn's editor, hovers and every code block on the docs and check pages.
 - **The docs list's levels are easier to tell apart.** Its sections (*Handler API*, *Checks*) are headings in the accent colour, the groups under them are bold, and the names are indented under a line.

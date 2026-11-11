@@ -271,3 +271,39 @@ test('learn: the lessons page is built, and the workbench and start page link to
   assert.ok(html.length < 2_000_000, 'the page stays small (no ESLint in it)');
   assert.match(fs.readFileSync(path.join(root, 'playground/dist/pages/start/index.html'), 'utf8'), /href="\.\.\/learn\/"/);
 });
+
+// Feedback forms: every link that fills in "Where" (area=…) names one of that form's options, so a renamed option
+// can't silently leave the field empty. This repo's form for the workbench and the site; the extension's for checks
+// and the editors.
+test('feedback links: the Where they fill in is one of the form\'s options', () => {
+  const options = (file) => {
+    const y = fs.readFileSync(file, 'utf8');
+    const block = y.slice(y.indexOf('id: area'), y.indexOf('validations:', y.indexOf('id: area')));
+    return [...block.matchAll(/^\s+- (.+)$/gm)].map((m) => m[1].trim());
+  };
+  const forms = {
+    'nucleuscoop-handler-testbench:feedback.yml': options(path.join(root, '.github/ISSUE_TEMPLATE/feedback.yml')),
+    'splitscreenme-vscode:tester-feedback.yml': options(path.join(coreDir, '.github/ISSUE_TEMPLATE/tester-feedback.yml')),
+  };
+  assert.ok(forms['nucleuscoop-handler-testbench:feedback.yml'].includes('Workbench'));
+  const files = ['playground/src/report.ts', 'playground/rules-pages.mjs', 'playground/src/start.html', 'playground/src/tools.html'];
+  let seen = 0;
+  for (const f of files) {
+    const src = fs.readFileSync(path.join(root, f), 'utf8');
+    // Literal links: …/<repo>/issues/new?template=<form>…area=<value>
+    for (const m of src.matchAll(/github\.com\/Snailedlt\/([\w-]+)\/issues\/new\?template=([\w-]+\.yml)[^"'`\s]*?area=([^&"'`\s]+)/g)) {
+      const opts = forms[`${m[1]}:${m[2]}`];
+      assert.ok(opts, `${f}: a form we don't know (${m[1]} ${m[2]})`);
+      assert.ok(opts.includes(decodeURIComponent(m[3].replace(/\+/g, ' '))), `${f}: area "${m[3]}" isn't an option of ${m[2]}`);
+      seen++;
+    }
+    // Built with URLSearchParams: { template: '<form>', area: '<value>' }
+    for (const m of src.matchAll(/template: '([\w-]+\.yml)'[\s\S]{0,200}?area: (?:[^'}]*?\?\? )?'([^']+)'/g)) {
+      const repo = /nucleuscoop-handler-testbench/.test(src.slice(Math.max(0, m.index - 600), m.index)) || m[1] === 'feedback.yml' ? 'nucleuscoop-handler-testbench' : 'splitscreenme-vscode';
+      const opts = forms[`${repo}:${m[1]}`];
+      assert.ok(opts && opts.includes(m[2]), `${f}: area "${m[2]}" isn't an option of ${m[1]}`);
+      seen++;
+    }
+  }
+  assert.ok(seen >= 3, `found ${seen} links with a Where`);
+});

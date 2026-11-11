@@ -36,7 +36,7 @@ const SEV_WHAT = {
  * @param {{ outDir: string, startHtml: string, RULES: Record<string, {severity: string, description: string}>, RULE_DOCS: Record<string, any>, JS_RULES: Record<string, unknown>, base: string, preview: boolean, noindex: string }} o
  */
 /** "Tell us what's wrong" on a check's page: the tester feedback form, set to the linter and naming the check. */
-const ruleReportUrl = (id, page) => 'https://github.com/Snailedlt/splitscreenme-vscode/issues/new?' + new URLSearchParams({ template: 'tester-feedback.yml', title: `Check ${id}: `, area: 'Linter (a wrong or missing warning)', what: `About the check \`${id}\` (${page}):\n\n` }).toString();
+const ruleReportUrl = (id, page) => 'https://github.com/Snailedlt/splitscreenme-vscode/issues/new?' + new URLSearchParams({ template: 'tester-feedback.yml', title: `Check ${id}: `, area: 'Checks (a wrong or missing warning)', what: `About the check \`${id}\` (${page}):\n\n` }).toString();
 
 export function writeRulePages(o) {
   HL = o.hl ?? null;
@@ -89,7 +89,7 @@ ${docsDrawer(up, here, `<li><a href="${up}rules/">Every check</a></li>`)}
   const foot = (up) => `</main>
 </div>
 <script src="${up}docs/nav.js" defer></script>
-<footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml">Something wrong on this page?</a></footer>
+<footer class="small"><a href="${up}start/">About these tools</a> · <a href="${up}">Open the workbench</a> · <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/issues/new?template=feedback.yml&amp;area=Docs+and+check+pages">Something wrong on this page?</a></footer>
 </body>
 </html>
 `;

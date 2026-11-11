@@ -1,0 +1,43 @@
+name: Feedback
+description: Something wrong, confusing or missing in the browser workbench, Learn, or the site (home, tools, docs and check pages).
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: A wrong or missing **check**, or something in **VS Code, Notepad++, ncdev** or another editor? That goes to [the extension's form](https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Workbench
+        - Learn
+        - Docs and check pages
+        - Home and tools pages
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: handler
+    attributes:
+      label: Handler
+      description: A Hub link, a workbench share link, or the smallest piece of handler code that shows it (if a handler is involved).
+      render: js
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Filled in from the workbench; otherwise the date you saw it.
+  - type: textarea
+    id: context
+    attributes:
+      label: Details from the workbench
+      description: Filled in for you when you open this form from the workbench (build, browser, settings, which handler; never your code). Please leave it as it is. A bot keeps a copy as the first comment.
+      render: text

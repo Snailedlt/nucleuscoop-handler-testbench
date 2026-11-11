@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A wrong or missing check, VS Code, Notepad++, ncdev or another editor
+    url: https://github.com/Snailedlt/splitscreenme-vscode/issues/new?template=tester-feedback.yml
+    about: The checks and the editor tools live in splitscreenme-vscode.
