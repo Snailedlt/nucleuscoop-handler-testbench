@@ -31,7 +31,7 @@ cd nucleuscoop-handler-testbench/playground && npm ci && node build.mjs --previe
 The build takes a minute or two and ends by printing which test build its start page links to. (If it stops with `GitHub API 403`, GitHub's hourly limit for unsigned-in requests from your address is used up: wait a bit and run it again.) Then serve the site (the pages link to each other, which doesn't work from `file://`):
 
 ```bash
-npx serve dist/pages -l 8080
+npx --yes serve dist/pages -l 8080
 ```
 
 Open http://localhost:8080/ (the workbench). The other pages are `/start/`, `/learn/`, `/docs/` and `/rules/`. Nothing you do on this site is counted: a preview build has the anonymous counts switched off.
