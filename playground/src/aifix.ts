@@ -97,6 +97,9 @@ export function pageTools() {
 
 export type DiffLine = { kind: ' ' | '-' | '+'; text: string; a?: number; b?: number };
 
+/** The most cells the line diff's table may have (about 16 MB of Uint32). */
+export const MAX_DIFF_CELLS = 4_000_000;
+
 export function diffLines(before: string, after: string): DiffLine[] {
   const a = before.split('\n');
   const b = after.split('\n');
@@ -109,6 +112,16 @@ export function diffLines(before: string, after: string): DiffLine[] {
   const B = b.slice(pre, b.length - suf);
   const n = A.length;
   const m = B.length;
+  // The table is n × m: past this, show the changed block as removed then added instead (a real handler is a few
+  // hundred lines; a rewrite of thousands of lines would need hundreds of MB and freeze the page).
+  if (n * m > MAX_DIFF_CELLS) {
+    const out: DiffLine[] = [];
+    for (let k = 0; k < pre; k++) out.push({ kind: ' ', text: a[k], a: k + 1, b: k + 1 });
+    A.forEach((t, i) => out.push({ kind: '-', text: t, a: pre + i + 1 }));
+    B.forEach((t, j) => out.push({ kind: '+', text: t, b: pre + j + 1 }));
+    for (let k = 0; k < suf; k++) out.push({ kind: ' ', text: a[a.length - suf + k], a: a.length - suf + k + 1, b: b.length - suf + k + 1 });
+    return out;
+  }
   const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
   for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
   const out: DiffLine[] = [];

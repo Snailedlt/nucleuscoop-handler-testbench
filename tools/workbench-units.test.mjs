@@ -210,3 +210,32 @@ test('learn: every lesson starts unfinished, its solution passes, with no errors
   const order = first.lessons.map((l) => l.section).filter((s, i, a) => s !== a[i - 1]);
   assert.equal(new Set(order).size, order.length, `sections out of order: ${order.join(', ')}`);
 });
+
+test('snippets: a bare stop repeats its default text', async () => {
+  const { expandSnippet } = await load('playground/src/snippet.ts');
+  assert.equal(expandSnippet('${1:player} = $1').text, 'player = player');
+  assert.equal(expandSnippet('$1 = ${1:p\\}x}').text, 'p}x = p}x');
+  assert.equal(expandSnippet('f(${1|a,b|}, $1)$0').text, 'f(a, a)');
+  assert.equal(expandSnippet('x$1y').text, 'xy');
+});
+
+test('key bindings: a chord and its first step clash', () => {
+  const chord = keys.ACTIONS.find((a) => keys.steps(keys.binding(a.id)).length > 1);
+  assert.ok(chord, 'a default binding with two steps');
+  const first = keys.steps(keys.binding(chord.id))[0];
+  const other = keys.ACTIONS.find((a) => a.id !== chord.id && a.where !== 'fixed');
+  assert.ok(keys.conflicts(other.id, first).some((a) => a.id === chord.id), `${first} clashes with ${chord.id}`);
+});
+
+test('AI fix diff: a huge rewrite is shown without the n×m table', async () => {
+  const { diffLines, MAX_DIFF_CELLS } = await load('playground/src/aifix.ts');
+  const n = Math.ceil(Math.sqrt(MAX_DIFF_CELLS)) + 10;
+  const a = Array.from({ length: n }, (_, i) => `a${i}`).join('\n');
+  const b = Array.from({ length: n }, (_, i) => `b${i}`).join('\n');
+  const t0 = Date.now();
+  const d = diffLines(a, b);
+  assert.ok(Date.now() - t0 < 2000);
+  assert.equal(d.filter((l) => l.kind === '-').length, n);
+  assert.equal(d.filter((l) => l.kind === '+').length, n);
+  assert.deepEqual(diffLines('x\ny\nz', 'x\nY\nz').map((l) => l.kind).sort(), [' ', ' ', '+', '-']);
+});

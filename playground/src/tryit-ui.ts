@@ -130,7 +130,7 @@ export function initTryIt(deps: TryItDeps): { run: () => void; options: () => Si
     const cells = new Map<string, Cell>();
     let done = 0;
     const t0 = performance.now();
-    const draw = (finished: boolean) => {
+    const draw = (finished: boolean, stopped = false) => {
       const failed = [...cells.values()].reduce((n, c) => n + c.fail.length, 0);
       const rows = Array.from({ length: max }, (_, i) => i + 1)
         .map((p) => `<tr><th>${p} player${p === 1 ? '' : 's'}</th>${modes
@@ -144,14 +144,14 @@ export function initTryIt(deps: TryItDeps): { run: () => void; options: () => Si
         .join('');
       const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
       // Nucli runs the relay while it tests, then shows how it went.
-      const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc', busy: !finished });
-      box.innerHTML = `<div class="mx-head">${nuc}<strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn icon" type="button" id="mx-close" aria-label="Close" title="Close">×</button></div>
+      const nuc = mascot(finished ? (failed ? 'n-bad' : stopped ? 'n-idle' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc', busy: !finished });
+      box.innerHTML = `<div class="mx-head">${nuc}<strong>${stopped ? `Stopped after ${done} of ${jobs.length} combinations${failed ? `: ${failed} fail` : ''}` : finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn icon" type="button" id="mx-close" aria-label="Close" title="Close">×</button></div>
         ${finished ? '' : `<div class="mx-bar" role="progressbar" aria-label="Combinations tested" aria-valuemin="0" aria-valuemax="${jobs.length}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, jobs.length)) * 100)}%"></i></div>`}
         <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
         ${fails.length ? `<ul class="mx-fails">${fails.slice(0, 8).map((f) => { const [p, kb] = f.k.split('|'); return `<li>${p} player${p === '1' ? '' : 's'}, ${modes.find((m) => String(m.kb) === kb)!.label.toLowerCase()}, ${f.res.replace('x', '×')}: ${esc(f.why)}</li>`; }).join('')}${fails.length > 8 ? `<li>…and ${fails.length - 8} more</li>` : ''}</ul>` : ''}
         <p class="muted small" style="margin:6px 0 0">Pick a cell to see that run below.</p>`;
       document.documentElement.classList.toggle('busy', !finished); // the logo beats while it runs
-      box.querySelector('#mx-stop')?.addEventListener('click', () => (mxRun++, draw(true)));
+      box.querySelector('#mx-stop')?.addEventListener('click', () => (mxRun++, draw(true, true)));
       box.querySelector('#mx-close')?.addEventListener('click', () => ((mxRun++, (box.hidden = true), document.documentElement.classList.remove('busy'))));
       box.querySelectorAll<HTMLButtonElement>('button[data-p]').forEach((b) =>
         b.addEventListener('click', () => {

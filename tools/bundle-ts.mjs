@@ -5,8 +5,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
-export const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const esbuild = createRequire(path.join(root, 'playground/package.json'))('esbuild');
 
 export const coreDir = [process.env.CORE_DIR, process.env.SPLITSCREENME_VSCODE, path.join(root, 'core'), path.join(root, '../splitscreenme-vscode')]

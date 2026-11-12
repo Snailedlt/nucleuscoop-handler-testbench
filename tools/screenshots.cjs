@@ -9,7 +9,7 @@ const onlyAt = args.indexOf('--only');
 // --only <names>: just these screenshots (comma-separated: check, fix-all, try-it, lines-tree, lines, whats-new, phone).
 const ONLY = onlyAt >= 0 ? args[onlyAt + 1].split(',') : null;
 const want = (name) => !ONLY || ONLY.includes(name);
-const BASE = args.find((a, i) => !a.startsWith('--') && i !== onlyAt + 1) || 'http://127.0.0.1:8765/';
+const BASE = args.find((a, i) => !a.startsWith('--') && (onlyAt < 0 || i !== onlyAt + 1)) || 'http://127.0.0.1:8765/';
 const IMG = path.join(__dirname, '..', 'docs', 'images');
 const CH = path.join(IMG, 'changelog');
 const SKYRIM = 'PPct546raDXfjRLGw';

@@ -10,6 +10,12 @@ export function expandSnippet(body: string, indent = '', unit = '  '): { text: s
   let text = '';
   const stops: Stop[] = [];
   let i = 0;
+  // Each stop's default text, wherever it's given: a bare `$1` repeats the text of `${1:player}` (VS Code does the same).
+  const defaults = new Map<number, string>();
+  for (const m of body.matchAll(/\$\{(\d+)(?::((?:\\.|[^}\\])*)|\|([^|]*)\|)\}/g)) {
+    const n = +m[1];
+    if (!defaults.has(n)) defaults.set(n, m[2] !== undefined ? m[2].replace(/\\(.)/g, '$1') : (m[3] ?? '').split(',')[0]);
+  }
   const put = (s: string) => {
     text += s.replace(/\t/g, unit).replace(/\n/g, '\n' + indent);
   };
@@ -18,7 +24,13 @@ export function expandSnippet(body: string, indent = '', unit = '  '): { text: s
     if (c === '\\' && i + 1 < body.length && '\\$}'.includes(body[i + 1])) { put(body[i + 1]); i += 2; continue; }
     if (c === '$') {
       const simple = /^\$(\d+)/.exec(body.slice(i));
-      if (simple) { stops.push({ n: +simple[1], from: text.length, to: text.length }); i += simple[0].length; continue; }
+      if (simple) {
+        const from = text.length;
+        put(defaults.get(+simple[1]) ?? '');
+        stops.push({ n: +simple[1], from, to: text.length });
+        i += simple[0].length;
+        continue;
+      }
       const choice = /^\$\{(\d+)\|([^|]*)\|\}/.exec(body.slice(i));
       if (choice) {
         const first = choice[2].split(',')[0];

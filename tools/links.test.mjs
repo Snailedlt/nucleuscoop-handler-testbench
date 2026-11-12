@@ -250,9 +250,9 @@ test('release and Hub links have the expected form', () => {
 
 // Every check the editors link to (core/ruledocs.ts ruleUrl → rules/<id>/) has its page in the built site.
 test('rules: every check the tools link to has its page', { skip: !fs.existsSync(path.join(root, 'playground/dist/pages/rules/index.html')) && 'not built' }, () => {
-  const src = fs.readFileSync(path.join(root, '..', 'splitscreenme-vscode', 'src', 'core', 'lint.ts'), 'utf8');
+  const src = fs.readFileSync(path.join(coreDir, 'src', 'core', 'lint.ts'), 'utf8');
   const nucleus = [...src.slice(src.indexOf('export const RULES = {')).matchAll(/^  '?([a-z0-9-]+)'?: \{/gm)].map((m) => m[1]);
-  const js = [...fs.readFileSync(path.join(root, '..', 'splitscreenme-vscode', 'src', 'core', 'jsrules.ts'), 'utf8').matchAll(/^  '([a-z0-9-]+)': \{ title:/gm)].map((m) => m[1]);
+  const js = [...fs.readFileSync(path.join(coreDir, 'src', 'core', 'jsrules.ts'), 'utf8').matchAll(/^  '([a-z0-9-]+)': \{ title:/gm)].map((m) => m[1]);
   const ids = [...new Set([...nucleus, ...js])];
   assert.ok(ids.length > 40, `${ids.length} rules`);
   const missing = ids.filter((id) => !fs.existsSync(path.join(root, 'playground/dist/pages/rules', id, 'index.html')));

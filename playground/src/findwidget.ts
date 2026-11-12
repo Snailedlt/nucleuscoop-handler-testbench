@@ -108,7 +108,17 @@ function replacement(st: State, matched: string): string {
   return matched.replace(new RegExp(re.source, re.flags.replace('g', '')), st.repl.value); // $1… from the match
 }
 
+/** Matches from the text and query as they are now: a search waiting for typing to pause, or for an edit to settle,
+ *  would leave old offsets, and a replace would then overwrite the wrong text. The current match stays current. */
+function fresh(cm: any, st: State) {
+  clearTimeout(st.timer);
+  clearTimeout(st.typing);
+  st.timer = st.typing = undefined;
+  search(cm, st, cm.getCursor('from'));
+}
+
 function replaceOne(cm: any, st: State) {
+  fresh(cm, st);
   const m = st.matches[st.current];
   if (!m) return;
   const from = pos(cm, m[0]), to = pos(cm, m[1]);
@@ -117,6 +127,7 @@ function replaceOne(cm: any, st: State) {
 }
 
 function replaceAll(cm: any, st: State) {
+  fresh(cm, st);
   if (!st.matches.length) return;
   const n = st.matches.length;
   // One edit for the whole text: thousands of replaceRange calls would each re-measure the document.

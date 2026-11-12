@@ -173,7 +173,7 @@ const normStep = (s: string) => {
   const order = ['Ctrl', 'Shift', 'Alt', 'Cmd'];
   return [...parts.filter((p) => p).sort((a, b) => order.indexOf(a) - order.indexOf(b)), key].join('+');
 };
-const steps = (keys: string) => keys.split(' ').filter(Boolean).map(normStep);
+export const steps = (keys: string) => keys.split(' ').filter(Boolean).map(normStep);
 
 /** Workbench (app) shortcuts: which action an event completes, following two-step bindings. */
 let pending: { step: string; at: number } | null = null;
@@ -230,8 +230,15 @@ export function codeKeyMap(handlers: Record<string, (cm: any) => void>, base: Re
 /** Other actions using this binding where it would clash (the same place, or the page and the code). */
 export function conflicts(id: string, keys: string): Action[] {
   const mine = ACTIONS.find((a) => a.id === id);
-  const s = steps(keys).join(' ');
-  return ACTIONS.filter((a) => a.id !== id && a.where !== 'fixed' && mine && steps(binding(a.id)).join(' ') === s);
+  const s = steps(keys);
+  // The same keys, or one is the start of the other's chord (Ctrl+K and Ctrl+K Ctrl+0): the editor can't tell
+  // them apart, and CodeMirror refuses such a keymap outright.
+  const starts = (x: string[], y: string[]) => x.length > 0 && x.length <= y.length && x.every((k, i) => k === y[i]);
+  return ACTIONS.filter((a) => {
+    if (a.id === id || a.where === 'fixed' || !mine) return false;
+    const o = steps(binding(a.id));
+    return starts(o, s) || starts(s, o);
+  });
 }
 /** Keys a browser doesn't hand to the page. */
 export function reserved(keys: string): string | undefined {

@@ -69,6 +69,8 @@ export function initFixes(deps: FixesDeps): void {
     }
     const who = runner.label;
     const base = editor.getValue();
+    // The handler this fix is for: switching to another tab meanwhile must not apply it there.
+    const startDoc = editor.getDoc();
     const before = counts(base, deps.lintCtx());
     aiCtl = new AbortController();
     aiBtn.disabled = true;
@@ -99,6 +101,8 @@ export function initFixes(deps: FixesDeps): void {
       const changes = Array.isArray(r?.changes) ? r.changes.map(String).slice(0, 20) : [];
       if (!code.trim()) {
         aiBox.innerHTML = `<p>The answer had no handler code. Try again.</p>`;
+      } else if (editor.getDoc() !== startDoc) {
+        aiBox.innerHTML = `<p>You switched to another handler while ${esc(who)} was working, so its fix was not applied. Go back to that handler and run Fix with AI again.</p>`;
       } else if (code === base) {
         aiBox.innerHTML = `<p>${esc(who)} found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
       } else {

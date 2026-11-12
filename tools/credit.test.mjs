@@ -2,9 +2,10 @@
 // was and wasn't done, refreshed (never doubled), and an edited credit line is left alone.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { build } from '../playground/node_modules/esbuild/lib/main.js';
 
-const { outputFiles } = await build({ entryPoints: [new URL('../playground/src/credit.ts', import.meta.url).pathname], bundle: true, format: 'esm', write: false, platform: 'neutral' });
+const { outputFiles } = await build({ entryPoints: [fileURLToPath(new URL('../playground/src/credit.ts', import.meta.url))], bundle: true, format: 'esm', write: false, platform: 'neutral' });
 const { withCredit, withoutCredit, hasCredit, creditLines, CREDIT_LINK } = await import('data:text/javascript;base64,' + Buffer.from(outputFiles[0].text).toString('base64'));
 
 const H = 'Game.GUID = "x";\nGame.GameName = "x";\n';

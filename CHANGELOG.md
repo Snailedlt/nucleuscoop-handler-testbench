@@ -88,6 +88,11 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **Fix with AI stays with its handler.** Switching tabs while the AI works no longer applies its fix to the other handler, and a huge AI rewrite no longer freezes the page while its changes are listed.
+- **Replace uses the newest matches.** Replace and Replace all right after an edit no longer overwrite the wrong text.
+- **Stopping Test all says so.** It shows how many combinations ran, instead of "All combinations work".
+- **A shortcut can't half-match a two-step one.** Settings › Keyboard reports Ctrl+K as clashing with Ctrl+K Ctrl+0, which used to break the editor's keys on the next visit.
+- **Snippets fill in repeated placeholders.** A placeholder used twice gets its default text in both places.
 - **No more dark box above the docs filter.** The list beside the docs now has a plain background, so nothing shows above its filter box.
 - **Find no longer freezes on long handlers.** Thousands of matches used to be marked one by one on every keystroke; now only the lines on screen are highlighted and typing in Find stays quick. Moving the cursor near the end of a very long handler froze the editor too; fixed.
 - **Header buttons line up.** Share, Save and the menu are one height, and the ▾ and + beside the tabs sit level with them; the tabs no longer grow a scroll bar (scroll them with the wheel or a trackpad, or pick one from ▾).

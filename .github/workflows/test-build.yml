@@ -31,7 +31,10 @@ jobs:
     env:
       BRANCH: ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
     steps:
+      # No token left in git's config: the next steps run the extension branch's npm scripts.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: The extension, at the branch's newest commit
         run: git clone --quiet --depth 1 --branch "$BRANCH" https://github.com/Snailedlt/splitscreenme-vscode ext
       - uses: actions/setup-node@v4

@@ -31,11 +31,17 @@ const start = new Date(end.getTime() - 365 * 864e5);
 async function allHits() {
   const seen = [];
   const hits = [];
+  let waits = 0; // GoatCounter's rate limit: wait and retry, but not for ever (the workflow's fallback must get to run)
   for (let page = 0; page < 200; page++) {
     const q = new URLSearchParams({ start: stamp(start), end: stamp(end, true), limit: '100' });
     for (const id of seen) q.append('exclude_paths', String(id));
     const r = await fetch(`${api}/stats/hits?${q}`, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
-    if (r.status === 429) { await new Promise((ok) => setTimeout(ok, 2000)); page--; continue; }
+    if (r.status === 429) {
+      if (++waits > 30) throw new Error('GoatCounter kept answering 429 (rate limited); try again later.');
+      await new Promise((ok) => setTimeout(ok, 2000));
+      page--;
+      continue;
+    }
     if (!r.ok) throw new Error(`GoatCounter ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const j = await r.json();
     for (const h of j.hits ?? []) { seen.push(h.path_id); hits.push({ path: String(h.path ?? '').replace(/^\//, ''), count: Number(h.count ?? 0) }); }
