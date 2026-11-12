@@ -14,12 +14,20 @@ on:
         description: 'splitscreenme-vscode branch to build (empty: the branch being tested for the next release)'
         required: false
         default: ''
+      commit:
+        description: 'Exact commit to build (full or short SHA; empty: the branch''s newest). Must be on the branch.'
+        required: false
+        default: ''
   push:
     branches: [preview-ux]
     paths: ['.github/workflows/test-build.yml']
 
 # Nothing by default; each job asks for what it needs.
 permissions: {}
+
+# The extension repository the test build comes from (change it here if the tools move upstream).
+env:
+  EXT_REPO: Snailedlt/splitscreenme-vscode
 
 concurrency:
   group: test-build
@@ -35,12 +43,29 @@ jobs:
       contents: read
     env:
       BRANCH: ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
+      COMMIT: ${{ inputs.commit }}
     outputs:
       ver: ${{ steps.vsix.outputs.ver }}
-      sha: ${{ steps.vsix.outputs.sha }}
+      sha: ${{ steps.src.outputs.sha }}
+      author: ${{ steps.src.outputs.author }}
+      date: ${{ steps.src.outputs.date }}
     steps:
-      - name: The extension, at the branch's newest commit
-        run: git clone --quiet --depth 1 --branch "$BRANCH" https://github.com/Snailedlt/splitscreenme-vscode ext
+      # The exact commit is fixed here, before any of the extension's code runs, and named in the release notes.
+      - name: The extension, at the chosen commit (or the branch's newest)
+        id: src
+        run: |
+          [[ -z "$COMMIT" || "$COMMIT" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::commit must be a SHA (7-40 hex characters)"; exit 1; }
+          git clone --quiet --filter=blob:none --no-checkout --branch "$BRANCH" "https://github.com/$EXT_REPO" ext
+          cd ext
+          FULL=$(git rev-parse --verify --quiet "${COMMIT:-HEAD}^{commit}") || { echo "::error::Commit $COMMIT not found in $EXT_REPO"; exit 1; }
+          git merge-base --is-ancestor "$FULL" HEAD || { echo "::error::Commit $FULL is not on $BRANCH"; exit 1; }
+          git checkout --quiet --detach "$FULL"
+          {
+            echo "sha=$FULL"
+            echo "author=$(git log -1 --format='%an' "$FULL" | tr -cd '[:alnum:] ._-' | cut -c1-60)"
+            echo "date=$(git log -1 --format='%cI' "$FULL")"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building $EXT_REPO@$FULL ($BRANCH)" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -55,8 +80,7 @@ jobs:
         working-directory: ext
         run: |
           VER=$(node -p "require('./package.json').version")
-          SHA=$(git rev-parse --short HEAD)
-          echo "ver=$VER" >> "$GITHUB_OUTPUT"; echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
           mkdir -p ../out
           npx vsce package --no-dependencies -o "../out/splitscreenme-vscode-v$VER-test.vsix"
       - name: ncdev.exe (with the Notepad++ plugin) and the plugin's zip, tested like a release
@@ -85,6 +109,8 @@ jobs:
       BRANCH: ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
       VER: ${{ needs.build.outputs.ver }}
       SHA: ${{ needs.build.outputs.sha }}
+      AUTHOR: ${{ needs.build.outputs.author }}
+      DATE: ${{ needs.build.outputs.date }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
@@ -95,7 +121,10 @@ jobs:
       - name: Check what the build handed over
         run: |
           [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected version: $VER"; exit 1; }
-          [[ "$SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::Unexpected commit: $SHA"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Unexpected commit: $SHA"; exit 1; }
+          [[ "$AUTHOR" =~ ^[A-Za-z0-9\ ._-]{0,60}$ ]] || { echo "::error::Unexpected author: $AUTHOR"; exit 1; }
+          [[ "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}([+-][0-9:]{5}|Z)$ ]] || { echo "::error::Unexpected date: $DATE"; exit 1; }
+          [[ "$EXT_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || { echo "::error::Unexpected repository: $EXT_REPO"; exit 1; }
           [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "::error::Unexpected branch name: $BRANCH"; exit 1; }
           ls out
           [ "$(ls out | LC_ALL=C sort | tr '\n' ' ')" = "NcDev.zip ncdev.exe splitscreenme-vscode-v$VER-test.vsix " ] || { echo "::error::Unexpected files"; exit 1; }
@@ -103,15 +132,17 @@ jobs:
         run: |
           gh release delete test-build --yes --cleanup-tag 2>/dev/null || true
           cat > notes.md <<EOF
-          **For testing only: not released.** splitscreenme-vscode \`$BRANCH\` at [\`$SHA\`](https://github.com/Snailedlt/splitscreenme-vscode/commit/$SHA) (version $VER), built like a release.
+          **For testing only: not released.** $EXT_REPO \`$BRANCH\` at [\`${SHA:0:7}\`](https://github.com/$EXT_REPO/commit/$SHA) (version $VER), built like a release.
+
+          Built from commit \`$SHA\` by $AUTHOR, committed $DATE.
 
           Get it the way users will: build the site with \`node build.mjs --preview --test-build\`, serve \`dist/pages\` and download from its tools page (\`/tools/\`). The steps are in the test guide.
           EOF
-          gh release create test-build "out/splitscreenme-vscode-v$VER-test.vsix" out/ncdev.exe out/NcDev.zip --prerelease --target "$GITHUB_SHA" --title "Test build: v$VER ($SHA)" --notes-file notes.md
+          gh release create test-build "out/splitscreenme-vscode-v$VER-test.vsix" out/ncdev.exe out/NcDev.zip --prerelease --target "$GITHUB_SHA" --title "Test build: v$VER (${SHA:0:7})" --notes-file notes.md
       - name: Summary
         run: |
           {
-            echo "## Test build: v$VER ($BRANCH @ $SHA)"
+            echo "## Test build: v$VER ($EXT_REPO $BRANCH @ $SHA, by $AUTHOR, $DATE)"
             echo
             echo "https://github.com/$GH_REPO/releases/tag/test-build"
             echo

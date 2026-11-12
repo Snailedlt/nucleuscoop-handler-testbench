@@ -61,7 +61,7 @@ This guide is on the local site too, at http://localhost:8080/test-guide/ (only 
 git -C ../../splitscreenme-vscode pull && npm --prefix ../../splitscreenme-vscode ci && git pull && npm ci && git -C .assets pull && node build.mjs --preview --test-build --assets .assets && npx --yes http-server dist/pages -p 8080 -c-1
 ```
 
-That updates the site. The downloads on the tools page (the `.vsix` and `ncdev.exe`) only change when the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) runs again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run): run it first when the tools changed, then the line above.
+That updates the site. The downloads on the tools page (the `.vsix` and `ncdev.exe`) only change when the [Test build workflow](https://github.com/Snailedlt/nucleuscoop-handler-testbench/actions/workflows/test-build.yml) runs again (after the testbench is merged it has a *Run workflow* button; until then, re-run its last run): run it first when the tools changed, then the line above. To build one exact commit, put its SHA in the workflow's *commit* field; the release notes then name the commit, its author and its date.
 
 ---
 
