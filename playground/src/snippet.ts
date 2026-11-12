@@ -12,7 +12,9 @@ export function expandSnippet(body: string, indent = '', unit = '  '): { text: s
   let i = 0;
   // Each stop's default text, wherever it's given: a bare `$1` repeats the text of `${1:player}` (VS Code does the same).
   const defaults = new Map<number, string>();
-  for (const m of body.matchAll(/\$\{(\d+)(?::((?:\\.|[^}\\])*)|\|([^|]*)\|)\}/g)) {
+  // Escaped text (`\${1:x}`) is skipped: the `\\.` alternative eats the escape before a `$` can match.
+  for (const m of body.matchAll(/\\.|\$\{(\d+)(?::((?:\\.|[^}\\])*)|\|([^|]*)\|)\}/g)) {
+    if (m[1] === undefined) continue;
     const n = +m[1];
     if (!defaults.has(n)) defaults.set(n, m[2] !== undefined ? m[2].replace(/\\(.)/g, '$1') : (m[3] ?? '').split(',')[0]);
   }

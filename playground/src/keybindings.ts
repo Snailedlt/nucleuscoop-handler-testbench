@@ -228,6 +228,16 @@ export function codeKeyMap(handlers: Record<string, (cm: any) => void>, base: Re
 // Conflicts and keys the browser keeps
 
 /** Other actions using this binding where it would clash (the same place, or the page and the code). */
+/** Back to the default shortcut; actions now using that default lose it (as saving a new one does). Returns them. */
+export function resetBinding(id: string): Action[] {
+  const a = ACTIONS.find((x) => x.id === id);
+  const keys = a ? defaultBinding(a) : '';
+  const moved = keys ? conflicts(id, keys) : [];
+  moved.forEach((c) => setBinding(c.id, ''));
+  setBinding(id, null);
+  return moved;
+}
+
 export function conflicts(id: string, keys: string): Action[] {
   const mine = ACTIONS.find((a) => a.id === id);
   const s = steps(keys);

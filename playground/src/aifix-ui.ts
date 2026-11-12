@@ -102,6 +102,7 @@ export function initFixes(deps: FixesDeps): void {
       if (!code.trim()) {
         aiBox.innerHTML = `<p>The answer had no handler code. Try again.</p>`;
       } else if (editor.getDoc() !== startDoc) {
+        aiBox.hidden = false;
         aiBox.innerHTML = `<p>You switched to another handler while ${esc(who)} was working, so its fix was not applied. Go back to that handler and run Fix with AI again.</p>`;
       } else if (code === base) {
         aiBox.innerHTML = `<p>${esc(who)} found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;

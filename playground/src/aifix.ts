@@ -114,7 +114,7 @@ export function diffLines(before: string, after: string): DiffLine[] {
   const m = B.length;
   // The table is n × m: past this, show the changed block as removed then added instead (a real handler is a few
   // hundred lines; a rewrite of thousands of lines would need hundreds of MB and freeze the page).
-  if (n * m > MAX_DIFF_CELLS) {
+  if (n === 0 || m === 0 || (n + 1) * (m + 1) > MAX_DIFF_CELLS) {
     const out: DiffLine[] = [];
     for (let k = 0; k < pre; k++) out.push({ kind: ' ', text: a[k], a: k + 1, b: k + 1 });
     A.forEach((t, i) => out.push({ kind: '-', text: t, a: pre + i + 1 }));

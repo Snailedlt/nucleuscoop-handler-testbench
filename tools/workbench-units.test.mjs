@@ -217,6 +217,29 @@ test('snippets: a bare stop repeats its default text', async () => {
   assert.equal(expandSnippet('$1 = ${1:p\\}x}').text, 'p}x = p}x');
   assert.equal(expandSnippet('f(${1|a,b|}, $1)$0').text, 'f(a, a)');
   assert.equal(expandSnippet('x$1y').text, 'xy');
+  // An escaped placeholder is text, not a default.
+  assert.equal(expandSnippet('\\${1:player} = $1').text, '${1:player} = ');
+});
+
+test('key bindings: Reset takes the default back from whoever has it', () => {
+  const a = keys.ACTIONS.find((x) => x.where !== 'fixed' && keys.binding(x.id) && keys.steps(keys.binding(x.id)).length === 1);
+  const b = keys.ACTIONS.find((x) => x.where !== 'fixed' && x.id !== a.id);
+  const def = keys.binding(a.id);
+  keys.setBinding(a.id, '');
+  keys.setBinding(b.id, def);
+  assert.deepEqual(keys.resetBinding(a.id).map((x) => x.id), [b.id]);
+  assert.equal(keys.binding(a.id), def);
+  assert.equal(keys.binding(b.id), '');
+  keys.resetAll();
+});
+
+test('find: the current match skips one ending at the cursor', async () => {
+  const { currentMatch } = await load('playground/src/findwidget.ts');
+  const aa = [[0, 1], [1, 2]];
+  assert.equal(currentMatch(aa, 0), 0);
+  assert.equal(currentMatch(aa, 1), 1, 'the cursor after the first a');
+  assert.equal(currentMatch(aa, 2), 0, 'wraps');
+  assert.equal(currentMatch([], 0), -1);
 });
 
 test('key bindings: a chord and its first step clash', () => {
@@ -237,5 +260,8 @@ test('AI fix diff: a huge rewrite is shown without the n×m table', async () => 
   assert.ok(Date.now() - t0 < 2000);
   assert.equal(d.filter((l) => l.kind === '-').length, n);
   assert.equal(d.filter((l) => l.kind === '+').length, n);
+  // A big deletion (one side empty) needs no table either.
+  const big = Array.from({ length: 5000 }, (_, i) => `l${i}`).join('\n');
+  assert.equal(diffLines(big + '\nend', 'end').filter((l) => l.kind === '-').length, 5000);
   assert.deepEqual(diffLines('x\ny\nz', 'x\nY\nz').map((l) => l.kind).sort(), [' ', ' ', '+', '-']);
 });

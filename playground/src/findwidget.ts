@@ -79,10 +79,16 @@ function search(cm: any, st: State, from?: any) {
   highlight(cm, st, re);
   // The match under the cursor (where the search started), else the next one, as VS Code does.
   const at = cm.indexFromPos(from ?? cm.getCursor('from'));
-  let lo = 0, hi = st.matches.length; // the first match ending at or after the cursor (binary search: they're in order)
-  while (lo < hi) { const mid = (lo + hi) >> 1; if (st.matches[mid][1] < at) lo = mid + 1; else hi = mid; }
-  st.current = st.matches.length ? (lo < st.matches.length ? lo : 0) : -1;
+  st.current = currentMatch(st.matches, at);
   show(cm, st);
+}
+
+/** The match under the cursor or the next one after it (wrapping to the first); -1 when none. A match that ends
+ *  exactly at the cursor is behind it. Binary search: the matches are in order. */
+export function currentMatch(matches: [number, number][], at: number): number {
+  let lo = 0, hi = matches.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (matches[mid][1] <= at) lo = mid + 1; else hi = mid; }
+  return matches.length ? (lo < matches.length ? lo : 0) : -1;
 }
 
 function show(cm: any, st: State) {

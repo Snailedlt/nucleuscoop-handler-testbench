@@ -1,7 +1,7 @@
 // Settings › Keyboard shortcuts: every shortcut (keybindings.ts), searchable, each changeable by pressing the new keys,
 // with clashes and keys the browser keeps pointed out, one-click resets. Saved in this browser; Export / Import
 // settings carries them to another one.
-import { ACTIONS, binding, conflicts, defaultBinding, isCustom, keyLabel, onBindingsChange, reserved, resetAll, setBinding, stepOf, type Group } from './keybindings';
+import { ACTIONS, binding, conflicts, defaultBinding, isCustom, keyLabel, onBindingsChange, reserved, resetAll, resetBinding, setBinding, stepOf, type Group } from './keybindings';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const chips = (keys: string) => (keys ? keys.split(' ').map((step) => step.split('+').map((k) => `<kbd>${esc(k)}</kbd>`).join('')).join(' <span class="muted">then</span> ') : '<span class="muted">none</span>');
@@ -91,8 +91,8 @@ export function initKeySettings(root: HTMLElement) {
       msg.textContent = '';
       render();
     } else if (reset) {
-      setBinding(reset, null);
-      msg.textContent = `${ACTIONS.find((a) => a.id === reset)!.label}: back to ${keyLabel(binding(reset))}.`;
+      const moved = resetBinding(reset);
+      msg.textContent = `${ACTIONS.find((a) => a.id === reset)!.label}: back to ${keyLabel(binding(reset))}.${moved.length ? ` Removed from “${moved.map((c) => c.label).join('”, “')}”.` : ''}`;
       render();
     } else if (none) {
       setBinding(none, '');
