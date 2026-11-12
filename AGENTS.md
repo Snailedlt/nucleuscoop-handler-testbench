@@ -49,6 +49,8 @@ The Pages build uses splitscreenme-vscode's `main`: merge that first when the wo
 
 ## Conventions
 
+- `.coderabbit.yaml` sets CodeRabbit's pull request reviews: this file is its guidelines, and its `path_instructions` repeat the rules here per folder, so change them together.
+
 - Show changes in the preview artifact or the test address first; go live only when the maintainer says so.
 - When the maintainer has to run a workflow or change a setting, give the direct link and the inputs. Allowlist hosts and environment variables go in a code block, one per line.
 - **Links live for ever.** Addresses end up in Discord posts, READMEs, bookmarks and old releases, so every link we've published keeps working after any redesign: keep them readable and generic (`#docs-Context.ModifySaveFile`, `#hub-<id>`, `#what-it-catches`, not internal ids or tab indexes). When one changes, the old one leads to the new place and says so once: add it to `MOVED_LINKS` in `playground/src/links.ts` (workbench `#…` links; `tools/links.test.mjs` checks every one), keep the old `id` as an alias (start page anchors: `<span id="install" class="anchor-alias">`), or leave a small page at the old path that says what moved and links on (site pages). For something removed, link to a note saying it's gone and what replaced it. An unknown link never dead-ends: it says what it was and offers the way on.

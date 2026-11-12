@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit's reviews of this repository (the browser workbench and site in playground/, the Jint testbench in src/
+# and probes/). AGENTS.md is read automatically as the review guidelines. The checks, Try it and the API model come
+# from splitscreenme-vscode (src/core); its AGENTS.md has the verified facts about Nucleus Co-op. The Nucleus Co-op
+# source is reachable through the DeepWiki MCP server, connected in CodeRabbit's web app.
+language: en-GB
+tone_instructions: "Plain, short English. Say what breaks and for whom. Desktop first; phones must work but aren't tailored. Don't suggest phone-only layouts."
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Generated, recorded or binary: review the script that makes them instead.
+  path_filters:
+    - "!playground/src/usage.json"
+    - "!probes/expected.txt"
+    - "!design/mascots/history/**"
+    - "!design/mascots/archive/**"
+    - "!docs/images/**"
+    - "!docs/videos/**"
+    - "!**/package-lock.json"
+
+  path_instructions:
+    - path: "playground/src/**"
+      instructions: |
+        The workbench and Learn. Check against AGENTS.md "Who it's for":
+        - Help on request, not on screen: anything new that shows for someone who didn't ask must sit behind a hover, tap, key or setting.
+        - Everything reachable from the keyboard and the command palette; WCAG 2.1 AA (contrast in light and dark, labels, focus).
+        - Every code block syntax highlighted through codehl.ts (hlHtml / hlCode / modeFor).
+        - New parts get an initX(deps) with what they need passed in, not top-level code that depends on declaration order.
+        - New workbench features need a tip in tips.ts and a CHANGELOG line.
+    - path: "playground/src/links.ts"
+      instructions: "Links live for ever: a changed `#…` link must stay reachable through MOVED_LINKS (tools/links.test.mjs checks every one). Never remove an entry."
+    - path: "playground/src/{themes.json,themekit.ts,customtheme.ts}"
+      instructions: "Looks are data. parseTheme accepts known tokens only and never `url()`. Check new colours for contrast in light and dark."
+    - path: "playground/*.mjs"
+      instructions: "The site's build and pages (start, tools, Learn, docs, checks). Published URLs and anchors must keep working (old anchors as `anchor-alias` spans, MOVED anchors); every page keeps the shared header, kbd keys, copy buttons and highlighting from the site-wide pass in build.mjs."
+    - path: "playground/{test-guide.md,test-guide-page.mjs}"
+      instructions: "Temporary release test guide, built only with --test-build and never on the live site. Removed at release; don't review its prose."
+    - path: "tools/hub-*.mjs"
+      instructions: "Keep the Hub's load low: only new versions, one request at a time, packages once per version, capped retries. The Hub is run by volunteers."
+    - path: ".github/workflows/**"
+      instructions: "Secrets (DISCORD_WEBHOOKS, tokens) never reach logs or forks' pull requests. Deploys only when the built output changed. A failed announcement never fails a release."
+    - path: "{src,probes}/**"
+      instructions: "The Jint 2.11.58 testbench: probes record how the real engine behaves, and the workbench's Try it is checked against them (playground/sim-parity.mjs). A changed expectation needs the probe that shows it."
+    - path: "CHANGELOG.md"
+      instructions: "User-visible changes go under the unreleased section in an emoji group (✨ New, 🛠️ Improved, 🐛 Fixed, ⚡ Faster, ⚠️ Changed, 🙏 Thanks), starting with a short bold summary, then one or two plain sentences."
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CONTRIBUTING.md"
+      - "playground/src/editor-icons/README.md"
+
+chat:
+  auto_reply: true
