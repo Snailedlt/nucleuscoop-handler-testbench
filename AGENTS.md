@@ -17,6 +17,15 @@ The tools serve experienced developers, handler authors, Nucleus Co-op experts a
 - **Desktop first.** Over 90% of people write handlers on a desktop or laptop: design and test for that (mouse, keyboard, a wide screen). Phones are supported but not tailored: nothing broken, cut off or untappable, checked by the smoke test's phone checks. No phone-only features, no phone layouts driving a design, no manual phone testing or phone screenshots for every change.
 - **The check for every new feature:** does it add anything on screen for someone who didn't ask for it? If so, put it behind a hover, tap or key, or a setting.
 
+## Related repositories
+
+Where to look things up, and which to trust when they disagree (current code first, then these facts, then history). CodeRabbit reaches them through DeepWiki; an agent can clone them next to this repo.
+
+- **Current code:** [SplitScreen-Me/splitscreenme-nucleus](https://github.com/SplitScreen-Me/splitscreenme-nucleus) (Nucleus Co-op, C#: how handlers are loaded and run, every `Game.*` option, the Hub install), [splitscreenme-protoInput](https://github.com/SplitScreen-Me/splitscreenme-protoInput) (Proto Input: input hooks, message filters), [splitscreenme-www](https://github.com/SplitScreen-Me/splitscreenme-www) (the official handler docs), [splitscreenme-hub](https://github.com/SplitScreen-Me/splitscreenme-hub) (hub.splitscreen.me), [splitscreenme-discordbot](https://github.com/SplitScreen-Me/splitscreenme-discordbot) (the bot and its handler templates), [sebastienros/jint](https://github.com/sebastienros/jint) (the engine; Nucleus pins 2.11.58).
+- **Our tools:** [Snailedlt/splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode) (checks, simulator, API model, editors, CLI, MCP, skill) and [Snailedlt/nucleuscoop-handler-testbench](https://github.com/Snailedlt/nucleuscoop-handler-testbench) (the workbench and site, imports the first one's `src/core`; the Jint probes).
+- **History** (why something is the way it is, old handlers; current code wins): [lucasassislar/nucleuscoop](https://github.com/lucasassislar/nucleuscoop) (the original Nucleus Co-op), [distrohelena/nucleuscoop](https://github.com/distrohelena/nucleuscoop) (the community version before SplitScreen.Me), [Ilyaki/ProtoInput](https://github.com/Ilyaki/ProtoInput) (Proto Input before it moved), [UniversalSplitScreen](https://github.com/UniversalSplitScreen/UniversalSplitScreen) (Ilyaki's earlier input-hook split screen).
+- **Related, for ideas only** (never a source for how Nucleus behaves): [partydeck/partydeck](https://github.com/partydeck/partydeck), a split-screen launcher for Linux/SteamOS.
+
 ## Commands
 
 ```bash
@@ -49,7 +58,7 @@ The Pages build uses splitscreenme-vscode's `main`: merge that first when the wo
 
 ## Conventions
 
-- `.coderabbit.yaml` sets CodeRabbit's pull request reviews: this file is its guidelines, and its `path_instructions` repeat the rules here per folder, so change them together.
+- `.coderabbit.yaml` sets CodeRabbit's pull request reviews: this file is its guidelines, and its `path_instructions` repeat the rules here per folder, so change them together. The web app's setup (scope, DeepWiki) is in splitscreenme-vscode's [CODERABBIT.md](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/CODERABBIT.md).
 
 - Show changes in the preview artifact or the test address first; go live only when the maintainer says so.
 - When the maintainer has to run a workflow or change a setting, give the direct link and the inputs. Allowlist hosts and environment variables go in a code block, one per line.

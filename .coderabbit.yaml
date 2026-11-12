@@ -55,6 +55,12 @@ reviews:
       instructions: "User-visible changes go under the unreleased section in an emoji group (✨ New, 🛠️ Improved, 🐛 Fixed, ⚡ Faster, ⚠️ Changed, 🙏 Thanks), starting with a short bold summary, then one or two plain sentences."
 
 knowledge_base:
+  # MCP servers (DeepWiki, connected in CodeRabbit's web app): 'auto' would turn them off for public repositories.
+  mcp:
+    usage: enabled
+  linked_repositories:
+    - repository: "Snailedlt/splitscreenme-vscode"
+      instructions: "The checks, Try it, the API model and the editor features this workbench imports as @core (its src/core), plus the VS Code extension, ncdev CLI, LSP/MCP servers and the agent skill. Its AGENTS.md has the verified facts about Nucleus Co-op and Jint."
   code_guidelines:
     enabled: true
     filePatterns:
