@@ -18,23 +18,27 @@ on:
     branches: [preview-ux]
     paths: ['.github/workflows/test-build.yml']
 
-permissions:
-  contents: write
+# Nothing by default; each job asks for what it needs.
+permissions: {}
 
 concurrency:
   group: test-build
   cancel-in-progress: true
 
 jobs:
+  # Runs the extension branch's own npm scripts, so it gets no token that can write: read-only, and it hands the
+  # built files to the publish job as an artifact. (Its scripts could change PATH or the environment of later steps
+  # in this job, which is why publishing happens in a separate job.)
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       BRANCH: ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
+    outputs:
+      ver: ${{ steps.vsix.outputs.ver }}
+      sha: ${{ steps.vsix.outputs.sha }}
     steps:
-      # No token left in git's config: the next steps run the extension branch's npm scripts.
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - name: The extension, at the branch's newest commit
         run: git clone --quiet --depth 1 --branch "$BRANCH" https://github.com/Snailedlt/splitscreenme-vscode ext
       - uses: actions/setup-node@v4
@@ -47,23 +51,55 @@ jobs:
           npm run typecheck
           npm test
       - name: The .vsix
+        id: vsix
         working-directory: ext
         run: |
           VER=$(node -p "require('./package.json').version")
           SHA=$(git rev-parse --short HEAD)
-          echo "VER=$VER" >> "$GITHUB_ENV"; echo "SHA=$SHA" >> "$GITHUB_ENV"
-          npx vsce package --no-dependencies -o "../splitscreenme-vscode-v$VER-test.vsix"
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"; echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          mkdir -p ../out
+          npx vsce package --no-dependencies -o "../out/splitscreenme-vscode-v$VER-test.vsix"
       - name: ncdev.exe (with the Notepad++ plugin) and the plugin's zip, tested like a release
         working-directory: ext
         run: |
           npm run build
           sh scripts/build-native.sh win-x64,linux-x64
           node scripts/smoke-standalone.mjs dist-sea/ncdev-linux-x64
-          cp dist-sea/ncdev.exe ../ncdev.exe
-          (cd dist-sea && zip -q -X ../../NcDev.zip NcDev.dll)
+          cp dist-sea/ncdev.exe ../out/ncdev.exe
+          (cd dist-sea && zip -q -X ../../out/NcDev.zip NcDev.dll)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-build
+          path: out/
+          if-no-files-found: error
+          retention-days: 3
+
+  # The only job with a token that can write. It runs nothing from the extension: it checks the version and commit
+  # it was handed, then publishes the three files as the `test-build` pre-release (replacing the last one).
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BRANCH: ${{ inputs.branch || 'claude/brave-thompson-maiubs' }}
+      VER: ${{ needs.build.outputs.ver }}
+      SHA: ${{ needs.build.outputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: test-build
+          path: out
+      - name: Check what the build handed over
+        run: |
+          [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected version: $VER"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::Unexpected commit: $SHA"; exit 1; }
+          [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "::error::Unexpected branch name: $BRANCH"; exit 1; }
+          ls out
+          [ "$(ls out | LC_ALL=C sort | tr '\n' ' ')" = "NcDev.zip ncdev.exe splitscreenme-vscode-v$VER-test.vsix " ] || { echo "::error::Unexpected files"; exit 1; }
       - name: Publish the test-build pre-release (replacing the last one)
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete test-build --yes --cleanup-tag 2>/dev/null || true
           cat > notes.md <<EOF
@@ -71,13 +107,13 @@ jobs:
 
           Get it the way users will: build the site with \`node build.mjs --preview --test-build\`, serve \`dist/pages\` and download from its tools page (\`/tools/\`). The steps are in the test guide.
           EOF
-          gh release create test-build "splitscreenme-vscode-v$VER-test.vsix" ncdev.exe NcDev.zip --prerelease --target "$GITHUB_SHA" --title "Test build: v$VER ($SHA)" --notes-file notes.md
+          gh release create test-build "out/splitscreenme-vscode-v$VER-test.vsix" out/ncdev.exe out/NcDev.zip --prerelease --target "$GITHUB_SHA" --title "Test build: v$VER ($SHA)" --notes-file notes.md
       - name: Summary
         run: |
           {
             echo "## Test build: v$VER ($BRANCH @ $SHA)"
             echo
-            echo "https://github.com/${{ github.repository }}/releases/tag/test-build"
+            echo "https://github.com/$GH_REPO/releases/tag/test-build"
             echo
             echo "Local site with these downloads: \`node build.mjs --preview --test-build\` in playground/, then serve dist/pages."
           } >> "$GITHUB_STEP_SUMMARY"
