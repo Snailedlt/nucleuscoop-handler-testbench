@@ -197,7 +197,7 @@ pre.cfg code { background: none; padding: 0; font-size: inherit; }
 .editors .ed.full { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
 .editors .ed-tag.full { color: var(--accent); border-color: currentColor; }
 .editors .ed-tag.rec { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.editors .ed:has(.ed-tag) > span:not(.ed-tag) { padding-top: 10px; }
+.editors .ed:has(.ed-tag) > span:not(.ed-tag) { padding-top: 16px; } /* below the badge, so a long name ("Anything with LSP") never runs under it */
 .videos.one { grid-template-columns: minmax(0, 760px); }
 .tool-grid { list-style: none; padding: 0; margin: 22px 0 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
 .tool-grid.four { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }

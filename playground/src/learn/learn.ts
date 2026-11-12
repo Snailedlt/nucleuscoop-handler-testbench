@@ -486,7 +486,12 @@ function setDrawer(open: boolean, remember = true) {
   requestAnimationFrame(() => editor.refresh());
 }
 $('#drawer-toggle').addEventListener('click', () => setDrawer(!$('.learn').classList.contains('drawer-open')));
-$('#drawer').addEventListener('keydown', (e) => { if (e.key === 'Escape' && matchMedia('(max-width: 1100px)').matches) { setDrawer(false, false); $('#drawer-toggle').focus(); } });
+// Esc closes the drawer where it covers the lesson, wherever the focus is (not while a hover card or menu takes Esc).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || e.defaultPrevented || !$('.learn').classList.contains('drawer-open') || !matchMedia('(max-width: 1100px)').matches) return;
+  setDrawer(false, false);
+  $('#drawer-toggle').focus();
+});
 
 // ------------------------------------------------------------------------------------------------------------
 // The first lesson's scene: what happens when you start a game twice, one step at a time.

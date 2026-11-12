@@ -88,6 +88,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 
 ### 🐛 Fixed
 
+- **Small layout fixes.** The editor tiles' badges no longer cover a long name ("Anything with LSP"), the "Help test this beta" questions are left-aligned everywhere, and Esc closes Learn's lesson list wherever the focus is.
 - **Fix with AI stays with its handler.** Switching tabs while the AI works no longer applies its fix to the other handler, and a huge AI rewrite no longer freezes the page while its changes are listed.
 - **Replace uses the newest matches.** Replace and Replace all right after an edit no longer overwrite the wrong text.
 - **Stopping Test all says so.** It shows how many combinations ran, instead of "All combinations work".
