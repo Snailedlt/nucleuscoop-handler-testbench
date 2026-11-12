@@ -122,8 +122,10 @@ export function diffLines(before: string, after: string): DiffLine[] {
     for (let k = 0; k < suf; k++) out.push({ kind: ' ', text: a[a.length - suf + k], a: a.length - suf + k + 1, b: b.length - suf + k + 1 });
     return out;
   }
-  const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  // One contiguous table (row i starts at i * W): no per-row arrays, so a long, thin diff costs no more than its cells.
+  const W = m + 1;
+  const dp = new Uint32Array((n + 1) * W);
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i * W + j] = A[i] === B[j] ? dp[(i + 1) * W + j + 1] + 1 : Math.max(dp[(i + 1) * W + j], dp[i * W + j + 1]);
   const out: DiffLine[] = [];
   for (let k = 0; k < pre; k++) out.push({ kind: ' ', text: a[k], a: k + 1, b: k + 1 });
   let i = 0;
@@ -133,7 +135,7 @@ export function diffLines(before: string, after: string): DiffLine[] {
       out.push({ kind: ' ', text: A[i], a: pre + i + 1, b: pre + j + 1 });
       i++;
       j++;
-    } else if (j < m && (i === n || dp[i][j + 1] >= dp[i + 1][j])) {
+    } else if (j < m && (i === n || dp[i * W + j + 1] >= dp[(i + 1) * W + j])) {
       out.push({ kind: '+', text: B[j], b: pre + j + 1 });
       j++;
     } else {

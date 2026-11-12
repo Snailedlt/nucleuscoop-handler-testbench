@@ -231,6 +231,12 @@ test('key bindings: Reset takes the default back from whoever has it', () => {
   assert.equal(keys.binding(a.id), def);
   assert.equal(keys.binding(b.id), '');
   keys.resetAll();
+  // A chord's first step clashes too: Find on Ctrl+K loses it when Fold all (Ctrl+K Ctrl+0) is reset.
+  keys.setBinding('foldAll', '');
+  keys.setBinding('find', 'Ctrl+K');
+  assert.deepEqual(keys.resetBinding('foldAll').map((x) => x.id), ['find']);
+  assert.equal(keys.binding('find'), '');
+  keys.resetAll();
 });
 
 test('find: the current match skips one ending at the cursor', async () => {
@@ -263,5 +269,12 @@ test('AI fix diff: a huge rewrite is shown without the n×m table', async () => 
   // A big deletion (one side empty) needs no table either.
   const big = Array.from({ length: 5000 }, (_, i) => `l${i}`).join('\n');
   assert.equal(diffLines(big + '\nend', 'end').filter((l) => l.kind === '-').length, 5000);
+  // Long and thin (many rows, few columns) stays within the cell limit and is still a real diff.
+  const tall = Array.from({ length: 200000 }, (_, i) => `t${i}`);
+  const t1 = Date.now();
+  const thin = diffLines(tall.join('\n'), [tall[0], 'new', tall[100]].join('\n'));
+  assert.ok(Date.now() - t1 < 3000);
+  assert.equal(thin.filter((l) => l.kind === '+').length, 1);
+  assert.equal(thin.filter((l) => l.kind === ' ').length, 2);
   assert.deepEqual(diffLines('x\ny\nz', 'x\nY\nz').map((l) => l.kind).sort(), [' ', ' ', '+', '-']);
 });
