@@ -741,6 +741,10 @@ await m.ctx.close();
     await s.p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.replaceRange('Game.GUID = "SRB2 Tutorial";\nGame.GameName = "SRB2 Tutorial";\n', { line: cm.lastLine(), ch: 0 }); });
     await s.p.waitForTimeout(600);
     check(await s.p.isVisible('#task.ok'), `learn ${theme}: typing the lines ticks the task`);
+    await s.p.waitForTimeout(500); // the draft is saved shortly after typing
+    await s.p.reload();
+    await s.p.waitForTimeout(600);
+    check(/SRB2 Tutorial/.test(await s.p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) && (await s.p.isVisible('#task.ok')), `learn ${theme}: typed code is still there after a reload`);
     check(/Nothing wrong so far/.test(await s.p.textContent('#pane')), `learn ${theme}: Check leaves out the lines a lesson soon adds, and says so`);
     await axe(s.p, `${theme}, learn code lesson`);
     await s.p.goto(BASE + 'learn/#first-handler/name');
@@ -760,7 +764,12 @@ await m.ctx.close();
     check(!(await s.p.isVisible('#task.ok')), `learn ${theme}: a lesson starts from its own code, unfinished`);
     await s.p.click('#show');
     await s.p.waitForTimeout(600);
-    check((await s.p.isVisible('#task.ok')) && /Fullscreen = "0"/.test(await s.p.textContent('#pane')) && (await s.p.textContent('#show')) === 'Reset', `learn ${theme}: the Show me button passes, Try it shows each player's settings, and the button turns into Reset`);
+    check((await s.p.isVisible('#task.ok')) && /Fullscreen = "0"/.test(await s.p.textContent('#pane')) && (await s.p.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.offsetParent && getComputedStyle(b).visibility !== 'hidden' && /^\s*Reset\s*$/.test(b.textContent)).length)) === 1 && !(await s.p.evaluate(() => getComputedStyle(document.querySelector('#show')).visibility === 'visible')), `learn ${theme}: the Show me button passes, Try it shows each player's settings, Show me steps aside and there's one Reset`);
+    await s.p.click('#reset');
+    await s.p.waitForTimeout(500);
+    check(!(await s.p.isVisible('#task.ok')) && (await s.p.evaluate(() => getComputedStyle(document.querySelector('#show')).visibility === 'visible')), `learn ${theme}: Reset goes back to the lesson's start, and Show me is back`);
+    await s.p.click('#show');
+    await s.p.waitForTimeout(600);
     await s.p.selectOption('#try-players', '4');
     await s.p.waitForTimeout(300);
     check((await s.p.$$('#try-out .player')).length === 4, `learn ${theme}: Try it with the players you pick`);
@@ -783,11 +792,24 @@ await m.ctx.close();
   }
   {
     const s = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    for (const l of ['why', 'settings', 'test']) {
-      await s.p.goto(BASE + `learn/#first-handler/${l}`);
-      await s.p.waitForTimeout(400);
-      const wide = await s.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-      check(wide <= 1, `learn phone ${l}: no sideways scrolling (${wide}px)`);
+    for (const width of [390, 360]) {
+      await s.p.setViewportSize({ width, height: 844 });
+      for (const l of ['why', 'name', 'settings', 'test']) {
+        await s.p.goto(BASE + `learn/#first-handler/${l}`);
+        await s.p.waitForTimeout(400);
+        const wide = await s.p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        check(wide <= 0, `learn phone ${width}px ${l}: no sideways scrolling (${wide}px)`);
+        // The header: the lesson count whole, and no "›" without a neighbour after it.
+        const hdr = await s.p.evaluate(() => {
+          const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+          const count = [...document.querySelectorAll('header *')].find((e) => vis(e) && /^\d+ of \d+$/.test(e.textContent.trim()) && !e.children.length);
+          const r = count?.getBoundingClientRect();
+          const seps = [...document.querySelectorAll('header *')].filter((e) => vis(e) && !e.children.length && e.textContent.trim() === '›');
+          const lone = seps.filter((sep) => { let n = sep.nextElementSibling; while (n && !vis(n)) n = n.nextElementSibling; return !n || !n.textContent.trim(); });
+          return { count: r ? r.left >= 0 && r.right <= document.documentElement.clientWidth : false, lone: lone.length };
+        });
+        check(hdr.count && !hdr.lone, `learn phone ${width}px ${l}: the header shows the lesson count whole, no lone ›`);
+      }
     }
     check(!s.errors.length, `learn phone: no page errors ${s.errors.join(' ')}`);
     await s.ctx.close();

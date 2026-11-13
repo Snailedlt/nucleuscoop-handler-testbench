@@ -55,9 +55,38 @@ const testEvent = (name: string, detail: string) => { try { (window as any).goat
 
 let chapter: Chapter = CHAPTERS[0];
 let index = 0;
-const edits = new Map<string, string>();
 const lesson = (): Lesson => chapter.lessons[index];
 const keyOf = (l: Lesson) => `${chapter.id}/${l.id}`;
+
+// What the learner typed in each code lesson, kept across reloads (localStorage, beside the progress). Each draft
+// remembers a hash of the lesson's start: when a later version of the lesson starts differently, the draft is
+// dropped rather than restored onto code it no longer fits.
+const CODE_KEY = 'nucleus-learn-code';
+type Drafts = Record<string, { s: string; c: string }>;
+/** FNV-1a, enough to notice that a lesson's start changed. */
+const hashOf = (t: string) => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 0x01000193); return (h >>> 0).toString(36); };
+const drafts: Drafts = (() => {
+  try { const v = JSON.parse(localStorage.getItem(CODE_KEY) || 'null'); if (v && typeof v === 'object') return v; } catch { /* private mode */ }
+  return {};
+})();
+let draftTimer: ReturnType<typeof setTimeout> | undefined;
+const saveDrafts = () => { clearTimeout(draftTimer); draftTimer = undefined; try { localStorage.setItem(CODE_KEY, JSON.stringify(drafts)); } catch { /* private mode or full */ } };
+addEventListener('pagehide', () => { if (draftTimer) saveDrafts(); });
+/** The learner's code for a code lesson, if they changed it (and the lesson still starts the same). */
+function draftFor(l: Lesson): string | undefined {
+  const d = drafts[keyOf(l)];
+  if (!d) return undefined;
+  if (d.s === hashOf(l.start) && typeof d.c === 'string') return d.c;
+  delete drafts[keyOf(l)];
+  saveDrafts();
+  return undefined;
+}
+function setDraft(l: Lesson, code: string) {
+  const k = keyOf(l);
+  if (code === l.start) { if (!(k in drafts)) return; delete drafts[k]; } else drafts[k] = { s: hashOf(l.start), c: code };
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(saveDrafts, 400);
+}
 
 const editor = CodeMirror($('#code'), {
   value: '',
@@ -337,14 +366,16 @@ function renderTryIt(text: string) {
 let checkTimer: ReturnType<typeof setTimeout> | undefined;
 /** The learner has typed in this lesson (hints only show after that). */
 let touched = false;
-/** The Show me button: "Show me" until the editor holds the answer, then "Reset". */
+/** The Show me button, in code lessons until the editor holds the answer. It keeps its place when it hides, so Back
+ *  and Next don't move; Reset is the code bar's (#reset). */
 function syncShow() {
   const l = lesson();
   const b = $('#show');
   b.hidden = l.kind !== 'code';
   const done = editor.getValue() === l.solution;
-  b.textContent = done ? 'Reset' : 'Show me';
-  b.dataset.act = done ? 'reset' : 'show';
+  b.style.visibility = done ? 'hidden' : '';
+  b.setAttribute('aria-hidden', String(done));
+  b.tabIndex = done ? -1 : 0;
 }
 function status() {
   const l = lesson();
@@ -369,7 +400,7 @@ editor.on('change', (_cm: any, ch: any) => {
   const l = lesson();
   if (ch?.origin !== 'setValue') touched = true;
   if (ch?.origin !== 'setValue' && ch?.origin !== 'complete') clearDiff();
-  if (l.kind === 'code') edits.set(keyOf(l), editor.getValue());
+  if (l.kind === 'code') setDraft(l, editor.getValue());
   clearTimeout(checkTimer);
   checkTimer = setTimeout(status, 300);
 });
@@ -423,7 +454,7 @@ function renderLesson(focus = false) {
     // Read-only code still scrolls from the keyboard.
     const scroller = editor.getScrollerElement();
     if (l.kind === 'test') { scroller.tabIndex = 0; scroller.setAttribute('aria-label', 'The handler (read-only)'); } else { scroller.removeAttribute('tabindex'); scroller.removeAttribute('aria-label'); }
-    editor.setValue(l.kind === 'code' ? edits.get(keyOf(l)) ?? l.start : l.start);
+    editor.setValue(l.kind === 'code' ? draftFor(l) ?? l.start : l.start);
     editor.clearHistory();
     $('#pane').hidden = !l.pane;
     $('#pane').innerHTML = '';
@@ -529,7 +560,7 @@ const scene = (() => {
 
 // ------------------------------------------------------------------------------------------------------------
 // The Show me button: the answer in the editor, the lines it added marked (Svelte 4's button, Svelte 5's diff);
-// then Reset.
+// the code bar's Reset goes back to the lesson's start.
 let diffLines: number[] = [];
 function clearDiff() {
   for (const n of diffLines) editor.removeLineClass(n, 'background', 'diff-add');
@@ -559,13 +590,13 @@ function showMe() {
 }
 function reset() {
   clearDiff();
-  editor.setValue(lesson().start);
+  const l = lesson();
+  editor.setValue(l.start);
+  setDraft(l, l.start); // Reset also forgets the saved code
+  saveDrafts();
   editor.focus();
 }
-$('#show').addEventListener('click', () => {
-  if ($('#show').dataset.act === 'show') showMe(); else reset();
-  status();
-});
+$('#show').addEventListener('click', () => { showMe(); status(); });
 $('#reset').addEventListener('click', () => { reset(); status(); });
 
 // ------------------------------------------------------------------------------------------------------------

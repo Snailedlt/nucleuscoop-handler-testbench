@@ -26,6 +26,12 @@ How to write it (people and AI agents read this, and the workbench shows it):
 ### 🐛 Fixed
 
 - **A Hub handler that isn't verified no longer says "verified on the Hub".** It shows "not verified", as the list already did.
+- **Learn keeps your code.** What you typed in a lesson is still there after a reload or a browser restart. Reset (above the code) goes back to the lesson's start and forgets it.
+- **One Reset in Learn.** After Show me there used to be two Reset buttons; now Show me steps aside and the one above the code stays.
+- **Learn's header fits on a phone.** The lesson count no longer gets cut off and the page no longer scrolls sideways; the chapter name gives way on narrow screens.
+- **Copy no longer covers code in Learn.** The button has a row of its own above the code.
+- **The lines to add are highlighted across the whole code block in Learn,** also when it scrolls sideways.
+- **Learn's file name stays on one line** above the code; the shortcut hints give way instead.
 
 ---
 
