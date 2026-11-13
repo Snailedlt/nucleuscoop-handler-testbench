@@ -44,7 +44,7 @@ reviews:
     - path: "playground/*.mjs"
       instructions: "The site's build and pages (start, tools, Learn, docs, checks). Published URLs and anchors must keep working (old anchors as `anchor-alias` spans, MOVED anchors); every page keeps the shared header, kbd keys, copy buttons and highlighting from the site-wide pass in build.mjs."
     - path: "playground/{test-guide.md,test-guide-page.mjs}"
-      instructions: "Temporary release test guide, built only with --test-build and never on the live site. Removed at release; don't review its prose."
+      instructions: "Release test guide, only while a test round runs: built only with --test-build and never on the live site; test-guide.md is deleted at the release. Don't review its prose."
     - path: "tools/hub-*.mjs"
       instructions: "Keep the Hub's load low: only new versions, one request at a time, packages once per version, capped retries. The Hub is run by volunteers."
     - path: ".github/workflows/**"

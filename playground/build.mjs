@@ -703,8 +703,8 @@ let docValues = [];
   const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
   if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
 }
-// test-guide/: the release test guide (test-guide.md) for the maintainer, only on a local --test-build site (never
-// the live one). Temporary: remove it with test-guide.md once the release is out.
+// test-guide/: a release test guide (playground/test-guide.md, when there is one) for the maintainer, only on a local
+// --test-build site (never the live one). Add the file for a test round and delete it at the release.
 if (TEST_BUILD && fs.existsSync(path.join(here, 'test-guide.md'))) {
   const { writeTestGuidePage } = await import('./test-guide-page.mjs');
   writeTestGuidePage({ outDir: path.join(here, 'dist', 'pages', 'test-guide'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), guide: fs.readFileSync(path.join(here, 'test-guide.md'), 'utf8'), build: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC' });

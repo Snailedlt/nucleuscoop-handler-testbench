@@ -1,7 +1,7 @@
 // test-guide/: the release test guide (test-guide.md) as a page of the local test site, for the maintainer only.
 // build.mjs writes it only with --test-build (never for the live site), unlinked and noindex. Each step can be
 // marked passed or a problem (kept in this browser); "Copy the problems" puts the problem steps on the clipboard,
-// ready to paste into a message. Temporary: remove it (and test-guide.md) once the release is out.
+// ready to paste into a message. Built only while a test-guide.md exists: add one for a test round, delete it at the release.
 import fs from 'node:fs';
 import path from 'node:path';
 import { siteHeader, SITE_HEADER_CSS } from './site-chrome.mjs';
