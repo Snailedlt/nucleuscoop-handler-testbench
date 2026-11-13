@@ -232,6 +232,14 @@ test('Share: the link leads while it carries everything and fits Discord, else t
   assert.match(shareFileMessage({ game: '', filename: 'x.zip', site: 's' }), /^Nucleus Co-op handler: x\.zip/);
 });
 
+test('code spans: inline code with backticks in it (a longer fence, as Explain writes a template string)', async () => {
+  const { codeSpans } = await load('playground/src/codespans.ts');
+  assert.equal(codeSpans('Sets `a` to `1`.'), 'Sets <code>a</code> to <code>1</code>.');
+  assert.equal(codeSpans('stores `` `-w ${x}` `` in it'), 'stores <code>`-w ${x}`</code> in it');
+  assert.equal(codeSpans('``` a ``b`` ```'), '<code>a ``b``</code>');
+  assert.equal(codeSpans('a ` b'), 'a ` b', 'a lone backtick stays');
+});
+
 test('snippets: a bare stop repeats its default text', async () => {
   const { expandSnippet } = await load('playground/src/snippet.ts');
   assert.equal(expandSnippet('${1:player} = $1').text, 'player = player');

@@ -1,6 +1,7 @@
 // Small helpers every part of the page uses: the element lookup, HTML escaping, the docs' tiny Markdown, and
 // whether the screen is narrow (a phone: the code or the results, with a switch).
 import { hlHtml } from './codehl';
+import { codeSpans } from './codespans';
 
 export const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -27,7 +28,7 @@ export function md(src: string): string {
         if (!para.trim()) continue;
         const inl = (t: string) => {
           let h = esc(t);
-          h = h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])_([^_]+)_(?=$|[\s.,)])/g, '$1<em>$2</em>');
+          h = codeSpans(h).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])_([^_]+)_(?=$|[\s.,)])/g, '$1<em>$2</em>');
           h = h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
           return h.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
         };

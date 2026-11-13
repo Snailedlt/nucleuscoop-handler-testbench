@@ -32,6 +32,7 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - **Copy no longer covers code in Learn.** The button has a row of its own above the code.
 - **The lines to add are highlighted across the whole code block in Learn,** also when it scrolls sideways.
 - **Learn's file name stays on one line** above the code; the shortcut hints give way instead.
+- **Explain shows a template string as it's written** (backticks kept), in the workbench and in Learn.
 
 ---
 
