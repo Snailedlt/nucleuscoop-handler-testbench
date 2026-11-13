@@ -211,6 +211,27 @@ test('learn: every lesson starts unfinished, its solution passes, with no errors
   assert.equal(new Set(order).size, order.length, `sections out of order: ${order.join(', ')}`);
 });
 
+test('Share: the link leads while it carries everything and fits Discord, else the file', async () => {
+  const { shareAdvice, shareFileMessage, DISCORD_LIMIT } = await load('playground/src/share.ts');
+  const lead = (o) => (shareAdvice(o).fileFirst ? 'file' : 'link');
+  assert.equal(lead({ selection: false, files: 0, linkLength: 800 }), 'link');
+  assert.equal(lead({ selection: false, files: 0, linkLength: null }), 'link', 'before the length is known');
+  assert.equal(lead({ selection: false, files: 0, linkLength: DISCORD_LIMIT }), 'link', 'exactly the limit still fits');
+  assert.equal(lead({ selection: false, files: 0, linkLength: DISCORD_LIMIT + 1 }), 'file');
+  assert.equal(lead({ selection: false, files: 3, linkLength: 800 }), 'file', "a link doesn't carry the package's files");
+  assert.equal(lead({ selection: true, files: 3, linkLength: 9000 }), 'link', 'selected lines are shared by link');
+  assert.equal(lead({ selection: false, files: 34, linkLength: 60, named: true }), 'link', 'an unchanged Hub handler is linked by name, files and all');
+  assert.equal(shareAdvice({ selection: false, files: 34, linkLength: 60, named: true }).linkSub, 'A short link: opens it for anyone, with its 34 files');
+  assert.match(shareAdvice({ selection: false, files: 0, linkLength: 5123 }).linkSub, /^5,123 characters: too long for a Discord message \(2,000\)$/);
+  assert.equal(shareAdvice({ selection: false, files: 1, linkLength: 100 }).linkSub, "The code only: the 1 other file doesn't fit in a link");
+  assert.match(shareAdvice({ selection: false, files: 2, linkLength: 100 }).fileSub, /its 2 files/);
+  const msg = shareFileMessage({ game: 'Borderlands 2', filename: 'Borderlands 2.zip', site: 'https://example.test/' });
+  assert.match(msg, /^Nucleus Co-op handler for Borderlands 2: Borderlands 2\.zip \(attached\)\n/);
+  assert.match(msg, /drop the file on https:\/\/example\.test\//);
+  assert.ok(msg.length < 400 && !/```|@/.test(msg), 'short, no mentions or code fences');
+  assert.match(shareFileMessage({ game: '', filename: 'x.zip', site: 's' }), /^Nucleus Co-op handler: x\.zip/);
+});
+
 test('snippets: a bare stop repeats its default text', async () => {
   const { expandSnippet } = await load('playground/src/snippet.ts');
   assert.equal(expandSnippet('${1:player} = $1').text, 'player = player');

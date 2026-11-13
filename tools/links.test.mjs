@@ -78,7 +78,7 @@ test('every probe has a link that opens it (#probe-05, #probe-112), and #probe-5
 
 test('an unknown link says what it was and offers the way on, never a dead end', () => {
   const note = (h) => links.unknownNote(links.routeLink(h, CATALOG));
-  assert.deepEqual(note('hub-gone'), { text: "That Hub handler isn't one of the examples in this version of the workbench. It's still on the Hub.", action: { label: 'Open it on the Hub', to: 'hub', url: 'https://hub.splitscreen.me/handler/gone' } });
+  assert.deepEqual(note('hub-gone'), { text: "That Hub handler isn't in the workbench's copy of the Hub. It may be new: look on the Hub.", action: { label: 'Open it on the Hub', to: 'hub', url: 'https://hub.splitscreen.me/handler/gone' } });
   assert.equal(note('probe-999').action.to, 'probes');
   assert.match(note('probe-999').text, /^There's no probe 999 in this version/);
   assert.equal(links.followMoved('package-nvmp').to, 'hub-vnPXYhWMJJ3FNuQuS', 'the removed Fallout example leads to its Hub handler');

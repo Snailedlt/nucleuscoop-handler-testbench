@@ -12,6 +12,23 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## Unreleased
+
+### ✨ New
+
+- **Share the file.** Share has a new choice for handlers a link can't carry: it saves the .zip (the code and every file with it) and copies a short message to post with it. It leads the dialog when the handler has other files, or when the link would be too long for a Discord message (2,000 characters). Whoever gets the file drops it on the workbench to open it, or onto Nucleus Co-op to play.
+
+### 🛠️ Improved
+
+- **Hub handlers say how fresh they are.** An opened Hub handler shows the date of the workbench's copy of the Hub next to its version, and the list says newer ones may be on the Hub.
+- **A link to an unchanged Hub handler says it's short.** Share now tells you that link opens the whole handler, files included.
+
+### 🐛 Fixed
+
+- **A Hub handler that isn't verified no longer says "verified on the Hub".** It shows "not verified", as the list already did.
+
+---
+
 ## 2026-11-13
 
 ### ✨ New

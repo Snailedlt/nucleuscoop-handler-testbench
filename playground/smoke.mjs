@@ -154,6 +154,23 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(400);
   check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) === 'Game.GUID = "A";\nGame.GameName = "A";\nGame.ExecutableName = "a.exe";\nGame.Play = function () {\n    Context.StartArguments = "-w";\n};\n', `${theme}: Shift+Alt+F formats the code`);
   check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
+  // Share: the link leads while it fits a Discord message; past that, the file does (the .zip and a message to post).
+  const shareLead = async () => {
+    await p.click('#share-open');
+    await p.waitForTimeout(500);
+    const r = await p.evaluate(() => ({ lead: document.querySelector('#code-dialog .code-hero')?.dataset.code, link: document.querySelector('#code-link-sub').textContent, file: document.querySelector('#code-file-sub').textContent }));
+    await p.click('#code-close');
+    return r;
+  };
+  const short = await shareLead();
+  check(short.lead === 'link' && /Opens this handler/.test(short.link), `${theme}: Share leads with the link for a short handler (${short.lead}: ${short.link})`);
+  const shortCode = await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue());
+  // Text that doesn't compress, so the link is long whatever the compression.
+  await p.evaluate(() => { let x = 7, pad = ''; for (let i = 0; i < 4000; i++) { x = (x * 1103515245 + 12345) % 2147483648; pad += String.fromCharCode(97 + (x % 26)); } const cm = document.querySelector('.CodeMirror').CodeMirror; cm.setValue(cm.getValue() + '// ' + pad + '\n'); });
+  const long = await shareLead();
+  check(long.lead === 'file' && /too long for a Discord message/.test(long.link) && /\.zip/.test(long.file), `${theme}: Share leads with the file when the link is too long for Discord (${long.lead}: ${long.link})`);
+  await p.evaluate((c) => document.querySelector('.CodeMirror').CodeMirror.setValue(c), shortCode);
+  await p.waitForTimeout(200);
   // Folding, as in VS Code: Ctrl+K Ctrl+0 folds all, Ctrl+K Ctrl+J unfolds all.
   const folds = () => p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getAllMarks().filter((m) => m.__isFold).length);
   await p.click('.CodeMirror-code');
