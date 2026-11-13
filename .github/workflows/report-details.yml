@@ -1,0 +1,27 @@
+name: Report details
+# Feedback opened from the workbench carries a "Details from the workbench" block (build, browser, settings, the open
+# handler; playground/src/report.ts) with a checksum. GitHub can't lock a form field, so this copies the block, as it
+# was when the issue was opened, into a comment the reporter can't edit, and says whether it was changed before
+# sending. The logic is splitscreenme-vscode's scripts/issue-bots.mjs (tested there), fetched as it is on main, so
+# both repos run the same bot. Reads the issue only.
+on:
+  issues:
+    types: [opened]
+permissions:
+  issues: write
+jobs:
+  keep-details:
+    if: contains(github.event.issue.body, '### Details from the workbench')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Snailedlt/splitscreenme-vscode
+          ref: main
+          sparse-checkout: scripts/issue-bots.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const bots = await import(`${process.env.GITHUB_WORKSPACE}/scripts/issue-bots.mjs`);
+            await bots.runReportDetails({ github, context });

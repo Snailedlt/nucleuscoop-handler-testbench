@@ -5,6 +5,7 @@
 //
 // The core is imported from a checkout of splitscreenme-vscode (src/core), so the
 // page always runs the same linter as the extension.
+import { siteHeader, SITE_HEADER_CSS, siteVisitScript, COPY_CSS, COPY_SCRIPT, COMMUNITY, COMMUNITY_CSS, withCommunity } from './site-chrome.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -13,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import * as esbuild from 'esbuild';
 import { fetchPackageFiles, slimFiles } from '../tools/hub-files.mjs';
+import { hubClientHeaders } from '../tools/hub-client.mjs';
 
 const PAGES_BASE = 'https://snailedlt.github.io/nucleuscoop-handler-testbench/';
 // A preview build (the Claude artifact, the raw.githack test address) is served somewhere else: its
@@ -22,6 +24,12 @@ const PREVIEW = process.argv.includes('--preview');
 const NOINDEX = PREVIEW ? '<meta name="robots" content="noindex, nofollow">\n' : '';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+// A Windows checkout made before .gitattributes (eol=lf) has CRLF files, which the build's line-based parsing
+// can't read. Say how to fix it instead of failing somewhere deep inside.
+if (fs.readFileSync(path.join(here, '..', 'probes', 'expected.txt'), 'utf8').includes('\r')) {
+  console.error('This checkout has Windows (CRLF) line endings; the build needs LF. Fix it once, in nucleuscoop-handler-testbench\n(this discards uncommitted changes there):\n\n  git rm -r -q --cached . && git reset -q --hard\n');
+  process.exit(1);
+}
 const argCore = process.argv.indexOf('--core');
 const coreRepo = path.resolve(argCore > 0 ? process.argv[argCore + 1] : process.env.SPLITSCREENME_VSCODE ?? path.join(here, '..', '..', 'splitscreenme-vscode'));
 if (!fs.existsSync(path.join(coreRepo, 'src', 'core', 'lint.ts'))) {
@@ -122,7 +130,7 @@ async function hubExamples() {
     for (const h of JSON.parse(fs.readFileSync(cachePath, 'utf8')).handlers) previous.set(`${h.id}-v${h.version}`, h);
   } catch {}
   const get = async (url) => {
-    const r = await fetch(url, { headers: { 'user-agent': 'nucleus-handler-workbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)' } });
+    const r = await fetch(url, { headers: hubClientHeaders('workbench-build', 'examples'), signal: AbortSignal.timeout(30000) });
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     return r.json();
   };
@@ -217,7 +225,7 @@ for (const h of hubData ? [] : hub.handlers) {
   const file = path.join(coverDir, `${h.cover}.jpg`);
   if (fs.existsSync(file)) continue;
   try {
-    const r = await fetch(`https://images.igdb.com/igdb/image/upload/t_cover_small/${h.cover}.jpg`, { headers: { 'user-agent': 'nucleus-handler-workbench (+https://github.com/Snailedlt/nucleuscoop-handler-testbench)' } });
+    const r = await fetch(`https://images.igdb.com/igdb/image/upload/t_cover_small/${h.cover}.jpg`, { headers: hubClientHeaders('workbench-build', 'covers'), signal: AbortSignal.timeout(30000) });
     const buf = Buffer.from(await r.arrayBuffer());
     if (r.ok && /^image\//.test(r.headers.get('content-type') ?? '') && buf.length < 200_000) {
       fs.writeFileSync(file, buf);
@@ -265,9 +273,9 @@ for (const h of hub.handlers) {
   if (f) h.files = f.files.length;
   else delete h.files;
 }
-// Example packages (examples/README.md): a verified Hub handler with the other files it ships.
+// Example packages (examples/README.md): handlers with the other files they ship. None for now: Hub handlers open
+// with their package files themselves (the Fallout New Vegas Multiplayer example went that way; #package-nvmp leads there).
 const EXAMPLE_PACKAGES = [
-  { id: 'nvmp', title: 'Fallout New Vegas Multiplayer, with its files', sub: 'A verified Hub handler (v21 by Talos91) whose package adds an NVMP folder with the scripts Game.Play runs.', name: 'Fallout New Vegas Multiplayer.js', hubId: 'vnPXYhWMJJ3FNuQuS' },
 ].map((e) => {
   const dir = path.join(here, 'examples', e.id);
   const files = [];
@@ -390,14 +398,17 @@ const result = await esbuild.build({
   target: 'es2020',
   minify: true,
   write: false,
-  alias: { '@core': path.join(coreRepo, 'src', 'core') },
+  // ESLint (the core linter's general JavaScript rules) asks for Node's path module: the browser build of it.
+  alias: { '@core': path.join(coreRepo, 'src', 'core'), 'node:path': 'path-browserify', path: 'path-browserify' },
+  // …and reads a few things from `process`.
+  banner: { js: "var process = globalThis.process || { env: {}, argv: [], versions: {}, platform: 'browser', cwd: function () { return '/'; }, emitWarning: function () {}, nextTick: function (f) { Promise.resolve().then(f); } };" },
   nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
   logLevel: 'warning',
 });
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 
 const cm = (p) => fs.readFileSync(path.join(here, 'node_modules', 'codemirror', p), 'utf8');
-const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css'), cm('addon/dialog/dialog.css')].join('\n');
+const css = [cm('lib/codemirror.css'), cm('addon/lint/lint.css'), cm('addon/hint/show-hint.css'), cm('addon/dialog/dialog.css'), cm('addon/fold/foldgutter.css')].join('\n');
 
 // The looks (src/themes.json) as CSS, by the same code that applies a custom theme in the page.
 const themeMod = await esbuild.build({ entryPoints: [path.join(here, 'src', 'themekit.ts')], bundle: true, format: 'esm', platform: 'node', write: false, logLevel: 'warning' });
@@ -405,7 +416,8 @@ const { builtInCSS } = await import('data:text/javascript;base64,' + Buffer.from
 const THEMES = JSON.parse(fs.readFileSync(path.join(here, 'src', 'themes.json'), 'utf8'));
 const themesCSS = builtInCSS(THEMES);
 // Each Hub example's problem counts, worked out here so the Open list needs no handler sources.
-const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning' });
+// ESM from a data: URL has no `require`; ESLint (inside the linter) requires Node's built-ins.
+const lintMod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'lint.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
 const { lint: lintHandler } = await import('data:text/javascript;base64,' + Buffer.from(lintMod.outputFiles[0].text).toString('base64'));
 for (const h of hub.handlers) {
   const d = lintHandler(h.source);
@@ -441,6 +453,8 @@ function pageHtml(inlineHub) {
     .readFileSync(path.join(here, 'src', 'page.html'), 'utf8')
     // The site's own page has the start page next to it; the single file looks for one (src/app.ts).
     .replace(/(<a class="link start-link[^"]*" href=")[^"]*"/g, (_, a) => `${a}${inlineHub ? PAGES_BASE + 'start/' : 'start/'}"`)
+    .replaceAll('__DISCORD_INVITE__', COMMUNITY.discord)
+    .replaceAll('__REDDIT__', COMMUNITY.reddit)
     .replace('/*WWW_LOGO*/', () => fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim())
     .replace('/*THEMES*/', () => themesCSS)
     .replace('/*CODEMIRROR_CSS*/', () => css)
@@ -459,9 +473,9 @@ const SEO = `${NOINDEX}${PREVIEW ? '' : `<link rel="canonical" href="${PAGES_BAS
 <meta property="og:title" content="Nucleus Handler Workbench">
 <meta property="og:description" content="${WB_DESC}">
 ${PREVIEW ? '' : `<meta property="og:url" content="${PAGES_BASE}">\n`}<meta property="og:image" content="${PREVIEW ? '' : PAGES_BASE}start/og.png">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="760">
-<meta property="og:image:alt" content="The workbench checking a verified Hub handler, each problem explained, with a one-click fix">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nucleus handler tools: Catch it before Nucleus does. Free tools for writing Nucleus Co-op handlers, shown in Notepad++, VS Code and the browser workbench.">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Nucleus Handler Workbench', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any (web browser)', browserRequirements: 'Requires JavaScript', description: WB_DESC, ...(PREVIEW ? {} : { url: PAGES_BASE }), offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, isAccessibleForFree: true })}</script>`;
 const standalone = (page, seo = '') => {
@@ -498,7 +512,7 @@ fs.writeFileSync(path.join(here, 'dist', 'pages', 'index.html'), standalone(page
 fs.writeFileSync(path.join(here, 'dist', 'pages', 'icon.png'), Buffer.from(fs.readFileSync(path.join(here, 'src', 'www-logo.b64'), 'utf8').trim(), 'base64'));
 // For search engines (submit it in Search Console: a project site can't have its own robots.txt).
 if (PREVIEW) fs.rmSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), { force: true });
-else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+else fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}tools/`].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
 fs.rmSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true, force: true }); // only this build's handlers
 fs.mkdirSync(path.join(here, 'dist', 'pages', 'hub'), { recursive: true });
@@ -519,17 +533,27 @@ fs.writeFileSync(path.join(here, 'dist', 'pages', 'llms.txt'), PREVIEW ? llms.re
 // The intro page to share with testers and contributors: /start/ on the Pages site.
 const startDir = path.join(here, 'dist', 'pages', 'start');
 fs.mkdirSync(startDir, { recursive: true });
-// The newest extension release, pre-releases included (GitHub's /releases/latest skips those).
+// The newest extension release, pre-releases included (GitHub's /releases/latest skips those): the start page links
+// its .vsix and ncdev.exe. --test-build links the unreleased test build instead (this repo's `test-build` pre-release,
+// made by .github/workflows/test-build.yml from an extension branch), so a local site hands out what will be released.
+const TEST_BUILD = process.argv.includes('--test-build');
 let vsix = { url: 'https://github.com/Snailedlt/splitscreenme-vscode/releases', name: 'the .vsix', tag: 'latest release' };
+let ncdevUrl = 'https://github.com/Snailedlt/splitscreenme-vscode/releases';
 try {
-  const res = await fetch('https://api.github.com/repos/Snailedlt/splitscreenme-vscode/releases?per_page=10', {
+  const api = TEST_BUILD ? 'https://api.github.com/repos/Snailedlt/nucleuscoop-handler-testbench/releases/tags/test-build' : 'https://api.github.com/repos/Snailedlt/splitscreenme-vscode/releases?per_page=10';
+  const res = await fetch(api, {
     headers: { accept: 'application/vnd.github+json', ...(process.env.GITHUB_TOKEN ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) },
   });
-  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
-  const rel = (await res.json()).find((r) => !r.draft && r.assets.some((a) => a.name.endsWith('.vsix')));
+  if (!res.ok) throw new Error(`GitHub API ${res.status}${TEST_BUILD && res.status === 404 ? ': no test build yet (run the Test build workflow)' : ''}`);
+  const body = await res.json();
+  const rel = TEST_BUILD ? body : body.find((r) => !r.draft && r.assets.some((a) => a.name.endsWith('.vsix')));
   const asset = rel?.assets.find((a) => a.name.endsWith('.vsix'));
-  if (asset) vsix = { url: asset.browser_download_url, name: asset.name, tag: rel.tag_name };
+  if (asset) vsix = { url: asset.browser_download_url, name: asset.name, tag: TEST_BUILD ? `test build, ${rel.name.replace(/^Test build:\s*/, '')}` : rel.tag_name };
+  const exe = rel?.assets.find((a) => a.name === 'ncdev.exe');
+  if (exe) ncdevUrl = exe.browser_download_url;
+  if (TEST_BUILD) console.log(`tools page: the test build (${rel.name})`);
 } catch (e) {
+  if (TEST_BUILD) throw new Error(`--test-build: ${e.message}`);
   console.warn(`start page: no release info (${e.message}), linking the releases page`);
 }
 // Highlighted code for static pages: the editor's JavaScript mode, the same cm-* classes (codehl.ts does it in the page).
@@ -546,28 +570,75 @@ const hlStatic = (() => {
     return out;
   };
 })();
-const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-fs.writeFileSync(
-  path.join(startDir, 'index.html'),
-  fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8')
-    // __BASE__ is the site's root: absolute on the live site; in a preview, relative to start/ (and
-    // the lines that only make sense with an absolute address are left out).
-    .replace(/^.*__BASE__(?:start\/)?".*\n/gm, (l) => (PREVIEW && /rel="canonical"|og:url/.test(l) ? '' : l))
-    .replace('<meta name="viewport"', `${NOINDEX}<meta name="viewport"`)
-    .replaceAll('__BASE__start/', PREVIEW ? '' : `${PAGES_BASE}start/`)
-    .replaceAll('__BASE__', PREVIEW ? '../' : PAGES_BASE)
-    .replaceAll('__VSIX_URL__', escHtml(vsix.url))
-    .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
-    .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
-    .replaceAll('__PROBES__', String(probes.length))
-    // Code in the text coloured like the workbench's editor (issue #12): CodeMirror's runMode at build time, the
-    // www look's code colours (AA on this page's code background, light and dark).
-    .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlStatic(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
-    .replace('</style>', `.hl .cm-keyword { color: var(--kw); } .hl .cm-string { color: var(--str); } .hl .cm-number, .hl .cm-atom { color: var(--num); } .hl .cm-property { color: var(--prop); } .hl .cm-comment { color: var(--cmt); }
+// The code colours of the site's own pages (the www look's, AA on their code background, light and dark), for the
+// highlighted code (.hl) on every page.
+const HL_CSS = `.hl .cm-keyword { color: var(--kw); } .hl .cm-string { color: var(--str); } .hl .cm-number, .hl .cm-atom { color: var(--num); } .hl .cm-property { color: var(--prop); } .hl .cm-comment { color: var(--cmt); }
 :root { --kw: #6f2db8; --str: #b0175a; --num: #0f6f6d; --prop: #0b5c8a; --cmt: #5c636c; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; } }
 :root[data-theme="dark"] { --kw: #ff79c6; --str: #f1fa8c; --num: #bd93f9; --prop: #8be9fd; --cmt: #b0b4ba; }
-</style>`)
+`;
+// Code coloured like the editors: CodeMirror's tokens, Nucleus names by what they are (src/semhl.ts, the core's
+// semantic tokens). For the start page's inline code, the docs and checks pages' code blocks, and the site pass below.
+const hlSem = await (async () => {
+  const m = await esbuild.build({
+    stdin: { contents: "export { semHighlight } from './semhl'; export { looksLikeCodeText } from './codetext';", resolveDir: path.join(here, 'src'), loader: 'ts' },
+    bundle: true, format: 'esm', platform: 'node', write: false, logLevel: 'error',
+    alias: { '@core': path.join(coreRepo, 'src', 'core'), 'eslint/universal': path.join(coreRepo, 'src', 'core', 'eslint-stub.ts') },
+    nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
+  });
+  const { semHighlight, looksLikeCodeText } = await import('data:text/javascript;base64,' + Buffer.from(m.outputFiles[0].text).toString('base64'));
+  const req = createRequire(import.meta.url);
+  const CM = req('codemirror/addon/runmode/runmode.node.js');
+  req('codemirror/mode/javascript/javascript.js');
+  const f = (src) => semHighlight(src, CM.runMode);
+  f.looksLikeCode = looksLikeCodeText;
+  return f;
+})();
+const ANCHOR_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"/></svg>';
+const escHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// The start page (start/) and the tools page (tools/): the same look (start.html's head and styles), each its own
+// body. tools.html is only the body; it gets start.html's head with its own title, description and address.
+const startSrc = fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8');
+const toolsSrc = (() => {
+  const head = startSrc.slice(0, startSrc.indexOf('<body>'));
+  const title = 'Get the tools: Nucleus Co-op handlers in VS Code, Notepad++, the browser and more';
+  const desc = 'Every Nucleus Co-op handler tool in one place: the browser workbench, VS Code, Notepad++, other editors through a language server, the ncdev command line and AI agents.';
+  return head
+    .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*"/, `$1${desc}"`)
+    .replace(/(<meta (?:property="og|name="twitter):title" content=")[^"]*"/g, `$1Get the tools: Nucleus Co-op handler tools"`)
+    .replace(/(<meta (?:property="og|name="twitter):description" content=")[^"]*"/g, `$1${desc}"`)
+    .replace(/__BASE__start\/"/g, '__BASE__tools/"')
+    .replace(/(content="__BASE__)tools\/og\.png"/g, '$1start/og.png"')
+    + '<body>\n' + fs.readFileSync(path.join(here, 'src', 'tools.html'), 'utf8');
+})();
+const toolsDir = path.join(here, 'dist', 'pages', 'tools');
+fs.mkdirSync(toolsDir, { recursive: true });
+const renderSitePage = (src, section) =>
+  src
+    // __BASE__ is the site's root: absolute on the live site; in a preview, relative to the page (and
+    // the lines that only make sense with an absolute address are left out).
+    .replace(/^.*__BASE__(?:[a-z]+\/)?".*\n/gm, (l) => (PREVIEW && /rel="canonical"|og:url/.test(l) ? '' : l))
+    .replace('<meta name="viewport"', `${NOINDEX}<meta name="viewport"`)
+    // The site's header (site-chrome.mjs), as on the other pages.
+    .replace('<body>\n<main>', () => `<body>\n${siteHeader('../', section)}\n<main>`)
+    .replace('</style>', () => `${SITE_HEADER_CSS}</style>`)
+    .replaceAll('__BASE__start/', PREVIEW ? '' : `${PAGES_BASE}start/`)
+    .replaceAll('__BASE__', PREVIEW ? '../' : PAGES_BASE)
+    // A preview links the workbench by its file: some hosts (the Claude artifact) serve ../index.html but not ../.
+    .replaceAll("../?ref=", PREVIEW ? '../index.html?ref=' : '../?ref=')
+    .replaceAll('__VSIX_URL__', escHtml(vsix.url))
+    .replaceAll('__VSIX_NAME__', escHtml(vsix.name))
+    .replaceAll('__VSIX_TAG__', escHtml(vsix.tag))
+    .replaceAll('__NCDEV_URL__', escHtml(ncdevUrl))
+    .replace('<a id="vsix" ', () => (TEST_BUILD ? '<a id="vsix" data-pinned="test-build" ' : '<a id="vsix" '))
+    .replaceAll('__PROBES__', String(probes.length))
+    // Every heading with class has-anchor gets its link (GitHub's link icon, shown on hover), written here once.
+    .replace(/<(h[2-4]) id="([^"]+)" class="([^"]*\bhas-anchor\b[^"]*)">([^<]+)<\/\1>/g, (m, h, id, cls, text) => `<${h} id="${id}" class="${cls}">${text}<a class="anchor" href="#${id}" aria-label="Link to this section: ${text}">${ANCHOR_SVG}</a></${h}>`)
+    // Code in the text coloured like the workbench's editor (issue #12): CodeMirror's runMode at build time, the
+    // www look's code colours (AA on this page's code background, light and dark).
+    .replace(/<code>([^<]*)<\/code>/g, (m, inner) => (/[.()=]/.test(inner) ? `<code class="hl">${hlSem(inner.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'))}</code>` : m))
+    .replace('</style>', () => `${HL_CSS}</style>`)
     // Duo and Nucli say hello in the header (the same drawings as the workbench, src/mascots.gen.ts).
     .replace('__MASCOTS__', (() => {
       const gen = fs.readFileSync(path.join(here, 'src', 'mascots.gen.ts'), 'utf8');
@@ -576,14 +647,90 @@ fs.writeFileSync(
       return `<style>${css} .hero-masc { float: right; display: flex; align-items: flex-end; gap: 0; margin: 0 0 8px 16px; } .hero-masc .masc { display: block; width: 132px; height: 132px; } .hero-masc .masc svg { width: 100%; height: 100%; overflow: visible; } .hero-masc .masc + .masc { width: 112px; height: 112px; margin-left: -18px; } @media (max-width: 640px) { .hero-masc { float: none; justify-content: center; margin: 0 0 4px; } .hero-masc .masc { width: 104px; height: 104px; } .hero-masc .masc + .masc { width: 88px; height: 88px; } }</style>`
         + `<div class="hero-masc" aria-hidden="true"><span class="masc">${svg.idle}</span><span class="masc">${svg['n-idle']}</span></div>`
         + `<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) addEventListener('DOMContentLoaded', () => document.querySelectorAll('.hero-masc svg').forEach((s) => s.pauseAnimations()));</script>`;
-    })()),
-);
-// Screenshots, each in light and dark (the page shows the viewer's theme).
-for (const [dir, names] of [
-  [path.join(here, '..', 'docs', 'images'), ['check', 'lines-tree']],
-  [path.join(coreRepo, 'docs', 'images'), ['vscode-problems', 'vscode-try-it', 'vscode-hover']],
-]) for (const n of names) for (const t of ['light', 'dark']) fs.copyFileSync(path.join(dir, `${n}-${t}.png`), path.join(startDir, `${n}-${t}.png`));
+    })());
+fs.writeFileSync(path.join(startDir, 'index.html'), renderSitePage(startSrc, 'start/'));
+fs.writeFileSync(path.join(toolsDir, 'index.html'), renderSitePage(toolsSrc, 'tools/'));
+// The gallery's screenshots (docs/images/gallery: <tool>-<view>-light/dark.webp, the workbench's looks as
+// workbench-look-<look>-…): each view in light and dark, compared with the slider on the page.
+fs.rmSync(path.join(startDir, 'gallery'), { recursive: true, force: true });
+fs.mkdirSync(path.join(startDir, 'gallery'), { recursive: true });
+for (const f of fs.readdirSync(path.join(here, '..', 'docs', 'images', 'gallery'))) if (f.endsWith('.webp')) fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'gallery', f), path.join(startDir, 'gallery', f));
 fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(startDir, 'og.png'));
+// One page per check (rules/<id>/) and the list of them (rules/), from the core's core/ruledocs.ts (rules-pages.mjs).
+// The checks for the docs list's Checks section (rules-pages.mjs), handed to the docs pages below.
+let checksNav = [];
+{
+  const mod = await esbuild.build({ entryPoints: [path.join(coreRepo, 'src', 'core', 'ruledocs.ts')], bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const { RULE_DOCS } = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
+  const lintAll = await esbuild.build({ stdin: { contents: "export { RULES } from './lint'; export { JS_RULES } from './jsrules';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const { RULES, JS_RULES } = await import('data:text/javascript;base64,' + Buffer.from(lintAll.outputFiles[0].text).toString('base64'));
+  const { writeRulePages } = await import('./rules-pages.mjs');
+  let ruleIds;
+  ({ ids: ruleIds, nav: checksNav } = writeRulePages({ hl: hlSem, outDir: path.join(here, 'dist', 'pages', 'rules'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), RULES, RULE_DOCS, JS_RULES, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX, feedbackSite }));
+  if (!PREVIEW) fs.writeFileSync(path.join(here, 'dist', 'pages', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[PAGES_BASE, `${PAGES_BASE}start/`, `${PAGES_BASE}tools/`, `${PAGES_BASE}rules/`, `${PAGES_BASE}learn/`, `${PAGES_BASE}docs/`, ...ruleIds.map((id) => `${PAGES_BASE}rules/${id}/`)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+}
+// Learn (learn/): the lessons, one page with its own small bundle (src/learn/): the editor, the checks and Try it,
+// without the rest of the workbench. ESLint's general rules stay out (the lessons only need Nucleus' own checks).
+{
+  const learnJs = await esbuild.build({
+    entryPoints: [path.join(here, 'src', 'learn', 'learn.ts')],
+    bundle: true, format: 'iife', platform: 'browser', target: 'es2020', minify: true, write: false,
+    alias: { '@core': path.join(coreRepo, 'src', 'core'), 'eslint/universal': path.join(coreRepo, 'src', 'core', 'eslint-stub.ts'), 'node:path': 'path-browserify', path: 'path-browserify' },
+    banner: { js: "var process = globalThis.process || { env: {}, argv: [], versions: {}, platform: 'browser', cwd: function () { return '/'; }, emitWarning: function () {}, nextTick: function (f) { Promise.resolve().then(f); } };" },
+    nodePaths: [path.join(coreRepo, 'node_modules'), path.join(here, 'node_modules')],
+    logLevel: 'warning',
+  });
+  const startHtml = fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8');
+  const style = startHtml.slice(startHtml.indexOf('<style>') + 7);
+  const tokens = style.slice(0, style.indexOf('* { box-sizing'));
+  const learnDir = path.join(here, 'dist', 'pages', 'learn');
+  fs.mkdirSync(learnDir, { recursive: true });
+  fs.writeFileSync(path.join(learnDir, 'index.html'), fs.readFileSync(path.join(here, 'src', 'learn', 'learn.html'), 'utf8')
+    .replace('__HEAD__', () => NOINDEX + (PREVIEW ? '' : `<link rel="canonical" href="${PAGES_BASE}learn/">`))
+    .replace('/*TOKENS*/', () => tokens)
+    .replace('/*CODEMIRROR_CSS*/', () => cm('lib/codemirror.css'))
+    .replace('/*LEARN_JS*/', () => learnJs.outputFiles[0].text.replace(/<\/script/gi, '<\\/script')));
+}
+// The Docs as pages (docs/, docs/<group>/, docs/<name>/), from the core's core/docspage.ts (docs-pages.mjs): linkable
+// and searchable, each with "Open in the workbench".
+let docValues = [];
+{
+  const mod = await esbuild.build({ stdin: { contents: "export { docsPage, docsView, docsValue, DOCS_GROUPS } from './docspage'; export { allEntries } from './lookup'; export { api, docReviewUrl } from './api';", resolveDir: path.join(coreRepo, 'src', 'core'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', write: false, nodePaths: [path.join(coreRepo, 'node_modules')], logLevel: 'warning', banner: { js: `import { createRequire as __cr } from 'node:module'; const require = __cr(${JSON.stringify(import.meta.url)});` } });
+  const D = await import('data:text/javascript;base64,' + Buffer.from(mod.outputFiles[0].text).toString('base64'));
+  const { writeDocPages } = await import('./docs-pages.mjs');
+  docValues = writeDocPages({ hl: hlSem, checks: checksNav, outDir: path.join(here, 'dist', 'pages', 'docs'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), docsPage: D.docsPage, docsView: D.docsView, docsValue: D.docsValue, allEntries: D.allEntries, groups: D.DOCS_GROUPS, enums: Object.keys(D.api.enums), docReviewUrl: D.docReviewUrl, feedbackSite, base: PAGES_BASE, preview: PREVIEW, noindex: NOINDEX });
+  // Each docs page in the sitemap too (written with the rule pages above).
+  const sm = path.join(here, 'dist', 'pages', 'sitemap.xml');
+  if (!PREVIEW && fs.existsSync(sm)) fs.writeFileSync(sm, fs.readFileSync(sm, 'utf8').replace('</urlset>', docValues.filter(Boolean).map((v) => `  <url><loc>${PAGES_BASE}docs/${v}/</loc></url>\n`).join('') + '</urlset>'));
+}
+// test-guide/: a release test guide (playground/test-guide.md, when there is one) for the maintainer, only on a local
+// --test-build site (never the live one). Add the file for a test round and delete it at the release.
+if (TEST_BUILD && fs.existsSync(path.join(here, 'test-guide.md'))) {
+  const { writeTestGuidePage } = await import('./test-guide-page.mjs');
+  writeTestGuidePage({ outDir: path.join(here, 'dist', 'pages', 'test-guide'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), guide: fs.readFileSync(path.join(here, 'test-guide.md'), 'utf8'), build: new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC' });
+  console.log('test-guide/: the test guide (local test site only)');
+}
+// votes/: the anonymous votes for the maintainers (votes-page.mjs), from votes.json on the data branch
+// (tools/votes-report.mjs, daily in hub-sync.yml), or --votes <file>. Unlisted and not for search engines.
+{
+  const argVotes = process.argv.indexOf('--votes');
+  const file = argVotes > 0 ? path.resolve(process.argv[argVotes + 1]) : argData > 0 ? path.join(path.resolve(process.argv[argData + 1]), 'votes.json') : null;
+  if (file && fs.existsSync(file)) {
+    const { writeVotesPage } = await import('./votes-page.mjs');
+    writeVotesPage({ outDir: path.join(here, 'dist', 'pages', 'votes'), startHtml: fs.readFileSync(path.join(here, 'src', 'start.html'), 'utf8'), votes: JSON.parse(fs.readFileSync(file, 'utf8')) });
+  }
+}
+// The short demo videos (captioned, no sound) and their posters: the workbench's own, the editors' from the extension repo.
+fs.mkdirSync(path.join(startDir, 'videos'), { recursive: true });
+for (const [dir, names] of [[path.join(here, '..', 'docs', 'videos'), ['workbench']], [path.join(coreRepo, 'docs', 'videos'), ['vscode', 'notepadpp']]])
+  for (const n of names) for (const f of [`${n}.mp4`, `${n}-poster.jpg`]) {
+    // The start page plays each of these: a missing one would ship as a broken player, so stop here.
+    if (!fs.existsSync(path.join(dir, f))) throw new Error(`build: ${path.join(dir, f)} is missing (the start page shows it). The editors' videos come from splitscreenme-vscode's docs/videos.`);
+    fs.copyFileSync(path.join(dir, f), path.join(startDir, 'videos', f));
+  }
+// The editor icons ("Works in your editor"): Devicon's where it has one, a neutral stand-in where it doesn't.
+fs.mkdirSync(path.join(startDir, 'editors'), { recursive: true });
+for (const f of fs.readdirSync(path.join(here, 'src', 'editor-icons'))) if (f.endsWith('.svg')) fs.copyFileSync(path.join(here, 'src', 'editor-icons', f), path.join(startDir, 'editors', f));
 // Duo and Nucli, the mascot concepts (design/mascots), at /mascots/: the sheet, its earlier steps and the archive.
 // Concepts for now, not approved by the Nucleus Co-op maintainers, so search engines are asked to leave them out.
 {
@@ -597,11 +744,50 @@ fs.copyFileSync(path.join(here, '..', 'docs', 'images', 'og.png'), path.join(sta
     }
   };
   copy(src, dst);
+  // The rest of the Duo and Nucli site: the UI kit at /ui-kit/ and the overview at /duo-nucli/ (design/index.html,
+  // design/ui-kit). The pages link to each other as they sit in design/; served here, the overview moves into its own
+  // folder (the site's root is the workbench), so the links to it, and from it, are pointed there.
+  copy(path.join(here, '..', 'design', 'ui-kit'), path.join(here, 'dist', 'pages', 'ui-kit'));
+  fs.mkdirSync(path.join(here, 'dist', 'pages', 'duo-nucli'), { recursive: true });
+  fs.copyFileSync(path.join(here, '..', 'design', 'index.html'), path.join(here, 'dist', 'pages', 'duo-nucli', 'index.html'));
+  const overview = path.join(here, 'dist', 'pages', 'duo-nucli', 'index.html');
+  fs.writeFileSync(overview, fs.readFileSync(overview, 'utf8').replace(/<head>/i, '<head>\n<meta name="robots" content="noindex">').replace(/(href|src)="(mascots|ui-kit)\//g, '$1="../$2/'));
+  for (const f of [path.join(dst, 'index.html'), path.join(here, 'dist', 'pages', 'ui-kit', 'index.html')])
+    fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/href="\.\.\/index\.html"/g, 'href="../duo-nucli/index.html"'));
   // The download packs (the assets branch, checked out; --assets <dir>): kept off main, copied in before the fingerprint.
   const argAssets = process.argv.indexOf('--assets');
   const packs = argAssets > 0 ? path.join(path.resolve(process.argv[argAssets + 1]), 'mascots', 'packs') : path.join(src, 'packs');
   if (fs.existsSync(packs)) { fs.mkdirSync(path.join(dst, 'packs'), { recursive: true }); for (const f of fs.readdirSync(packs)) if (f.endsWith('.zip')) fs.copyFileSync(path.join(packs, f), path.join(dst, 'packs', f)); }
   else console.warn('No mascot packs (the assets branch, --assets <dir>): the Downloads buttons will lead nowhere.');
+}
+// The site's own pages count one anonymous visit with where it came from (site-chrome.mjs siteVisitScript), as the
+// workbench does, so the `?ref=` on links to the start page, Learn, docs and checks shows up under Campaigns.
+// Every site page also gets: keyboard shortcuts drawn as keys (src/kbd.ts, the same as Learn's), and a Copy button
+// on its code blocks and inline commands (site-chrome.mjs COPY_SCRIPT), and the community links where it asks for
+// them (<!--COMMUNITY--> box, <!--COMMUNITY_FOOTER--> links; site-chrome.mjs COMMUNITY).
+{
+  const script = siteVisitScript(feedbackSite);
+  const kb = await esbuild.build({ stdin: { contents: "export { kbdify, KEYS_CSS } from './kbd'; export { SEM_STATIC_CSS } from './semcss';", resolveDir: path.join(here, 'src'), loader: 'ts' }, bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'error' });
+  const { kbdify, KEYS_CSS, SEM_STATIC_CSS } = await import('data:text/javascript;base64,' + Buffer.from(kb.outputFiles[0].text).toString('base64'));
+  const page = (html) => {
+    const b = html.search(/<body[^>]*>/i), e = html.lastIndexOf('</body>');
+    if (b < 0 || e < 0) return html;
+    // Inline code that is clearly code (Game.Play, a call, a string) coloured like the editor; then the keys.
+    const body = kbdify(withCommunity(html.slice(b, e)).replaceAll('__EDITOR_POLL__', COMMUNITY.editorPoll).replaceAll('__DISCORD_INVITE__', COMMUNITY.discord).replace(/<code>([^<]*)<\/code>/g, (m, inner) => {
+      const t = inner.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+      return hlSem.looksLikeCode(t) ? `<code class="hl">${hlSem(t)}</code>` : m;
+    }));
+    return html.slice(0, b).replace('</style>', () => `${KEYS_CSS}\n${COPY_CSS}\n${HL_CSS}\n${SEM_STATIC_CSS}\n${COMMUNITY_CSS}</style>`) + body + `${COPY_SCRIPT}\n${script ?? ''}\n` + html.slice(e);
+  };
+  const add = (d) => {
+    if (!fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) add(f);
+      else if (e.name === 'index.html') fs.writeFileSync(f, page(fs.readFileSync(f, 'utf8')));
+    }
+  };
+  for (const sub of ['start', 'tools', 'learn', 'docs', 'rules', 'test-guide', 'votes']) add(path.join(here, 'dist', 'pages', sub));
 }
 // Fingerprint of everything served, so the deploy can be skipped when nothing changed (pages.yml
 // compares it with the live build.txt).

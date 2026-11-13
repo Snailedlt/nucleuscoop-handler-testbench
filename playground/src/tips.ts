@@ -20,7 +20,7 @@ export interface Tip {
   /** Clippy-style: shown once, when this is true. */
   when?: (c: TipContext) => boolean;
   /** Optional action button. */
-  action?: { label: string; run: 'lines' | 'new' | 'examples' | 'tryit' | 'share' };
+  action?: { label: string; run: 'lines' | 'new' | 'examples' | 'tryit' | 'share' | 'tutorial' };
 }
 
 const has = (c: TipContext, s: string) => c.text.includes(s);
@@ -142,14 +142,18 @@ const SHORTCUTS = T('Shortcut', [
   { id: 'f-looks-past', text: 'Miss the old Nucleus Co-op? Settings (Ctrl+,) → Theme has vlxst\'s Mac style and the original alpha 8 look, light and dark.' },
   { id: 'f-code-colours', text: 'Prefer your editor\'s colours? Settings (Ctrl+,) → Theme → Code colours: GitHub, VS Code, Xcode, One, Monokai or Dracula, with any look.' },
   { id: 'f-custom-theme', text: 'Make the workbench yours: Settings (Ctrl+,) → Theme → "Download this look as a theme file", keep only the colours you change, then "Load a theme file…". It shows up under Look, next to the built-in ones.' },
-  { id: 'f-ref-home', text: 'Not sure what an option is called? Open Reference with nothing typed and browse Game, Context, Player and the rest, or see the names Hub handlers use most.' },
-  { id: 'f-lines-ref', text: 'Open the Reference tab, then point at names in Lines (Ctrl+B): each one\'s full docs show in Reference, on a wide screen.', action: { label: 'Lines', run: 'lines' } },
+  { id: 'f-ref-home', text: 'Not sure what an option is called? Open Docs with nothing typed and browse Game, Context, Player and the rest, or see the names Hub handlers use most.' },
+  { id: 'f-lines-ref', text: 'Open the Docs tab, then point at names in Lines (Ctrl+B): each one\'s full docs show in Docs, on a wide screen.', action: { label: 'Lines', run: 'lines' } },
   { id: 's-open-keys', text: 'In Open (Ctrl+K), the arrow keys move between tiles, templates and Hub rows; Home and End jump to the first and last. Hover a Hub handler\'s icons for players, keyboards and mice, and downloads.', action: { label: 'Examples', run: 'examples' } },
   { id: 's-format', text: 'Shift+Alt+F formats the code: indentation and spacing only. Nothing moves to another line, so Nucleus reads it exactly as before.' },
   { id: 's-f8', text: 'F8 jumps to the next problem, Shift+F8 to the one before. Ctrl+. shows the fixes for the line you’re on.' },
-  { id: 's-tryit', text: 'Ctrl+Enter runs Try it on the code as it is now.', action: { label: 'Try it', run: 'tryit' } },
-  { id: 's-lines', text: 'Ctrl+B (or Ctrl+Shift+L) shows or hides Lines.', action: { label: 'Show Lines', run: 'lines' } },
+  { id: 's-tryit', text: 'Ctrl+F5 runs Try it on the code as it is now (VS Code\'s Run Without Debugging); Ctrl+; then A tests all combinations.', action: { label: 'Try it', run: 'tryit' } },
+  { id: 's-lines', text: 'Ctrl+B shows or hides Lines (Ctrl+Shift+L too, outside the code: in the code it selects every occurrence, as in VS Code).', action: { label: 'Show Lines', run: 'lines' } },
+  { id: 's-docs-page', text: 'Every name in Docs has a page of its own to link to: open one and choose Open as a page, or send someone docs/Context.ModifySaveFile/ on the site.' },
+  { id: 's-tutorial', text: 'New to handlers? Learn walks you through making your first one, for a free game, a few lines at a time, checked as you type. At the end, you test it in Nucleus Co-op.', action: { label: 'Start it', run: 'tutorial' } },
+  { id: 's-find-all', text: 'Add the same text after every match: Ctrl+F, type what to find, Alt+Enter selects every match, then → puts a cursor after each (← before each) and you type once for all.' },
   { id: 's-edit', text: 'VS Code’s editing keys work: Ctrl+/ comments a line, Alt+↑/↓ moves it, Shift+Alt+↑/↓ copies it, Ctrl+D selects the next match.' },
+  { id: 's-explain', text: 'Not sure what a line does? Put the cursor on it and press Ctrl+Alt+E: what it does in plain words, the docs of its names, and what Check says about it.' },
   { id: 's-goto', text: 'Ctrl+G goes to a line number, handy with a line from a Nucleus error message.' },
   { id: 's-suggest', text: 'Type `.` after `Game`, `Context` or `Nucleus`, or press Ctrl+Space, for the names that exist there, with their docs.' },
   { id: 's-save', text: 'Ctrl+S saves the handler as a .zip Nucleus Co-op can install; Ctrl+Shift+S (or the arrow next to Save) picks .js or .nc. Ctrl+, opens Settings, and ? lists every shortcut.' },
@@ -173,7 +177,7 @@ const FEATURES_ = T('Feature', [
   { id: 'f-testall', text: 'Test all combinations runs every player count, input setup and monitor size, and lists what fails and why.', action: { label: 'Try it', run: 'tryit' } },
   { id: 'f-share', text: 'Share (next to Save) copies a link to the handler, the code, or a Discord-ready code block. Select some lines first to share only those.', action: { label: 'Copy link', run: 'share' } },
   { id: 'f-package', text: 'Open a .zip or .nc, or a Hub handler marked "+ N files" in the Open list, and its other files come along: "+ N files" shows each one, where Nucleus installs it and what’s inside, and saving puts them back. Big Hub files show a Hub badge: get those from the original package.' },
-  { id: 'f-reference', text: 'The Reference tab searches every option, Context member and Nucleus enum with its docs: try "window title" or "mutex".' },
+  { id: 'f-reference', text: 'The Docs tab searches every option, Context member and Nucleus enum with its docs: try "window title" or "mutex".' },
   { id: 'f-mascots', text: 'Meet Nucli, the quiet atom who checks your handler: he dozes until there\'s code, cheers when there\'s nothing to fix and runs Test all. Duo, splitscreen.me\'s split-screen ball, turns up when something won\'t load.' },
   { id: 'f-mascot-modes', text: 'Want Duo and Nucli livelier, or nothing moving at all? Settings → Theme → Motion has presets and a switch for each kind of motion, including Nucli editing the code during fixes.' },
   { id: 'f-ai-providers', text: 'Fix with AI works with Claude, OpenAI, OpenRouter, Gemini or a free local model (Ollama, LM Studio): pick one in Settings › AI.' },

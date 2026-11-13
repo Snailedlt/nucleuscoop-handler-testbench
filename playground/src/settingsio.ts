@@ -2,7 +2,7 @@
 // Only settings (an allowlist): never handlers, drafts, tabs or files, and never the WakaTime API key.
 const SETTINGS = [
   'a11y', 'advanced', 'check-density', 'code-theme', 'custom-theme', 'themes', 'theme-on', 'dev-site', 'dev-mode',
-  'editor', 'feedback-off', 'kb', 'layout', 'lines', 'lines-prefs', 'mascots', 'motion', 'panels', 'rail-open',
+  'editor', 'feedback-off', 'kb', 'keys', 'credit-off', 'layout', 'lines', 'lines-prefs', 'mascots', 'motion', 'panels', 'rail-open',
   'save-format', 'tips', 'view', 'sim', 'tab', 'tester-profile',
 ].map((k) => `nucleus-workbench-${k}`);
 const FORMAT = 'nucleus-workbench-settings';

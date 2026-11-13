@@ -1,10 +1,10 @@
 # Nucleus handler testbench
 
-> **Beta, testers wanted.** Intro, screenshots and a 5-minute install: **https://snailedlt.github.io/nucleuscoop-handler-testbench/start/**
+> **Beta, testers wanted.** Intro, screenshots and a 5-minute install: **https://snailedlt.github.io/nucleuscoop-handler-testbench/start/?ref=workbench-readme-md**
 
 Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) game handlers outside Nucleus, on Linux or macOS with Mono, using **the same JavaScript engine version Nucleus ships (Jint 2.11.58), set up the same way**. Use it to check that a handler loads and that its `Game.Play` logic runs for each player, without Windows, the game or controllers.
 
-**Browser workbench: https://snailedlt.github.io/nucleuscoop-handler-testbench/** (from `playground/`): check a handler, fix it, and see what Nucleus sets up for each player, in the browser. Nothing to install.
+**Browser workbench: https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=workbench-readme-md** (from `playground/`): check a handler, fix it, and see what Nucleus sets up for each player, in the browser. Nothing to install.
 
 <p>
   <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/check-dark.png"><img src="docs/images/check-light.png" width="49%" alt="Check: Skyrim Together Reborn, a verified Hub handler, with its five ProtoController5 to 9 lines flagged and explained"></picture>
@@ -14,6 +14,10 @@ Runs [Nucleus Co-op](https://github.com/SplitScreen-Me/splitscreenme-nucleus) ga
   <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/fix-all-dark.png"><img src="docs/images/fix-all-light.png" width="49%" alt="Fix all: the automatic fixes for a handler with common mistakes, as a list and a diff, before you accept them"></picture>
   <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/phone-dark.png"><img src="docs/images/phone-light.png" width="24%" alt="The workbench on a phone: the Check results for the example handler"></picture>
 </p>
+
+**In motion** (a minute or two each, captioned, no sound): [▶ the workbench](docs/videos/workbench.mp4) · [▶ VS Code](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/docs/videos/vscode.mp4) · [▶ Notepad++](https://github.com/Snailedlt/splitscreenme-vscode/blob/main/docs/videos/notepadpp.mp4)
+
+[![The workbench in motion: checks, fixes, suggestions, Docs, Try it, the visual editor and the debugger](docs/videos/workbench-poster.jpg)](docs/videos/workbench.mp4)
 
 ## What it does
 
@@ -90,12 +94,15 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 
 ## Workbench (browser GUI)
 
-`playground/` builds a single self-contained page for testing by hand. It's published at **https://snailedlt.github.io/nucleuscoop-handler-testbench/** (`.github/workflows/pages.yml`: on every push and daily, against splitscreenme-vscode's `main`; one-time setup: Settings > Pages > Source: GitHub Actions). It has:
+`playground/` builds a single self-contained page for testing by hand. It's published at **https://snailedlt.github.io/nucleuscoop-handler-testbench/?ref=workbench-readme-md** (`.github/workflows/pages.yml`: on every push and daily, against splitscreenme-vscode's `main`; one-time setup: Settings > Pages > Source: GitHub Actions). It has:
 
-- an editor with live lint squiggles, quick fixes, completion, hover docs and signature help;
-- API search;
+- a code editor with the same features as the VS Code extension: live squiggles and quick fixes, suggestions (API members, option values, your own functions and variables, `Context.Options` keys, snippets, the template in an empty file), hovers and parameter hints styled like VS Code's, F12, rename (F2), find and replace, folding, Format Document, and VS Code's shortcuts (all rebindable);
+- a visual editor beside the code: **Form** (one line per option, values from lists) and **Blocks** (`Game.Play` as conditions and actions), plus **Lines** (every option Nucleus has, grouped, insertable);
+- a **debugger**: breakpoints, stepping, variables and watches, per player;
+- **Files**: open a whole `.zip`/`.nc` package, edit its text files, with the package checks; and **Your game on this PC**: link the game's install folder to check paths against it;
+- **Docs**: every name with its docs, searchable; `#docs-<name>` links open one (e.g. `#docs-Context.ModifySaveFile`), and the address follows what you browse;
 - the New Handler generator;
-- a per-player `Game.Play` simulation;
+- a per-player `Game.Play` simulation (**Try it**), and **Test all** for every players × input × monitor combination;
 - the probes, shown next to the linter's verdict;
 - **Engine templates**: the same files the SplitScreen.Me Discord bot sends with `/create`. They are read at build time from [splitscreenme-discordbot](https://github.com/SplitScreen-Me/splitscreenme-discordbot)'s `src/handler_templates`, using a cached shallow clone in `.cache/`. Pass `--bot <path>` to use a local checkout, or `--refresh-bot` to re-clone;
 - **Hub examples**: the most-downloaded handlers whose current version is verified, snapshotted from the hub API at build time (`--hub <n>`, default 40; `--refresh-hub` to re-fetch). A published artifact can't reach other sites when you view it, so they are embedded. Each one's source is that verified package's own `jsContent`, and its package's other files are downloaded once per version (cached in `.cache/hub-files/`) for the Files panel;
@@ -108,7 +115,7 @@ Handlers get .NET access through Jint (`System.IO`, `System.Diagnostics`, …), 
 - The result is shown as a diff, with error and warning counts before and after. You choose **Accept** or **Reject**.
 - In **Apply automatically** mode the fix is applied straight away, with **Undo**. It still goes to review if the fix adds any new problem, removes more than half the handler, doesn't reduce the problem count, or you edited the handler meanwhile.
 
-**Advanced mode** is off by default. You turn it on with the switch at the top right.
+**Advanced mode** is off by default. You turn it on in **Settings › Advanced**.
 
 - **Off:** problems in plain language with **Fix this** and **Show me**, a readable per-player preview ("Window: the left half of the screen, 960 × 1080", "Changes config.ini: Width = 960"), and **Save for Nucleus**. That saves a `.zip` you drag onto Nucleus Co-op's *Extract handler* button.
 - **On:** rule ids, severity filters, the API reference, engine probes and recorded calls.
@@ -126,7 +133,7 @@ In Advanced mode everything is keyboard-driven:
 
 **Share links.** **Share › Copy a link** puts the handler, compressed, into the link (`#share-…`), so anyone with the link sees the same code; with text selected it shares just the selection, which keeps links short enough for a Discord message (2,000 characters; whole handlers are usually longer).
 
-Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly. The page also remembers your draft, the active tab and the simulation settings in your browser.
+Links like `#hub-<id>`, `#probe-17`, `#template-basic` or `#example-mistakes` open that example directly, and `#docs-<name>` opens a name in Docs (over the handler you have open). The page also remembers your draft, the active tab and the simulation settings in your browser.
 
 It uses the same core code as the extension, from a checkout of [splitscreenme-vscode](https://github.com/Snailedlt/splitscreenme-vscode). That checkout needs `npm ci` run in it first.
 
@@ -136,9 +143,9 @@ cd playground && npm install && node build.mjs --core ../../splitscreenme-vscode
 
 The simulation runs in the browser's JavaScript engine, not Jint. It emulates the Jint rules the probes confirmed, and it refuses code Jint can't parse. Before running a handler it rewrites the source so the browser behaves like Jint where they differ: ES2015+ built-ins Jint lacks (`.includes()`, `Object.assign`, `Map`, …) fail, `let`/`const` become `var`, and a top-level `"use strict"` applies to the whole handler.
 
-The simulation lives in splitscreenme-vscode (`src/core/sim.ts`), where it also powers the extension's **Try it** panel and `nucleus simulate`; this page bundles the same file.
+The simulation lives in splitscreenme-vscode (`src/core/sim.ts`), where it also powers the extension's **Try it** panel and `ncdev simulate`; this page bundles the same file.
 
-`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 113. `--isolated` does the same through `nucleus simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
+`sim-parity.mjs` checks the simulation against the real engine: it runs every probe through it and compares the outcome, and the launch arguments it produces, with `probes/expected.txt`. It currently matches on all 119. `--isolated` does the same through `ncdev simulate`, the sandboxed path the CLI and VS Code use. Run it after changing `src/core/sim.ts`:
 
 ```bash
 cd playground && node sim-parity.mjs --core ../../splitscreenme-vscode              # and with --isolated
@@ -184,3 +191,7 @@ tools/fetch_verified.py  version-verified Hub downloads + manifest
 probes/                  engine behaviour probes + expected results
 playground/              browser workbench (build.mjs → dist/workbench.html)
 ```
+
+## Contributing
+
+Want to help, with or without code? Start with [CONTRIBUTING.md](CONTRIBUTING.md).

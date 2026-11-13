@@ -5,7 +5,14 @@ try { if (localStorage.getItem('nucleus-workbench-dev-site') === 'v3') document.
   var m = localStorage.getItem('nucleus-workbench-dev-mode'); if (m === 'light' || m === 'dark') document.documentElement.dataset.theme = m; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>/*CODEMIRROR_CSS*/</style>
+<style>/*CODEMIRROR_CSS*/
+/* Word wrap (wrap.ts; Settings › Wrap long lines, Alt+Z): read-only code follows the code editor. On: long lines wrap
+   at word boundaries; off: they scroll sideways. Either way nothing is cut off. Parameter hints always wrap, as in
+   VS Code: a hint you'd have to scroll is no hint. */
+:root[data-wrap="on"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek) { white-space: pre-wrap; overflow-wrap: break-word; }
+:root[data-wrap="off"] :is(.doc-code, #tip pre, .hint-doc pre, .pkg-text, #line-pop .lp-doc pre, .dbg-peek) { white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+:root[data-wrap="on"] .diff td { white-space: pre-wrap; overflow-wrap: break-word; }
+</style>
 <style>
 /* Layout: a two-pane workbench, code on the left, analysis on the right; stacks on phones.
  * Two site themes, switched in the dev bar (data-site on <html>):
@@ -83,6 +90,18 @@ a.btn { text-decoration: none; color: var(--fg); display: inline-block; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 :root { accent-color: var(--accent); }
 
+html.no-handler #main { display: none; }
+.no-handler { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 24px 16px; text-align: center; }
+.no-handler[hidden] { display: none; }
+.no-handler h2 { margin: 0; font-size: 20px; }
+.no-handler .nh-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+.no-handler .nh-intro { max-width: 920px; }
+.no-handler .nh-intro p { max-width: 640px; margin-left: auto; margin-right: auto; }
+.no-handler .nh-intro p { margin: 8px 0 0; }
+.nh-steps { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin: 12px 0 0; padding: 0; font-size: 14px; }
+.nh-steps b { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 12px; margin-right: 4px; }
+/* Advanced mode starts compact: just the ways on. */
+:root[data-mode="dev"] .no-handler .nh-intro { display: none; }
 .main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) 12px minmax(0, 1fr); gap: 0; }
 @media (min-width: 861px) { .main:has(#lines:not([hidden])) { grid-template-columns: minmax(0, 1.5fr) 12px minmax(0, 1fr); } }
 /* Resizable panes: a size set by dragging wins over the defaults above (double-click resets) */
@@ -97,11 +116,12 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
 body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select: none !important; }
 .pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; box-shadow: var(--sh-1); }
 .pane-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 40px; box-sizing: border-box; }
+@media (min-width: 861px) { .pane-head { min-height: 52px; } .pane-head[role=tablist] { padding-block: 7px; } }
 #status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
 .code-row { flex: 1; min-height: 0; display: flex; position: relative; }
 #editor { flex: 1; min-height: 0; min-width: 0; position: relative; }
 /* Lines: a Pawno-style list of every name, beside the code */
-.lines-toggle { padding: 2px 9px; font-size: 12px; margin-left: 6px; }
+.lines-toggle { padding: 2px 10px; font-size: 12.5px; margin-left: 6px; }
 .lines-toggle[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 #lines { width: 310px; flex: none; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
 #lines[hidden] { display: none; }
@@ -332,7 +352,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 #updated #updated-text { flex: 1; min-width: 0; }
 #updated .btn.icon { width: 26px; padding: 2px 0; }
 #news-dialog { width: min(560px, 94vw); }
-#news-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+#news-dialog h2 { margin: 0 0 6px; }
 #news-body { max-height: 62vh; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
 #news-body .release { border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
 #news-body .release[open] { border-color: var(--accent); }
@@ -412,7 +432,7 @@ body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select:
 .set-field small { color: var(--muted); font-size: 12px; }
 .set-field input { font: 13px var(--font-mono); color: var(--fg); background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 8px; width: 100%; box-sizing: border-box; }
 .set-waka-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-#settings-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+#settings-dialog h2 { margin: 0 0 6px; }
 .set-sec { border-top: 1px solid var(--line); padding: 12px 0 10px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
 .set-sec:not(.ct) > :not(.check):not(h3) { align-self: flex-start; }
 /* Settings: on/off choices as switches, each row with a soft hover */
@@ -431,10 +451,9 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .set-check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; padding: 4px 0; cursor: pointer; }
 .set-check input { margin-top: 3px; flex: none; }
 .set-check small { display: block; color: var(--muted); font-size: 12px; }
+.set-check small .fb-open { display: inline-block; margin-top: 4px; }
 .more-list { display: flex; flex-direction: column; gap: 8px; }
 .more-list .btn { text-align: left; padding: 12px 14px; font-size: 15px; }
-.code-list .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.code-list .btn small { color: var(--muted); font-size: 12px; font-weight: 400; }
 /* Save or copy: one recommended action (the .zip for Nucleus), the rest as a grid of small choices. */
 #code-dialog { width: min(560px, calc(100vw - 32px)); }
 #code-dialog button svg { flex: none; color: var(--accent); }
@@ -443,7 +462,6 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .code-hero { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid var(--accent); border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--fg); font: inherit; font-size: 15px; cursor: pointer; }
 .code-hero:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 .code-hero > span:nth-child(2) { flex: 1; }
-.code-badge { font-size: 11.5px; font-weight: 600; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; flex: none !important; }
 .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .code-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
 .code-opt:hover { background: var(--surface-2); }
@@ -452,7 +470,7 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .code-saved::before { content: '✓ '; color: var(--ok, #2e9e5b); }
 .code-warn { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 4px; }
 @media (max-width: 520px) { .code-grid { grid-template-columns: 1fr; } }
-#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; padding: 2px 9px; align-self: stretch; }
+#code-menu-open { display: inline-flex; align-items: center; justify-content: center; margin-left: 0; width: auto; }
 .lines-toggle { align-self: stretch; }
 #keybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--surface-2); border-top: 1px solid var(--line); scrollbar-width: none; }
 #keybar[hidden] { display: none; }
@@ -501,13 +519,54 @@ html.kb-up #toasts { bottom: calc(var(--kb) + 12px); }
 #editor .CodeMirror { position: absolute; inset: 0; height: auto; font: var(--code-size, 13px)/1.55 var(--font-mono); background: var(--code-bg); color: var(--code-fg, var(--fg)); }
 .CodeMirror-gutters { background: var(--code-gutter, var(--surface-2)); border-right: 1px solid var(--code-line, var(--line)); }
 .CodeMirror-linenumber { color: var(--code-muted, var(--muted)); }
+/* Find and replace (findwidget.ts), as in VS Code: a box at the top right of the code. */
+.find-widget { display: none; position: absolute; top: 4px; right: 16px; z-index: 6; gap: 4px; align-items: flex-start; padding: 4px 6px; background: var(--panel, var(--bg)); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 14px rgb(0 0 0 / .18); font: 13px/1.3 var(--ui-font, system-ui, sans-serif); max-width: calc(100% - 24px); }
+.find-widget.open { display: flex; }
+.find-widget .fw-rows { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.find-widget .fw-row { display: flex; gap: 2px; align-items: center; }
+.find-widget input { width: 190px; max-width: 40vw; min-width: 0; padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); font: inherit; }
+.find-widget input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.find-widget.bad .fw-find, .find-widget.none .fw-find { border-color: var(--danger, #d33); }
+.find-widget button { min-width: 24px; height: 24px; padding: 0 5px; border: 1px solid transparent; border-radius: 4px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.find-widget button:hover { background: color-mix(in srgb, var(--fg) 10%, transparent); }
+.find-widget button:focus-visible { outline: 2px solid var(--accent); }
+.find-widget .fw-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.find-widget .fw-toggle { align-self: stretch; height: auto; }
+.find-widget .fw-count { min-width: 64px; padding: 0 4px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.find-widget.none .fw-count { color: var(--danger, #d33); }
+.cm-find-match { background: color-mix(in srgb, #f5b400 35%, transparent); border-radius: 2px; }
+.CodeMirror-selected { z-index: 0; }
+@media (max-width: 600px) { .find-widget { right: 4px; left: 4px; } .find-widget input { width: 100%; max-width: none; flex: 1; } }
+/* Settings › Keyboard shortcuts (kbsettings.ts) */
+.kb-tools { display: flex; gap: 8px; margin: 6px 0; }
+.kb-tools .kb-q { flex: 1; min-width: 0; }
+.kb-table { width: 100%; border-collapse: collapse; }
+.kb-table td, .kb-table th { padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: left; }
+.kb-table th { font-weight: 600; padding-top: 12px; }
+.kb-table td:nth-child(2) { white-space: nowrap; }
+.kb-table .kb-act { text-align: right; white-space: nowrap; }
+.kb-table .kb-act .link { margin-left: 6px; }
+.kb-table tr.kb-custom td:first-child { font-weight: 600; }
+.kb-table .kb-recorder { width: 14em; font: inherit; padding: 3px 6px; border: 2px solid var(--accent); border-radius: 4px; background: var(--bg); color: var(--fg); }
+.kb-msg { min-height: 1.3em; margin: 2px 0; }
+@media (max-width: 600px) { .kb-table td:nth-child(2) { white-space: normal; } }
+/* Folding, as in VS Code: the arrows show while the pointer is over the code; a folded block's arrow and ⋯ stay. */
+.CodeMirror-foldgutter { width: 14px; }
+.CodeMirror-foldgutter-open, .CodeMirror-foldgutter-folded { color: var(--code-muted, var(--muted)); cursor: pointer; font-size: 12px; line-height: inherit; text-align: center; }
+.CodeMirror .CodeMirror-foldgutter-open::after { content: '\2304'; }
+.CodeMirror .CodeMirror-foldgutter-folded::after { content: '\203A'; }
+.CodeMirror-foldgutter-open { opacity: 0; transition: opacity .15s; }
+.CodeMirror:hover .CodeMirror-foldgutter-open, .CodeMirror-focused .CodeMirror-foldgutter-open:hover { opacity: 1; }
+.CodeMirror-foldmarker { color: var(--code-muted, var(--muted)); background: color-mix(in srgb, var(--code-muted, var(--muted)) 18%, transparent); border-radius: 4px; padding: 0 5px; margin: 0 3px; font-family: inherit; text-shadow: none; cursor: pointer; }
+@media (pointer: coarse) { .CodeMirror-foldgutter-open { opacity: .6; } }
 .CodeMirror-cursor { border-left-color: var(--code-fg, var(--fg)); }
 .CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 600; }
-.cm-s-default .cm-keyword { color: var(--kw); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
+.cm-s-default .cm-keyword { color: var(--kw); font-weight: var(--kw-weight, normal); } .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
 .cm-s-default .cm-number { color: var(--num); } .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
+:is(.cm-s-default, .hl) span.cm-nucleus-obj, :is(.cm-s-default, .hl) span.cm-nucleus-val { color: var(--num); } :is(.cm-s-default, .hl) span.cm-nucleus-prop, :is(.cm-s-default, .hl) span.cm-nucleus-fn { color: var(--prop); }
 .cm-s-default .cm-property { color: var(--prop); } .cm-s-default .cm-variable, .cm-s-default .cm-def, .cm-s-default .cm-variable-2 { color: var(--code-fg, var(--fg)); }
-.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--code-muted, var(--muted)); }
+.cm-s-default .cm-atom { color: var(--num); } .cm-s-default .cm-operator { color: var(--op, var(--code-muted, var(--muted))); font-weight: var(--op-weight, normal); }
 /* Tokens other file types use (batch, PowerShell, ini, xml, yaml): mapped onto the same code colours. */
 .cm-s-default .cm-builtin, .cm-s-default .cm-tag { color: var(--kw); } .cm-s-default .cm-attribute, .cm-s-default .cm-qualifier { color: var(--prop); }
 .cm-s-default .cm-meta, .cm-s-default .cm-header, .cm-s-default .cm-bracket { color: var(--code-muted, var(--muted)); } .cm-s-default .cm-variable-3, .cm-s-default .cm-type { color: var(--num); }
@@ -540,41 +599,82 @@ ul.hl { padding: 4px 8px; border-radius: var(--r-ctl); }
 .CodeMirror-lint-mark-info { --sq: var(--info); }
 .CodeMirror-lint-mark-info::after { height: 2px; --sq-mask: radial-gradient(circle, #000 0.7px, transparent 1px); -webkit-mask-size: 4px 2px; mask-size: 4px 2px; }
 .CodeMirror-lint-tooltip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px/1.45 var(--font-body); max-width: 460px; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 50; }
-.CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); font: 12.5px var(--font-mono); max-height: 260px; box-shadow: 0 8px 22px rgba(0,0,0,.2); z-index: 60; }
-.CodeMirror-hint { color: var(--fg); display: flex; justify-content: space-between; gap: 16px; padding: 3px 8px; }
-li.CodeMirror-hint-active { background: var(--accent); color: var(--accent-fg); }
-li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
-.hint-type { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Suggestions, as VS Code: dense rows, an icon per kind, the typed letters highlighted, the type dim on the right. */
+.CodeMirror-hints { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font: 13px var(--font-mono); max-height: 264px; box-shadow: 0 2px 8px rgba(0,0,0,.16); z-index: 60; padding: 0; }
+.CodeMirror-hint { color: var(--fg); display: flex; align-items: center; gap: 6px; padding: 0 8px 0 4px; line-height: 22px; border-radius: 0; white-space: nowrap; }
+li.CodeMirror-hint-active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--fg); outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: -1px; }
+li.CodeMirror-hint-active .hint-type { color: var(--muted); opacity: 1; }
+.hint-hit { color: var(--accent); font-weight: 700; }
+.hint-type { color: var(--muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; margin-left: 12px; }
 .hint-name.dep { text-decoration: line-through; opacity: .7; }
+.hint-ico { width: 16px; flex: none; text-align: center; font-size: 12px; color: var(--muted); }
+.hint-ico.k-method, .hint-ico.k-function { color: #b180d7; } .hint-ico.k-property, .hint-ico.k-field, .hint-ico.k-variable { color: #75beff; }
+.hint-ico.k-enumMember, .hint-ico.k-value, .hint-ico.k-constant, .hint-ico.k-enum { color: #ee9d28; }
+.hint-name { flex: 1; }
+.hint-doc { position: fixed; z-index: 61; max-height: 264px; overflow: auto; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0 0 4px; font: 13px/1.45 var(--font-body); box-shadow: 0 2px 8px rgba(0,0,0,.16); }
+.hint-doc > * { margin: 4px 8px 0; }
+.hint-doc > pre.doc-code:first-child { margin: 0; padding: 4px 8px; background: none; border-radius: 0; border-bottom: 1px solid var(--line); font: 12.5px/1.5 var(--font-mono); white-space: pre-wrap; }
+.hint-doc pre { white-space: pre-wrap; }
+.hint-doc code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 3px; border-radius: 3px; }
+.cm-snippet-stop { background: color-mix(in srgb, var(--accent) 18%, transparent); outline: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
 
-#sig { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 6px 10px; font: 12px/1.5 var(--font-mono); box-shadow: 0 4px 14px rgba(0,0,0,.15); overflow-x: auto; }
-#sig .active { color: var(--accent); font-weight: 600; text-decoration: underline; }
-#tip { position: fixed; z-index: 70; max-width: min(460px, calc(100vw - 24px)); max-height: 50vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; font-size: 13px; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
+/* Parameter hints, as VS Code: a small box just above the line being typed; the parameter being typed in bold,
+   what to pass for it under a thin line; "1/2" with arrows when there are overloads. */
+#sig { position: fixed; z-index: 65; display: flex; max-width: min(620px, calc(100vw - 16px)); background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.16); font: 13px/1.45 var(--font-body); }
+#sig[hidden] { display: none; }
+#sig .sig-nav { display: flex; flex-direction: column; align-items: center; padding: 2px 2px; color: var(--muted); font-size: 11px; border-right: 1px solid var(--line); }
+#sig .sig-nav button { background: none; border: 0; color: var(--muted); font-size: 9px; line-height: 1; padding: 2px 4px; cursor: pointer; }
+#sig .sig-nav button:hover { color: var(--fg); }
+#sig .sig-body { min-width: 0; }
+#sig .sig-label { padding: 3px 8px; font: 12.5px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+#sig .active { font-weight: 700; color: var(--accent); }
+#sig .sig-docs { padding: 3px 8px 4px; border-top: 1px solid var(--line); max-height: 9em; overflow: auto; }
+#sig .sig-docs p { margin: 0; }
+#sig .sig-pdoc + .sig-fdoc { margin-top: 4px; color: var(--muted); }
+#sig .sig-fdoc { color: var(--muted); }
+#sig code { font: 12px var(--font-mono); background: var(--surface-2); padding: 0 3px; border-radius: 3px; }
+/* The editor's hover, as VS Code draws it: a flat box with square-ish corners and a light shadow; sections (problems,
+   docs) split by a thin line; code on top of the docs; the fixes as links in a bar at the bottom. */
+#tip { position: fixed; z-index: 70; max-width: min(520px, calc(100vw - 24px)); max-height: 45vh; overflow: auto; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0; font: 13px/1.45 var(--font-body); box-shadow: 0 2px 8px rgba(0,0,0,.16); }
 #tip[hidden] { display: none; }
-/* The hover card (one box): over a problem, the problem with an icon in its colour, its message (names as code) and
-   its fixes; the docs of the name fold away below. */
-#tip .hc-item { display: flex; gap: 10px; }
-#tip .hc-item + .hc-item { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-#tip .hc-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); margin-top: 1px; }
-#tip .error .hc-ico { background: var(--err); }
-#tip .warning .hc-ico { background: var(--warn); color: #1b1f2a; }
-#tip .info .hc-ico { background: var(--info); }
-#tip .hc-body { min-width: 0; }
-#tip .hc-title { font-weight: 600; color: var(--fg); }
-#tip .hc-msg { color: var(--muted); margin-top: 2px; line-height: 1.45; }
-#tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 4px; border-radius: 3px; overflow-wrap: anywhere; }
-#tip .hc-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-#tip .hc-actions .btn { padding: 3px 10px; font-size: 12px; }
-#tip .hc-actions .btn code { background: transparent; color: inherit; padding: 0; }
-#tip .hc-key { display: inline-flex; gap: 2px; margin-left: 2px; }
-#tip .hc-key kbd { font: 10.5px var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
-#tip .hc-rule { font: 11px var(--font-mono); color: var(--muted); }
-#tip details.hc-doc { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 6px; }
-#tip details.hc-doc > summary { cursor: pointer; font-size: 12px; color: var(--muted); }
-#tip details.hc-doc[open] > summary { margin-bottom: 6px; }
+#tip .hv-sec { padding: 4px 8px; }
+#tip .hv-sec + .hv-sec { border-top: 1px solid var(--line); }
+#tip .hv-prob { display: flex; gap: 6px; align-items: baseline; padding: 1px 0; }
+#tip .hv-ico { flex: none; font: 700 12px/1 var(--font-body); width: 12px; text-align: center; }
+#tip .error .hv-ico { color: var(--err); } #tip .warning .hv-ico { color: var(--warn); } #tip .info .hv-ico, #tip .hint .hv-ico { color: var(--info); }
+#tip .hv-msg { color: var(--fg); }
+/* API names in hovers, hints and suggestion docs open the Reference (as VS Code's hover links). */
+.api-link { cursor: pointer; text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.api-link:hover, .api-link:focus-visible { text-decoration: underline solid; color: var(--accent); outline: none; }
+.api-link:focus-visible { box-shadow: 0 0 0 2px var(--accent); border-radius: 3px; }
+#tip .hv-prob + .hv-prob { margin-top: 4px; }
+#tip ul, .hint-doc ul, #sig ul { margin: 0 0 6px; padding-left: 18px; }
+#tip .hv-prob strong { font-weight: 600; }
+#tip .hv-rule { font: 11.5px var(--font-mono); color: var(--muted); }
+#tip code { font: 12px var(--font-mono); background: var(--surface-2); color: var(--fg); padding: 0 3px; border-radius: 3px; overflow-wrap: anywhere; }
+#tip .hv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; padding: 3px 8px; border-top: 1px solid var(--line); background: var(--surface-2); font-size: 12px; }
+#tip .hv-link { background: none; border: 0; padding: 1px 0; color: var(--link, var(--accent)); font: inherit; cursor: pointer; }
+#tip .hv-link:hover, #tip .hv-link:focus-visible { text-decoration: underline; }
+#tip .hv-link code { background: transparent; color: inherit; padding: 0; font-size: 11.5px; }
+#tip .hv-key { margin-left: auto; color: var(--muted); font-size: 11.5px; }
+/* Docs in the hover: the signature as plain code on top, a thin line, then the text. */
+#tip .hv-doc { padding: 0; }
+#tip .hv-doc > pre.doc-code:first-child, #tip .dc.compact .dc-sig { margin: 0; padding: 4px 8px; background: none; border-radius: 0; border-bottom: 1px solid var(--line); font: 12.5px/1.5 var(--font-mono); }
+#tip .hv-doc > :not(pre:first-child) { margin-left: 8px; margin-right: 8px; }
+#tip .hv-doc > p:first-of-type, #tip .hv-doc > pre:first-child + p { margin-top: 4px; }
+#tip .hv-doc > :last-child { margin-bottom: 6px; }
+#tip .dc.compact .dc-sig div + div { border-top: 0; padding-top: 0; }
+#tip .dc.compact .dc-text { padding: 4px 8px 2px; }
+#tip .dc.compact .dc-fact { color: var(--muted); font-size: 12px; }
+#tip .dc.compact .dc-fact .req { color: var(--err); }
+#tip .dc.compact .dc-ai { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 4px; padding: 0; border: 0; font-size: 11.5px; }
+#tip .dc.compact .dc-ai a { font-size: 11.5px; }
+#tip pre { margin: 0 0 6px; }
 #tip p, .api p { margin: 0 0 6px; }
 /* API docs card (doccard.ts): signature, description, facts, and who wrote it. */
 .dc-sig { font: 12.5px/1.5 var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 7px 10px; margin: 0 0 8px; overflow-wrap: anywhere; }
+/* A long overload is printed one parameter per line (doccard.ts): keep its line breaks. */
+.dc-sig > div { white-space: pre-wrap; }
 .dc-sig div + div { margin-top: 2px; border-top: 1px dashed var(--line); padding-top: 2px; }
 .sg-o { color: var(--muted); } .sg-n { color: var(--prop, var(--accent)); font-weight: 700; } .sg-p { color: var(--code-fg, var(--fg)); }
 .sg-t { color: var(--kw, var(--accent)); } .sg-c { color: var(--muted); }
@@ -625,8 +725,7 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .fix-more .diff-wrap { max-height: 260px; }
 .CodeMirror .line-changed { background: color-mix(in srgb, var(--ok) 7%, transparent); box-shadow: inset 3px 0 0 var(--ok); transition: background-color 1s; }
 /* Help test this beta (testguide.ts). */
-#test-dialog { width: min(720px, calc(100vw - 32px)); }
-#test-dialog { width: min(720px, 96vw); }
+#test-dialog { width: min(720px, calc(100vw - 32px)); text-align: left; }
 .tg-ask { display: flex; gap: 14px; align-items: center; margin: 0 0 6px; }
 .rel-intro { margin: 2px 0 10px; font-size: 14px; line-height: 1.5; }
 .rel-intro strong { font-size: 15px; }
@@ -663,15 +762,46 @@ li.CodeMirror-hint-active .hint-type { color: inherit; opacity: .85; }
 .tg-time { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--surface-2); color: var(--fg); cursor: help; }
 .tg-need { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--fg); cursor: help; }
 @media (max-width: 520px) { .tg-ask .masc { display: none; } .tg-cards { grid-template-columns: 1fr; } }
-.tg-count { margin: 0 0 8px; }
 .tg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow: auto; }
 .tg-item { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface); }
 .tg-item.done { opacity: .65; }
+.tg-pinned { list-style: none; margin: 0 0 12px; padding: 4px 4px 4px 12px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: var(--r-pane); max-height: 24vh; overflow: auto; }
+.tg-prow { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+.tg-prow .tg-goto { flex: 1; text-align: left; color: var(--fg); font-weight: 600; }
+.tg-prow.done .tg-goto { text-decoration: line-through; color: var(--muted); }
+.tg-item.tg-flash { animation: tg-flash 1.2s ease-out; }
+@keyframes tg-flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 3px transparent; } }
+@media (prefers-reduced-motion: reduce) { .tg-item.tg-flash { animation: none; outline: 2px solid var(--accent); } }
+.tg-acts { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin-top: 4px; }
+.tg-pin[aria-pressed="true"] { font-weight: 600; }
+/* Pinned test tasks: a small window over the workbench while testing (testpins.ts). */
+.tg-float { position: fixed; z-index: 40; width: min(340px, calc(100vw - 16px)); max-height: 55vh; display: flex; flex-direction: column; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: var(--sh-2, 0 8px 28px rgba(0,0,0,.22)); font-size: 13px; }
+.tg-float[hidden] { display: none; }
+.tg-float .tf-head { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 4px; border-bottom: 1px solid var(--line); cursor: grab; user-select: none; touch-action: none; }
+.tg-float.collapsed .tf-head { border-bottom: 0; }
+.tg-float .tf-grip { border: 0; background: none; color: var(--muted); padding: 4px; cursor: grab; border-radius: 4px; display: inline-flex; }
+.tg-float .tf-grip:focus-visible { outline: 2px solid var(--accent); }
+.tg-float .tf-title { flex: 1; font-size: 13px; }
+.tg-float .tf-title .muted { font-weight: 400; margin-left: 4px; }
+.tg-float .tf-list { list-style: none; margin: 0; padding: 6px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.tg-float .tf-item { border-radius: 6px; padding: 2px 4px; }
+.tg-float .tf-item.done .tf-name { text-decoration: line-through; opacity: .65; }
+.tg-float .tf-row { display: flex; align-items: center; gap: 6px; }
+.tg-float .tf-name { flex: 1; text-align: left; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; padding: 4px 2px; cursor: pointer; border-radius: 4px; }
+.tg-float .tf-name:hover { color: var(--accent); }
+.tg-float .tf-body { padding: 0 4px 6px 26px; }
+.tg-float .tf-body p { margin: 4px 0; line-height: 1.45; }
+.tg-float .tf-unpin, .tg-float .tf-all, .tg-float .tf-fold { min-width: 28px; min-height: 28px; }
+@media (max-width: 860px) {
+  .tg-float { left: 8px !important; right: 8px; top: auto !important; bottom: 8px; width: auto; max-height: 45vh; }
+  .tg-float .tf-head { cursor: default; }
+  .tg-float .tf-grip { display: none; }
+}
 .tg-item.done strong { text-decoration: line-through; }
 .tg-done input { width: 18px; height: 18px; margin-top: 2px; }
 .tg-item p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
 .tg-title { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.tg-kind, .tg-for { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.tg-kind { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
 .tg-kind { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--fg); border-color: transparent; cursor: help; }
 .tg-legend { margin-top: 10px; font-size: 13px; } .tg-legend dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; } .tg-legend dt { font-weight: 600; } .tg-legend dd { margin: 0; color: var(--muted); }
 @media (pointer: coarse) { .no-touch { display: none !important; } }
@@ -794,11 +924,11 @@ table { border-collapse: collapse; width: 100%; }
 .probes tr.disagree { background: var(--err-bg); }
 .detail { color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); overflow-wrap: anywhere; }
 .center { text-align: center; } .agree { color: var(--ok); font-weight: 700; } .disagree-mark { color: var(--err); font-weight: 700; }
-.lede { margin: 0 0 12px; max-width: 65ch; }
 .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
 #api-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 12px; }
 .api { border: 1px solid var(--line); border-radius: var(--r-pane); padding: 10px 12px; margin: 0 0 10px; background: var(--surface); }
 .api:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.api-page { margin: 10px 0 0; font-size: 13px; }
 .api h3 { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font: 600 13.5px var(--font-mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .chip-btn { cursor: pointer; font: inherit; border: 0; }
@@ -827,6 +957,8 @@ dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
 .check input { margin-top: 4px; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+/* Dialogs long enough to scroll keep their Close/Done in view, as What's new and Settings do */
+@media (min-width: 601px) { :is(#help-dialog, #test-dialog) > .actions { position: sticky; bottom: -20px; margin: 14px -20px -20px; padding: 12px 20px 20px; background: var(--surface); border-top: 1px solid var(--line); z-index: 1; } }
 .ai-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--r-pane); background: var(--surface-2); }
 .ai-bar .toggle { display: flex; gap: 6px; align-items: center; font-size: 12.5px; }
 #ai-note { flex: 1 1 200px; min-width: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); }
@@ -851,13 +983,7 @@ dialog h2 { font: 600 17px var(--font-display); margin: 0 0 12px; }
 #hub-q { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--code-bg); margin-bottom: 8px; }
 #hub-intro { margin: 0 0 10px; font-size: 12.5px; max-width: 65ch; }
 #hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.hub-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.hub-item h3 { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
-.hub-meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; font-variant-numeric: tabular-nums; grid-column: 1; }
-.hub-actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; }
-.hub-lint { display: flex; gap: 4px; flex-wrap: wrap; }
 #source-note { margin-left: auto; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-@media (max-width: 520px) { .hub-item { grid-template-columns: minmax(0, 1fr); } .hub-actions { grid-column: 1; grid-row: auto; } }
 kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
 .btn.primary kbd { background: transparent; color: inherit; border-color: color-mix(in srgb, var(--accent-fg) 45%, transparent); opacity: .85; margin-left: 4px; }
 .btn.icon { width: 32px; padding: 6px 0; text-align: center; font-weight: 600; }
@@ -880,21 +1006,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .tip-line { font-size: 11.5px; margin-left: auto; }
 .problem.current { outline: 2px solid var(--accent); outline-offset: 1px; }
 .fixable { font-size: 11px; color: var(--ok); font-weight: 600; }
-/* Getting started: at the top of the code, where reading starts. Closed, the footer's Getting started brings it back. */
-#welcome { border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); padding: 8px 12px; font-size: 13px; }
-#welcome[hidden] { display: none; }
-/* Where a put-away thing now lives (flyTo in app.ts): a short glow on the link. */
-:root:not([data-motion-ui="off"]) #welcome.welcome-in { animation: welcome-in .35s cubic-bezier(.2, .8, .2, 1); transform-origin: top; }
+/* Getting started on the home page: its intro unfolds where it lives. */
 @keyframes welcome-in { from { opacity: 0; transform: scaleY(.6); } }
-.fly-ghost { position: fixed; z-index: 95; pointer-events: none; transform-origin: top left; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-.moved-here { animation: moved-here 1.6s ease-out; border-radius: 4px; }
-@keyframes moved-here { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
-#welcome .w-head { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
-#welcome .w-head > span { flex: 1; min-width: 0; }
-#welcome .w-head strong { color: var(--fg); }
-#welcome .w-head .btn.icon { width: 26px; padding: 2px 0; flex: none; }
-#welcome .w-steps { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
-#welcome .w-steps b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 11px; margin-right: 2px; }
+:root:not([data-motion-ui="off"]) .no-handler.welcome-in .nh-intro { animation: welcome-in .35s cubic-bezier(.2, .8, .2, 1); transform-origin: top; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 /* A notice at the top of the code pane (src/toast.ts notice()): problems that need reading stay there until dismissed. */
 #notice { display: flex; align-items: flex-start; gap: 10px; margin: 8px 10px 0; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-left: 3px solid var(--tk); border-radius: var(--r-pane); background: var(--surface-2); font-size: 13.5px; line-height: 1.4; }
@@ -929,9 +1043,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .toast-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .toast-action:focus-visible, .toast-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (prefers-reduced-motion: reduce) { #toasts, .toast, .toast-inner { transition: none; } }
-/* The Open dialog (Ctrl+K) and command palette (Ctrl+Shift+P): a palette at a fixed spot near the top,
+/* The Open dialog (Ctrl+P) and command palette (Ctrl+Shift+P): a palette at a fixed spot near the top,
    so it doesn't jump while the results change. Soft rows instead of an outline on every card. */
-#open-dialog { width: min(1120px, calc(100vw - 24px)); height: min(86vh, 960px); max-height: none; margin: 6vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.15); }
+#open-dialog { width: min(1120px, calc(100vw - 24px)); height: min(86vh, 960px); max-height: none; margin: 6vh auto auto; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: var(--r-lg); box-shadow: var(--sh-2); }
 #open-dialog[open] { display: flex; }
 @media (prefers-reduced-motion: no-preference) {
   #open-dialog[open] { animation: palette-in .16s cubic-bezier(.2,.9,.3,1); }
@@ -995,7 +1109,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 :root[data-site="v3"] #open-dialog { border-radius: var(--r-pane); }
 /* Settings → Theme */
 .ct { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; align-self: stretch; }
-.ct-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
 /* Looks: a card each, with a small picture of the workbench in its colours */
 .looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
 .look-card { position: relative; display: flex; flex-direction: column; border-radius: var(--r-pane); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); transition: border-color .12s, box-shadow .12s, transform .12s; }
@@ -1033,7 +1146,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .code-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--sh-1); }
 .code-card:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ct-sample { margin: 0; padding: 6px 8px; border-radius: calc(var(--r-ctl) + 2px); background: var(--code-bg); color: var(--code-fg, var(--fg)); font: 10.5px/1.5 var(--font-mono); white-space: pre; overflow: hidden; border: 1px solid var(--code-line, var(--line)); }
-.ct-sample .k { color: var(--kw); } .ct-sample .s { color: var(--str); } .ct-sample .n { color: var(--num); } .ct-sample .c { color: var(--cmt); font-style: italic; } .ct-sample .p { color: var(--prop); }
+.ct-sample .k { color: var(--kw); font-weight: var(--kw-weight, normal); } .ct-sample .o { color: var(--op, inherit); font-weight: var(--op-weight, normal); } .ct-sample .s { color: var(--str); } .ct-sample .n { color: var(--num); } .ct-sample .c { color: var(--cmt); font-style: italic; } .ct-sample .p { color: var(--prop); }
 .code-card .lc-name { font-size: 12.5px; padding: 0 2px; }
 .code-card .lc-tick { top: 8px; right: 8px; }
 .code-card.on .lc-tick { display: grid; }
@@ -1149,6 +1262,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .api-home { display: flex; flex-direction: column; gap: 6px; }
 .api-home > p { margin: 0; }
 .api-h { margin: 14px 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.api-note { font-size: 12px; margin: 0 0 4px; }
+.api-h4 { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: var(--fg); }
+.api-chip .pct { font: 600 10.5px var(--font-ui, system-ui); color: var(--muted); margin-left: 2px; }
 .api-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .api-group { display: flex; flex-direction: column; gap: 3px; text-align: left; font: inherit; color: var(--fg); background: var(--surface-2); border: 0; border-radius: var(--r-pane); padding: 10px 12px; cursor: pointer; transition: background-color .12s; }
 .api-group:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
@@ -1158,7 +1274,15 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .api-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .api-chip { font: 12px var(--font-mono); color: var(--fg); background: var(--surface-2); border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; }
 .api-chip:hover { background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); }
-.api-crumbs { font-size: 13px; }
+.api-crumbs { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; font-size: 12.5px; color: var(--muted); margin: 0 0 8px; padding: 4px 0; background: var(--surface); }
+.api-crumbs .ref-crumb { background: none; border: 0; padding: 2px 0; font: inherit; color: var(--muted); cursor: pointer; }
+.api-crumbs .ref-crumb:hover, .api-crumbs .ref-crumb:focus-visible { color: var(--accent); text-decoration: underline; }
+.api-crumbs .ref-here { color: var(--fg); font-weight: 600; overflow-wrap: anywhere; }
+.api-crumbs .ref-sep { opacity: .6; }
+.api-crumbs .ref-count { margin-left: 4px; font-size: 11px; background: var(--surface-2); border-radius: 999px; padding: 0 6px; }
+.api-crumbs .ref-back { width: 24px; height: 24px; margin-right: 2px; display: inline-grid; place-items: center; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--fg); font-size: 13px; cursor: pointer; }
+.api-crumbs .ref-back:hover { background: var(--surface-2); }
+@media (pointer: coarse) { .api-crumbs .ref-back { width: 36px; height: 36px; } .api-crumbs .ref-crumb { padding: 8px 2px; } }
 .api-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
 .api-list button { display: grid; grid-template-columns: minmax(0, auto) auto; column-gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--fg); background: none; border: 0; border-radius: var(--r-ctl); padding: 6px 8px; cursor: pointer; }
 .api-list button:hover { background: var(--surface-2); }
@@ -1168,6 +1292,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 #help-dialog .keys td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
 /* --- Advanced mode off (simple-only shown) / on (dev-only shown) --- */
 :root[data-mode=simple] .dev-only, :root[data-mode=dev] .simple-only { display: none !important; }
+/* Settings for experienced users only show in Advanced mode (their values stay as they are). WakaTime, once on, stays in view so it can be turned off. */
+:root[data-mode=simple] #settings-dialog .set-sec.dev-only:has(#set-waka:checked) { display: flex !important; }
+.adv-tag { margin-left: 6px; padding: 0 6px; font-size: 10.5px; font-weight: 600; vertical-align: 1px; }
 .mode { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
 .mode button { border: 0; background: var(--surface); padding: 6px 10px; cursor: pointer; }
 .mode button[aria-pressed=true] { background: var(--fg); color: var(--bg); font-weight: 600; }
@@ -1186,8 +1313,8 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
 .pcard .loc { flex: none; }
 .pcard .body { padding: 4px 0 6px 26px; }
 .pcard .body .plain-why { margin-top: 0; }
-.sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: #fff; background: var(--muted); }
-.problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); color: #1b1f2a; } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
+.sev-ico { flex: none; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--font-body); color: var(--surface); background: var(--muted); } /* the page's surface colour: light on the dark fills of light themes, dark on the light fills of dark ones */
+.problem.error .sev-ico { background: var(--err); } .problem.warning .sev-ico { background: var(--warn); } .problem.info .sev-ico, .problem.hint .sev-ico { background: var(--info); }
 #problems[data-density="compact"] { gap: 4px; }
 /* First visit: Nucli's two questions (firstrun.ts) */
 #firstrun-dialog { width: min(600px, 94vw); }
@@ -1312,7 +1439,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #tipbar.open #tip-off .short { display: inline; }
   #toasts { bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   header .brand { order: 0; min-width: 0; }
-  header .toolbar { order: 2; }
   .switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--r-pane); overflow: hidden; }
   .switch button { border: 0; background: var(--surface); padding: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .switch button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); }
@@ -1356,7 +1482,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line); border-bottom-
   #code-dialog { padding-inline: 8px; }
   #code-dialog h2 { padding-inline: 12px; }
   #code-dialog .actions { display: none; }
-  .code-list .btn small { font-size: 13px; }
   #more-dialog .more-list .btn, #code-dialog .more-list .btn { border: 0; border-radius: 10px; background: none; padding: 14px 12px; font-size: 16px; }
   #more-dialog .more-list .btn:active, #code-dialog .more-list .btn:active { background: var(--surface-2); }
   #more-dialog .actions { display: none; }
@@ -1399,9 +1524,10 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .brand-long { font-weight: inherit; }
 @media (max-width: 1280px) { .brand-long { display: none; } }
 .htabs-wrap { display: flex; align-items: flex-end; gap: 2px; flex: 1; min-width: 0; align-self: stretch; }
-#htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; align-self: flex-end; }
+#htabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; align-self: flex-end; } /* no scroll bar to change its height: the wheel, a trackpad and ▾ reach the rest */
+#htabs::-webkit-scrollbar { display: none; }
 .htab-all[hidden] { display: none; }
-.htab-all { font-size: 12px; }
+
 .htab-w { display: inline-flex; align-items: center; max-width: 250px; border: 1px solid transparent; border-bottom: 0; border-radius: 9px 9px 0 0; flex: none; }
 .htab-w:hover { background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .htab-w.on { background: var(--surface); border-color: var(--line); }
@@ -1416,8 +1542,13 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .ht-x { width: 22px; height: 22px; margin-right: 5px; display: grid; place-items: center; flex: none; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 15px; line-height: 1; cursor: pointer; opacity: 0; padding: 0; }
 .htab-w:hover .ht-x, .htab-w.on .ht-x, .ht-x:focus-visible { opacity: 1; }
 .ht-x:hover { background: var(--surface-2); color: var(--fg); }
+.ht-ed { width: 22px; height: 22px; margin-right: 5px; display: none; place-items: center; flex: none; color: var(--muted); font-size: 11px; }
+.htab-w.edited .ht-ed { display: grid; }
+.htab-w.edited .ht-x { display: none; }
+.htab-w.edited:hover .ht-ed, .htab-w.edited:focus-within .ht-ed { display: none; }
+.htab-w.edited:hover .ht-x, .htab-w.edited:focus-within .ht-x { display: grid; }
 @media (pointer: coarse) { .ht-x { opacity: 1; } }
-.htab-add { flex: none; width: 30px; height: 30px; margin-bottom: 2px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.htab-add { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; margin-bottom: 3px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
 .htab-add:hover, .htab-add[aria-expanded="true"] { background: var(--surface); color: var(--fg); }
 .save-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
 .save-btn:hover { filter: brightness(1.08); }
@@ -1426,11 +1557,19 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .split-save .save-more { padding: 0 8px; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid color-mix(in srgb, var(--accent-fg) 35%, transparent); }
 .split-save .save-more[aria-expanded=true] { background: var(--accent); color: var(--accent-fg); filter: brightness(.88); }
 .share-btn { display: inline-flex; align-items: center; gap: 6px; }
+/* The header's buttons (Share, Save and its ▾, the menu): one height whatever their content, so they line up. */
+:root { --hdr-ctl: 32px; }
+:root[data-site="mac"] { --hdr-ctl: 28px; }
+header :is(#share-open, .split-save .btn, #app-menu-open) { box-sizing: border-box; height: var(--hdr-ctl); padding-top: 0; padding-bottom: 0; }
+header .split-save { align-self: center; }
+header #app-menu-open { width: var(--hdr-ctl); }
 @media (max-width: 860px) { .split-save.wide-only, .share-btn.wide-only { display: none; } }
 #app-menu-open { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
 #app-menu-open .phone-dots { display: none; }
 .app-hidden { display: none !important; }
 .phone-name { display: none !important; }
+/* "· edited" belongs to the name, which only shows here on a phone; on a wide screen the tab's dot says it. */
+#doc-edited { display: none !important; }
 .rail { display: none; }
 /* Menus (menus.ts) */
 .app-menu { position: fixed; z-index: 90; min-width: 240px; max-width: min(340px, calc(100vw - 16px)); padding: 6px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-pane); box-shadow: 0 12px 32px rgba(0,0,0,.28); font-size: 13.5px; }
@@ -1440,6 +1579,8 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
 .app-menu .am-l { flex: 1; }
 .app-menu .am-k { font: 11px var(--font-mono); color: var(--muted); }
 .app-menu .am-check { width: 14px; color: var(--accent); font-weight: 700; }
+/* in a menu with ticks, every label starts in the same column */
+.app-menu:has(.am-check) button:not(:has(.am-check))::before { content: ""; width: 14px; flex: none; }
 .app-menu .am-sep { height: 1px; background: var(--line); margin: 5px 4px; }
 .app-menu .am-h { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px 2px; }
 /* Side rail */
@@ -1467,6 +1608,7 @@ header { flex-wrap: nowrap; gap: 12px; min-height: 40px; }
   :root[data-layout="rail"] header .brand, :root[data-layout="rail"] header .toolbar { display: flex; }
   .htabs-wrap { display: none; }
   .phone-name { display: inline-flex !important; }
+  #doc-edited:not([hidden]) { display: inline !important; }
   #app-menu-open svg { display: none; }
   #app-menu-open .phone-dots { display: inline; font-size: 18px; }
   header .home-link { display: none; }
@@ -1540,9 +1682,6 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .fv-icon { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: var(--muted) !important; cursor: pointer; font-size: 15px; line-height: 1; }
 .fv-icon:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); color: var(--fg) !important; }
 .fv-icon:disabled { opacity: .35; cursor: default; }
-.fv-info { font: italic 600 13px/1 Georgia, serif; }
-.fv-info::before { content: ""; position: absolute; width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 50%; }
-.fv-info { position: relative; }
 .fv-info[aria-expanded="true"] { background: var(--surface-2); border-color: var(--line); color: var(--accent) !important; }
 
 /* Inputs */
@@ -1675,12 +1814,9 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .gf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Code | Form switch, the game folder button, and Check's extra groups (game folder, package) */
-.view-switch { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
+.view-switch { display: inline-flex; align-self: stretch; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; flex: none; }
 .view-switch button { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12.5px; padding: 3px 10px; cursor: pointer; }
 .view-switch button[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); font-weight: 600; }
-.gf-btn { display: inline-flex; align-items: center; gap: 5px; }
-.gf-btn.on { border-color: var(--ok); }
-.gf-btn .gf-n { font-size: 11px; color: var(--muted); }
 #formview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
 #formview[hidden] { display: none; }
 #blocksview { flex: 1; min-width: 0; overflow: auto; background: var(--surface); }
@@ -1885,15 +2021,17 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 #extra-problems .xp .xp-b { flex: 1; min-width: 0; }
 #extra-problems .xp .xp-why { color: var(--muted); margin: 2px 0 0; }
 #extra-problems .xp .xp-act { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
-#extra-problems .xp.error .sev-ico { background: var(--err); } #extra-problems .xp.warning .sev-ico { background: var(--warn); color: #1b1f2a; } #extra-problems .xp.info .sev-ico { background: var(--info); }
+#extra-problems .xp.error .sev-ico { background: var(--err); } #extra-problems .xp.warning .sev-ico { background: var(--warn); } #extra-problems .xp.info .sev-ico { background: var(--info); }
 #gf-dialog { width: min(560px, calc(100vw - 32px)); }
 
 /* ---- Packages: the Files panel, the file tabs, file icons, the second editor ---- */
 .fi-badge { display: inline-grid; place-items: center; min-width: 22px; height: 16px; padding: 0 3px; border-radius: 4px; font: 700 9px/1 var(--font-mono); color: #fff; background: #64748b; flex: none; letter-spacing: -.2px; margin-right: 5px; }
 .fi-js { background: #e0b100; color: #1b1f2a; } .fi-ini, .fi-cfg { background: #57657a; } .fi-json { background: #0f766e; } .fi-xml, .fi-toml, .fi-yaml { background: #9a3412; } .fi-txt { background: #6b7280; } .fi-bat { background: #166534; } .fi-ps1 { background: #1e3a8a; } .fi-lua { background: #1e40af; } .fi-reg { background: #57657a; } .fi-vdf { background: #374151; } .fi-dll { background: #6d28d9; } .fi-exe { background: #b91c1c; } .fi-img { background: #be185d; } .fi-bin { background: #475569; }
 .fi-dir { background: none; color: var(--muted); font-size: 12px; min-width: 14px; }
-.files-toggle { display: inline-flex; align-items: center; }
-.files-toggle[aria-pressed="true"] { background: var(--surface-2); }
+.files-toggle { display: inline-flex; align-items: center; align-self: stretch; padding: 2px 10px; font-size: 12.5px; }
+/* pressed like its neighbour Lines */
+.files-toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.files-toggle[aria-pressed="true"] :is(.fi-dir, .files-n, .files-game) { color: inherit; }
 .files-n { font-size: 11px; color: var(--muted); margin-left: 4px; }
 #file-strip { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--line); background: var(--surface-2); overflow-x: auto; }
 #file-strip[hidden] { display: none; }
@@ -1939,6 +2077,7 @@ details[open] > .fv-group-title::before { transform: rotate(45deg); }
 .install-map .im-to { font: 12px var(--font-mono); color: var(--muted); overflow-wrap: anywhere; }
 .install-map .im-drop { color: var(--warn); }
 footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+footer .made-by { margin-left: auto; }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
@@ -1951,13 +2090,13 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <svg class="logo logo-v3" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="3" width="28" height="12.5" rx="3.4" fill="var(--p1)"></rect><rect x="2" y="17.5" width="13" height="11.5" rx="3.4" fill="var(--p2)"></rect><circle cx="23.5" cy="23.25" r="5.75" fill="var(--p3)"></circle></svg>
       <h1><span class="brand-long">Nucleus Handler </span>Workbench</h1></a><a class="start-link home-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="The home page: what the workbench and the VS Code extension do, and how to get them"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.2 8 2.8l5.5 4.4M4 6.3V13h3V9.5h2V13h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></div>
     </div>
-    <div class="htabs-wrap"><div id="htabs" role="tablist" aria-label="Open handlers"></div><button class="htab-add" id="tab-add" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="New handler, open a file, or an example">+</button></div>
+    <div class="htabs-wrap"><div id="htabs" role="tablist" aria-label="Open handlers"></div><button class="htab-add" id="tab-add" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="New handler, open a file, or an example"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
     <div class="switch" role="group" aria-label="Show">
       <button type="button" data-view="code" aria-pressed="false">Handler</button>
       <button type="button" data-view="results" aria-pressed="true">Results <span class="count" id="count-switch">0</span></button>
     </div>
     <div class="toolbar">
-      <button class="btn share-btn wide-only" id="share-open" type="button" aria-haspopup="dialog" title="Share: a link, the code, or a post for Discord"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Share</span></button><span class="split-save wide-only"><button class="btn save-btn" id="code-menu-open" type="button" aria-label="Save the handler"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Save</span></button><button class="btn save-btn save-more" id="save-more" type="button" aria-haspopup="menu" aria-label="Save as: pick the format" title="Save as…"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span>
+      <button class="btn share-btn wide-only" id="share-open" type="button" aria-haspopup="dialog" title="Share: a link, the code, or a post for Discord"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Share</span></button><span class="split-save wide-only"><button class="btn primary save-btn" id="code-menu-open" type="button" aria-label="Save the handler"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Save</span></button><button class="btn primary save-btn save-more" id="save-more" type="button" aria-haspopup="menu" aria-label="Save as: pick the format" title="Save as…"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span>
       <button class="btn icon gear" id="app-menu-open" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu: settings, Advanced mode, help"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="phone-dots" aria-hidden="true">⋯</span></button>
       <!-- Reached from the menus (and still by their shortcuts); kept so everything wired to them keeps working. -->
       <div class="app-hidden" hidden>
@@ -1976,22 +2115,29 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button class="rail-btn" type="button" data-rail="lines" aria-label="Lines"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="rail-label" aria-hidden="true">Lines</span></button>
       <button class="rail-btn" type="button" data-rail="share" aria-label="Share: a link, the code, or a post for Discord"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Share</span></button><button class="rail-btn" type="button" data-rail="save" aria-label="Save the handler"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Save</span></button>
       <span class="rail-sp"></span>
-      <button class="rail-btn" type="button" data-rail="test" aria-label="Help test the beta">🧪<span class="rail-label" aria-hidden="true">Help test the beta</span></button>
+      <button class="rail-btn" type="button" data-rail="test" aria-label="Help test this beta">🧪<span class="rail-label" aria-hidden="true">Help test this beta</span></button>
       <button class="rail-btn" type="button" data-rail="menu" aria-label="Menu: settings, Advanced mode, help" aria-haspopup="menu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Settings and menu</span></button>
       <button class="rail-btn rail-toggle" type="button" id="rail-toggle" aria-expanded="false" aria-label="Show labels in the sidebar" title="Show labels"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="rail-label" aria-hidden="true">Hide labels</span></button>
     </nav>
   </header>
 
   <div id="updated" role="status" hidden><span id="updated-text"></span> <button class="link" type="button" id="updated-open">What's new</button><button class="btn icon" type="button" id="updated-close" aria-label="Dismiss">×</button></div>
+  <section id="no-handler" class="no-handler" role="main" aria-labelledby="nh-title" hidden>
+    <h2 id="nh-title">No handler open</h2>
+    <div class="nh-intro">
+      <p class="muted">A handler is the file that tells Nucleus Co-op how to run a game split-screen (it goes in Nucleus' <code>handlers</code> folder). Here you write one, check it and try it, then save it for Nucleus.</p>
+      <ol class="nh-steps"><li><b>1</b> Start one, or open yours</li><li><b>2</b> Fix what Nucleus would reject</li><li><b>3</b> Try it per player</li><li><b>4</b> Save it for Nucleus</li></ol>
+    </div>
+    <div class="nh-acts"><button type="button" class="btn primary" data-nh="new">New handler…</button><button type="button" class="btn" data-nh="open" title="Your own handler (.js, .zip, .nc), an example, or one from the Hub">Open a handler or example… <kbd>Ctrl+P</kbd></button><button type="button" class="btn" data-nh="learn">Learn: make your first one</button><button type="button" class="btn" data-nh="undo" hidden>Reopen</button><button type="button" class="btn" data-nh="back" hidden>Back to the code <kbd>Esc</kbd></button></div>
+  </section>
   <main class="main" id="main" data-view="results">
     <section class="pane" aria-label="Handler source">
       <div class="pane-head doc-head">
-        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><span class="view-switch" role="group" aria-label="View"><button type="button" data-view-mode="code" aria-pressed="true">Code</button><button type="button" data-view-mode="form" aria-pressed="false">Form</button><button type="button" data-view-mode="blocks" aria-pressed="false" title="Game.Play and the other callbacks as if / do steps">Blocks</button></span><button class="btn files-toggle" id="files-toggle" type="button" aria-pressed="false" aria-controls="files-panel"><span class="fi-badge fi-dir" aria-hidden="true">▤</span>Files<span class="files-n" id="files-n"></span><span class="files-game" id="files-game" hidden title="Your game's folder is linked">+ game</span></button><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+Shift+L)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+        <div class="doc-title"><button type="button" id="doc-switch" class="phone-name" aria-haspopup="menu" aria-label="Open handlers: switch, new or open"><span id="doc-name">Untitled handler</span><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span id="doc-edited" class="muted" hidden>· edited</span><span class="view-switch" role="group" aria-label="View"><button type="button" data-view-mode="code" aria-pressed="true">Code</button><button type="button" data-view-mode="form" aria-pressed="false">Form</button><button type="button" data-view-mode="blocks" aria-pressed="false" title="Game.Play and the other callbacks as if / do steps">Blocks</button></span><button class="btn files-toggle" id="files-toggle" type="button" aria-pressed="false" aria-controls="files-panel"><span class="fi-badge fi-dir" aria-hidden="true">▤</span>Files<span class="files-n" id="files-n"></span><span class="files-game" id="files-game" hidden title="Your game's folder is linked">+ game</span></button><button class="btn lines-toggle" id="lines-toggle" type="button" aria-pressed="false" aria-controls="lines" title="List every name a handler can use; click one to insert it (Ctrl+B)">Lines</button><button class="btn icon phone-only" id="code-menu-phone" type="button" aria-label="Save or copy the handler" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div id="doc-meta"></div>
       </div>
       <div id="notice" hidden><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"></svg><div class="notice-text"></div><button class="btn notice-action" type="button" hidden></button><button class="notice-close" type="button" aria-label="Dismiss" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div id="drop-hint" hidden>Drop a handler .js, .zip or .nc to open it</div>
-      <div id="welcome" hidden></div>
       <div id="file-strip" role="tablist" aria-label="Files in this package" hidden></div>
       <div class="code-row">
         <div id="line-pop" role="dialog" aria-label="Problems on this line" hidden></div>
@@ -2043,7 +2189,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <div class="pane-head" role="tablist">
         <button role="tab" data-tab="problems" type="button">Check <span class="count" id="count-problems">0</span></button>
         <button role="tab" data-tab="simulate" type="button">Try it</button>
-        <button role="tab" data-tab="api" type="button" title="Every option and function a handler can use">Reference</button>
+        <button role="tab" data-tab="api" type="button" title="Every option and function a handler can use, with its docs">Docs</button>
         <button role="tab" data-tab="probes" type="button" class="dev-only" title="Tiny handlers run in Nucleus' real JavaScript engine: the proof behind Check and Try it">Engine probes <span class="count" id="count-probes"></span></button>
       </div>
       <div role="tabpanel" id="panel-problems"><h2 class="sr-only">Check</h2>
@@ -2072,7 +2218,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
           <label>Players <select id="sim-players"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
           <label>Monitor <select id="sim-res"><option value="1920x1080" selected>1920×1080</option><option value="2560x1440">2560×1440</option><option value="3840x2160">3840×2160</option></select></label>
           <label>Keyboard & mouse <select id="sim-kb"><option value="0" selected>Player 1</option><option value="1">Player 2</option><option value="-2">Each player their own</option><option value="-1">Nobody</option></select></label>
-          <button class="btn primary" id="sim-run" type="button" title="Ctrl+Enter">Run again</button>
+          <button class="btn primary" id="sim-run" type="button" title="Ctrl+F5">Run again</button>
           <button class="btn" id="sim-all" type="button" title="Every player count, input setup and monitor size">Test all combinations</button>
         </div>
           <button class="btn" id="sim-debug" type="button" title="Debug (F5): run the handler step by step, pause on breakpoints, and see every value"><span aria-hidden="true">▶ </span>Step through</button>
@@ -2081,14 +2227,14 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
         <div id="sim-matrix" hidden></div>
         <div id="sim-out"></div>
       </div>
-      <div role="tabpanel" id="panel-api" hidden><h2 class="sr-only">Reference</h2>
+      <div role="tabpanel" id="panel-api" hidden><h2 class="sr-only">Docs</h2>
         <input id="api-q" type="search" placeholder="Search the handler API: KillMutex, window title, Context.ModifySaveFile…" aria-label="Search the handler API" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <div id="api-results"></div>
       </div>
       <div role="tabpanel" id="panel-probes" hidden><div id="probes"></div></div>
     </section>
   </main>
-  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="welcome-open" type="button">Getting started</button><button class="link tg-open" id="test-open" type="button">🧪 Help test the beta</button><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a></footer>
+  <footer><span id="build-info" class="dev-only"></span><span>Your draft is kept in this browser only.</span><button class="link" id="welcome-open" type="button">Getting started</button><button class="link tg-open" id="test-open" type="button">🧪 Help test this beta</button><button class="link" id="help-open-2" type="button">Keyboard shortcuts</button><button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button><button class="link" type="button" id="news-open-2">What's new</button><a class="link start-link" href="https://snailedlt.github.io/nucleuscoop-handler-testbench/start/" title="What the workbench and the VS Code extension do, and how to install them">About these tools</a><span class="comm-foot">Questions? <a class="link" href="__DISCORD_INVITE__" target="_blank" rel="noopener">Discord</a> · <a class="link" href="__REDDIT__" target="_blank" rel="noopener">r/nucleuscoop</a></span><span class="made-by">Made by <a class="link" href="https://github.com/Snailedlt" rel="author" target="_blank">Snailedlt</a> (Jørgen KH)</span></footer>
 </div>
 
 <div id="tip" hidden></div>
@@ -2115,6 +2261,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button type="button" role="tab" id="st-layout" data-st="layout" aria-controls="sp-layout">Layout</button>
       <span class="set-g" role="presentation">Working</span>
       <button type="button" role="tab" id="st-editor" data-st="editor" aria-controls="sp-editor">Editor</button>
+      <button type="button" role="tab" id="st-keys" data-st="keys" aria-controls="sp-keys">Keyboard shortcuts</button>
       <button type="button" role="tab" id="st-check" data-st="check" aria-controls="sp-check">Check</button>
       <button type="button" role="tab" id="st-lines" data-st="lines" aria-controls="sp-lines">Lines</button>
       <span class="set-g" role="presentation">You</span>
@@ -2177,9 +2324,10 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
     <div class="set-sec">
       <label class="set-line">Text size <select id="set-size"><option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option></select></label>
-      <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>Instead of scrolling sideways. On by default on phones.</small></span></label>
+      <label class="set-check"><input type="checkbox" id="set-wrap"> <span>Wrap long lines<small>In the code and everywhere code is shown, keeping the indent, instead of scrolling sideways (as VS Code's word wrap; Alt+Z). On by default on phones.</small></span></label>
       <label class="set-check"><input type="checkbox" id="set-keybar"> <span>Symbol keys on touch screens<small>A row with ; = " ( ) { } [ ], Suggest and Undo above the on-screen keyboard</small></span></label></div>
   </div>
+ <div class="set-panel" role="tabpanel" id="sp-keys" aria-labelledby="st-keys" data-label="Keyboard shortcuts" hidden></div>
   <div class="set-panel" role="tabpanel" id="sp-check" aria-labelledby="st-check" data-label="Check" hidden>
     <div class="set-sec"><h3>Check</h3>
       <label class="set-row">How much each problem, and each option in Form, shows <select id="set-density"><option value="compact">Compact: one line, open for more</option><option value="comfortable">Comfortable: what and why</option><option value="detailed">Detailed: everything open</option></select></label></div>
@@ -2187,7 +2335,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="set-panel" role="tabpanel" id="sp-lines" aria-labelledby="st-lines" data-label="Lines" hidden>
 
     <div class="set-sec">
-      <label class="set-check"><input type="checkbox" id="set-lines"> <span>Show the Lines list<small>Every name a handler can use, click to insert<span class="wide-only"> (Ctrl+Shift+L)</span></small></span></label></div>
+      <label class="set-check"><input type="checkbox" id="set-lines"> <span>Show the Lines list<small>Every name a handler can use, click to insert<span class="wide-only"> (Ctrl+B)</span></small></span></label></div>
     <div class="set-sec" id="lines-settings" aria-label="List settings"></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-a11y" aria-labelledby="st-a11y" data-label="Accessibility" hidden>
@@ -2216,17 +2364,18 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
       <button class="link" type="button" id="set-heads">Show heads-ups again</button></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-feedback" aria-labelledby="st-feedback" data-label="Feedback and privacy" hidden>
-    <div class="set-sec"><h3>Feedback</h3>
-      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Share my votes and feature use, anonymously<small><b>On:</b> your 👍/👎 on tips and docs, and which features you used (each counted once per visit), are added to the project's anonymous counts, so we see what helps. <b>Off:</b> nothing leaves your browser; your votes still show here, only to you. Either way: no code, no names, no cookies.</small></span></label>
-      <p class="small" id="set-feedback-totals" hidden>The totals are public, for anyone to see: <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">see the votes and feature use</a>.</p>
+    <div class="set-sec"><h3>Privacy</h3>
+      <label class="set-check"><input type="checkbox" id="set-feedback"> <span>Anonymous usage counts (GoatCounter)<small>Simple tallies that show us what's useful: which features get used, which beta test tasks get pinned, tried and reported, your 👍/👎 on tips and docs, screen size, language, and which site linked here. No cookies, no IDs, nothing that tells you apart from anyone else, and never your code or handler names. <b>Off:</b> nothing is sent at all.<br><span class="fb-open">Everything counted is public: <span id="set-feedback-totals" hidden>the <a id="set-feedback-totals-link" href="#" target="_blank" rel="noopener">same numbers we see</a>, and </span>the <a href="https://github.com/Snailedlt/nucleuscoop-handler-testbench/blob/main/playground/src/feedback.ts" target="_blank" rel="noopener">code that sends them</a> is open source.</span></small></span></label>
       <p class="muted small" id="set-feedback-note" hidden></p></div>
+    <div class="set-sec dev-only"><h3>Credit lines<span class="chip adv-tag">Advanced</span></h3>
+      <label class="set-check"><input type="checkbox" id="set-credit"> <span>Add credit lines when saving<small>A handler made or changed here gets a few comment lines at the top when you save or copy it: made with the workbench (with a link), and what was and wasn't done here: checked, simulated with Try it, changed by Fix with AI. Helps people who support you see which tools were used. A handler you only opened and saved stays as it was.</small></span></label></div>
   </div>
   <div class="set-panel" role="tabpanel" id="sp-general" aria-labelledby="st-general" data-label="Updates and backup" hidden>
     <div class="set-sec"><h3>Updates</h3>
       <label class="set-check"><input type="checkbox" id="set-news"> <span>Tell me when the workbench is updated<small>A short note after an update, with what's new</small></span></label>
       <button class="link" type="button" id="set-news-open">What's new</button></div>
     <div class="set-sec"><h3>Back up or move your settings</h3>
-      <p class="muted small" style="margin:0 0 8px">A file with your settings (look, layout, editor, Check, Lines, accessibility, tips), to use in another browser or on another computer. Your handlers, drafts and WakaTime key aren't in it.</p>
+      <p class="muted small" style="margin:0 0 8px">A file with your settings (look, layout, editor, keyboard shortcuts, Check, Lines, accessibility, tips), to use in another browser or on another computer. Your handlers, drafts and WakaTime key aren't in it.</p>
       <div class="set-row"><button class="btn" type="button" id="set-export">Export settings…</button><button class="btn" type="button" id="set-import">Import settings…</button><input type="file" id="set-import-file" accept=".json,application/json" hidden></div>
       <p class="small" id="set-io-msg" role="status" aria-live="polite"></p></div>
   </div>
@@ -2256,8 +2405,8 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
     <div class="set-sec">
       <label class="set-check"><input type="checkbox" id="set-advanced"> <span>Advanced mode<small>Rule ids, filters, suggestions, recorded calls and engine probes</small></span></label>
-      <label class="set-check"><input type="checkbox" id="set-devbar"> <span>Developer bar<small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
-    <div class="set-sec"><h3>WakaTime</h3>
+      <label class="set-check dev-only"><input type="checkbox" id="set-devbar"> <span>Developer bar<span class="chip adv-tag">Advanced</span><small>Site theme, colour mode and contrast checks (Ctrl+Alt+D)</small></span></label></div>
+    <div class="set-sec dev-only"><h3>WakaTime<span class="chip adv-tag">Advanced</span></h3>
       <label class="set-check"><input type="checkbox" id="set-waka"> <span>Track my time in WakaTime<small>Like WakaTime's VS Code plugin: sends the handler's name, the game's name, the time, what you're doing (writing, testing, reading docs), line numbers and how many lines you changed. Never the code. Your API key stays in this browser.</small></span></label>
       <div class="set-fields" id="set-waka-fields">
         <label class="set-field">API key <input type="text" id="set-waka-key" class="secret" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" placeholder="waka_…"></label>
@@ -2297,7 +2446,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
   <div class="more-list">
     <button class="btn no-touch" type="button" data-proxy="#help-open">Keyboard shortcuts</button>
     <button class="btn" type="button" data-proxy="#news-open-2">What's new</button>
-    <button class="btn" type="button" data-proxy="#test-open">🧪 Help test the beta</button>
+    <button class="btn" type="button" data-proxy="#test-open">🧪 Help test this beta</button>
     <button class="btn" type="button" data-proxy="a.home-link">⌂ Home: about these tools</button>
   </div>
   <div class="actions"><button class="btn" type="button" id="more-close">Close</button></div>
@@ -2320,7 +2469,7 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 <dialog id="firstrun-dialog"></dialog>
 <dialog id="test-dialog" aria-labelledby="test-h">
   <h2 id="test-h">🧪 Help test this beta</h2>
-  <p class="muted" id="test-intro" style="margin:0 0 10px">Each item says what to try, how long it takes and what to look for. Tick what you've tried (kept in this browser), and report anything you find.</p>
+  <p class="muted" id="test-intro" style="margin:0 0 10px">Each item says what to try, how long it takes and what to look for. Tick what you've tried (kept in this browser), and report anything you find. Test on a desktop or laptop: that's what most people write handlers on.</p>
   <p class="tg-compare" id="tg-compare" hidden><span>⇄ This is a big update.</span> <button class="link" type="button" id="tg-compare-btn">Open this handler in the previous version</button> <span class="muted">to compare: what got better, what got worse, what you miss.</span></p>
   <div id="test-body"></div>
   <div class="actions"><button class="btn primary" type="button" id="test-close">Done</button></div>
@@ -2335,16 +2484,17 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
 
 <dialog id="help-dialog" aria-label="Keyboard shortcuts">
   <h2 tabindex="-1" autofocus>Keyboard shortcuts</h2>
-  <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl.</p>
+  <p class="muted" style="margin:0 0 8px">The editor uses VS Code's keys. On a Mac, ⌘ instead of Ctrl. Keys with <kbd>[</kbd> <kbd>]</kbd> <kbd>/</kbd> <kbd>\</kbd> <kbd>;</kbd> go by position, as in VS Code: on a German, Spanish or Nordic keyboard, press the key where a US keyboard has that one (e.g. <kbd>Ü</kbd> for <kbd>[</kbd>). <button class="link" type="button" id="help-rebind">Change shortcuts</button></p>
   <table class="keys"><tbody>
     <tr class="kh"><th colspan="2">Workbench</th></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>P</kbd> · <kbd>F1</kbd></td><td>Command palette: every command (format, fix, try it, theme…)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>P</kbd> · <kbd>Ctrl</kbd> <kbd>K</kbd></td><td>Examples and Hub handlers (type <kbd>&gt;</kbd> for commands)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>Enter</kbd></td><td>Try it (simulate the handler)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>P</kbd></td><td>Examples and Hub handlers (type <kbd>&gt;</kbd> for commands, <kbd>:</kbd> for a line); <kbd>Ctrl</kbd> <kbd>K</kbd> too, outside the code</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>F5</kbd></td><td>Try it (simulate the handler), as VS Code's Run Without Debugging</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>;</kbd> then <kbd>A</kbd></td><td>Test all combinations, as VS Code's Run All Tests</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save (the .zip for Nucleus, or the format you picked last)</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>S</kbd></td><td>Save as: .zip, .js or .nc</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>S</kbd></td><td>Save into Nucleus Co-op's handlers folder</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>B</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Show or hide the Lines list</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>B</kbd></td><td>Show or hide the Lines list</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>,</kbd></td><td>Settings</td></tr>
     <tr><td><kbd>?</kbd></td><td>This list (outside the editor)</td></tr>
     <tr><td><kbd>Esc</kbd> then <kbd>Tab</kbd></td><td>Leave the code editor (Tab alone indents)</td></tr>
@@ -2352,27 +2502,32 @@ footer { color: var(--muted); font-size: 11.5px; display: flex; flex-wrap: wrap;
     <tr><td><kbd>F8</kbd> / <kbd>Shift</kbd> <kbd>F8</kbd></td><td>Next / previous problem</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>.</kbd></td><td>Problems and fixes on this line</td></tr>
     <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>F</kbd></td><td>Format the code (indentation and spacing)</td></tr>
+    <tr class="kh"><th colspan="2">Find and navigate</th></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>F</kbd> · <kbd>Ctrl</kbd> <kbd>H</kbd></td><td>Find · find and replace (<kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>F</kbd> on a Mac); <kbd>Enter</kbd> / <kbd>Shift</kbd> <kbd>Enter</kbd> or <kbd>F3</kbd> / <kbd>Shift</kbd> <kbd>F3</kbd> through the matches; <kbd>Alt</kbd> <kbd>C</kbd> / <kbd>W</kbd> / <kbd>R</kbd> match case, whole word, regex; <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Enter</kbd> replace all</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>G</kbd></td><td>Go to line (<code>42</code> or <code>42:7</code> for a column)</td></tr>
+    <tr><td><kbd>F12</kbd> · <kbd>Shift</kbd> <kbd>F12</kbd></td><td>Go to definition · select every use</td></tr>
+    <tr><td><kbd>F2</kbd></td><td>Rename a variable or function everywhere</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>\</kbd></td><td>Matching bracket</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>[</kbd> / <kbd>]</kbd></td><td>Fold / unfold the block; <kbd>Ctrl</kbd> <kbd>K</kbd> <kbd>Ctrl</kbd> <kbd>0</kbd> / <kbd>J</kbd> all</td></tr>
     <tr class="kh"><th colspan="2">Editing</th></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Suggestions (also after typing <kbd>.</kbd>)</td></tr>
+    <tr><td><kbd>Tab</kbd> · <kbd>Shift</kbd> <kbd>Tab</kbd></td><td>Indent (a selection: its lines) · outdent</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>/</kbd> · <kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>A</kbd></td><td>Line comment · block comment (<kbd>Ctrl</kbd> <kbd>K</kbd> <kbd>Ctrl</kbd> <kbd>C</kbd> / <kbd>U</kbd> add / remove)</td></tr>
+    <tr><td><kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Move the line up / down</td></tr>
+    <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Copy the line up / down</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>K</kbd></td><td>Delete the line</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Enter</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>Enter</kbd></td><td>New line below · above</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>]</kbd> / <kbd>[</kbd></td><td>Indent / outdent</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>L</kbd></td><td>Select the line</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>D</kbd> · <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td>Select the next match too · every match (edit several at once)</td></tr>
+    <tr><td><kbd>Alt</kbd> click · <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Add a cursor; <kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>I</kbd> one at each selected line's end (<kbd>Esc</kbd> for one cursor again)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> · <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo (including applied fixes) · redo</td></tr>
     <tr class="kh"><th colspan="2">Debugger (Try it › Step through)</th></tr>
     <tr><td><kbd>F9</kbd></td><td>Breakpoint on this line (or click beside the line number); <kbd>Shift</kbd> <kbd>F9</kbd> a condition (Advanced mode)</td></tr>
     <tr><td><kbd>F5</kbd></td><td>Start, or continue to the next breakpoint (in the code or Try it)</td></tr>
     <tr><td><kbd>F10</kbd> · <kbd>F11</kbd> · <kbd>Shift</kbd> <kbd>F11</kbd></td><td>Step over · into · out</td></tr>
     <tr><td><kbd>Alt</kbd> <kbd>F10</kbd> · <kbd>Alt</kbd> <kbd>F5</kbd></td><td>Step back · back to the previous breakpoint</td></tr>
     <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>F5</kbd> · <kbd>Shift</kbd> <kbd>F5</kbd></td><td>Restart · stop</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>Space</kbd></td><td>Suggestions (also after typing <kbd>.</kbd>)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>/</kbd></td><td>Comment or uncomment the line</td></tr>
-    <tr><td><kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Move the line up / down</td></tr>
-    <tr><td><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Copy the line up / down</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>K</kbd></td><td>Delete the line</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>Enter</kbd></td><td>New line above</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>]</kbd> / <kbd>[</kbd></td><td>Indent / outdent</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>L</kbd></td><td>Select the line</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>D</kbd></td><td>Select the next match too (edit several at once)</td></tr>
-    <tr><td><kbd>Alt</kbd> click · <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Add a cursor (<kbd>Esc</kbd> for one cursor again)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>F</kbd> · <kbd>F3</kbd></td><td>Find · next match</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>H</kbd></td><td>Replace (<kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>F</kbd> on a Mac)</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>G</kbd></td><td>Go to line</td></tr>
-    <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> · <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo (including applied fixes) · redo</td></tr>
   </tbody></table>
   <p>Tips under the code: <button class="link" type="button" data-tips-toggle aria-pressed="true">Tips: on</button> · <button class="link" type="button" id="tips-reset">Show heads-ups again</button></p>
   <p class="muted">Links like <code>#hub-&lt;id&gt;</code>, <code>#probe-17</code> or <code>#example-mistakes</code> open that example directly.</p>

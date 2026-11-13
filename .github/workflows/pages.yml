@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -69,13 +69,18 @@ jobs:
       - name: Typecheck the workbench (catches code the smoke test doesn't reach)
         run: npx tsc --noEmit -p tsconfig.ci.json  # the extension is checked out at ../core here
         working-directory: playground
+      - name: Workbench unit tests and links that must live for ever (tools/workbench-units.test.mjs, tools/links.test.mjs)
+        run: npm test # the extension at ../core, as in tools/bundle-ts.mjs
+        working-directory: playground
       - name: Try it still matches Jint on every probe
         run: node sim-parity.mjs --core ../core
         working-directory: playground
       - name: Unit tests (Hub package files; feedback links match the extension's issue forms and bot)
         run: |
           node tools/hub-files.test.mjs
+          node tools/hub-client.test.mjs
           node tools/report-links.test.mjs
+          node tools/credit.test.mjs
       - name: Browser smoke test (Check, Fix all, Try it, packages, themes, keyboard, accessibility)
         run: |
           npx playwright install --with-deps chromium

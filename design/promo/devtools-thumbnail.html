@@ -1,0 +1,112 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>NC devtools thumbnail</title>
+<!-- The Reddit/Discord thumbnail for the devtools (1920x1080). Real screenshots from docs/images/gallery; render with node design/promo/render.mjs. Needs the Inter font installed. -->
+<style>
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; }
+body { font-family: Inter, sans-serif; color: #e8eef6; background: #0b1020; position: relative; }
+.bg { position: absolute; inset: 0;
+  background:
+    radial-gradient(900px 600px at 78% 40%, rgba(56,189,248,.28), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, rgba(168,85,247,.30), transparent 70%),
+    radial-gradient(600px 500px at 0% 0%, rgba(34,197,94,.14), transparent 70%),
+    linear-gradient(160deg, #0b1020 0%, #0d1530 60%, #120d2a 100%); }
+.grid { position: absolute; inset: 0; opacity: .5;
+  background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 48px 48px; mask-image: radial-gradient(1200px 900px at 70% 50%, #000 30%, transparent 80%); }
+
+.left { position: absolute; left: 96px; top: 70px; width: 800px; z-index: 5; }
+.brand { display: flex; align-items: center; gap: 16px; font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+.brand img { width: 60px; height: 60px; border-radius: 14px; }
+.brand span b { color: #38bdf8; }
+h1 { margin-top: 36px; font-family: 'Inter Display', Inter, sans-serif; font-size: 104px; line-height: .98; font-weight: 800; letter-spacing: -.035em; }
+h1 em { font-style: normal; background: linear-gradient(90deg, #38bdf8, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { margin-top: 28px; font-size: 34px; line-height: 1.3; color: #b6c2d4; font-weight: 500; }
+.sub b { color: #fff; font-weight: 700; }
+ul { list-style: none; padding: 0; margin-top: 30px; display: grid; gap: 13px; }
+li { display: flex; align-items: center; gap: 18px; font-size: 31px; font-weight: 600; }
+li i { flex: none; width: 50px; height: 50px; border-radius: 13px; display: grid; place-items: center; font-style: normal; font-size: 26px; font-weight: 800; }
+.i1 { background: rgba(239,68,68,.18); color: #f87171; box-shadow: inset 0 0 0 2px rgba(248,113,113,.45); }
+.i2 { background: rgba(56,189,248,.16); color: #38bdf8; box-shadow: inset 0 0 0 2px rgba(56,189,248,.45); }
+.i3 { background: rgba(34,197,94,.16); color: #4ade80; box-shadow: inset 0 0 0 2px rgba(74,222,128,.45); }
+.i5 { background: rgba(251,191,36,.16); color: #fbbf24; box-shadow: inset 0 0 0 2px rgba(251,191,36,.45); }
+.i4 { background: rgba(167,139,250,.16); color: #a78bfa; box-shadow: inset 0 0 0 2px rgba(167,139,250,.45); }
+
+.works { position: absolute; left: 96px; bottom: 56px; display: flex; align-items: center; gap: 18px; z-index: 5; }
+.works span { font-size: 24px; color: #8fa0b8; font-weight: 600; margin-right: 4px; }
+.works img, .works .web { width: 58px; height: 58px; padding: 9px; border-radius: 14px; background: rgba(255,255,255,.92); }
+.works .web { display: grid; place-items: center; font-size: 30px; padding: 0; }
+.works small { font-size: 22px; color: #8fa0b8; margin-left: 6px; }
+
+.badge { position: absolute; right: 64px; top: 56px; z-index: 6; padding: 14px 26px; border-radius: 999px; font-size: 26px; font-weight: 800; letter-spacing: .06em;
+  color: #0b1020; background: linear-gradient(90deg, #fde047, #fb923c); box-shadow: 0 10px 40px rgba(251,146,60,.45); }
+
+.stage { position: absolute; right: -40px; top: 150px; width: 1120px; height: 860px; perspective: 2400px; }
+.win { position: absolute; border-radius: 16px; overflow: hidden; background: #1e1e1e;
+  box-shadow: 0 40px 90px rgba(0,0,0,.6), 0 0 0 1.5px rgba(255,255,255,.12); }
+.win img { display: block; width: 100%; }
+.w1 { width: 760px; left: 330px; top: -20px; transform: rotateY(-14deg) rotateX(4deg); opacity: .92; }
+.w2 { width: 920px; left: 120px; top: 150px; transform: rotateY(-14deg) rotateX(4deg); }
+.w3 { width: 1000px; left: 40px; top: 330px; transform: rotateY(-14deg) rotateX(4deg); }
+.w3 { height: 560px; } .w3 img { margin-top: -0px; }
+
+.pop { position: absolute; z-index: 7; border-radius: 14px; background: #1f2633; color: #e8eef6; box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 0 1.5px rgba(255,255,255,.14); font-size: 25px; }
+.err { left: 860px; top: 760px; width: 640px; padding: 20px 24px; border-left: 6px solid #f87171; }
+.err .t { font-weight: 700; display: flex; gap: 12px; align-items: center; }
+.err .t b { color: #f87171; font-size: 28px; }
+.err code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 23px; color: #9cdcfe; }
+.err .fix { margin-top: 14px; display: inline-block; padding: 7px 16px; border-radius: 9px; background: #38bdf8; color: #0b1020; font-weight: 800; font-size: 22px; }
+.ok { left: 1530px; top: 410px; padding: 16px 22px; display: flex; align-items: center; gap: 12px; font-weight: 700; border-left: 6px solid #4ade80; }
+.ok b { color: #4ade80; font-size: 28px; }
+.tag { position: absolute; z-index: 8; padding: 7px 16px; border-radius: 999px; font-size: 21px; font-weight: 700; color: #fff; background: rgba(15,20,35,.88); box-shadow: 0 0 0 1.5px rgba(255,255,255,.25), 0 8px 24px rgba(0,0,0,.5); display: flex; align-items: center; gap: 9px; }
+.tag img { width: 26px; height: 26px; }
+.links { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.tag { box-shadow: 0 0 0 2px rgba(56,189,248,.85), 0 8px 24px rgba(0,0,0,.5) !important; }
+</style></head>
+<body>
+<div class="bg"></div><div class="grid"></div>
+
+<div class="badge">OPEN BETA · COMING SOON</div>
+
+<div class="left">
+  <div class="brand"><img src="icon.png" alt=""><span>Nucleus <b>handler tools</b></span></div>
+  <h1>Catch it<br>before <em>Nucleus</em><br>does.</h1>
+  <p class="sub"><b>Free tools</b> for writing Nucleus Co-op handlers. For beginners and veterans.</p>
+  <ul>
+    <li><i class="i1">✕</i>Mistakes underlined as you type</li>
+    <li><i class="i2" style="font-size:22px">{ }</i>Suggestions and docs for every option</li>
+    <li><i class="i3">▶</i>Try it for every player, before launch</li>
+    <li><i class="i4">★</i>Tutorials that start from zero</li>
+    <li><i class="i5">✦</i>AI-native: tools for your agent, AI help built in</li>
+  </ul>
+</div>
+
+<div class="works"><span>Works in</span>
+  <img src="../../playground/src/editor-icons/vscode.svg" alt="">
+  <img src="../../playground/src/editor-icons/notepadplusplus.svg" alt="">
+  <div class="web">🌐</div>
+  <img src="../../playground/src/editor-icons/neovim.svg" alt="">
+  <small>+ any LSP editor</small>
+</div>
+
+<div class="stage">
+  <div class="win w1"><img src="../../docs/images/gallery/notepadpp-problem-hover-dark.webp" alt=""></div>
+  <div class="win w2"><img src="../../docs/images/gallery/vscode-problems-quickfix-dark.webp" alt=""></div>
+  <div class="win w3"><img src="../../docs/images/gallery/workbench-check-dark.webp" alt=""></div>
+</div>
+
+<svg class="links" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
+  <g fill="none" stroke="rgba(56,189,248,.85)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1180 170 H1222"/>
+    <path d="M980 272 H1040 V336"/>
+    <path d="M910 437 H962 V512"/>
+  </g>
+  <g fill="#38bdf8" stroke="#0b1020" stroke-width="3">
+    <circle cx="1224" cy="170" r="7"/><circle cx="1040" cy="338" r="7"/><circle cx="962" cy="514" r="7"/>
+  </g>
+</svg>
+<div class="tag" style="right:740px;top:150px"><img src="../../playground/src/editor-icons/notepadplusplus.svg" alt="">Notepad++</div>
+<div class="tag" style="right:940px;top:252px"><img src="../../playground/src/editor-icons/vscode.svg" alt="">VS Code</div>
+<div class="tag" style="right:1010px;top:418px">🌐 Browser workbench</div>
+</body></html>

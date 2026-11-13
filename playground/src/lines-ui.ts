@@ -8,6 +8,7 @@
 // - grouped by object or by topic, A–Z or by how many Hub handlers use it, keyboard friendly.
 import { allLines, KINDS, Kind, Line, matches, scanHandler, inCallback, Scan, USAGE_TOTAL } from './lines';
 import { BEFORE_SESSION } from '@core/lifecycle';
+import { narrow } from './dom';
 
 interface Deps {
   editor: any; // CodeMirror 5
@@ -67,8 +68,9 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
   if (prefs.group === 'tree') { prefs.view = 'tree'; prefs.group = 'object'; }
   if ((prefs as any).tree === false && !('view' in JSON.parse(store.get(PREFS_KEY) || '{}'))) prefs.view = 'list';
   const saved = store.get(LINES_KEY);
-  // Phones always start with the list closed (it's a sheet over the code there).
-  let open = window.matchMedia('(max-width: 860px)').matches ? false : saved ? saved === '1' : window.matchMedia('(min-width: 1680px)').matches;
+  // Closed until someone opens it (help on request; Ctrl+B or the Lines button), then as they left it. Phones always
+  // start closed (it's a sheet over the code there).
+  let open = narrow() ? false : saved === '1';
   let scan: Scan | undefined;
   let callback = false;
   let current: Line | undefined;
@@ -86,7 +88,7 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
     // With Reference open beside the list (desktop), the full docs go there, where there's room.
     const path = l.path.replace(/^new /, '');
     if (previewReference && previewReference(path)) {
-      info.append(text('div', 'muted', 'Its docs are on the right, in Reference.'));
+      info.append(text('div', 'muted', 'Its docs are on the right, in Docs.'));
       return;
     }
     if (l.doc) info.append(text('div', '', l.doc));
@@ -490,8 +492,12 @@ export function initLines({ editor, openReference, previewReference }: Deps) {
       return lab;
     };
     SETTINGS.filter((s) => !s.advanced).forEach((s) => panel.append(row(s)));
+    // Only in Advanced mode: the list's finer controls (their values stay as they are).
     const adv = document.createElement('details');
-    adv.append(text('summary', '', 'More list settings'));
+    adv.className = 'dev-only';
+    const sum = text('summary', '', 'More list settings');
+    sum.append(text('span', 'chip adv-tag', 'Advanced'));
+    adv.append(sum);
     SETTINGS.filter((s) => s.advanced).forEach((s) => adv.append(row(s)));
     panel.append(adv);
     const reset = document.createElement('button');

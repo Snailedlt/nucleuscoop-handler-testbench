@@ -1,30 +1,37 @@
+import { RULE_DOCS, ruleUrl } from '@core/ruledocs';
+import { inProblemList } from './checklist';
+import { initKeySettings } from './kbsettings';
+import { openFind } from './findwidget';
+import { hasCredit, withCredit, withoutCredit } from './credit';
+import { definitionAt } from '@core/definition';
+import { JS_RULES } from '@core/jsrules';
 import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
 import { announce, clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
-import { canShare, decodeShare, encodeShare, SHARE_PREFIX } from './share';
+import { decodeShare, encodeShare } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/lint/lint';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
-import { vscodeKeys, vscodeMouse } from './keys';
-import { MATRIX_RESOLUTIONS, planMatrix, failureOf, jobOptions } from '@core/matrix';
+import { semanticMarks } from './semmarks';
+import { codeHandlers, fixedCodeKeys, foldRange, keysByPosition, lineCommentFold, selectReferences, vscodeMouse } from './keys';
+import { ACTIONS, appActionFor, codeKeyMap, keyLabel, labelOf, binding, onBindingsChange, type Group } from './keybindings';
 import { lint, Diagnostic, RULES, lineOf, pluginGlobals, type TextEdit } from '@core/lint';
-import { api, membersOf, ownerLabel, Resolved } from '@core/api';
-import { memberContextAt, resolveAt, callContextAt, valueContextAt } from '@core/complete';
-import { search, lookup, allEntries, Entry } from '@core/lookup';
-import USAGE from './usage.json';
+import { api, ownerLabel, Resolved } from '@core/api';
+import { resolveAt } from '@core/complete';
+import { completionsAt, explainLine, hoverAt, signatureHelpAt, type CompletionKind, type CompletionEntry } from '@core/features';
+import { currentRunner } from './aiproviders';
+import { insertSnippet } from './snippet';
 import { renderHandler, FEATURES } from '@core/templates';
-import { simulate, sessionSummary, groupIgnored, parsePluginsInfo } from '@core/sim';
-import { AiError, currentRunner } from './aiproviders';
-import { initAiSettings } from './aisettings';
-import { buildPrompt, pageTools, diffLines, hunks, counts, newProblems, type DiffLine } from './aifix';
+import { simulate, parsePluginsInfo } from '@core/sim';
+import { counts } from './aifix';
 import { fixAll } from '@core/fix';
 import { formatHandler } from '@core/format';
 import { canSaveIntoFolder, rememberedName, saveIntoNucleus } from './nucleussave';
-import { readPackage, buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
+import { buildPackage, storeFiles, storedFiles, fileSize, sizeOf, PackageFile } from './package';
 import { initLines } from './lines-ui';
 import { initTips } from './tips-ui';
 import { initSettings } from './settings-ui';
@@ -32,7 +39,7 @@ import { announceLine, hoverDelay, initA11y } from './a11y';
 import { initNews } from './news';
 import { initPanels } from './panels-ui';
 import { initTouchTitles } from './touch-titles';
-import { mascot, mascotsOn } from './mascots';
+import { mascot } from './mascots';
 import { fixWithNucli, applyEditsToText } from './fixfx';
 import { codeNote } from './codenote';
 import { initMessageHints } from './wmhints';
@@ -42,21 +49,29 @@ import { initKeyHints } from './keyhints';
 import { mountFormView, type FormView } from './formview';
 import { mountBlocksView, type BlocksView } from './blocksview';
 import { initPackageUI, fileIcon } from './packageui';
-import { installMap, type PkgProblem } from './pkgcheck';
+import type { PkgProblem } from './pkgcheck';
 import { pickGameFolder, checkAgainstFolder, initFolderPickers, folderSummaryHtml, type GameFolder, type FolderProblem } from './gamefolder';
 import { openMenu, type MenuItem } from './menus';
 import { initTestGuide } from './testguide';
+import { initTestPins } from './testpins';
 import { exportSettings, importSettings } from './settingsio';
 import { BETA } from './testplan';
 import { feedbackUrl, openReport, setReportState } from './report';
 import { firstRunDone, initFirstRun } from './firstrun';
-import { feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
+import { countVisit, feedbackAvailable, feedbackBlockedByBrowser, feedbackOn, setFeedback, totalsUrl, use, wireVotes } from './feedback';
 import { blockedItemAt, messageMarkdown } from '@core/wm';
 import { initSheetDrag } from './sheets';
 import { initWakaTime } from './wakatime';
 import { mountDebugger } from './debugui';
-import { hlCode, hlHtml } from './codehl';
+import { hlCode, hlHtml, modeFor } from './codehl';
 import { setCodeFieldSupport } from './codefield';
+import { $, esc, md, narrow, onNarrowChange } from './dom';
+import { initDocs, linkApiNames, wireApiLinkClicks } from './docs-ui';
+import { initTryIt } from './tryit-ui';
+import { initFixes } from './aifix-ui';
+import { initFileOpen } from './fileopen-ui';
+import { pageDownloads, saveFileName, type Downloads } from './savefile';
+import { followMoved as followMovedLink, movedNote, probeHash, routeLink, slug, unknownNote, type LinkCatalog } from './links';
 
 declare const PROBES: { name: string; source: string; jint: string; detail: string }[];
 applyTheme();
@@ -70,27 +85,9 @@ declare const HUB_EXAMPLES: { takenAt: string | null; handlers: HubExample[]; ba
 declare const EXAMPLE_PACKAGES: { id: string; title: string; sub: string; name: string; hubId: string; handler: string; files: { name: string; b64: string }[] }[];
 declare const BOT_TEMPLATES: { commit: string | null; templates: { id: string; name: string; source: string }[] };
 
-const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-
-/** Tiny Markdown for API docs: fenced code, inline code, bold, links, paragraphs. */
-function md(src: string): string {
-  const out: string[] = [];
-  const parts = src.split(/```(\w*)\n?([\s\S]*?)```/g);
-  for (let i = 0; i < parts.length; i++) {
-    if (i % 3 === 0) {
-      for (const para of parts[i].split(/\n{2,}/)) {
-        if (!para.trim()) continue;
-        let h = esc(para.trim());
-        h = h.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        h = h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-        h = h.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
-        out.push(`<p>${h.replace(/\n/g, '<br>')}</p>`);
-      }
-    } else if (i % 3 === 2) out.push(`<pre class="doc-code">${esc(parts[i].trim())}</pre>`);
-  }
-  return hlHtml(out.join(''));
-}
+// The address as the page was opened (start-up loads the last draft, which can rewrite it): a #docs-… link from an
+// editor's hover opens Docs there, over whatever handler is open.
+const INITIAL_HASH = location.hash;
 
 // ---------------------------------------------------------------------------
 // Samples
@@ -167,11 +164,16 @@ function plainFor(d: Diagnostic): { title: string; why: string } {
   if (d.rule === 'unknown-member' && /calling it throws/.test(d.message)) {
     return { title: "A function that doesn't exist", why: "Calling it is an error, so Nucleus stops here. It's usually a typo." };
   }
-  return PLAIN[d.rule] ?? { title: d.rule, why: '' };
+  // General JavaScript mistakes (ESLint's rules, core/jsrules.ts) carry their own plain title and why.
+  const js = (JS_RULES as Record<string, { title: string; why: string }>)[d.rule];
+  return PLAIN[d.rule] ?? (js ? { title: js.title, why: js.why } : { title: d.rule, why: '' });
 }
 
 const STORE_KEY = 'nucleus-workbench-draft';
-let initial = BUGGY;
+// New handler… starts from this template: short, commented, and a starting point for anyone. The common-mistakes
+// handler is in Examples (#example-mistakes).
+const STARTER = '// New to handlers? Menu › Learn makes one with you, step by step.\n' + renderHandler({ gameName: 'My Game', executableName: 'MyGame.exe', features: [] });
+let initial = STARTER;
 // Files that came with the opened package (besides handler.js); saved with it, and kept over a reload.
 let packageFiles: PackageFile[] = storedFiles();
 // A package's pluginsInfo.txt (in its handler folder, Game.Folder): Nucleus adds each plugin as a
@@ -189,8 +191,12 @@ const simPlugins = () => {
   const t = pluginsText();
   return t ? parsePluginsInfo(t) : undefined;
 };
+// A first visit (nothing kept in this browser, no link to a handler) starts on the home page: what a handler is, and
+// the ways on (New, Open, Learn). The template is one click away (New handler…).
+let firstVisit = false;
 try {
-  initial = localStorage.getItem(STORE_KEY) || BUGGY;
+  firstVisit = !localStorage.getItem(STORE_KEY) && !localStorage.getItem('nucleus-workbench-tabs') && !location.hash;
+  initial = firstVisit ? '' : localStorage.getItem(STORE_KEY) || STARTER;
 } catch {
   /* storage unavailable */
 }
@@ -282,7 +288,10 @@ const editor = CodeMirror($('#editor'), {
   tabSize: 2,
   matchBrackets: true,
   autoCloseBrackets: true,
-  gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers'],
+  gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+  // Folding, as in VS Code: arrows next to the line numbers (shown on hover), the keys in keys.ts.
+  foldGutter: { rangeFinder: foldRange, minFoldSize: 1 },
+  foldOptions: { rangeFinder: foldRange, widget: '⋯', minFoldSize: 1 },
   // Touch screens edit through the page's own text selection, which only reaches lines that are
   // drawn: draw them all (handlers are small), so the phone's Select all, copy and delete see every line.
   viewportMargin: window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0 ? Infinity : 10,
@@ -314,21 +323,33 @@ const editor = CodeMirror($('#editor'), {
     tooltips: false, // our own hover card (showHoverCard)
   },
   configureMouse: vscodeMouse,
-  extraKeys: {
-    // Ctrl+.: the problems (and fixes) at the cursor, else on its line.
-    ...vscodeKeys((cm: any) => {
-      const c = cm.getCursor();
-      showLineProblems(c.line, cm.indexFromPos(c));
-      if (linePop.hidden) showLineProblems(c.line);
-      // From the keyboard: straight to its first button (Fix this), Esc goes back to the code.
-      if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
-    }),
-    'Ctrl-Space': (cm: any) => cm.showHint({ hint: hinter, completeSingle: false }),
-    // Tab indents; Esc then Tab (or Shift+Tab) leaves the editor, so the rest of the page is reachable by keyboard.
-    Tab: (cm: any) => cm.execCommand('insertSoftTab'),
-    'Shift-Tab': (cm: any) => cm.execCommand('indentLess'),
-  },
+  // Keys: keybindings.ts (VS Code's, changeable in Settings › Keyboard shortcuts), set just below.
 } as any);
+// The code editor's keys from keybindings.ts; again whenever they're changed in Settings.
+const editorHandlers: Record<string, (cm: any) => void> = {
+  ...codeHandlers,
+  // The problems (and fixes) at the cursor, else on its line; from the keyboard straight to its first button.
+  quickFix: (cm: any) => {
+    const c = cm.getCursor();
+    const at = cm.indexFromPos(c);
+    // The problem at the cursor (with the name's docs); else every problem on the line; only then the name's docs.
+    const here = lineProblems(c.line, true).some((d) => d.start <= at && at <= Math.max(d.end, d.start + 1));
+    if (here || !lineProblems(c.line, false).length) showLineProblems(c.line, at);
+    else showLineProblems(c.line);
+    if (linePop.hidden) showLineProblems(c.line);
+    if (!linePop.hidden) linePop.querySelector<HTMLElement>('[data-lp-fix], [data-lp-more]')?.focus();
+  },
+  explainLine: () => explainAtCursor(),
+  suggest: (cm: any) => cm.showHint({ hint: hinter, completeSingle: false, explicit: true }),
+  goToLine: () => showOpen('line'),
+  definition: () => goToDefinition(),
+  rename: () => renameSymbol(),
+  references: () => renameSymbol(true),
+};
+const applyKeys = () => editor.setOption('extraKeys', codeKeyMap(editorHandlers, fixedCodeKeys));
+applyKeys();
+onBindingsChange(() => (applyKeys(), renderHelpKeys()));
+keysByPosition(editor);
 let escThenTab = false;
 editor.on('keydown', (_cm: any, e: KeyboardEvent) => {
   if (e.key === 'Escape') escThenTab = true;
@@ -375,55 +396,105 @@ editor.getInputField().setAttribute("aria-label", "Handler code");
   });
 }
 
-// Completion
-function hinter(cm: any) {
+// API names in hovers, parameter hints and suggestion docs are links (docs-ui.ts): a click (or Enter) opens that name
+// in Docs, as VS Code's hovers link to the docs.
+function openReferenceAt(path: string) {
+  tip.hidden = true;
+  selectTab('api');
+  if (narrow()) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+  docs.go(`q:${path}`);
+}
+
+// Completion: the same suggestions as VS Code and other editors (core/features.ts completionsAt): API members, the
+// option's values, the handler's own functions and variables, Context.Options keys and their values, snippets, the
+// whole template in an empty file. The docs of the highlighted one show beside the list.
+const HINT_ICON: Partial<Record<CompletionKind, string>> = { method: 'ƒ', function: 'ƒ', snippet: '⧉', keyword: 'k', enumMember: '▪', value: '▪', constant: '#', property: '·', field: '·', variable: 'x', module: '{}', class: 'C', enum: 'E' };
+function hinter(cm: any, options?: { explicit?: boolean }) {
   const text = cm.getValue();
   const cur = cm.getCursor();
   const offset = cm.indexFromPos(cur);
-  const ctx = memberContextAt(text, offset);
-  // `Game.DPIHandling = |`: the values the option takes (enum values, true/false, a callback function, the usual
-  // window messages for BlockedMessages).
-  const val = !ctx ? valueContextAt(text, offset) : undefined;
-  if (val && !val.partial.includes('.')) {
-    const p = val.partial.toLowerCase();
-    const indent = (cm.getLine(cur.line).match(/^\s*/) ?? [''])[0];
-    const list = val.values.filter((v) => v.value.toLowerCase().startsWith(p)).map((v) => ({
-      text: v.value,
-      displayText: v.value,
-      render(el: HTMLElement) {
-        el.innerHTML = `<span class="hint-name">${esc(v.value.replace(/\s+/g, ' '))}</span><span class="hint-type">${esc(v.detail ?? '')}</span>`;
-      },
-      // A callback: the function on its own lines, the cursor inside it.
-      hint: v.snippet ? (c: any, data: any) => {
-        c.replaceRange(`function () {\n${indent}  \n${indent}};`, data.from, data.to);
-        c.setCursor({ line: data.from.line + 1, ch: indent.length + 2 });
-      } : undefined,
-    }));
-    return list.length ? { list, from: cm.posFromIndex(val.partialStart), to: cur } : null;
-  }
-  if (!ctx) return null;
-  const partial = ctx.partial.toLowerCase();
-  const list = membersOf(ctx.base)
-    .filter((m) => m.name.toLowerCase().startsWith(partial))
-    .sort((a, b) => rank(a.member) - rank(b.member) || a.name.localeCompare(b.name))
-    .map((m) => ({
-      text: m.name,
-      displayText: m.name,
-      render(el: HTMLElement) {
-        const t = m.member ? (m.member.kind === 'method' ? 'method' : m.member.ts ?? m.member.ref ?? '') : m.detail ?? '';
-        el.innerHTML = `<span class="hint-name${m.member?.deprecated ? ' dep' : ''}">${esc(m.name)}</span><span class="hint-type">${esc(String(t))}</span>`;
-      },
-    }));
-  return { list, from: cm.posFromIndex(ctx.partialStart), to: cur };
+  const items = completionsAt(text, offset, { own: true, explicit: !!options?.explicit });
+  if (!items?.length) return null;
+  // The word the editor would replace when an item has no range of its own.
+  let ws = offset;
+  while (ws > 0 && /[\w$]/.test(text[ws - 1])) ws--;
+  // What's typed, matched with its case first (`hand` → handler before Handler), as VS Code ranks them.
+  const exact = (it: CompletionEntry) => {
+    const typed = text.slice(it.range?.start ?? ws, offset).replace(/^["']/, '');
+    return typed && it.label.startsWith(typed) ? 1 : 0;
+  };
+  const list = items
+    .filter((it) => {
+      const start = it.range?.start ?? ws;
+      const typed = text.slice(start, offset).replace(/^["']/, '').toLowerCase();
+      if (!typed) return true;
+      return [it.label, ...(it.filterText ?? '').split(/\s+/)].some((w) => w.toLowerCase().startsWith(typed));
+    })
+    .sort((a, z) => exact(z) - exact(a) || (a.sortText ?? a.label).localeCompare(z.sortText ?? z.label))
+    .map((it) => {
+      const from = cm.posFromIndex(it.range?.start ?? ws);
+      const to = cm.posFromIndex(Math.max(it.range?.end ?? offset, offset));
+      const right = it.labelDetail ?? (it.kind === 'method' ? 'method' : (it.detail ?? '').replace(/^.*?\):\s*/, '').slice(0, 40));
+      const typed = text.slice(it.range?.start ?? ws, offset).replace(/^["']/, '');
+      const hit = typed && it.label.toLowerCase().startsWith(typed.toLowerCase()) ? typed.length : 0;
+      const doc = it.documentation && !/^\s*```/.test(it.documentation) && it.detail && !it.labelDetail ? '```js\n' + it.detail + '\n```\n\n' + it.documentation : it.documentation;
+      return {
+        text: it.insertText ?? it.label,
+        displayText: it.label,
+        from,
+        to,
+        doc,
+        render(el: HTMLElement) {
+          el.innerHTML = `<span class="hint-ico k-${it.kind}" aria-hidden="true">${HINT_ICON[it.kind] ?? ''}</span><span class="hint-name${it.deprecated ? ' dep' : ''}">${hit ? `<b class="hint-hit">${esc(it.label.slice(0, hit))}</b>` : ''}${esc(it.label.slice(hit))}</span><span class="hint-type">${esc(right)}</span>`;
+        },
+        hint(c: any, _data: any, self: any) {
+          if (it.snippet) insertSnippet(c, self.from, self.to, it.insertText ?? it.label);
+          else c.replaceRange(self.text, self.from, self.to, 'complete');
+          if (it.signatureHelp) showSignature();
+        },
+      };
+    });
+  if (!list.length) return null;
+  const pre = items.findIndex((it) => it.preselect);
+  const data = { list, from: list[0].from, to: cur, selectedHint: Math.max(0, list.findIndex((h) => h.displayText === items[pre]?.label)) };
+  // The highlighted suggestion's docs, next to the list.
+  CodeMirror.on(data, 'select', (c: any, el: HTMLElement) => showHintDoc(c.doc, el));
+  CodeMirror.on(data, 'close', () => showHintDoc(undefined));
+  return data;
 }
-const rank = (m?: { required?: boolean; deprecated?: string; doc?: string }) => (!m ? 1 : m.required ? 0 : m.deprecated ? 3 : m.doc ? 1 : 2);
+const hintDoc = document.createElement('div');
+hintDoc.className = 'hint-doc';
+hintDoc.hidden = true;
+document.body.appendChild(hintDoc);
+// The list closes when the editor loses focus, so the docs beside it act on mousedown.
+wireApiLinkClicks(hintDoc, openReferenceAt, 'mousedown');
+function showHintDoc(doc: string | undefined, el?: HTMLElement) {
+  const box = el?.closest('.CodeMirror-hints') as HTMLElement | null;
+  if (!doc || !box) return void (hintDoc.hidden = true);
+  hintDoc.innerHTML = md(doc);
+  linkApiNames(hintDoc);
+  hintDoc.hidden = false;
+  const r = box.getBoundingClientRect();
+  const w = Math.min(420, window.innerWidth - 16);
+  hintDoc.style.width = `${w}px`;
+  const right = r.right + 6 + w <= window.innerWidth - 8;
+  hintDoc.style.left = `${right ? r.right + 6 : Math.max(8, r.left - 6 - w)}px`;
+  hintDoc.style.top = `${r.top}px`;
+  // No room on either side (a phone): under the list.
+  if (!right && r.left - 6 - w < 8) { hintDoc.style.left = `${Math.max(8, r.left)}px`; hintDoc.style.top = `${r.bottom + 6}px`; }
+}
 
 editor.on('inputRead', (cm: any, change: any) => {
   const afterEquals = change.text[0] === ' ' && /[\w\]]\s*=\s$/.test(cm.getLine(change.from.line).slice(0, change.from.ch + 1));
-  if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0]) || afterEquals) {
+  if (change.text[0] === '.' || /^[\w$"'\[,]$/.test(change.text[0]) || afterEquals) {
     if (!cm.state.completionActive) cm.showHint({ hint: hinter, completeSingle: false });
   }
   if (change.text[0] === '(' || change.text[0] === ',') showSignature();
+});
+// A quote or `[` typed where brackets close themselves (closebrackets' keys insert `""`, `[]` with no inputRead):
+// `Context.Options["` still opens the keys.
+editor.on('keyHandled', (cm: any, name: string) => {
+  if (/^'["'[]'$/.test(name) && !cm.state.completionActive) cm.showHint({ hint: hinter, completeSingle: false });
 });
 editor.on('cursorActivity', () => showSignature());
 // Settings › Accessibility: read out the problems on the line the cursor moves to (once per line).
@@ -482,6 +553,7 @@ $('#gf-close').addEventListener('click', () => ($('#gf-dialog') as HTMLDialogEle
 
 // Hover docs
 const tip = $('#tip');
+wireApiLinkClicks(tip, openReferenceAt);
 let tipTimer: number | undefined;
 let tipHideTimer: number | undefined;
 // The hover card: the problems under the pointer (what, why, a fix you can click) and the docs of the name there.
@@ -489,32 +561,38 @@ let tipHideTimer: number | undefined;
 // the pointer moves onto it. Replaces CodeMirror's own plain-text lint tooltip (lint.tooltips: false).
 const SEV_ICON: Record<string, string> = { error: '✖', warning: '!', info: 'i', hint: '·' };
 const codeIn = (s: string) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+// The hover, as VS Code shows it: one flat box; each problem a short line (what, then why), the docs under a thin
+// divider, and the fixes as links in a bar at the bottom (Ctrl+. from the keyboard).
+// Each check's own page (core/ruledocs.ts): next to the site's own pages when served with them, else the live site.
+const ruleHref = (id: string) => (/^start\//.test(document.querySelector('a.start-link')?.getAttribute('href') ?? '') ? `rules/${encodeURIComponent(id)}/` : ruleUrl(id));
 function problemCard(list: Diagnostic[]): string {
-  return list.map((d, i) => {
+  return `<div class="hv-sec hv-probs">${list.map((d) => {
     const plain = plainFor(d);
-    const fixes = [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred));
-    return `<div class="hc-item ${sevClass[d.severity]}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div class="hc-body">`
-      + `<div class="hc-title">${esc(plain.title)}<span class="sr-only"> (${d.severity})</span></div><div class="hc-msg">${hlHtml(codeIn(d.message))}</div>`
-      + (fixes.length || mode === 'dev' ? `<div class="hc-actions">${fixes.map((f, k) => `<button class="btn${k === 0 ? ' primary' : ''}" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${f.preferred ? 'Fix: ' : ''}${codeIn(f.title)}</button>`).join('')}${fixes.length && i === 0 ? '<span class="hc-key" title="Fixes from the keyboard"><kbd>Ctrl</kbd><kbd>.</kbd></span>' : ''}${mode === 'dev' ? `<span class="hc-rule">${d.rule}</span>` : ''}</div>` : '')
-      + `</div></div>`;
-  }).join('');
+    return `<div class="hv-prob ${sevClass[d.severity]}"><span class="hv-ico" aria-hidden="true">${SEV_ICON[d.severity]}</span><div><strong>${esc(plain.title)}</strong><span class="sr-only"> (${d.severity})</span><div class="hv-msg">${hlHtml(codeIn(d.message))}${mode === 'dev' ? ` <span class="hv-rule">${d.rule}</span>` : ''}</div></div></div>`;
+  }).join('')}</div>`;
+}
+function fixBar(list: Diagnostic[]): string {
+  const links = list.flatMap((d, i) => [...(d.fixes ?? [])].sort((a, z) => Number(!!z.preferred) - Number(!!a.preferred))
+    .map((f) => `<button class="hv-link" type="button" data-hc-fix="${i}:${d.fixes!.indexOf(f)}">${codeIn(f.title)}</button>`));
+  return links.length ? `<div class="hv-bar">${links.slice(0, 3).join('')}<span class="hv-key" title="Fixes from the keyboard">Ctrl+.</span></div>` : '';
 }
 function placeTip(from: { left: number; top: number; bottom: number }) {
   const w = tip.offsetWidth, h = tip.offsetHeight;
   const x = Math.min(Math.max(8, from.left - 12), window.innerWidth - w - 8);
-  const below = from.bottom + 6 + h <= window.innerHeight - 8 || from.top - 6 - h < 8;
+  // Above the line, as VS Code (the code under it stays readable); below when there's no room above.
+  const above = from.top - 4 - h >= 8;
   tip.style.left = `${x}px`;
-  tip.style.top = `${below ? from.bottom + 6 : from.top - 6 - h}px`;
+  tip.style.top = `${above ? from.top - 4 - h : from.bottom + 4}px`;
 }
 function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string, anchorFrom: number) {
   if (!list.length && !doc) return void (tip.hidden = true);
-  // One box: over a problem, the problem (what, why, fixes); the name's docs fold away under it, open on a click.
-  // Over plain code, the docs. (As in JetBrains IDEs and VS Code: the problem first, the docs one step away.)
-  const name = list.length && doc ? resolveAt(text, at) : undefined;
-  tip.innerHTML = list.length
-    ? problemCard(list) + (doc ? `<details class="hc-doc"><summary>Docs${name ? ` for <code>${esc(text.slice(name.start, name.end))}</code>` : ''}</summary>${doc}</details>` : '')
-    : `<div class="hc-doc">${doc}</div>`;
+  // Explain this line: on request, a link at the bottom of the card (as in VS Code); not on a gutter marker (at -1).
+  tip.classList.remove('explain');
+  const explain = at >= 0 ? `<div class="hv-bar"><button class="hv-link" type="button" data-hc-explain="${at}">Explain this line</button><span class="hv-key">${esc(labelOf('explainLine'))}</span></div>` : '';
+  tip.innerHTML = (list.length ? problemCard(list) : '') + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '') + fixBar(list) + explain;
+  tip.querySelector<HTMLButtonElement>('[data-hc-explain]')?.addEventListener('click', () => showExplanation(at));
   tip.classList.toggle('has-problems', list.length > 0);
+  linkApiNames(tip);
   tip.hidden = false;
   tip.querySelectorAll<HTMLButtonElement>('[data-hc-fix]').forEach((b) => b.addEventListener('click', () => {
     const [di, fi] = b.dataset.hcFix!.split(':').map(Number);
@@ -529,9 +607,61 @@ function showHoverCard(text: string, at: number, list: Diagnostic[], doc: string
   }));
   placeTip(editor.charCoords(editor.posFromIndex(anchorFrom), 'window'));
 }
+/** Explain this line (core/explain.ts): what the line does in plain words, the docs of its names, what Check says.
+ * With AI set up (Settings › AI), "Explain with AI" asks it for a longer answer, labelled AI-written. */
+let explainSample: any;
+async function explainRunner() {
+  if (explainSample === undefined) explainSample = await (window as any).claude?.use?.('sample')?.catch?.(() => null) ?? null;
+  return currentRunner(explainSample).runner;
+}
+function explainAtCursor() {
+  const c = editor.getCursor();
+  const line = editor.getLine(c.line);
+  if (!line.trim()) return codeNote(editor, c.line, 'An empty line: nothing to explain.', { mood: 'info' });
+  showExplanation(editor.indexFromPos({ line: c.line, ch: Math.max(c.ch, line.search(/\S/)) }));
+}
+function showExplanation(at: number) {
+  use('explain-line');
+  const text = editor.getValue();
+  const e = explainLine(text, at);
+  if (!e) return void (tip.hidden = true);
+  tip.innerHTML = `<div class="hv-sec hv-doc">${md(e.markdown)}</div><div class="hv-bar" hidden><button class="hv-link" type="button" data-hc-ai>Explain with AI</button></div>`;
+  tip.classList.remove('has-problems');
+  tip.classList.add('explain');
+  linkApiNames(tip);
+  tip.hidden = false;
+  // Asked for from the keyboard, so read it out too (the hover card itself isn't a live region).
+  announce(tip.innerText.replace(/\s+/g, ' ').slice(0, 600));
+  const lineStart = editor.indexFromPos({ line: e.line, ch: 0 });
+  placeTip(editor.charCoords(editor.posFromIndex(lineStart + Math.max(0, e.text.search(/\S/))), 'window'));
+  const bar = tip.querySelector<HTMLElement>('.hv-bar')!;
+  void explainRunner().then((runner) => {
+    if (!runner || !tip.contains(bar)) return;
+    bar.hidden = false;
+    placeTip(editor.charCoords(editor.posFromIndex(lineStart + Math.max(0, e.text.search(/\S/))), 'window'));
+    const btn = bar.querySelector<HTMLButtonElement>('[data-hc-ai]')!;
+    btn.addEventListener('click', async () => {
+      use('explain-line-ai');
+      btn.disabled = true;
+      btn.textContent = `Asking ${runner.label}…`;
+      try {
+        const r = await runner.json(e.aiPrompt, {});
+        const answer = String(r?.explanation ?? '').trim();
+        if (!answer) throw new Error('No answer.');
+        bar.outerHTML = `<div class="hv-sec hv-doc"><p class="small">AI-written by ${esc(runner.label)}; check it against the docs.</p>${md(answer)}</div>`;
+        linkApiNames(tip);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Explain with AI';
+        notice(`${runner.label} couldn't explain it: ${(err as Error).message}`, { kind: 'error' });
+      }
+    });
+  });
+}
 const problemsAt = (at: number) => current.filter((d) => d.severity !== 'hint' && d.start <= at && at <= Math.max(d.end, d.start + 1));
 editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
-  if (tip.contains(e.target as Node)) return;
+  // An explanation (Explain this line) stays until Esc, a click elsewhere, typing or scrolling.
+  if (tip.contains(e.target as Node) || (!tip.hidden && tip.classList.contains('explain'))) return;
   clearTimeout(tipTimer);
   tipTimer = window.setTimeout(() => {
     // Not over the "+" or while its menu is open: the menu says it already.
@@ -543,7 +673,7 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
       const line = editor.lineAtHeight(e.clientY, 'window');
       const list = lineProblems(line, mode === 'dev');
       if (!list.length) return void (tip.hidden = true);
-      return showHoverCard(text, 0, list, '', Math.min(...list.map((d) => d.start)));
+      return showHoverCard(text, -1, list, '', Math.min(...list.map((d) => d.start)));
     }
     if ((e.target as HTMLElement).closest?.('.CodeMirror-gutters')) return void (tip.hidden = true);
     const pos = editor.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
@@ -555,12 +685,16 @@ editor.getWrapperElement().addEventListener('mousemove', (e: MouseEvent) => {
     // A number in Game.ProtoInput.BlockedMessages: the window message and what blocking it does.
     const msg = blockedItemAt(text, at);
     const r = msg ? undefined : resolveAt(text, at);
-    const doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
-    const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : at;
+    let doc = msg ? md(messageMarkdown(msg.id)) : r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+    // Not an API name: the handler's own functions and variables, Context.Options keys, JavaScript's own (as in VS Code).
+    const own = !doc && !msg ? hoverAt(text, at, { own: true }) : undefined;
+    if (own) doc = md(own.markdown);
+    const from = list.length ? Math.min(...list.map((d) => d.start)) : msg ? msg.start : r ? r.start : own ? own.range.start : at;
     showHoverCard(text, at, list, doc, from);
   }, hoverDelay(280));
 });
-const hideTipSoon = () => { clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
+document.addEventListener('pointerdown', (e) => { if (!tip.hidden && tip.classList.contains('explain') && !tip.contains(e.target as Node)) tip.hidden = true; }, true);
+const hideTipSoon = () => { if (tip.classList.contains('explain')) return; clearTimeout(tipHideTimer); tipHideTimer = window.setTimeout(() => (tip.hidden = true), 250); };
 editor.getWrapperElement().addEventListener('mouseleave', (e: MouseEvent) => {
   clearTimeout(tipTimer);
   if (!tip.contains(e.relatedTarget as Node)) hideTipSoon();
@@ -569,6 +703,7 @@ editor.getWrapperElement().addEventListener('mouseenter', () => clearTimeout(tip
 tip.addEventListener('mouseenter', () => { clearTimeout(tipHideTimer); clearTimeout(tipTimer); });
 tip.addEventListener('mouseleave', (e: MouseEvent) => { if (!editor.getWrapperElement().contains(e.relatedTarget as Node)) hideTipSoon(); });
 editor.on('change', () => (tip.hidden = true));
+semanticMarks(editor); // Game, Context and the rest in their own colours, as in VS Code (semmarks.ts)
 editor.on('scroll', () => (tip.hidden = true));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tip.hidden) tip.hidden = true; });
 
@@ -587,12 +722,15 @@ setCodeFieldSupport({
       const end = cm.charCoords({ line: pos.line, ch: cm.getLine(pos.line).length }, 'window');
       if (e.clientX > end.right + 4) return void (tip.hidden = true);
       const r = resolveAt(text, at);
-      const doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+      let doc = r ? describeResolved(r.resolved, text.slice(r.start, r.end)) : '';
+      const own = doc ? undefined : hoverAt(text, at, { own: true });
+      if (own) doc = md(own.markdown);
       if (!doc && !problems.length) return void (tip.hidden = true);
-      tip.innerHTML = problems.map((d) => `<div class="hc-item ${sevClass[d.severity] ?? 'info'}"><span class="hc-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hc-body"><div class="hc-msg">${hlHtml(codeIn(d.message))}</div></div></div>`).join('')
-        + (doc ? `<div class="hc-doc">${doc}</div>` : '');
+      tip.innerHTML = (problems.length ? `<div class="hv-sec hv-probs">${problems.map((d) => `<div class="hv-prob ${sevClass[d.severity] ?? 'info'}"><span class="hv-ico" aria-hidden="true">${SEV_ICON[d.severity] ?? 'i'}</span><div class="hv-msg">${hlHtml(codeIn(d.message))}</div></div>`).join('')}</div>` : '')
+        + (doc ? `<div class="hv-sec hv-doc">${doc}</div>` : '');
       tip.classList.toggle('has-problems', problems.length > 0);
-      tip.hidden = false;
+      linkApiNames(tip);
+  tip.hidden = false;
       placeTip(cm.charCoords(cm.posFromIndex(problems.length ? problems[0].start : r ? r.start : at), 'window'));
     }, hoverDelay(280));
   },
@@ -605,7 +743,8 @@ setCodeFieldSupport({
 function describeResolved(res: Resolved, word: string): string {
   switch (res.kind) {
     case 'member':
-      return memberCard(res.owner, res.name, res.member);
+      // The handler's own function (its return type, resolved): core's own hover says it better.
+      return res.member.own ? '' : memberCard(res.owner, res.name, res.member, { compact: true });
     case 'enum': {
       const e = api.enums[res.name];
       return md('```\nenum Nucleus.' + res.name + '\n```\n\n' + (e.doc ?? '') + '\n\n' + Object.entries(e.values).map(([k, v]) => `\`${k}\` = ${v}`).join(', '));
@@ -628,41 +767,78 @@ function showSignature() {
   // While text is selected, stay out of the way of the selection handles and the copy menu.
   if (editor.somethingSelected()) return void (sig.hidden = true);
   const text = editor.getValue();
-  const c = callContextAt(text, editor.indexFromPos(editor.getCursor()));
-  if (!c || (c.callee.kind !== 'member' && c.callee.kind !== 'nucleusClass')) {
+  // Every overload, the parameter being typed highlighted, and what to pass for it (core's signature help, as in VS
+  // Code): Nucleus' methods and classes, JavaScript's own, the handler's own functions.
+  const h = signatureHelpAt(text, editor.indexFromPos(editor.getCursor()), { own: true });
+  if (!h?.signatures.length) {
     // Touch screens have no hover: show the docs for whatever is under the cursor instead.
     if (coarse.matches) {
       const r = resolveAt(text, editor.indexFromPos(editor.getCursor()));
       if (r && r.resolved.kind === 'member') {
         const m = r.resolved.member;
-        sig.innerHTML = `<div><strong>${esc(ownerLabel(r.resolved.owner))}.${esc(r.resolved.name)}</strong>: ${esc(m.kind === 'method' ? 'method' : m.ts ?? '')}${m.doc ? ` · ${esc(m.doc.split('\n')[0].slice(0, 140))}` : ''}</div>`;
+        sig.innerHTML = `<div class="sig-body"><div class="sig-label"><strong>${esc(ownerLabel(r.resolved.owner))}.${esc(r.resolved.name)}</strong>: ${esc(m.kind === 'method' ? 'method' : m.ts ?? '')}</div>${m.doc ? `<div class="sig-docs">${esc(m.doc.split('\n')[0].slice(0, 140))}</div>` : ''}</div>`;
+        sig.classList.remove('multi');
+        linkApiNames(sig);
         sig.hidden = false;
+        placeSig();
         return;
       }
     }
     sig.hidden = true;
     return;
   }
-  let lines: string[] = [];
-  if (c.callee.kind === 'member' && c.callee.member.kind === 'method') {
-    const { owner, name, member } = c.callee;
-    lines = (member.overloads ?? []).map(
-      (o) =>
-        `${esc(ownerLabel(owner))}.${esc(name)}(` +
-        o.params.map((p, i) => `<span class="${i === c.activeParameter || (p.rest && c.activeParameter >= i) ? 'active' : ''}">${esc(`${p.rest ? '...' : ''}${p.name}: ${p.type}`)}</span>`).join(', ') +
-        `): ${esc(o.returns)}`,
-    );
-  } else if (c.callee.kind === 'nucleusClass') {
-    const cls = api.nucleusClasses[c.callee.name];
-    lines = [`new Nucleus.${esc(c.callee.name)}(` + cls.params.map((p, i) => `<span class="${i === c.activeParameter ? 'active' : ''}">${esc(p)}</span>`).join(', ') + ')'];
-  }
-  if (!lines.length) {
-    sig.hidden = true;
-    return;
-  }
-  sig.innerHTML = lines.map((l) => `<div>${l}</div>`).join('');
+  // One overload at a time, as VS Code: "1/2" with arrows (Alt+Up / Alt+Down) when there are more.
+  const key = h.signatures.map((x) => x.label).join('\n');
+  if (sigPick.key !== key) sigPick = { key, index: h.activeSignature };
+  const n = h.signatures.length;
+  const si = ((sigPick.index % n) + n) % n;
+  const s = h.signatures[si];
+  const k = h.activeParameter;
+  let at = s.label.indexOf('(') + 1;
+  let html = '';
+  let activeIdx = -1;
+  s.parameters.forEach((p, i) => {
+    const pos = s.label.indexOf(p, at);
+    if (pos < 0) return;
+    const active = i === k || (i === s.parameters.length - 1 && k > i && p.startsWith('...'));
+    if (active) activeIdx = i;
+    html += esc(s.label.slice(at, pos)) + (active ? `<span class="active">${esc(p)}</span>` : esc(p));
+    at = pos + p.length;
+  });
+  html = esc(s.label.slice(0, s.label.indexOf('(') + 1)) + html + esc(s.label.slice(at));
+  const pdoc = activeIdx >= 0 ? s.parameterDocs?.[activeIdx] : undefined;
+  const fdoc = s.documentation?.split(/\n{2,}/)[0];
+  sig.innerHTML = (n > 1 ? `<div class="sig-nav"><button type="button" data-sig="-1" aria-label="Previous overload (Alt+Up)">▲</button><span>${si + 1}/${n}</span><button type="button" data-sig="1" aria-label="Next overload (Alt+Down)">▼</button></div>` : '')
+    + `<div class="sig-body"><div class="sig-label">${html}</div>`
+    + (pdoc || fdoc ? `<div class="sig-docs">${pdoc ? `<div class="sig-pdoc">${md(pdoc)}</div>` : ''}${fdoc ? `<div class="sig-fdoc">${md(fdoc)}</div>` : ''}</div>` : '')
+    + '</div>';
+  sig.classList.toggle('multi', n > 1);
+  linkApiNames(sig);
   sig.hidden = false;
+  placeSig();
 }
+let sigPick = { key: '', index: 0 };
+// Just above the cursor's line (below it near the top), like VS Code; never over the line being typed.
+function placeSig() {
+  const c = editor.cursorCoords(null, 'window');
+  const box = editor.getWrapperElement().getBoundingClientRect();
+  const w = sig.offsetWidth, h = sig.offsetHeight;
+  sig.style.left = `${Math.max(box.left + 4, Math.min(c.left - 24, window.innerWidth - w - 8))}px`;
+  sig.style.top = `${c.top - h - 4 >= box.top ? c.top - h - 4 : c.bottom + 4}px`;
+}
+sig.addEventListener('mousedown', (e) => { if (!(e.target as HTMLElement).closest('[data-api]')) e.preventDefault(); }); // keep the editor's focus
+wireApiLinkClicks(sig, openReferenceAt);
+sig.addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLElement>('[data-sig]');
+  if (b) { sigPick.index += Number(b.dataset.sig); showSignature(); }
+});
+editor.addKeyMap({
+  'Alt-Up': () => { if (sig.hidden || !sig.classList.contains('multi')) return CodeMirror.Pass; sigPick.index--; showSignature(); },
+  'Alt-Down': () => { if (sig.hidden || !sig.classList.contains('multi')) return CodeMirror.Pass; sigPick.index++; showSignature(); },
+  Esc: () => { if (sig.hidden) return CodeMirror.Pass; sig.hidden = true; },
+});
+editor.on('blur', () => (sig.hidden = true));
+editor.on('scroll', () => { if (!sig.hidden) placeSig(); });
 
 // ---------------------------------------------------------------------------
 // Problems
@@ -701,7 +877,7 @@ function renderProblems(text: string) {
   const simple = mode === 'simple';
   const rank = { error: 0, warning: 1, info: 2, hint: 3 } as Record<string, number>;
   // Errors first (they stop Nucleus), then in line order.
-  const list = (simple ? current.filter((d) => d.severity === 'error' || d.severity === 'warning') : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter)))
+  const list = (simple ? current.filter(inProblemList) : current.filter((d) => (filter === 'all' ? d.severity !== 'hint' : d.severity === filter)))
     .slice()
     .sort((a, b) => rank[a.severity] - rank[b.severity] || a.start - b.start);
   shownProblems = list;
@@ -726,7 +902,7 @@ function renderProblems(text: string) {
   if (!list.length) {
     // Nucli: dozing while there's no code, pleased when there's nothing to fix.
     if (!editor.getValue().trim()) {
-      el.innerHTML = `<li class="empty masc-empty">${mascot('n-sleep', { size: 72, zoom: 1.2 })}<span><strong>Waiting for code.</strong> Type or paste a handler, or <button class="link" type="button" id="go-open">open one</button> (Ctrl+K).</span></li>`;
+      el.innerHTML = `<li class="empty masc-empty">${mascot('n-sleep', { size: 72, zoom: 1.2 })}<span><strong>Waiting for code.</strong> Type or paste a handler, or <button class="link" type="button" id="go-open">open one</button> (Ctrl+P).</span></li>`;
       el.querySelector('#go-open')?.addEventListener('click', () => showOpen());
       return;
     }
@@ -763,7 +939,7 @@ function renderProblems(text: string) {
           <span class="row-fix">${ordered[0] ? fixBtn(ordered[0], true) : ''}</span>
           <button class="ptoggle" type="button" aria-expanded="${open}" aria-controls="${bodyId}" aria-label="More about line ${line}: ${esc(plain.title)}"></button></div>
         <div class="body" id="${bodyId}"${open ? '' : ' hidden'}><p class="plain-why">${esc(plain.why)}</p>
-        <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${extra}</div>
+        <div class="meta">${ordered.slice(1).map((o) => fixBtn(o, false)).join('')}<button class="link" type="button" data-jump="${d.start}">Show me</button>${RULE_DOCS[d.rule] ? `<a class="link" href="${esc(ruleHref(d.rule))}" target="_blank" rel="noopener">About this check</a>` : ''}${extra}</div>
         <details class="tech"${density === 'detailed' ? ' open' : ''}><summary>Technical details</summary>${md(d.message).replace(/^<p>|<\/p>$/g, '')}</details></div></div></li>`;
     })
     .join('');
@@ -950,6 +1126,28 @@ function jumpTo(offset: number) {
 }
 
 /** F8 / Shift+F8: move through the problems shown in the list. */
+function renameSymbol(justFind = false) {
+  const at = editor.getCursor();
+  const n = selectReferences(editor);
+  if (!n) codeNote(editor, at.line, 'Not a variable or function of this handler. (Nucleus\'s own names can\'t be renamed.)', { mood: 'info' });
+  else codeNote(editor, at.line, justFind ? `${n} use${n === 1 ? '' : 's'}, all selected.` : `${n} use${n === 1 ? '' : 's'} selected: type the new name, Esc when done.`, { mood: 'info' });
+  editor.focus();
+}
+
+/** F12: the handler's own function or variable, `Game.X` where it's set, `Context.Options["key"]` its AddOption. */
+function goToDefinition() {
+  const text = editor.getValue();
+  const at = editor.getCursor();
+  const d = definitionAt(text, editor.indexFromPos(at));
+  if (!d) {
+    codeNote(editor, at.line, 'Nothing in this handler defines this. For Nucleus\'s own names, hover for the docs.', { mood: 'info' });
+    return;
+  }
+  editor.setSelection(editor.posFromIndex(d.start), editor.posFromIndex(d.end));
+  editor.scrollIntoView({ from: editor.posFromIndex(d.start), to: editor.posFromIndex(d.end) }, 120);
+  editor.focus();
+}
+
 function stepProblem(dir: 1 | -1) {
   if (!shownProblems.length) {
     codeNote(editor, editor.getCursor().line, 'No problems to go to.', { mood: 'info' });
@@ -980,82 +1178,22 @@ function setFixCount(n: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Simulate
+// Try it and Test all (tryit-ui.ts)
 
-// Players to try: 1 up to the handler's Game.MaxPlayers (at least 4, at most Nucleus' 32).
-function syncPlayerChoices() {
-  const sel = $('#sim-players') as HTMLSelectElement;
-  const m = editor.getValue().match(/^\s*Game\.MaxPlayers\s*=\s*(\d+)/m);
-  const max = Math.min(32, Math.max(4, m ? Number(m[1]) : 4, Number(sel.value) || 0));
-  if (sel.options.length === max) return;
-  const v = sel.value;
-  sel.replaceChildren(...Array.from({ length: max }, (_, i) => new Option(String(i + 1), String(i + 1))));
-  sel.value = Number(v) <= max ? v : String(max);
-}
-/** Try it's choices: players, monitor, keyboard (shared with the debugger). */
-function simOptions() {
-  syncPlayerChoices();
-  const players = Number(($('#sim-players') as HTMLSelectElement).value);
-  const [width, height] = ($('#sim-res') as HTMLSelectElement).value.split('x').map(Number);
-  const keyboardPlayer = Number(($('#sim-kb') as HTMLSelectElement).value);
-  return { players, width, height, keyboardPlayer, plugins: simPlugins() };
-}
-function runSim() {
-  if (!$('#panel-simulate').hidden) use('try-it');
-  const o = simOptions();
-  const kb = o.keyboardPlayer;
-  const r = simulate(editor.getValue(), o);
-  const out: string[] = [];
-  const simple = mode === 'simple';
-  // Test all needs a handler that loads: until then the banner below says what to fix.
-  const all = $('#sim-all') as HTMLButtonElement;
-  all.disabled = !r.loaded;
-  all.title = r.loaded ? 'Every player count, input setup and monitor size' : 'Fix the problems first: the handler has to load before it can be tried';
-  if (!r.loaded) {
-    out.push(
-      `<div class="banner error masc-banner">${mascot('n-bad', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong> Fix the problems first.${r.loadError ? `<details class="small"><summary>Technical details</summary><div class="mono">${esc(r.loadError)}</div></details>` : ''}<div class="banner-actions">${($('#fix-all') as HTMLButtonElement).hidden ? '' : `<button class="btn primary" type="button" id="sim-fix">${esc(($('#fix-all') as HTMLButtonElement).textContent ?? 'Fix problems')}</button>`}<button class="btn" type="button" id="sim-check">Show the problems</button></div></div>`,
-    );
-  } else {
-    // Nucli, pleased when every player starts; worried when the session ends.
-    out.push(`<div class="banner ${r.sessionEnded ? 'error' : 'ok'} masc-banner">${mascot(r.sessionEnded ? 'n-bad' : 'n-ok', { size: 44 })}<div><strong>${esc(sessionSummary(r))}</strong></div></div>`);
-    if (r.inputNote) out.push(`<p class="note">${esc(r.inputNote)}</p>`);
-  }
-  if (r.ignored.length) {
-    const uniq = groupIgnored(r.ignored);
-    out.push(`<h3>Settings Nucleus skips <span class="count">${uniq.length}</span></h3><ul class="mono-list warn">${uniq.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>`);
-  }
-  // A package: what a Hub install puts where (pkgcheck.ts installMap).
-  if (packageFiles.length) {
-    const map = installMap(editor.getValue(), packageFiles);
-    out.push(`<details class="install"${simple ? '' : ' open'}><summary>What Nucleus installs <span class="count">${map.length}</span></summary><div class="install-map">${map.map((m) => `<span>${fileIcon(m.name)}${esc(m.name)}</span><span aria-hidden="true">${m.to ? '→' : '✕'}</span><span class="im-to${m.to ? '' : ' im-drop'}">${m.to ? esc(m.to) : 'dropped (top level)'}</span>`).join('')}</div></details>`);
-  }
-  for (const p of r.players) {
-    const ownKb = p.index === kb || kb === -2; // -2: each player their own keyboard and mouse
-    const role = ownKb ? 'keyboard & mouse' : 'controller';
-    out.push(`<section class="player p${(p.index % 8) + 1}"><h3>Player ${p.index + 1} <span class="chip ${ownKb ? 'info' : ''}">${role}</span></h3>
-      ${p.error ? `<div class="banner error">Setting up this player fails here, and Nucleus ends the session.<div class="mono small">${esc(p.error)}</div></div>` : ''}
-      ${p.note ? `<p class="muted">${esc(p.note)}</p>` : ''}
-      <dl><dt>Window</dt><dd>${esc(p.window)}</dd>
-      <dt>Starts the game with</dt><dd class="mono">${p.startArguments ? esc(p.startArguments) : '<span class="muted">(nothing extra)</span>'}</dd></dl>
-      ${p.effects.length ? `<dl><dt>Changes before the game starts</dt><dd><ul class="effects">${p.effects.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></dd></dl>` : '<p class="muted">Changes no files before the game starts.</p>'}
-      ${!simple ? (p.calls.length ? `<details ${r.players.length <= 2 ? 'open' : ''}><summary>${p.calls.length} recorded call${p.calls.length > 1 ? 's' : ''}</summary><ul class="mono-list hl cm-s-default">${p.calls.map((c) => `<li>${hlCode(c)}</li>`).join('')}</ul></details>` : '<p class="muted">No Context or System calls.</p>') : ''}
-    </section>`);
-  }
-  for (const c of r.callbacks) {
-    out.push(`<section class="player"><h3>${esc(c.name)}</h3>${c.error ? `<div class="banner error">${esc(c.note ?? '')}<div class="mono small">${esc(c.error)}</div></div>` : ''}
-      ${simple ? '' : `<details><summary>${c.calls.length} recorded call${c.calls.length === 1 ? '' : 's'}</summary><ul class="mono-list hl cm-s-default">${c.calls.map((x) => `<li>${hlCode(x)}</li>`).join('')}</ul></details>`}</section>`);
-  }
-  if (r.options.length) {
-    out.push(`<details><summary>${r.options.length} option${r.options.length > 1 ? 's' : ''} set (different from Nucleus' defaults)</summary><table class="opts"><tbody>${r.options.map((o) => `<tr><td class="mono">${esc(o.path)}</td><td class="mono"><code class="hl cm-s-default">${hlCode(o.value.length > 120 ? o.value.slice(0, 117) + '…' : o.value)}</code></td></tr>`).join('')}</tbody></table></details>`);
-  }
-  $('#sim-out').innerHTML = out.join('');
-  $('#sim-out').querySelector('#sim-check')?.addEventListener('click', () => selectTab('problems'));
-  $('#sim-out').querySelector('#sim-fix')?.addEventListener('click', () => {
-    selectTab('problems');
-    ($('#fix-all') as HTMLButtonElement).click();
-  });
-}
-$('#sim-run').addEventListener('click', runSim);
+const tryIt = initTryIt({
+  editor,
+  plugins: simPlugins,
+  packageFiles: () => packageFiles,
+  simple: () => mode === 'simple',
+  selectTab,
+  used: use,
+  tried: (t) => {
+    doc.tried = { of: versionOf(withoutCredit(editor.getValue())), ...t };
+    saveDocMeta();
+  },
+});
+const runSim = tryIt.run;
+const simOptions = tryIt.options;
 
 // Debug: step through the run (debugui.ts), in Try it.
 const debug = mountDebugger({
@@ -1073,169 +1211,9 @@ const debug = mountDebugger({
 $('#sim-debug').addEventListener('click', () => debug.start());
 
 // ---------------------------------------------------------------------------
-// Test all combinations: every player count (up to Game.MaxPlayers, at most 8), input setup and
-// monitor size, a few runs at a time so the page stays responsive; one cell per players × input.
+// Docs (docs-ui.ts)
 
-// The combinations and what counts as failing come from the core, shared with the VS Code panel.
-const MX_RES = MATRIX_RESOLUTIONS;
-let mxRun = 0;
-function testAll() {
-  use('test-all');
-  document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: 'running tests' }));
-  const run = ++mxRun;
-  const code = editor.getValue();
-  const box = $('#sim-matrix');
-  box.hidden = false;
-  const first = simulate(code, { players: 1, width: 1920, height: 1080, keyboardPlayer: -1, plugins: simPlugins() });
-  if (!first.loaded) {
-    box.innerHTML = `<div class="mx-head"><strong>Can't test combinations yet</strong><span class="muted">Nucleus can't load this handler. Fix the problems first.</span></div>`;
-    return;
-  }
-  const { max, modes, jobs } = planMatrix(first)!;
-  type Cell = { ok: number; fail: { res: string; why: string }[] };
-  const cells = new Map<string, Cell>();
-  let done = 0;
-  const t0 = performance.now();
-  const draw = (finished: boolean) => {
-    const failed = [...cells.values()].reduce((n, c) => n + c.fail.length, 0);
-    const rows = Array.from({ length: max }, (_, i) => i + 1)
-      .map((p) => `<tr><th>${p} player${p === 1 ? '' : 's'}</th>${modes
-        .map((m) => {
-          if (!m.offered) return `<td><button class="na" type="button" disabled title="The handler doesn't set Game.SupportsMultipleKeyboardsAndMice = true">not offered</button></td>`;
-          const c = cells.get(`${p}|${m.kb}`);
-          if (!c) return '<td><button type="button" disabled>…</button></td>';
-          return `<td><button class="${c.fail.length ? 'fail' : 'ok'}" type="button" data-p="${p}" data-kb="${m.kb}" data-res="${c.fail[0]?.res ?? '1920x1080'}">${c.fail.length ? `${c.fail.length} of ${MX_RES.length} screens` : 'all screens'}</button></td>`;
-        })
-        .join('')}</tr>`)
-      .join('');
-    const fails = [...cells.entries()].flatMap(([k, c]) => c.fail.map((f) => ({ k, ...f })));
-    // Nucli runs the relay while it tests, then shows how it went.
-    const nuc = mascot(finished ? (failed ? 'n-bad' : 'n-ok') : 'n-ring', { size: 44, className: 'mx-masc', busy: !finished });
-    box.innerHTML = `<div class="mx-head">${nuc}<strong>${finished ? (failed ? `${failed} of ${jobs.length} combinations fail` : `All ${jobs.length} combinations work`) : `Testing ${done} of ${jobs.length}…`}</strong><span class="muted">${max} player${max === 1 ? '' : 's'} max · ${MX_RES.map(([w, h]) => `${w}×${h}`).join(', ')}${finished ? ` · ${Math.round(performance.now() - t0)} ms` : ''}</span>${finished ? '' : '<button class="btn" type="button" id="mx-stop">Stop</button>'}<button class="btn" type="button" id="mx-close" aria-label="Close">×</button></div>
-      ${finished ? '' : `<div class="mx-bar" role="progressbar" aria-label="Combinations tested" aria-valuemin="0" aria-valuemax="${jobs.length}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, jobs.length)) * 100)}%"></i></div>`}
-      <div class="mx-wrap"><table><thead><tr><th></th>${modes.map((m) => `<th>${m.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
-      ${fails.length ? `<ul class="mx-fails">${fails.slice(0, 8).map((f) => { const [p, kb] = f.k.split('|'); return `<li>${p} player${p === '1' ? '' : 's'}, ${modes.find((m) => String(m.kb) === kb)!.label.toLowerCase()}, ${f.res.replace('x', '×')}: ${esc(f.why)}</li>`; }).join('')}${fails.length > 8 ? `<li>…and ${fails.length - 8} more</li>` : ''}</ul>` : ''}
-      <p class="muted small" style="margin:6px 0 0">Pick a cell to see that run below.</p>`;
-    document.documentElement.classList.toggle('busy', !finished); // the logo beats while it runs
-    box.querySelector('#mx-stop')?.addEventListener('click', () => (mxRun++, draw(true)));
-    box.querySelector('#mx-close')?.addEventListener('click', () => ((mxRun++, (box.hidden = true), document.documentElement.classList.remove('busy'))));
-    box.querySelectorAll<HTMLButtonElement>('button[data-p]').forEach((b) =>
-      b.addEventListener('click', () => {
-        const players = $('#sim-players') as HTMLSelectElement;
-        if (![...players.options].some((o) => o.value === b.dataset.p)) players.append(new Option(b.dataset.p!, b.dataset.p!));
-        players.value = b.dataset.p!;
-        ($('#sim-kb') as HTMLSelectElement).value = b.dataset.kb!;
-        const res = $('#sim-res') as HTMLSelectElement;
-        if (![...res.options].some((o) => o.value === b.dataset.res)) res.append(new Option(b.dataset.res!.replace('x', '×'), b.dataset.res!));
-        res.value = b.dataset.res!;
-        runSim();
-        $('#sim-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }),
-    );
-  };
-  const step = () => {
-    if (run !== mxRun) return;
-    const until = performance.now() + 12; // a few runs per frame
-    while (done < jobs.length && performance.now() < until) {
-      const j = jobs[done++];
-      const key = `${j.players}|${j.kb}`;
-      const c = cells.get(key) ?? { ok: 0, fail: [] };
-      const why = failureOf(simulate(code, { ...jobOptions(j), plugins: simPlugins() }));
-      if (why) c.fail.push({ res: `${j.width}x${j.height}`, why });
-      else c.ok++;
-      cells.set(key, c);
-    }
-    draw(done >= jobs.length);
-    if (done < jobs.length) setTimeout(step, 0);
-  };
-  draw(false);
-  setTimeout(step, 0);
-}
-$('#sim-all').addEventListener('click', testAll);
-
-// ---------------------------------------------------------------------------
-// API search
-
-// Reference with nothing typed: what's in it, so it's clear what can be found there.
-const API_GROUPS: { key: string; title: string; doc: string; match: (path: string) => boolean }[] = [
-  // The docs Claude wrote that no person has checked yet: handler authors can confirm or correct them (👍/👎, an issue).
-  { key: 'AI', title: 'AI-written: please check', doc: 'Docs written by AI from the Nucleus source, which no person has checked yet. If you know how one really works, tell us with 👍 or 👎 (and "Tell us what\'s wrong").', match: (p) => unchecked().has(p) },
-  { key: 'Game', title: 'Game', doc: 'The handler\'s options: the game, its executable, players, mutexes, files and callbacks.', match: (p) => /^Game\.[^.]+$/.test(p) },
-  { key: 'Game.Hook', title: 'Game.Hook', doc: 'Focus and input hooks injected into each instance.', match: (p) => p.startsWith('Game.Hook.') },
-  { key: 'Game.ProtoInput', title: 'Game.ProtoInput', doc: 'Proto Input settings for the whole session.', match: (p) => p.startsWith('Game.ProtoInput.') },
-  { key: 'Context', title: 'Context', doc: 'One player\'s instance, inside Game.Play: launch arguments, folders and files to edit.', match: (p) => p.startsWith('Context.') },
-  { key: 'Player', title: 'Player', doc: 'The player Game.Play runs for (also PlayerList[i]): screen, controller, nickname.', match: (p) => p.startsWith('Player.') },
-  { key: 'ProtoInput', title: 'ProtoInput', doc: 'Proto Input calls at runtime, inside Game.Play and other callbacks.', match: (p) => p.startsWith('ProtoInput.') },
-  { key: 'Hub', title: 'Hub (written by the Hub)', doc: 'Lines hub.splitscreen.me writes into a handler when it is uploaded. You don\'t add or change them.', match: (p) => p.startsWith('Hub.') },
-  { key: 'System', title: '.NET (System.*)', doc: 'Files, folders, paths and the environment, through .NET.', match: (p) => p.startsWith('System.') },
-];
-let uncheckedCache: Set<string> | undefined;
-const unchecked = () => (uncheckedCache ??= new Set(allEntries(true).filter((e) => e.member.docBy === 'claude' && !e.member.docCheckedBy).map((e) => e.path)));
-const typeOf = (e: Entry) => (e.member.kind === 'method' ? 'fn' : ((e.member as { type?: string }).type ?? ''));
-function renderApiHome(el: HTMLElement) {
-  const all = allEntries(true);
-  const usage = USAGE.counts as Record<string, number>;
-  const top = Object.entries(usage)
-    .filter(([p]) => !/^Game\.(GUID|GameName|ExecutableName|Play|Hub)$/.test(p) && all.some((e) => e.path === p && e.member.kind !== 'object'))
-    .slice(0, 14);
-  const enums = Object.keys(api.enums).sort();
-  el.innerHTML = `<div class="api-home">
-    <p class="muted">Every option, Context member, enum and .NET call a handler can use, with what Nucleus does with it. Type above, or start here.</p>
-    ${unchecked().size ? `<button type="button" class="api-ai" data-group="AI"><span class="ai-spark" aria-hidden="true"></span><span><span class="t">Help check AI-written docs <span class="count">${unchecked().size}</span></span><span class="d">AI wrote these from the Nucleus source; no person has checked them yet. Know how one really works? Tell us with 👍 or 👎.</span></span></button>` : ''}
-    <h3 class="api-h">Browse</h3>
-    <div class="api-groups">${API_GROUPS.filter((g) => g.key !== 'AI').map((g) => `<button type="button" class="api-group" data-group="${g.key}"><span class="t">${esc(g.title)} <span class="count">${all.filter((e) => g.match(e.path)).length}</span></span><span class="s">${esc(g.doc)}</span></button>`).join('')}</div>
-    <h3 class="api-h">Most used in Hub handlers</h3>
-    <div class="api-chips">${top.map(([p, n]) => `<button type="button" class="api-chip" data-q="${esc(p)}" title="In ${n} of ${USAGE.handlers} Hub handlers">${esc(p)}</button>`).join('')}</div>
-    <h3 class="api-h">Nucleus values (enums)</h3>
-    <div class="api-chips">${enums.map((n) => `<button type="button" class="api-chip" data-q="Nucleus.${esc(n)}">Nucleus.${esc(n)}</button>`).join('')}</div>
-    <h3 class="api-h">Try a search</h3>
-    <p class="muted">${['mutex', 'window title', 'save file', 'keyboard', 'steam'].map((q) => `<button class="link" data-q="${q}">${q}</button>`).join(' · ')}</p>
-  </div>`;
-  el.querySelectorAll<HTMLButtonElement>('[data-group]').forEach((b) => b.addEventListener('click', () => renderApiGroup(el, b.dataset.group!)));
-  wireApiLinks(el);
-}
-/** One object's members, as a compact list: click one for its docs. */
-function renderApiGroup(el: HTMLElement, key: string) {
-  const g = API_GROUPS.find((x) => x.key === key)!;
-  const list = allEntries(true).filter((e) => g.match(e.path)).sort((a, b) => a.path.localeCompare(b.path));
-  el.innerHTML = `<div class="api-home"><p class="api-crumbs"><button type="button" class="link" data-home>Reference</button> › <strong>${esc(g.title)}</strong> <span class="muted">· ${list.length}</span></p><p class="muted">${esc(g.doc)}</p>
-    <ul class="api-list">${list.map((e) => `<li><button type="button" data-q="${esc(e.path)}"><span class="n">${esc(e.path)}</span><span class="ty">${esc(typeOf(e))}</span><span class="d">${e.member.docBy === 'claude' ? '<span class="ai-spark" title="AI-written, not from the official docs" role="img" aria-label="AI-written"></span> ' : ''}${esc((e.member.doc || '').split('\n')[0].replace(/[`*\\]/g, ''))}</span></button></li>`).join('')}</ul></div>`;
-  el.querySelector('[data-home]')!.addEventListener('click', () => renderApiHome(el));
-  wireApiLinks(el);
-  el.scrollTop = 0;
-}
-function wireApiLinks(el: HTMLElement) {
-  el.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) =>
-    b.addEventListener('click', () => {
-      ($('#api-q') as HTMLInputElement).value = b.dataset.q!;
-      renderApi(b.dataset.q!);
-    }),
-  );
-}
-
-function renderApi(q: string) {
-  if (q.trim()) use('reference-search');
-  const el = $('#api-results');
-  if (!q.trim()) return renderApiHome(el);
-  {
-    const exact = lookup(q);
-    let entries: Entry[] = exact.kind === 'entries' ? exact.entries : [];
-    for (const e of search(q, 30)) if (!entries.some((x) => x.path === e.path)) entries.push(e);
-    let head = '';
-    if (exact.kind === 'enum') head = `<article class="api"><h3>enum Nucleus.${esc(exact.name)}</h3>${md(exact.doc ?? '')}<p class="mono">${Object.entries(exact.values).map(([k, v]) => `${esc(k)} = ${v}`).join(' · ')}</p></article>`;
-    if (exact.kind === 'class') head = `<article class="api"><h3>new Nucleus.${esc(exact.name)}(${exact.params.join(', ')})</h3>${md(exact.doc)}</article>`;
-    if (exact.kind === 'none' && exact.didYouMean) head = `<p class="muted">"${esc(q)}" isn't part of the handler API. Did you mean <button class="link" data-q="${esc(exact.didYouMean)}">${esc(exact.didYouMean)}</button>?</p>`;
-    entries = entries.slice(0, 30);
-    el.innerHTML =
-      head +
-      (entries.length || head
-        ? entries.map((e) => `<article class="api"><h3>${esc(e.path)}${e.member.deprecated ? ' <span class="chip hint">deprecated</span>' : ''}${e.member.required ? ' <span class="chip error">required</span>' : ''}${e.owner.startsWith('Hub') ? ' <span class="chip info">written by the Hub</span>' : ''}</h3>${memberCard(e.owner, e.name, e.member)}</article>`).join('')
-        : `<p class="empty masc-empty">${mascot('n-calc', { size: 64, zoom: 1.2 })}<span>Nothing matches "${esc(q)}".</span></p>`);
-  }
-  wireApiLinks(el);
-}
-$('#api-q').addEventListener('input', (e) => renderApi((e.target as HTMLInputElement).value));
-renderApi('');
+const docs = initDocs({ selectTab, handlerHash: () => doc.hash, used: use, pageUrl: (p) => siteUrl(`docs/${p}/`) });
 
 // ---------------------------------------------------------------------------
 // Probes: real Jint results vs the linter
@@ -1269,7 +1247,7 @@ function renderProbes() {
   $('#probes').innerHTML = `<div class="probe-intro">
       <p><strong>What this is.</strong> Nucleus Co-op runs handlers with an old JavaScript engine, Jint 2.11.58. It understands less than a modern browser, and some things work differently there (<code>let</code> and <code>const</code>, arrow functions, how .NET calls like <code>Path.Combine</code> take their arguments). Each probe is a tiny handler that tests one of those things, and we ran every one in that real engine, set up the way Nucleus sets it up.</p>
       <p><strong>Why it matters.</strong> Check and Try it are built on these results. When Check says "Nucleus can't load this", or Try it shows what a line does, a probe here is the proof. Right now Check agrees with the real engine on <strong>${agree} of ${PROBES.length}</strong> probes, and Try it on <strong>${simAgree} of ${PROBES.length}</strong>.</p>
-      <p><strong>What you can use it for.</strong> Not sure whether Nucleus accepts some JavaScript? Find the probe for it below (or type its name in Open, Ctrl+K), open it to see the exact code, and the Jint column says what the real engine did. Missing one you need? <button class="link" type="button" id="probe-ask">Ask for a probe</button>.</p>
+      <p><strong>What you can use it for.</strong> Not sure whether Nucleus accepts some JavaScript? Find the probe for it below (or type its name in Open, Ctrl+P), open it to see the exact code, and the Jint column says what the real engine did. Missing one you need? <button class="link" type="button" id="probe-ask">Ask for a probe</button>.</p>
     </div>
     <details class="probe-cols"><summary>What the columns mean</summary><p class="small"><strong>Jint 2.11.58</strong>: what the real engine did (runs, loads, doesn't load, or Game.Play throws). <strong>Linter</strong>: what Check finds in it, live in this page. <strong>Agree</strong>: ✓ when Check reports an error exactly when the engine fails. <strong>Try it</strong>: what Try it predicts, with ✓ when it matches the engine.</p></details>
     <div class="table-wrap"><table class="probes"><thead><tr><th>Probe</th><th>Jint 2.11.58</th><th>Linter</th><th>Agree</th><th>Try it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
@@ -1286,15 +1264,25 @@ $('#count-probes').textContent = String(PROBES.length); // becomes "agree/total"
 // ---------------------------------------------------------------------------
 // Documents: what's in the editor, where it came from, shareable #links
 
-interface DocMeta { name: string; kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new'; hash?: string; hubIndex?: number; /** The Hub version's GUID, for guid-changed. */ published?: { version?: number; guid?: string } }
+interface DocMeta {
+  name: string;
+  kind: 'draft' | 'example' | 'template' | 'hub' | 'probe' | 'new';
+  hash?: string;
+  hubIndex?: number;
+  /** The Hub version's GUID, for guid-changed. */
+  published?: { version?: number; guid?: string };
+  /** For the credit lines (credit.ts): Fix with AI changes kept, and the last Try it (of which version). */
+  ai?: { direct: number; reviewed: number };
+  tried?: { of: string; players: number; loaded: boolean };
+}
 const META_KEY = 'nucleus-workbench-doc';
 let doc: DocMeta = { name: 'Untitled handler', kind: 'draft' };
 let loadedText = editor.getValue();
 try {
   const saved = JSON.parse(localStorage.getItem(META_KEY) || 'null');
   if (saved?.name) doc = saved;
-  else if (initial === BUGGY) doc = { name: 'Handler with common mistakes', kind: 'example', hash: 'example-mistakes' };
-  loadedText = localStorage.getItem(META_KEY + '-base') ?? (initial === BUGGY ? BUGGY : editor.getValue());
+  else if (initial === STARTER) doc = { name: 'My Game.js', kind: 'new' };
+  loadedText = localStorage.getItem(META_KEY + '-base') ?? editor.getValue();
 } catch {
   /* storage unavailable */
 }
@@ -1345,6 +1333,9 @@ async function copyLink(trigger?: HTMLElement | null) {
     await navigator.clipboard.writeText(url);
     confirmOn(trigger, 'Link copied ✓', `Link copied. It opens ${what} for anyone.`);
     if (long) notice(`The link copied, but it's long.${long}`, { kind: 'warning' });
+    // A link carries the code only: say so when the handler has package files, so nobody expects them.
+    const n = packageFiles.length;
+    if (n && !selection) notice(`The link has the code only: its ${n} package file${n === 1 ? '' : 's'} ${n === 1 ? "isn't" : "aren't"} in it. To share those too, Save ▾ › .zip and send the file.`, { kind: 'info' });
   } catch {
     notice(`Couldn't copy. The link is in the address bar.${long}`, { kind: 'warning' });
     history.replaceState(null, '', '#' + id);
@@ -1356,6 +1347,36 @@ function setPackageFiles(files: PackageFile[]) {
   renderDocHead();
   pkgUI?.render(); // the Files panel and its count, if it's open
 }
+/** A handler saved from here starts with the credit lines: folded away when it's opened again. */
+function foldCredit() {
+  if (hasCredit(editor.getValue())) editor.foldCode(CodeMirror.Pos(0, 0), { rangeFinder: lineCommentFold, widget: '⋯ made with the workbench' });
+}
+const saveDocMeta = () => { try { localStorage.setItem(META_KEY, JSON.stringify(doc)); } catch { /* not kept */ } };
+/** A short fingerprint of a version (credit lines: was Try it run on this one?). */
+function versionOf(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return `${text.length}:${(h >>> 0).toString(36)}`;
+}
+const CREDIT_OFF = 'nucleus-workbench-credit-off';
+const creditOn = () => { try { return localStorage.getItem(CREDIT_OFF) !== '1'; } catch { return true; } };
+/** The handler as it leaves the workbench: with the credit lines when it was made or changed here (credit.ts). */
+function exportText(): string {
+  const text = editor.getValue();
+  const base = withoutCredit(text);
+  const c = counts(base, lintCtx());
+  const tried = doc.tried && doc.tried.of === versionOf(base) ? { players: doc.tried.players, loaded: doc.tried.loaded } : undefined;
+  const out = withCredit(text, { errors: c.errors, warnings: c.warnings, tried, ai: doc.ai ?? { direct: 0, reviewed: 0 } }, { created: doc.kind === 'new', edited: base !== withoutCredit(loadedText), on: creditOn() });
+  if (out !== text) {
+    let told = false;
+    try { told = localStorage.getItem('nucleus-workbench-credit-told') === '1'; localStorage.setItem('nucleus-workbench-credit-told', '1'); } catch { /* ignore */ }
+    // The switch is an Advanced-mode setting: outside it, say so and open the tab with Advanced mode.
+    const adv = mode === 'dev';
+    if (!told) notice(`Added a few comment lines at the top: made with the workbench (with a link), and what was checked, simulated and done with AI here. ${adv ? 'Turn this off in Settings › Feedback and privacy.' : 'In Advanced mode, Settings › Feedback and privacy can turn this off.'}`, { kind: 'info', action: { label: 'Settings', run: () => settings.open(adv ? 'feedback' : 'advanced') } });
+  }
+  return out;
+}
+
 function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) {
   // One handler per tab: an example, Hub handler or link that's already open switches to its tab; anything else opens
   // in a new tab, unless this one is empty (nothing typed in a new handler).
@@ -1372,11 +1393,13 @@ function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) 
   }
   clearNotice(); // it was about the handler before
   document.documentElement.classList.remove('busy'); // a Test all of the last handler no longer runs
+  setNoneOpen(false);
   packageFiles = [];
   storeFiles([]);
   pkgUI?.reset();
   editor.setValue(src);
   editor.clearHistory();
+  foldCredit();
   loadedText = src;
   doc = meta;
   try {
@@ -1388,7 +1411,7 @@ function loadSource(src: string, meta: DocMeta, opts: { fresh?: boolean } = {}) 
   if (meta.hash) history.replaceState(null, '', '#' + meta.hash);
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   renderDocHead();
-  aiBox.hidden = true;
+  $('#ai-box').hidden = true; // the fix box (aifix-ui.ts) shows an older version
   selectTab('problems');
   editor.focus();
   if (tabsReady) (saveTabs(), renderTabs());
@@ -1406,6 +1429,43 @@ let tabs: Tab[] = [];
 let activeTab = '';
 let tabsReady = false;
 let lastClosed: { tab: Tab; index: number } | null = null;
+// Every handler closed: the tab strip is empty and the work area says so, with ways on (New, Open, Learn, Undo).
+// Underneath there is still one blank tab, which the next handler opened fills (loadSource reuses an empty tab).
+const NONE_KEY = 'nucleus-workbench-none-open';
+let noneOpen = false;
+// Getting started shows the home page over open handlers too (they stay in their tabs): Esc, a tab or any of its
+// buttons goes back.
+let homeOver = false;
+function showHome(v: boolean) {
+  if (homeOver === v || (v && noneOpen)) return;
+  homeOver = v;
+  document.documentElement.classList.toggle('no-handler', v || noneOpen);
+  const box = document.getElementById('no-handler')!;
+  box.hidden = !(v || noneOpen);
+  box.querySelector<HTMLElement>('[data-nh=back]')!.hidden = !v;
+  $('#nh-title').textContent = v ? 'Getting started' : 'No handler open';
+  if (v) box.querySelector<HTMLElement>('[data-nh=new]')?.focus();
+  else editor.refresh();
+}
+function setNoneOpen(v: boolean) {
+  if (noneOpen === v) return;
+  if (homeOver) showHome(false);
+  noneOpen = v;
+  document.documentElement.classList.toggle('no-handler', v);
+  $('#nh-title').textContent = firstVisit ? 'Welcome to the workbench' : 'No handler open';
+  try { if (v) localStorage.setItem(NONE_KEY, '1'); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
+  const box = document.getElementById('no-handler');
+  if (box) {
+    box.hidden = !v;
+    const undo = box.querySelector<HTMLElement>('[data-nh=undo]');
+    if (undo) { undo.hidden = !lastClosed; undo.textContent = lastClosed ? `Reopen ${lastClosed.tab.meta.name}` : 'Reopen'; }
+    // The Open key as it is now (Settings › Keyboard can change it).
+    const kbd = box.querySelector<HTMLElement>('[data-nh=open] kbd');
+    if (kbd) kbd.textContent = labelOf('open');
+  }
+  if (tabsReady) renderTabs();
+  if (v) box?.querySelector<HTMLElement>('[data-nh=new]')?.focus();
+}
 const newTabId = () => Math.random().toString(36).slice(2, 9);
 const activeT = () => tabs.find((x) => x.id === activeTab)!;
 const countsOf = (list: Diagnostic[]) => ({ e: list.filter((d) => d.severity === 'error').length, w: list.filter((d) => d.severity === 'warning').length });
@@ -1443,7 +1503,7 @@ function switchTab(id: string) {
   if (doc.hash) history.replaceState(null, '', '#' + doc.hash);
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   clearNotice();
-  aiBox.hidden = true;
+  $('#ai-box').hidden = true; // the fix box (aifix-ui.ts) shows an older version
   (CodeMirror as any).signal(editor, 'change', editor, { origin: '+swap', from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 }, text: [''], removed: [''] });
   (editor as any).performLint();
   renderDocHead();
@@ -1454,13 +1514,17 @@ function switchTab(id: string) {
 }
 /** A new, empty tab (the caller fills it, e.g. loadSource). */
 function openTab() {
+  if (noneOpen) { setNoneOpen(false); return; }
   stashTab();
   const x: Tab = { id: newTabId(), meta: { name: 'Untitled handler', kind: 'new' }, base: '', text: '', files: [] };
   tabs.splice(tabs.findIndex((y) => y.id === activeTab) + 1, 0, x);
   switchTab(x.id);
 }
 function closeTab(id: string) {
-  if (tabs.length < 2) return;
+  if (noneOpen) return;
+  // The last handler: a blank tab takes its place underneath, and the work area shows that nothing is open.
+  const last = tabs.length < 2;
+  if (last) openTab();
   const i = tabs.findIndex((x) => x.id === id);
   if (id === activeTab) {
     stashTab();
@@ -1471,28 +1535,41 @@ function closeTab(id: string) {
   try { localStorage.removeItem(textKey(gone.id)); localStorage.removeItem(filesKey(gone.id)); } catch { /* ignore */ }
   saveTabs();
   renderTabs();
+  if (last) { setNoneOpen(true); return; }
   notice(`Closed ${gone.meta.name}.`, { kind: 'info', action: { label: 'Undo', run: reopenClosed } });
 }
 function reopenClosed() {
   if (!lastClosed) return;
   const { tab, index } = lastClosed;
   lastClosed = null;
+  // From "nothing open": the blank tab underneath goes.
+  const blank = noneOpen ? activeTab : null;
+  if (blank) setNoneOpen(false);
   tabs.splice(Math.min(index, tabs.length), 0, tab);
   try { localStorage.setItem(textKey(tab.id), tab.text); } catch { /* ignore */ }
   storeFiles(tab.files, filesKey(tab.id));
   switchTab(tab.id);
+  if (blank) {
+    tabs = tabs.filter((x) => x.id !== blank);
+    try { localStorage.removeItem(textKey(blank)); localStorage.removeItem(filesKey(blank)); } catch { /* ignore */ }
+    saveTabs();
+    renderTabs();
+  }
   clearNotice();
 }
 function renderTabs() {
   const live = countsOf(current);
   const allBtn = document.getElementById('tab-all');
-  if (allBtn) allBtn.hidden = tabs.length < 3;
+  if (allBtn) allBtn.hidden = tabs.length < 2; // the list of open handlers: there as soon as there's more than one
   requestAnimationFrame(() => document.querySelector(`#tab-${activeTab}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
   const dot = (c?: { e: number; w: number }) => (!c ? '' : c.e ? ' e' : c.w ? ' w' : ' ok');
   const state = (c?: { e: number; w: number }) => (!c ? '' : c.e ? `, ${c.e} error${c.e === 1 ? '' : 's'}` : c.w ? `, ${c.w} warning${c.w === 1 ? '' : 's'}` : ', ready for Nucleus');
-  $('#htabs').innerHTML = tabs.map((x) => {
+  $('#htabs').innerHTML = noneOpen ? '' : tabs.map((x) => {
     const on = x.id === activeTab, c = on ? live : x.counts, name = on ? doc.name : x.meta.name, files = on ? packageFiles.length : x.files.length;
-    return `<span class="htab-w${on ? ' on' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}${tabs.length > 1 ? '. Delete closes it' : ''}</span>${tabs.length > 1 ? `<span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span>` : ''}</button></span>`;
+    // Changed since it was opened (as VS Code shows it: a dot where the close button is, the × on hover).
+    const meta = on ? doc : x.meta;
+    const edited = meta.kind !== 'draft' && meta.kind !== 'new' && (on ? editor.getValue() !== loadedText : x.text !== x.base);
+    return `<span class="htab-w${on ? ' on' : ''}${edited ? ' edited' : ''}" role="presentation"><button type="button" class="htab" role="tab" id="tab-${x.id}" data-tab-id="${x.id}" aria-selected="${on}" tabindex="${on ? 0 : -1}" title="${esc(name)}${files ? ` (with ${files} other file${files === 1 ? '' : 's'})` : ''}"><span class="ht-dot${dot(c)}" aria-hidden="true"></span><span class="ht-name">${esc(name)}</span>${files ? '<span class="ht-pk" aria-hidden="true">pkg</span>' : ''}<span class="sr-only">${esc(state(c))}${edited ? ', edited' : ''}. Delete closes it</span>${edited ? '<span class="ht-ed" aria-hidden="true" title="Edited">●</span>' : ''}<span class="ht-x" data-close="${x.id}" aria-hidden="true" title="Close">×</span></button></span>`;
   }).join('');
 }
 function initTabs() {
@@ -1510,8 +1587,21 @@ function initTabs() {
   Object.assign(activeT(), { meta: doc, base: loadedText, files: packageFiles, cm: editor.getDoc() });
   tabsReady = true;
   saveTabs();
-  renderTabs();
+  // Nothing was open last time (and nothing is asked for now): keep it that way.
+  try { if ((firstVisit || localStorage.getItem(NONE_KEY)) && tabs.length === 1 && !editor.getValue().trim() && !INITIAL_HASH) setNoneOpen(true); else localStorage.removeItem(NONE_KEY); } catch { /* ignore */ }
+  document.getElementById('no-handler')?.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-nh]');
+    if (!b) return;
+    const what = b.dataset.nh;
+    showHome(false);
+    if (what === 'new') ($('#new-open') as HTMLButtonElement).click();
+    else if (what === 'open') showOpen();
+    else if (what === 'learn') openLearn();
+    else if (what === 'undo') reopenClosed();
+  });
   const strip = $('#htabs');
+  strip.addEventListener('click', () => showHome(false), true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && homeOver && !document.querySelector('dialog[open]')) { e.preventDefault(); showHome(false); editor.focus(); } });
   const all = document.createElement('button');
   all.type = 'button';
   all.id = 'tab-all';
@@ -1519,12 +1609,19 @@ function initTabs() {
   all.setAttribute('aria-haspopup', 'menu');
   all.setAttribute('aria-label', 'All open handlers');
   all.title = 'All open handlers';
-  all.textContent = '▾';
+  all.innerHTML = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   $('#tab-add').before(all);
+  renderTabs(); // after the ▾ exists, so it's shown or hidden from the start
   all.addEventListener('click', () => openMenu(all, 'Open handlers', tabs.map((x) => {
     const on = x.id === activeTab;
     return { label: on ? doc.name : x.meta.name, checked: on, run: () => switchTab(x.id) };
   })));
+  // No scroll bar on the tabs: a mouse wheel scrolls them sideways (trackpads already do).
+  strip.addEventListener('wheel', (e) => {
+    if (strip.scrollWidth <= strip.clientWidth || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+    strip.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
   strip.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     const close = t.closest<HTMLElement>('[data-close]');
@@ -1544,7 +1641,10 @@ function initTabs() {
     else if (e.key === 'Delete') (e.preventDefault(), closeTab(activeTab));
   });
   // The dot follows Check.
-  editor.on('change', () => { clearTimeout(tabDotTimer); tabDotTimer = window.setTimeout(() => (renderTabs(), saveTabs()), 800); });
+  editor.on('change', () => {
+    // The edited dot at once (as VS Code); the counts and saving a moment later.
+    if (doc.kind !== 'draft' && doc.kind !== 'new' && !document.querySelector('.htab-w.on.edited')) renderTabs();
+    clearTimeout(tabDotTimer); tabDotTimer = window.setTimeout(() => (renderTabs(), saveTabs()), 800); });
 }
 let tabDotTimer = 0;
 
@@ -1582,7 +1682,11 @@ function openFilesDialog() {
       const top = f.name.includes('/');
       return `<details class="pkg-file"><summary><code>${esc(f.name)}</code> <span class="muted">${fileSize(sizeOf(f))}${f.remote ? ' · in the Hub package, not downloaded here' : ''}</span></summary>
         <p class="muted small">${top ? `Installed as <code>${esc(dest(f.name))}</code>` : "At the package's top level: the Hub install keeps only handler.js there, so this file is dropped."}</p>
-        ${text !== null ? `<pre class="pkg-text">${esc(text.slice(0, 20000))}${text.length > 20000 ? '\n…' : ''}</pre>` : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
+        ${text !== null ? (() => {
+          // Coloured like code when it is code (INI, JSON, XML, JavaScript); plain text stays plain.
+          const shown = text.slice(0, 20000), mode = modeFor(f.name);
+          return `<pre class="pkg-text${mode ? ' hl cm-s-default' : ''}">${mode ? hlCode(shown, mode) : esc(shown)}${text.length > 20000 ? '\n…' : ''}</pre>`;
+        })() : '<p class="muted small">Not a text file (or too big to show).</p>'}</details>`;
     })
     .join('');
   $('#files-body').innerHTML = `<p class="muted">A package (.zip or .nc) is <code>handler.js</code> plus folders. Nucleus installs the folders' contents in the handler's folder, <code>handlers\\${esc(folder)}\\</code>, which is <code>Game.Folder</code>. They're saved with the handler.</p>
@@ -1643,10 +1747,9 @@ function openTemplate(id: string) {
 }
 function openProbe(i: number) {
   const p = PROBES[i];
-  loadSource(p.source, { name: `Probe: ${probeTitle(p.name)}`, kind: 'probe', hash: `probe-${p.name.slice(0, 2)}` });
+  loadSource(p.source, { name: `Probe: ${probeTitle(p.name)}`, kind: 'probe', hash: probeHash(p.name) });
 }
 const probeTitle = (name: string) => name.replace(/\.js$/, '').replace(/^\d+-/, '').replace(/-/g, ' ');
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // ---------------------------------------------------------------------------
 // Open dialog (Ctrl+K): starters, Hub handlers, probes and actions in one searchable list
@@ -1697,19 +1800,31 @@ const click = (sel: string) => () => ($(sel) as HTMLElement).click();
 function commandList(): OpenEntry[] {
   const c = (title: string, keys: string, keywords: string, run: () => void, sub?: string): OpenEntry => ({ group: 'Actions', title, keys, keywords, run, sub, icon: OI.command });
   const list: OpenEntry[] = [
-    c('Format document', 'Shift+Alt+F', 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
+    c('Format document', labelOf('format'), 'format indent pretty beautify prettier whitespace tidy', formatDocument, 'Indentation and spacing only: no line moves, no code changes'),
+    c('Explain this line', labelOf('explainLine'), 'explain line what does this do help understand', () => setTimeout(() => (editor.focus(), explainAtCursor()), 0), 'What the line at the cursor does, in plain words'),
     c('Fix problems automatically', '', 'fix all repair autofix', click('#fix-all'), 'Every safe automatic fix, with a before/after to review'),
-    c('Try it: simulate the handler', 'Ctrl+Enter', 'run play simulate try', () => selectTab('simulate')),
-    c('Test all combinations', '', 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
+    c('Try it: simulate the handler', labelOf('tryIt'), 'run play simulate try', () => selectTab('simulate')),
+    c('Go to line', labelOf('goToLine'), 'go to line number jump column', () => setTimeout(() => showOpen('line'), 0)),
+    c('Find', labelOf('find'), 'find search', () => openFind(editor)),
+    c('Find and replace', labelOf('replace'), 'replace find search', () => openFind(editor, true)),
+    c('Test all combinations', labelOf('testAll'), 'matrix players monitors keyboards test all', () => { selectTab('simulate'); click('#sim-all')(); }),
     c('Debug: step through the handler', 'F5', 'debug debugger step breakpoint trace pause', () => debug.start(), 'Pause on breakpoints, step line by line (and back), see every variable'),
     c('Debug: toggle a breakpoint on this line', 'F9', 'debug breakpoint toggle stop line', () => debug.toggleBreakpoint()),
     c('Check: show the problems', '', 'problems lint errors warnings check', () => selectTab('problems')),
-    c('Go to the next problem', 'F8', 'next problem error warning', () => stepProblem(1)),
-    c('Go to the previous problem', 'Shift+F8', 'previous problem error warning', () => stepProblem(-1)),
+    c('Fold the block at the cursor', labelOf('fold'), 'fold collapse hide block function region', () => (editor.focus(), editor.execCommand('fold'))),
+    c('Unfold the block at the cursor', labelOf('unfold'), 'unfold expand show block', () => (editor.focus(), editor.execCommand('unfold'))),
+    c('Fold all', labelOf('foldAll'), 'fold all collapse everything', () => (editor.focus(), editor.execCommand('foldAll'))),
+    c('Unfold all', labelOf('unfoldAll'), 'unfold all expand everything', () => (editor.focus(), editor.execCommand('unfoldAll'))),
+    c('Rename symbol', labelOf('rename'), 'rename variable function refactor all uses', () => renameSymbol(), 'Every use of the variable or function at the cursor selected: type the new name'),
+    c('Find all references', labelOf('references'), 'references uses usages find all occurrences', () => renameSymbol(true)),
+    c('Select all occurrences', labelOf('selectAll'), 'select all occurrences multi cursor', () => (editor.focus(), editor.execCommand('selectAllOccurrences'))),
+    c('Go to definition', labelOf('definition'), 'definition declaration where defined jump go to function variable', () => goToDefinition(), 'Where the function or variable under the cursor is declared, or the option set'),
+    c('Go to the next problem', labelOf('nextProblem'), 'next problem error warning', () => stepProblem(1)),
+    c('Go to the previous problem', labelOf('prevProblem'), 'previous problem error warning', () => stepProblem(-1)),
     c('Go to line…', 'Ctrl+G', 'line jump goto', () => { editor.focus(); editor.execCommand('jumpToLine'); }),
     c('Show or hide Lines', 'Ctrl+B', 'lines list names insert sidebar', () => lines.toggle(), 'Every option, Context member and enum, click to insert'),
     c('Search the handler API', '', 'api docs reference search', () => { selectTab('api'); ($('#api-q') as HTMLInputElement).focus(); }),
-    c('Open examples and Hub handlers', 'Ctrl+P', 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
+    c('Open examples and Hub handlers', labelOf('open'), 'open examples hub templates switch', () => setTimeout(() => showOpen(), 0)),
     c('Open a file…', '', 'open upload import file zip nc', click('#file-open')),
     c('New handler…', '', 'new create template', () => newDialog.showModal()),
     c('Copy the handler', '', 'copy clipboard code', () => copyCode()),
@@ -1719,7 +1834,9 @@ function commandList(): OpenEntry[] {
     c('Theme: light', '', 'theme light colour color appearance', () => setThemeMode('light')),
     c('Theme: dark', '', 'theme dark colour color appearance', () => setThemeMode('dark')),
     c('Theme: follow the system', '', 'theme auto system colour color appearance', () => setThemeMode('auto')),
-    c('Settings', 'Ctrl+,', 'settings preferences options font size wrap', () => settings.open()),
+    c('Keyboard shortcuts: see and change them', '', 'keyboard shortcuts keybindings keys rebind remap change hotkeys', () => settings.open('keys')),
+    c('Settings', labelOf('settings'), 'settings preferences options font size wrap', () => settings.open()),
+    c('Toggle word wrap', labelOf('wordWrap'), 'word wrap long lines wrapping scroll sideways view', () => settings.toggleWrap()),
     c('Theme: pick a look or code colours', '', 'theme look style colours colors code syntax mac alpha v3 custom', () => settings.open('theme')),
     c('Turn Advanced mode on or off', '', 'advanced mode rule details probes', click('#advanced')),
     c('Turn tips on or off', '', 'tips hints help', () => tips.toggle()),
@@ -1727,8 +1844,9 @@ function commandList(): OpenEntry[] {
     c("What's new", '', 'changelog changes news updates release notes', () => news.open()),
     c('Keyboard shortcuts', '?', 'help keys shortcuts keybindings', () => helpDialog.showModal()),
     c('Getting started', '', 'new help start intro welcome first', () => ($('#welcome-open') as HTMLButtonElement).click()),
+    c('Learn: making your first handler', '', 'tutorial learn lesson course beginner how to start guide teach', () => openLearn()),
     c('Start-up questions: guided or developer, and the layout', '', 'first run beginner developer advanced guided layout rail bar nucli', () => document.dispatchEvent(new CustomEvent('open-firstrun'))),
-    c('Help test the beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
+    c('Help test this beta', '', 'test testing beta feedback checklist tester', () => testGuide.open()),
     c('Move Files to the other side of the code', '', 'files panel left right side move swap', () => announce(`Files is now ${panels.flip('files')} of the code.`)),
     c('Move Lines to the other side of the code', '', 'lines list left right side move swap', () => announce(`Lines is now ${panels.flip('lines')} of the code.`)),
     c('Compare: open this handler in the previous version', '', 'previous old version compare before beta', () => void hasPrevious().then((ok) => (ok ? openInPrevious() : notice('The previous version is only on the published site (GitHub Pages).', { kind: 'info' })))),
@@ -1739,7 +1857,7 @@ function commandList(): OpenEntry[] {
     c('Show or hide the dev bar', 'Ctrl+Alt+D', 'dev developer contrast colour', () => devBar.toggle()),
   ];
   if (packageFiles.length) list.splice(16, 0, c("Show the package's files", '', 'package files folder zip nc', openFilesDialog));
-  if (!aiBtn.hidden) list.splice(2, 0, c('Fix with AI', '', 'ai claude fix', click('#ai-fix')));
+  if (!$('#ai-fix').hidden) list.splice(2, 0, c('Fix with AI', '', 'ai claude fix', click('#ai-fix')));
   return list;
 }
 // Settings › Theme, from the palette.
@@ -1841,11 +1959,26 @@ function renderOpen() {
   const raw = ($('#open-q') as HTMLInputElement).value;
   // ">" first: commands only, as in VS Code's Ctrl+Shift+P.
   const commandMode = raw.trimStart().startsWith('>');
-  const q = (commandMode ? raw.trimStart().slice(1) : raw).trim().toLowerCase();
-  const all = commandMode ? commandList() : entries();
+  // ":" first: go to a line (and column), as in VS Code's Ctrl+G.
+  if (raw.trimStart().startsWith(':')) {
+    const [ln, col] = raw.trimStart().slice(1).split(/[:,]/).map((x) => Number(x.trim()));
+    const lines = editor.lineCount();
+    const ok = Number.isFinite(ln) && ln >= 1;
+    const line = Math.min(lines, Math.max(1, ln || 1));
+    ($('#open-q') as HTMLInputElement).placeholder = '';
+    shownEntries = ok
+      ? [{ group: 'Go to', title: `Go to line ${line}${col ? `, column ${col}` : ''}`, sub: `The code has ${lines} lines`, icon: OI.command, run: () => { const ch = Math.max(0, (col || 1) - 1); editor.setCursor({ line: line - 1, ch }); editor.scrollIntoView({ line: line - 1, ch }, 120); editor.focus(); } } as OpenEntry]
+      : [];
+    activeEntry = 0;
+    $('#open-body').innerHTML = ok ? '' : `<p class="empty">Type a line number between 1 and ${lines} (or line:column).</p>`;
+    if (!ok) return;
+  }
+  const lineMode = raw.trimStart().startsWith(':');
+  const q = lineMode ? '' : (commandMode ? raw.trimStart().slice(1) : raw).trim().toLowerCase();
+  const all = lineMode ? shownEntries : commandMode ? commandList() : entries();
   ($('#open-q') as HTMLInputElement).placeholder = commandMode ? 'Type a command: format, fix, try it, theme…' : 'Search examples, Hub handlers, engine probes and actions (> for commands)';
   let shown: OpenEntry[];
-  if (commandMode && !q) shown = all;
+  if (lineMode || (commandMode && !q)) shown = all;
   else if (q) {
     const words = q.split(/\s+/);
     shown = all
@@ -1955,8 +2088,8 @@ function moveVertical(dir: 1 | -1) {
   row.sort((a, b) => Math.abs(a.b.left + a.b.width / 2 - cx) - Math.abs(b.b.left + b.b.width / 2 - cx));
   setActive(row[0].i);
 }
-function showOpen(mode: 'open' | 'commands' = 'open') {
-  ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : '';
+function showOpen(mode: 'open' | 'commands' | 'line' = 'open') {
+  ($('#open-q') as HTMLInputElement).value = mode === 'commands' ? '>' : mode === 'line' ? ':' : '';
   activeEntry = 0;
   renderOpen();
   // The first rows arrive one after another, only as the dialog opens (not while typing).
@@ -2013,7 +2146,7 @@ $('#new-cancel').addEventListener('click', () => newDialog.close());
 // Copy the code (from Save or copy, or the command palette): confirmed on the button next to the code.
 async function copyCode() {
   try {
-    await navigator.clipboard.writeText(editor.getValue());
+    await navigator.clipboard.writeText(exportText());
     confirmOn(shareButton(), 'Copied ✓', `Copied ${editor.lineCount()} lines.`);
   } catch {
     editor.execCommand('selectAll');
@@ -2041,6 +2174,7 @@ function selectTab(id: string) {
   document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
   requestAnimationFrame(placeInk);
   document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]').forEach((p) => (p.hidden = p.id !== `panel-${id}`));
+  if (id !== 'api') docs.leaveHash();
   if (id === 'simulate') runSim();
   if (id === 'simulate' || id === 'api') document.dispatchEvent(new CustomEvent('wakatime-activity', { detail: id === 'simulate' ? 'running tests' : 'researching' }));
   if (id === 'probes' && !probesRendered) {
@@ -2054,7 +2188,10 @@ function selectTab(id: string) {
     /* ignore */
   }
 }
-document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab!)));
+document.querySelectorAll<HTMLButtonElement>('.pane-head [role=tab]').forEach((t) => t.addEventListener('click', () => {
+  selectTab(t.dataset.tab!);
+  if (t.dataset.tab === 'api') docs.setHash();
+}));
 
 const SIM_KEY = 'nucleus-workbench-sim';
 const simIds = ['sim-players', 'sim-res', 'sim-kb'];
@@ -2082,16 +2219,15 @@ const lines = initLines({
   editor,
   openReference: (path) => {
     selectTab('api');
-    if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
-    ($('#api-q') as HTMLInputElement).value = path;
-    renderApi(path);
+    if (narrow()) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+    docs.go(`q:${path}`);
   },
   // Hovering a name in Lines while Reference is the open tab (and its search is empty) shows the
   // name's docs there. Suggested by messenils.
   previewReference: (path) => {
-    if (window.matchMedia('(max-width: 860px)').matches || ($('#panel-api') as HTMLElement).hidden) return false;
+    if (narrow() || ($('#panel-api') as HTMLElement).hidden) return false;
     if (($('#api-q') as HTMLInputElement).value.trim()) return false;
-    renderApi(path);
+    docs.preview(path);
     return true;
   },
 });
@@ -2104,10 +2240,11 @@ const tips = initTips({
     new: () => ($('#new-open') as HTMLButtonElement).click(),
     examples: () => showOpen(),
     tryit: () => {
-      if (window.matchMedia('(max-width: 860px)').matches) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
+      if (narrow()) ($('.switch button[data-view=results]') as HTMLButtonElement)?.click();
       selectTab('simulate');
     },
     share: () => copyLink(),
+    tutorial: () => openLearn(),
   },
   targets: {
     lines: () => $('#lines-toggle'),
@@ -2115,6 +2252,7 @@ const tips = initTips({
     examples: () => $('#tab-add'),
     tryit: () => document.querySelector<HTMLElement>('[role=tab][data-tab=simulate]'),
     share: () => shareButton(),
+    tutorial: () => document.getElementById('app-menu-open'),
   },
 });
 $('#tips-reset').addEventListener('click', () => tips.reset());
@@ -2122,7 +2260,7 @@ $('#tips-reset').addEventListener('click', () => tips.reset());
 initA11y();
 const settings = initSettings({
   editor,
-  hint: () => editor.showHint({ hint: hinter, completeSingle: false }),
+  hint: () => editor.showHint({ hint: hinter, completeSingle: false, explicit: true }),
   lines,
   tips,
   advanced: $('#advanced') as HTMLInputElement,
@@ -2144,46 +2282,60 @@ moreDialog.querySelectorAll<HTMLButtonElement>('[data-proxy]').forEach((b) =>
 
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   const mod = e.ctrlKey || e.metaKey;
-  if (mod && e.shiftKey && e.code === 'KeyL') {
-    e.preventDefault();
-    lines.toggle();
-    return;
-  }
-  // As in VS Code: Ctrl+Shift+P and F1 open the command palette (">"), Ctrl+P (and Ctrl+K here) the
-  // examples and Hub handlers. Pressed again, the same key closes it.
-  const commands = (mod && e.shiftKey && e.key.toLowerCase() === 'p') || e.key === 'F1';
-  if (commands || (mod && !e.shiftKey && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'p'))) {
-    e.preventDefault();
-    const inCommands = ($('#open-q') as HTMLInputElement).value.trimStart().startsWith('>');
-    if (openDialog.open && inCommands === commands) openDialog.close();
-    else showOpen(commands ? 'commands' : 'open');
-  } else if (mod && e.key.toLowerCase() === 's') {
-    e.preventDefault(); // instead of the browser saving the page
-    const save = $('#save') as HTMLButtonElement;
-    void save;
-    if (e.altKey) void saveToNucleus();
-    else if (e.shiftKey) openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below');
-    else void saveAs();
-  } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'b') {
-    e.preventDefault(); // VS Code: toggle the side bar; here, the Lines list
-    lines.toggle();
-  } else if (mod && e.key === ',') {
-    e.preventDefault();
-    settings.open();
-  } else if (mod && !e.shiftKey && e.key === 'Enter') {
-    e.preventDefault();
-    selectTab('simulate');
-  } else if (e.altKey && e.shiftKey && e.code === 'KeyF') {
-    e.preventDefault(); // VS Code: Format Document
-    formatDocument();
-  } else if (e.key === 'F8') {
-    e.preventDefault();
-    stepProblem(e.shiftKey ? -1 : 1);
-  } else if (e.key === '?' && !(e.target as HTMLElement).closest('.CodeMirror, input, textarea, select')) {
-    e.preventDefault();
-    helpDialog.showModal();
-  }
+  const inCode = !!(e.target as HTMLElement | null)?.closest?.('.CodeMirror');
+  // Changing a shortcut in Settings: the keys go to the recorder, not here.
+  if ((e.target as HTMLElement | null)?.closest?.('.kb-recorder')) return;
+  // Kept beside the changeable ones: F1 for the palette; outside the code, Ctrl+K opens and Ctrl+Shift+L shows Lines
+  // (in the code those start VS Code's two-key shortcuts and select every match); ? lists the shortcuts.
+  if (e.key === 'F1') return void (e.preventDefault(), togglePalette(true));
+  if (!inCode && mod && !e.shiftKey && !e.altKey && e.code === 'KeyK') return void (e.preventDefault(), togglePalette(false));
+  if (!inCode && mod && e.shiftKey && e.code === 'KeyL') return void (e.preventDefault(), lines.toggle());
+  if (e.key === '?' && !(e.target as HTMLElement).closest('.CodeMirror, input, textarea, select')) return void (e.preventDefault(), helpDialog.showModal());
+  // The workbench's shortcuts (keybindings.ts), whatever they're set to.
+  const id = appActionFor(e);
+  if (!id) return;
+  e.preventDefault();
+  if (id === 'pending') return;
+  const run: Record<string, () => void> = {
+    palette: () => togglePalette(true),
+    open: () => togglePalette(false),
+    tryIt: () => selectTab('simulate'),
+    testAll: () => (selectTab('simulate'), click('#sim-all')()),
+    save: () => void saveAs(),
+    saveAs: () => openMenu(shown('#save-more', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#save-more'), 'Save as', saveItems(), document.documentElement.dataset.layout === 'rail' ? 'right' : 'below'),
+    saveNucleus: () => void saveToNucleus(),
+    lines: () => lines.toggle(),
+    settings: () => settings.open(),
+    wordWrap: () => settings.toggleWrap(),
+    format: () => formatDocument(),
+    nextProblem: () => stepProblem(1),
+    prevProblem: () => stepProblem(-1),
+  };
+  run[id]?.();
 });
+/** The shortcut list (?): from keybindings.ts, so it shows the keys as they're set now. */
+function renderHelpKeys() {
+  const body = document.querySelector('#help-dialog table.keys tbody');
+  if (!body) return;
+  const kbd = (k: string) => k.split(' · ').map((alt) => alt.split(' ').map((step) => step.split('+').map((x) => `<kbd>${esc(x)}</kbd>`).join(' ')).join(' then ')).join(' · ');
+  const groups: Group[] = ['Workbench', 'Problems', 'Find and navigate', 'Editing', 'Debugger'];
+  body.innerHTML = groups
+    .map((g) => `<tr class="kh"><th colspan="2">${g}</th></tr>` + ACTIONS.filter((a) => a.group === g).map((a) => {
+      const k = a.where === 'fixed' ? a.keys : keyLabel(binding(a.id));
+      return `<tr><td>${k ? kbd(k) : '<span class="muted">none</span>'}</td><td>${esc(a.label)}</td></tr>`;
+    }).join(''))
+    .join('');
+}
+renderHelpKeys();
+initKeySettings($('#sp-keys'));
+$('#help-rebind').addEventListener('click', () => (helpDialog.close(), settings.open('keys')));
+
+/** The command palette (">") or Open; pressed again, the same key closes it. */
+function togglePalette(commands: boolean) {
+  const inCommands = ($('#open-q') as HTMLInputElement).value.trimStart().startsWith('>');
+  if (openDialog.open && inCommands === commands) openDialog.close();
+  else showOpen(commands ? 'commands' : 'open');
+}
 
 // Help test this beta (testplan.ts: BETA). Gone at the full release.
 // The previous release at previous/ (beta only; the Pages build adds it from previous.json), to compare: the same
@@ -2210,6 +2362,23 @@ const testGuide = initTestGuide($('#test-dialog') as HTMLDialogElement, [$('#tes
     announce(p.coding === 'dev' ? 'Advanced mode is on, since you write code. Settings changes it.' : 'Guided mode, with tips. Advanced mode is in Settings.');
   },
 });
+// Tasks pinned from the guide float over the workbench while you test (testpins.ts).
+initTestPins(() => testGuide.open());
+/** A page of the site (start/, learn/, docs/…): next to the workbench on the site, the site's own from the one-file
+ *  workbench (the footer's start link says which, build.mjs). */
+function siteUrl(sub: string) {
+  const start = document.querySelector<HTMLAnchorElement>('a.link.start-link')?.href ?? 'start/';
+  // The start link is start/ on the site and start/index.html in the one-file builds.
+  return start.replace(/start\/(index\.html)?$/, sub);
+}
+// Learn (learn/, its own page): the lessons. Next to the start page on the site; the one-file workbench links to
+// the site's. A new tab from the menu (the workbench stays as it is); #learn links go there instead.
+function learnUrl(lesson?: string) {
+  return siteUrl('learn/') + (lesson ? `#${lesson}` : '');
+}
+function openLearn() {
+  window.open(learnUrl(), '_blank', 'noopener');
+}
 
 // ---------------------------------------------------------------------------
 // Code | Form | Blocks: the options as a form (formview.ts) and the callbacks as if / do steps (blocksview.ts), both
@@ -2293,7 +2462,8 @@ const appItems = (): MenuItem[] => [
   { label: 'Send feedback…', run: () => openReport(feedbackUrl()) },
   { kind: 'separator', label: '' },
   { label: '⌂ Home: about these tools', run: () => (location.href = homeHref()) },
-  ...(document.getElementById('test-open') ? [{ label: '🧪 Help test the beta', run: () => testGuide.open() }] : []),
+  { label: '📘 Learn: making your first handler', run: () => openLearn() },
+  ...(document.getElementById('test-open') ? [{ label: '🧪 Help test this beta', run: () => testGuide.open() }] : []),
 ];
 $('#tab-add').addEventListener('click', () => openMenu($('#tab-add'), 'New or open', addItems()));
 $('#app-menu-open').addEventListener('click', () => openMenu($('#app-menu-open'), 'Menu', appItems()));
@@ -2301,7 +2471,7 @@ $('#code-menu-phone').addEventListener('click', () => openMenu($('#code-menu-pho
 $('#doc-switch').addEventListener('click', () => openMenu($('#doc-switch'), 'Open handlers', [
   { kind: 'heading', label: 'Open handlers' },
   ...tabs.map((x) => ({ label: x.id === activeTab ? doc.name : x.meta.name, checked: x.id === activeTab, run: () => switchTab(x.id) })),
-  ...(tabs.length > 1 ? [{ label: `Close ${doc.name}`, run: () => closeTab(activeTab) }] : []),
+  ...(!noneOpen ? [{ label: `Close ${doc.name}`, run: () => closeTab(activeTab) }] : []),
   { kind: 'separator', label: '' },
   ...addItems(),
 ]));
@@ -2350,7 +2520,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     const i = tabs.findIndex((x) => x.id === activeTab);
     switchTab(tabs[(i + (e.code === 'BracketRight' ? 1 : -1) + tabs.length) % tabs.length].id);
-  } else if (e.altKey && !e.ctrlKey && e.code === 'KeyW' && tabs.length > 1) {
+  } else if (e.altKey && !e.ctrlKey && e.code === 'KeyW' && !noneOpen) {
     e.preventDefault();
     closeTab(activeTab);
   }
@@ -2377,6 +2547,7 @@ initKeyHints([
   });
 }
 // Feedback (feedback.ts): votes on tips and Claude's docs, anonymous counts. A 👎 on a doc points at the issue link.
+countVisit(); // one anonymous "visit" count, with the site and ?ref= it came from (when sharing counts is on)
 wireVotes((kind, _id, v, el) => {
   if (kind === 'doc' && v === 'down') el.closest('.dc-check')?.querySelector<HTMLElement>('a')?.focus();
   announce(v ? (v === 'up' ? 'Thanks: counted as helpful.' : 'Thanks: counted as not helpful.') : 'Vote taken back.');
@@ -2393,6 +2564,12 @@ wireVotes((kind, _id, v, el) => {
   sync();
   const totals = totalsUrl();
   if (totals) { ($('#set-feedback-totals-link') as HTMLAnchorElement).href = totals; $('#set-feedback-totals').hidden = false; }
+}
+
+{
+  const box = $('#set-credit') as HTMLInputElement;
+  box.checked = creditOn();
+  box.addEventListener('change', () => { try { box.checked ? localStorage.removeItem(CREDIT_OFF) : localStorage.setItem(CREDIT_OFF, '1'); } catch { /* not kept */ } });
 }
 
 $('#set-build').textContent = `Build ${BUILD.bench ?? '?'}`;
@@ -2427,237 +2604,19 @@ $('#set-import-file').addEventListener('change', async () => {
 $('#build-info').textContent = `Linter and API from splitscreenme-vscode @ ${BUILD.core} · Nucleus @ ${BUILD.nucleus ?? '?'} · Jint ${BUILD.jint ?? '2.11.58'}`;
 
 // ---------------------------------------------------------------------------
-// Fix with AI (artifact `sample` capability: Claude, on the viewer's own account)
+// Fix with AI and Fix all (aifix-ui.ts)
 
-const aiBox = $('#ai-box');
-const aiBtn = $('#ai-fix') as HTMLButtonElement;
-// Fixes are applied straight away (no "Apply without review" any more): Undo and the highlighted lines replace the review.
-
-let sample: any = null;
-let aiCtl: AbortController | null = null;
-(async () => {
-  try {
-    sample = await (window as any).claude?.use?.('sample');
-  } catch {
-    sample = null;
-  }
-  refreshAi();
-})();
-/** Fix with AI shows when a provider is set up (Settings › AI): Claude on claude.ai, an API key, or a local model. */
-function refreshAi() {
-  const on = !!currentRunner(sample).runner;
-  aiBtn.hidden = !on;
-  ($('#ai-note') as HTMLInputElement).hidden = !on;
-}
-document.addEventListener('ai-settings-changed', refreshAi);
-initAiSettings(() => sample);
-
-const AI_ERRORS: Record<string, string> = {
-  rate_limited: 'Too many requests right now. Try again in a minute.',
-  session_expired: 'Your Claude session expired. Sign in again, then retry.',
-  refused: 'Claude declined to change this handler.',
-  empty_completion: 'Claude returned nothing. Try again, or ask for less in the note.',
-  invalid_json: "Claude's answer wasn't in the expected format. Try again.",
-  prompt_too_large: 'This handler is too large to send in one request.',
-};
-const AI_UNAVAILABLE = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed']);
-
-function aiStatus(text: string) {
-  const el = aiBox.querySelector('.ai-status-text');
-  if (el) el.textContent = text;
-}
-
-async function runAiFix() {
-  const { runner, reason } = currentRunner(sample);
-  if (!runner) {
-    if (reason && reason !== 'off') notice(reason, { kind: 'info', action: { label: 'Open Settings › AI', run: () => settings.open('ai') } });
-    return;
-  }
-  const who = runner.label;
-  const base = editor.getValue();
-  const before = counts(base, lintCtx());
-  aiCtl = new AbortController();
-  aiBtn.disabled = true;
-  aiBox.hidden = false;
-  // Nucli reads the code while the AI works on it (a spinner when mascots are off).
-  aiBox.innerHTML = `<div class="ai-status">${mascotsOn() ? mascot('n-scan', { size: 56, busy: true, className: 'ai-masc' }) : '<span class="spinner" aria-hidden="true"></span>'}<span class="ai-status-text">Asking ${esc(who)}…</span><button class="btn" id="ai-stop" type="button">Stop</button></div>`;
-  $('#ai-stop').addEventListener('click', () => aiCtl?.abort());
-
-  // On claude.ai the page's Claude may not take tools; every API provider does.
-  const limits = runner.label === 'Claude' && sample ? await sample.limits().catch(() => null) : { tools: true };
-  const tools = limits?.tools
-    ? pageTools().map((t) => ({
-        ...t,
-        execute: (input: { [k: string]: unknown }) => {
-          aiStatus(t.name === 'lint_handler' ? `${who} is checking its fix with the linter…` : `${who} is looking up ${String(input.query ?? '').slice(0, 40)}…`);
-          return t.execute(input);
-        },
-      }))
-    : undefined;
-  try {
-    const r: any = await runner.json(buildPrompt(base, ($('#ai-note') as HTMLInputElement).value), {
-      signal: aiCtl.signal,
-      tools,
-      onText: () => aiStatus(`${who} is writing the fix…`),
-    });
-    use('ai-fix');
-    const code = typeof r?.code === 'string' ? r.code.replace(/\r\n/g, '\n') : '';
-    const changes = Array.isArray(r?.changes) ? r.changes.map(String).slice(0, 20) : [];
-    if (!code.trim()) {
-      aiBox.innerHTML = `<p>The answer had no handler code. Try again.</p>`;
-    } else if (code === base) {
-      aiBox.innerHTML = `<p>${esc(who)} found nothing to change.</p>${changes.length ? `<ul class="ai-changes">${changes.map((c: string) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}`;
-    } else {
-      showProposal(base, code, changes, before);
-    }
-  } catch (e: any) {
-    if (e?.code === 'cancelled') {
-      aiBox.hidden = true;
-    } else if (AI_UNAVAILABLE.has(e?.code)) {
-      aiBox.innerHTML = `<p>Claude isn't available on this page for your account. Pick another provider in Settings › AI; Fix all problems still works.</p>`;
-    } else if (e instanceof AiError) {
-      aiBox.innerHTML = `<p>${esc(e.message)}</p>`;
-    } else {
-      aiBox.innerHTML = `<p>${esc(AI_ERRORS[e?.code] ?? `Something went wrong reaching ${who}. Try again.`)}</p>`;
-    }
-  } finally {
-    aiBtn.disabled = false;
-    aiCtl = null;
-  }
-}
-aiBtn.addEventListener('click', runAiFix);
-
-// Fix all: the deterministic, offline fixes (the same as `nucleus lint --fix` and the extension).
-$('#fix-all').addEventListener('click', () => {
-  use('fix-all');
-  const base = editor.getValue();
-  const before = counts(base, lintCtx());
-  const r = fixAll(base, lintCtx());
-  aiBox.hidden = false;
-  boxShows = null;
-  if (r.code === base) {
-    aiBox.innerHTML = `<p>Nothing can be fixed automatically. ${before.errors + before.warnings ? 'The remaining problems need your decision; see their quick fixes below' + (sample ? ', or try Fix with AI' : '') + '.' : ''}</p>`;
-    return;
-  }
-  const changes = [...new Set(r.applied.map((a) => `${a.title} (line ${a.line})`))];
-  showProposal(base, r.code, changes, before, 'Fix all');
+initFixes({
+  editor,
+  lintCtx,
+  openAiSettings: () => settings.open('ai'),
+  used: use,
+  aiKept: (kind, d) => {
+    doc.ai = doc.ai ?? { direct: 0, reviewed: 0 };
+    doc.ai[kind] = Math.max(0, doc.ai[kind] + d);
+    saveDocMeta();
+  },
 });
-
-// The fix box shows a before/after of one version of the handler: once the code moves on (you keep
-// typing), it would be stale, so it closes and the list below is what counts.
-let boxShows: string | null = null;
-editor.on('change', (_cm: unknown, ch: { origin?: string }) => {
-  if (boxShows === null || ch.origin === '+ai-fix' || ch.origin === 'undo') return;
-  if (!aiBox.hidden && editor.getValue() !== boxShows) aiBox.hidden = true;
-  boxShows = null;
-});
-
-function applyCode(code: string) {
-  const doc = editor.getDoc();
-  fixWithNucli(editor, code, () => doc.replaceRange(code, doc.posFromIndex(0), doc.posFromIndex(doc.getValue().length), '+ai-fix'));
-}
-
-function showProposal(base: string, code: string, changes: string[], before: { errors: number; warnings: number }, source: 'AI' | 'Fix all' = 'AI') {
-  const after = counts(code, lintCtx());
-  const edited = editor.getValue() !== base;
-  const better = after.errors < before.errors || (after.errors === before.errors && after.warnings < before.warnings);
-  const notWorse = after.errors <= before.errors;
-  const lines = hunks(diffLines(base, code));
-  const rows = lines
-    .map((l) =>
-      l === null
-        ? '<tr class="gap"><td colspan="4">⋯</td></tr>'
-        : `<tr class="${l.kind === '+' ? 'add' : l.kind === '-' ? 'del' : ''}"><td class="n">${l.a ?? ''}</td><td class="n">${l.b ?? ''}</td><td class="sign">${l.kind === ' ' ? '' : l.kind}</td><td class="code">${esc(l.text) || ' '}</td></tr>`,
-    )
-    .join('');
-  const added = lines.filter((l) => l?.kind === '+').length;
-  const removed = lines.filter((l) => l?.kind === '-').length;
-  const chip = (n: number, kind: string) => `<span class="chip ${n ? kind : 'ok'}">${n} ${kind === 'error' ? 'error' : 'warning'}${n === 1 ? '' : 's'}</span>`;
-  const delta = `<div class="ai-delta">Before ${chip(before.errors, 'error')} ${chip(before.warnings, 'warning')} → after ${chip(after.errors, 'error')} ${chip(after.warnings, 'warning')} <span class="muted">· +${added} −${removed} lines</span></div>`;
-
-  const introduced = newProblems(base, code, lintCtx());
-  const baseLines = base.split('\n').length;
-  const bigRewrite = removed > Math.max(20, baseLines * 0.5);
-  let reason = '';
-  if (edited) reason = 'You edited the handler while the AI was working, so this was not applied automatically. Accepting replaces your latest edits.';
-  else if (introduced.length) reason = `This version adds ${introduced.length} new problem${introduced.length > 1 ? 's' : ''} (${introduced.slice(0, 2).join('; ')}${introduced.length > 2 ? '; …' : ''}), so it was not applied automatically.`;
-  else if (bigRewrite) reason = `This rewrites a large part of the handler (${removed} of ${baseLines} lines removed), so it was not applied automatically.`;
-  else if (!notWorse) reason = 'This version has more errors than yours, so it was not applied automatically.';
-  else if (!better) reason = 'This version does not reduce the problem count, so it was not applied automatically.';
-  // Applied straight away (Undo is one click, and the changed lines light up in the code). Only an AI fix that looks
-  // risky (it adds problems, rewrites most of the file, makes it worse, or you typed meanwhile) waits for a review.
-  const risky = source === 'AI' && (edited || introduced.length > 0 || bigRewrite || !notWorse);
-  const fixedCount = source === 'Fix all' ? changes.length : 0;
-  const remaining = after.errors + after.warnings;
-  const diffTable = `<div class="diff-wrap" tabindex="0" role="region" aria-label="The changes, line by line"><table class="diff"><tbody>${rows}</tbody></table></div>`;
-  const changeList = changes.length ? `<ul class="ai-changes">${changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
-
-  const review = () => `
-    <h3>${source === 'AI' ? "AI's proposed fix" : 'Automatic fixes'}</h3>
-    ${reason ? `<p class="note">${esc(reason.replace(/, so it was not applied automatically/, '').replace(/ so this was not applied automatically\./, '.'))} Check it before applying.</p>` : ''}
-    ${changeList}${delta}
-    <div class="ai-actions"><button class="btn primary" id="ai-accept" type="button">Apply</button><button class="btn" id="ai-reject" type="button">Discard</button></div>
-    ${diffTable}`;
-  const applied = () => `<div class="fix-done">
-    <span class="fix-ok" aria-hidden="true">✓</span>
-    <span class="fix-msg"><strong>${source === 'Fix all' ? `Fixed ${fixedCount} problem${fixedCount === 1 ? '' : 's'}` : 'Applied the AI fix'}</strong>${remaining ? ` · ${remaining} need${remaining === 1 ? 's' : ''} your decision, below` : ' · nothing left to fix'}. Changed lines are highlighted in the code.</span>
-    <button class="btn" id="ai-undo" type="button">Undo</button>
-    <button class="btn icon" id="ai-close" type="button" aria-label="Close">×</button>
-    <details class="fix-more"><summary>What changed (+${added} −${removed} lines)</summary>${changeList}${delta}${diffTable}</details></div>`;
-
-  const showApplied = () => {
-    aiBox.innerHTML = applied();
-    aiBox.classList.add('compact');
-    boxShows = code;
-    markChanged(code, lines);
-    $('#ai-undo').addEventListener('click', () => {
-      if (editor.getValue() === code) {
-        editor.undo();
-        clearChanged();
-        aiBox.innerHTML = '<p class="fix-done"><span class="fix-msg">Undone. Your handler is back to how it was.</span></p>';
-      } else {
-        aiBox.innerHTML = '<p>The handler changed after the fix was applied, so Undo is no longer safe here. Use Ctrl+Z in the editor instead.</p>';
-      }
-    });
-    $('#ai-close').addEventListener('click', () => (aiBox.hidden = true));
-  };
-  if (!risky) {
-    applyCode(code);
-    showApplied();
-    return;
-  }
-  aiBox.classList.remove('compact');
-  aiBox.innerHTML = review();
-  boxShows = editor.getValue();
-  aiBox.scrollIntoView({ block: 'nearest' });
-  $('#ai-accept').addEventListener('click', () => {
-    applyCode(code);
-    showApplied();
-    $('#ai-undo').focus(); // keep the keyboard where the result is
-  });
-  $('#ai-reject').addEventListener('click', () => (aiBox.hidden = true));
-}
-
-// The lines a fix added or changed, highlighted in the editor until you edit the code (or 12 s).
-let changedMarks: any[] = [];
-let changedTimer = 0;
-function clearChanged() {
-  changedMarks.forEach((h) => editor.removeLineClass(h, 'background', 'line-changed'));
-  changedMarks = [];
-  clearTimeout(changedTimer);
-}
-function markChanged(code: string, diff: (DiffLine | null)[]) {
-  const go = (tries = 0) => {
-    if (editor.getValue() !== code) return tries < 40 ? void setTimeout(() => go(tries + 1), 100) : undefined; // after Nucli's edit animation
-    clearChanged();
-    for (const l of diff) if (l?.kind === '+' && l.b) changedMarks.push(editor.addLineClass(l.b - 1, 'background', 'line-changed'));
-    const first = diff.find((l) => l?.kind === '+' && l.b);
-    if (first?.b) editor.scrollIntoView({ line: first.b - 1, ch: 0 }, 80);
-    changedTimer = window.setTimeout(clearChanged, 12000);
-  };
-  go();
-}
-editor.on('change', (_cm: unknown, ch: { origin?: string }) => { if (ch.origin !== '+ai-fix' && changedMarks.length) clearChanged(); });
 
 // ---------------------------------------------------------------------------
 // Advanced mode switch
@@ -2685,166 +2644,106 @@ advanced.addEventListener('change', () => {
 // ---------------------------------------------------------------------------
 // Small screens: show the handler or the results, with a switch
 
-const narrowQuery = matchMedia('(max-width: 860px)');
-function narrow() {
-  return narrowQuery.matches;
-}
 function setView(v: 'code' | 'results') {
   $('#main').dataset.view = v;
   document.querySelectorAll<HTMLButtonElement>('.switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
   if (v === 'code') editor.refresh();
 }
 document.querySelectorAll<HTMLButtonElement>('.switch button').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'code' | 'results')));
-narrowQuery.addEventListener('change', () => editor.refresh());
+onNarrowChange(() => editor.refresh());
 
 // ---------------------------------------------------------------------------
-// Open a file from the computer (picker or drag & drop): .js, or a .zip/.nc package
+// Open a file from the computer (picker or drag & drop): .js, or a .zip/.nc package (fileopen-ui.ts)
 
-async function openFile(file: File) {
-  try {
-    if (/\.(zip|nc)$/i.test(file.name)) {
-      const pkg = await readPackage(await file.arrayBuffer());
-      if (!pkg) {
-        notice(`${file.name} doesn't contain a handler.js this page can read.`, { kind: 'error' });
-        return;
-      }
-      loadSource(pkg.handler.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name.replace(/\.(zip|nc)$/i, '.js'), kind: 'draft' });
-      // The package's other files: kept, and saved with the handler.
-      setPackageFiles(pkg.files);
-      const kept = storeFiles(pkg.files);
-      const n = pkg.files.length;
-      const lost = pkg.unreadable.length ? ` This browser couldn't unpack ${pkg.unreadable.join(', ')}, so saving won't include ${pkg.unreadable.length === 1 ? 'it' : 'them'}.` : '';
-      // The "+ N files" chip shows the files; only what needs saying goes in a notice.
-      if (!kept || lost) notice(`${kept ? '' : `The ${n} other file${n === 1 ? '' : 's'} are too big to keep after a reload: save before closing the page.`}${lost}`.trim(), { kind: 'warning' });
-      return;
-    }
-    const text = await file.text();
-    loadSource(text.replace(/^﻿/, '').replace(/\r\n/g, '\n'), { name: file.name, kind: 'draft' });
-  } catch {
-    notice(`Couldn't read ${file.name}.`, { kind: 'error' });
-  }
-}
-const fileInput = $('#file-input') as HTMLInputElement;
-$('#file-open').addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => {
-  const f = fileInput.files?.[0];
-  if (f) openFile(f);
-  fileInput.value = '';
-});
-const dropHint = $('#drop-hint');
-let dragDepth = 0;
-const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
-document.addEventListener('dragenter', (e) => {
-  if (!hasFiles(e)) return;
-  dragDepth++;
-  dropHint.hidden = false;
-});
-document.addEventListener('dragleave', (e) => {
-  if (!hasFiles(e)) return;
-  dragDepth = Math.max(0, dragDepth - 1);
-  if (!dragDepth) dropHint.hidden = true;
-});
-document.addEventListener('dragover', (e) => {
-  if (hasFiles(e)) e.preventDefault();
-});
-document.addEventListener(
-  'drop',
-  (e) => {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragDepth = 0;
-    dropHint.hidden = true;
-    const f = e.dataTransfer!.files[0];
-    if (f) openFile(f);
-  },
-  true,
-);
+const fileInput = initFileOpen({ loadSource, setPackageFiles });
 
 // ---------------------------------------------------------------------------
-// Save for Nucleus: a .zip with handler.js that Nucleus' "Extract handler" installs
+// Save for Nucleus: a .zip with handler.js that Nucleus' "Extract handler" installs (the file name: savefile.ts)
 
-let downloads: any = null;
-(async () => {
-  try {
-    downloads = await (window as any).claude?.use?.('downloads');
-  } catch {
-    downloads = null;
-  }
-  if (!downloads && !(window as any).claude) {
-    // A normal web page (GitHub Pages): an ordinary browser download.
-    downloads = {
-      save: async ({ filename, data }: { filename: string; data: Uint8Array }) => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([data as BlobPart], { type: filename.endsWith('.js') ? 'text/javascript' : 'application/zip' }));
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      },
-    };
-  }
-  if (downloads) $('#save').hidden = false;
-})();
-const handlerFileName = () => {
-  const m = editor.getValue().match(/^Game\.GameName\s*=\s*"([^"]*)"/m);
-  const name = (m?.[1] || doc.name.replace(/\.js$/i, '') || 'handler').replace(/[\\/:*?"<>|]/g, '').trim() || 'handler';
-  return name;
-};
+let downloads: Downloads | null = null;
+void pageDownloads().then((d) => {
+  downloads = d;
+  if (d) $('#save').hidden = false;
+});
+const handlerFileName = () => saveFileName(editor.getValue(), doc.name);
 // "Save for Nucleus" in the header opens the same Save or copy dialog as the button next to the code.
 $('#save').addEventListener('click', () => void saveAs());
 
 // ---------------------------------------------------------------------------
 // Start-up: #links, first-visit welcome, last tab
 
+// What a #link opens is links.ts (pure, tested in tools/links.test.mjs); here it's done. A moved link opens the new
+// place, puts the new address in the address bar and says so once.
+function followMoved(h: string): string {
+  const { to, why } = followMovedLink(h);
+  if (why === undefined) return h;
+  try {
+    history.replaceState(history.state, '', `${location.pathname}${location.search}#${to}`);
+  } catch {
+    /* ignore */
+  }
+  setTimeout(() => notice(movedNote(why), { kind: 'info' }), 0);
+  return to;
+}
+const linkCatalog = (): LinkCatalog => ({
+  hub: HUB_EXAMPLES.handlers.map((x) => x.id),
+  probes: PROBES.map((p) => p.name),
+  packages: EXAMPLE_PACKAGES.map((e) => e.id),
+  templates: BOT_TEMPLATES.templates.map((t) => t.id),
+});
+const dropHash = () => {
+  try {
+    history.replaceState(null, '', location.pathname + location.search);
+  } catch {
+    /* ignore */
+  }
+};
 function openFromHash(): boolean {
-  const h = decodeURIComponent(location.hash.slice(1));
-  if (!h) return false;
-  if (h.startsWith(SHARE_PREFIX)) {
-    decodeShare(h)
-      .then((src) => {
-        loadSource(src, { name: 'Shared handler', kind: 'example', hash: h });
-        if (narrow()) setView('code'); // after the async load, which shows the results
-      })
-      .catch(() => notice('This share link is damaged or incomplete. Ask for it again, or for the file.', { kind: 'error' }));
-    return true;
+  const h = followMoved(decodeURIComponent(location.hash.slice(1)));
+  const t = routeLink(h, linkCatalog());
+  switch (t.kind) {
+    case 'none':
+      return false;
+    case 'share':
+      decodeShare(t.hash)
+        .then((src) => {
+          loadSource(src, { name: 'Shared handler', kind: 'example', hash: t.hash });
+          if (narrow()) setView('code'); // after the async load, which shows the results
+        })
+        .catch(() => notice('This share link is damaged or incomplete. Ask for it again, or for the file.', { kind: 'error' }));
+      return true;
+    case 'whats-new':
+      // The link in the Discord update post: the workbench, with What's new open.
+      news.open();
+      dropHash();
+      return false;
+    case 'docs':
+      docs.openHash(t.hash);
+      return false; // opens no handler: the draft stays
+    case 'learn':
+      // #learn: the lessons moved to their own page (learn/); old links lead there.
+      location.replace(learnUrl(t.lesson));
+      return true;
+    case 'dev':
+      // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
+      devBar.show();
+      dropHash();
+      return false;
+    case 'hub':
+      return void openHub(t.index), true;
+    case 'probe':
+      return openProbe(t.index), true;
+    case 'package':
+      return openExamplePackage(t.id), true;
+    case 'example-mistakes':
+      return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
+    case 'template':
+      return openTemplate(t.id), true;
   }
-  if (h === 'whats-new') {
-    // The link in the Discord update post: the workbench, with What's new open.
-    news.open();
-    try {
-      history.replaceState(null, '', location.pathname + location.search);
-    } catch {
-      /* ignore */
-    }
-    return false;
-  }
-  if (h === 'dev') {
-    // #dev shows the dev bar for this page load (like ?env=dev in lonnsinnplassering) and opens nothing.
-    devBar.show();
-    try {
-      history.replaceState(null, '', location.pathname + location.search);
-    } catch {
-      /* ignore */
-    }
-    return false;
-  }
-  if (h.startsWith('hub-')) {
-    const i = HUB_EXAMPLES.handlers.findIndex((x) => x.id === h.slice(4));
-    if (i >= 0) return void openHub(i), true;
-  } else if (h.startsWith('probe-')) {
-    const i = PROBES.findIndex((p) => p.name.startsWith(h.slice(6).padStart(2, '0') + '-'));
-    if (i >= 0) return openProbe(i), true;
-  } else if (h.startsWith('package-') && EXAMPLE_PACKAGES.some((e) => e.id === h.slice(8))) {
-    return openExamplePackage(h.slice(8)), true;
-  } else if (h === 'example-mistakes') {
-    return loadSource(BUGGY, { name: 'Handler with common mistakes', kind: 'example', hash: h }), true;
-  } else if (h.startsWith('template-')) {
-    const t = BOT_TEMPLATES.templates.find((x) => slug(x.id) === slug(h.slice('template-'.length)));
-    if (t) return openTemplate(t.id), true;
-  }
-  notice(`The link "#${h}" doesn't match an example or Hub handler in this version of the workbench.`, { kind: 'error' });
+  // Not here (any more): say what it was and show the way, never a dead end.
+  const n = unknownNote(t)!;
+  const run = n.action.to === 'hub' ? () => window.open(n.action.url, '_blank', 'noopener') : n.action.to === 'probes' ? () => selectTab('probes') : () => showOpen();
+  notice(n.text, { kind: 'info', action: { label: n.action.label, run } });
   return false;
 }
 // A link shares code: on phones, show the handler, not the results.
@@ -2860,45 +2759,6 @@ try {
 } catch {
   /* ignore */
 }
-// Something put away flies to where it now lives (a ghost of it shrinks into the link), and the link pulses, so you
-// see where to find it again. With motion off, only the pulse.
-function flyTo(from: HTMLElement, to: HTMLElement) {
-  const pulse = () => { to.classList.remove('moved-here'); void to.offsetWidth; to.classList.add('moved-here'); setTimeout(() => to.classList.remove('moved-here'), 1800); };
-  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
-  if (document.documentElement.dataset.motionUi === 'off' || !b.width || !a.width) return pulse();
-  const ghost = document.createElement('div');
-  ghost.className = 'fly-ghost';
-  ghost.setAttribute('aria-hidden', 'true');
-  Object.assign(ghost.style, { left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px` });
-  document.body.append(ghost);
-  const anim = ghost.animate([
-    { transform: 'translate(0, 0) scale(1)', opacity: 1, borderRadius: '8px' },
-    { transform: `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(${b.width / a.width}, ${b.height / a.height})`, opacity: 0.2, borderRadius: '999px' },
-  ], { duration: 520, easing: 'cubic-bezier(.5, 0, .2, 1)' });
-  anim.onfinish = () => { ghost.remove(); pulse(); };
-}
-function showWelcome() {
-  const w = $('#welcome');
-  w.innerHTML = `<div class="w-head"><span><strong>New here?</strong> A handler is the file that tells Nucleus Co-op how to run a game split-screen (in its <code>handlers</code> folder).</span><button class="btn icon" type="button" data-w="close" aria-label="Dismiss" title="Dismiss">×</button></div>
-    <div class="w-steps"><span><b>1</b> <button class="link" type="button" data-w="file">Open yours</button> or <button class="link" type="button" data-w="open">an example</button></span><span><b>2</b> Fix what Nucleus would reject</span><span><b>3</b> <button class="link" type="button" data-w="sim">Try it</button> per player</span><span><b>4</b> Save it for Nucleus</span></div>`;
-  w.hidden = false;
-  w.querySelector('[data-w=open]')!.addEventListener('click', () => showOpen());
-  w.querySelector('[data-w=file]')!.addEventListener('click', () => fileInput.click());
-  w.querySelector('[data-w=sim]')!.addEventListener('click', () => selectTab('simulate'));
-  w.querySelector('[data-w=close]')!.addEventListener('click', () => {
-    flyTo(w, $('#welcome-open'));
-    w.hidden = true;
-    editor.refresh();
-    announce('Closed. Getting started, at the bottom, brings it back.');
-    try {
-      localStorage.setItem(WELCOME_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-  });
-  editor.refresh();
-}
-if (!welcomed) showWelcome();
 // What feedback forms say about the open handler: its name and where it came from, a link only to an unedited example
 // or Hub handler, never the code itself.
 setReportState(() => ({
@@ -2911,19 +2771,33 @@ const firstRun = initFirstRun($('#firstrun-dialog') as HTMLDialogElement, {
   setMode,
   layout,
   setLayout,
-  done: (exp) => { if (exp) announce(exp === 'developer' ? 'Advanced mode is on.' : 'Guided: tips and plain words. Getting started is above the code.'); editor.focus(); },
+  done: (exp) => {
+    if (exp === 'developer') {
+      // "I write code" starts compact: no tip bar (a click away in Settings), and a home page without the intro.
+      tips.set(false);
+      try {
+        localStorage.setItem(WELCOME_KEY, '1');
+      } catch {
+        /* ignore */
+      }
+      editor.refresh();
+    }
+    if (exp) announce(exp === 'developer' ? 'Advanced mode is on: tips are off (Settings › Tips and help).' : 'Guided: tips and plain words. Getting started, at the bottom, shows the way round.');
+    editor.focus();
+  },
 });
 // A new visitor: during the beta, the tester questions first (they also pick guided or Advanced); else Nucli's.
-if (!welcomed && !firstRunDone() && !location.hash) {
+if (!welcomed && !firstRunDone() && !INITIAL_HASH) {
   if (testGuide.needed()) testGuide.open(); else firstRun.open();
 }
 $('#fr-again').addEventListener('click', () => { ($('#settings-dialog') as HTMLDialogElement).close(); firstRun.open(); });
+// Getting started: the home page (what a handler is, the four steps, New / Open / Learn), over the open handlers.
 $('#welcome-open').addEventListener('click', () => {
-  if (narrow()) setView('code');
-  showWelcome();
-  const w = $('#welcome');
-  w.classList.remove('welcome-in'); void w.offsetWidth; w.classList.add('welcome-in'); // unfolds where it lives
-  w.querySelector<HTMLElement>('button, a')?.focus();
+  if (noneOpen) {
+    const box = $('#no-handler');
+    box.classList.remove('welcome-in'); void box.offsetWidth; box.classList.add('welcome-in');
+    box.querySelector<HTMLElement>('[data-nh=new]')?.focus();
+  } else showHome(true);
 });
 
 let startTab = 'problems';
@@ -2933,10 +2807,23 @@ try {
   /* ignore */
 }
 initTabs();
-if (!openFromHash()) {
+const initialHash = INITIAL_HASH ? followMoved(decodeURIComponent(INITIAL_HASH.slice(1))) : '';
+const initialDocs = /^docs(-|$)/.test(initialHash) ? initialHash : '';
+if (initialDocs) {
+  renderDocHead();
+  docs.openHash(initialDocs);
+} else if (!openFromHash()) {
   renderDocHead();
   selectTab(['problems', 'simulate', 'api', 'probes'].includes(startTab) ? startTab : 'problems');
 } else if (narrow()) setView('code');
+// A link that opened a handler (#example-…, #hub-…) leaves the results tabs as they were: mark the one whose
+// panel shows, so a tab is always selected (and its ink drawn). Only the marking: the view stays as it is.
+if (!document.querySelector('.pane-head [role=tab][aria-selected=true]')) {
+  const shown = [...document.querySelectorAll<HTMLElement>('[role=tabpanel][id^=panel-]')].find((p) => !p.hidden);
+  const id = shown ? shown.id.slice('panel-'.length) : 'problems';
+  document.querySelectorAll<HTMLElement>('.pane-head [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+  requestAnimationFrame(placeInk);
+}
 initTouchTitles();
 
 // The phone's own "Select all" selects the whole editable area. CodeMirror then redraws that same
@@ -2971,14 +2858,19 @@ document.querySelectorAll('dialog').forEach((dl) =>
 // the first saves of a .zip.
 const codeDialog = $('#code-dialog') as HTMLDialogElement;
 /** The Save or Share button the person can see (slim bar, side rail or phone), so confirmations show where they look. */
-const shown = (...sel: string[]) => sel.map((s) => document.querySelector<HTMLElement>(s)).find((el) => !!el?.offsetParent) ?? null;
+// Function declarations (hoisted): initTips, far above, may ask for the Share button while the page starts.
+function shown(...sel: string[]): HTMLElement | null {
+  return sel.map((s) => document.querySelector<HTMLElement>(s)).find((el) => !!el?.offsetParent) ?? null;
+}
 const saveButton = () => shown('#code-menu-open', '.rail [data-rail=save]', '#code-menu-phone') ?? $('#code-menu-open');
-const shareButton = () => shown('#share-open', '.rail [data-rail=share]', '#code-menu-phone') ?? $('#share-open');
+function shareButton(): HTMLElement {
+  return shown('#share-open', '.rail [data-rail=share]', '#code-menu-phone') ?? ($('#share-open') as HTMLElement);
+}
 type SaveKind = 'zip' | 'js' | 'nc';
 const SAVE_KEY = 'nucleus-workbench-save-format';
 const STEPS_KEY = 'nucleus-workbench-install-steps-seen';
 const saveKind = (): SaveKind => { try { const v = localStorage.getItem(SAVE_KEY); return v === 'js' || v === 'nc' ? v : 'zip'; } catch { return 'zip'; } };
-const SAVE_LABEL: Record<SaveKind, string> = { zip: 'For Nucleus Co-op (.zip)', js: 'The code only (.js)', nc: 'Package for VS Code (.nc)' };
+const SAVE_LABEL: Record<SaveKind, string> = { zip: 'For Nucleus Co-op (.zip)', js: 'The code only (.js)', nc: 'Package for the Hub (.nc)' };
 function syncSaveButton() {
   const k = saveKind();
   $('#code-menu-open').setAttribute('aria-label', `Save the handler: ${SAVE_LABEL[k]}`);
@@ -3011,7 +2903,8 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
   if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
   const filename = `${handlerFileName()}.${kind}`;
   try {
-    const data = kind === 'js' ? new TextEncoder().encode(editor.getValue()) : buildPackage(editor.getValue(), packageFiles);
+    const text = exportText();
+    const data = kind === 'js' ? new TextEncoder().encode(text) : buildPackage(text, packageFiles);
     await downloads.save({ filename, data });
     waka.saved();
     use(`save-${kind}`);
@@ -3040,7 +2933,7 @@ async function saveToNucleus(pick = false, trigger: HTMLElement = saveButton()) 
     notice("This browser can't save into a folder: drag the .zip onto Nucleus Co-op's window to install it. (Chrome and Edge can save straight into Nucleus' handlers folder.)", { kind: 'info' });
     return;
   }
-  const r = await saveIntoNucleus(editor.getValue(), packageFiles, pick);
+  const r = await saveIntoNucleus(exportText(), packageFiles, pick);
   if (r.ok) {
     nucleusFolderName = r.folder;
     waka.saved();
@@ -3157,9 +3050,10 @@ requestAnimationFrame(placeInk);
 {
   const links = [...document.querySelectorAll<HTMLAnchorElement>('a.start-link')];
   if (links.length && /^https?:/.test(location.protocol) && /^https:/.test(links[0].getAttribute('href') ?? '')) {
-    fetch('start/', { method: 'HEAD', cache: 'no-store' })
+    // The file itself, not the folder: some hosts (the Claude artifact) serve start/index.html but not start/.
+    fetch('start/index.html', { cache: 'no-store' })
       .then((r) => {
-        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) links.forEach((a) => (a.href = 'start/'));
+        if (r.ok && (r.headers.get('content-type') ?? '').includes('html')) links.forEach((a) => (a.href = 'start/index.html'));
       })
       .catch(() => {});
   }

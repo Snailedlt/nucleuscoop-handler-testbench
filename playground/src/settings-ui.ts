@@ -1,4 +1,5 @@
 import { PRESETS, presetOf, savedMotion, setMotion, type MascotMotion, type Preset } from './motion';
+import { setWrap, wrapEditor } from './wrap';
 import { confirmOn } from './toast';
 // Workbench settings (the gear in the header): theme, editor, tips, the Lines column, and the
 // niche ones (Advanced mode, the dev bar) under Advanced. Also the phone helpers it controls:
@@ -6,6 +7,7 @@ import { confirmOn } from './toast';
 import { applyTheme } from './devbar';
 import { initKeyboard, keyboard, onKeyboard } from './keyboard';
 import { CODE_THEMES, codeThemeTokens, currentCodeTheme, pickCodeTheme, addLook, BUILT_IN_LOOKS, lookAbout, contrastProblems, currentLook, customLooks, lookName, lookTokens, parseTheme, pickLook, removeLook, themeFile } from './customtheme';
+import { narrow } from './dom';
 
 const EDITOR_KEY = 'nucleus-workbench-editor';
 const THEME_KEY = 'nucleus-workbench-dev-mode'; // shared with the dev bar
@@ -24,7 +26,6 @@ const put = (k: string, v: string | null) => {
   } catch {}
 };
 const touch = () => window.matchMedia('(pointer: coarse)').matches;
-const narrow = () => window.matchMedia('(max-width: 860px)').matches;
 
 interface Deps {
   editor: any;
@@ -44,9 +45,10 @@ export function initSettings(d: Deps) {
   const save = () => put(EDITOR_KEY, JSON.stringify(ed));
   const applyEditor = () => {
     document.documentElement.style.setProperty('--code-size', { s: '12px', m: '13px', l: '15px' }[ed.size]);
-    d.editor.setOption('lineWrapping', ed.wrap);
+    setWrap(ed.wrap); // every code view, not only the handler's editor (wrap.ts)
     d.editor.refresh();
   };
+  wrapEditor(d.editor);
   applyEditor();
 
   const dlg = $('#settings-dialog') as HTMLDialogElement;
@@ -78,7 +80,7 @@ export function initSettings(d: Deps) {
     if (!box) return;
     const on = currentCodeTheme();
     const mode = isDark() ? 'dark' : 'light';
-    const sample = '<span class="c">// Two players, one screen</span>\nGame.<span class="p">MaxPlayers</span> = <span class="n">2</span>;\n<span class="k">var</span> exe = <span class="s">"game.exe"</span>;';
+    const sample = '<span class="c">// Two players, one screen</span>\nGame.<span class="p">MaxPlayers</span> <span class="o">=</span> <span class="n">2</span>;\n<span class="k">var</span> exe <span class="o">=</span> <span class="s">"game.exe"</span>;';
     const card = (id: string, name: string) => {
       const label = document.createElement('label');
       label.className = `code-card${id === on ? ' on' : ''}`;
@@ -104,7 +106,11 @@ export function initSettings(d: Deps) {
       label.append(r, pre, nm, tick);
       return label;
     };
-    box.replaceChildren(card('', "The look's own"), ...Object.entries(CODE_THEMES).map(([id, t]) => card(id, t.name)));
+    box.replaceChildren(card('', "The look's own"), ...Object.entries(CODE_THEMES).map(([id, t]) => {
+      const c = card(id, t.name);
+      if (t.about) c.title = t.about; // what it is ("VS Code's default colours…") on hover
+      return c;
+    }));
   }
   function syncLooks() {
     syncCode();
@@ -259,6 +265,9 @@ export function initSettings(d: Deps) {
   // Search: shows every section's matching settings at once, with the section names above them.
   const q = $('#set-q') as HTMLInputElement;
   const none = $('#set-none');
+  // Settings for experienced users (.dev-only) aren't searched outside Advanced mode, as they aren't shown (a switched-on WakaTime is).
+  const modeHidden = (el: Element) => document.documentElement.dataset.mode !== 'dev' && el.classList.contains('dev-only') && !el.querySelector('#set-waka:checked');
+  const shownText = (el: Element): string => (modeHidden(el) ? '' : [...el.childNodes].map((n) => (n.nodeType === 1 ? shownText(n as Element) : n.textContent ?? '')).join(''));
   const filter = () => {
     const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
     dlg.classList.toggle('searching', words.length > 0);
@@ -267,7 +276,7 @@ export function initSettings(d: Deps) {
       let hit = false;
       const label = (panel.dataset.label ?? '').toLowerCase();
       for (const s of panel.querySelectorAll<HTMLElement>('.set-sec')) {
-        const text = label + ' ' + (s.textContent ?? '').toLowerCase();
+        const text = label + ' ' + shownText(s).toLowerCase();
         const ok = words.every((w) => text.includes(w));
         s.classList.toggle('no-match', !ok);
         hit ||= ok;
@@ -278,6 +287,7 @@ export function initSettings(d: Deps) {
     none.hidden = !words.length || any;
   };
   q.addEventListener('input', filter);
+  d.advanced.addEventListener('change', () => { if (q.value) filter(); });
   q.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && q.value) { e.preventDefault(); e.stopPropagation(); q.value = ''; filter(); }
   });
@@ -377,5 +387,13 @@ export function initSettings(d: Deps) {
   // Not while selecting: dragging a selection handle scrolls by itself.
   d.editor.on('cursorActivity', () => kbOpen && !d.editor.somethingSelected() && requestAnimationFrame(() => d.editor.scrollIntoView(null, 60)));
 
-  return { open };
+  /** Alt+Z (View: Toggle Word Wrap in VS Code): flips the setting, kept like a change in Settings. */
+  function toggleWrap() {
+    ed.wrap = !ed.wrap;
+    save();
+    applyEditor();
+    ($('#set-wrap') as HTMLInputElement).checked = ed.wrap;
+    d.toast(ed.wrap ? 'Word wrap on: long lines wrap (Alt+Z turns it off).' : 'Word wrap off: long lines scroll sideways (Alt+Z turns it on).');
+  }
+  return { open, toggleWrap };
 }

@@ -306,11 +306,3 @@ export function initToasts() {
   announce('');
 }
 
-/** Closes every toast at once (e.g. before a screenshot). */
-export function clearToasts() {
-  for (const e of [...entries]) {
-    entries.splice(entries.indexOf(e), 1);
-    e.el.remove();
-  }
-  layout();
-}

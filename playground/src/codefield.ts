@@ -6,6 +6,7 @@
 // gets focus, so pages with many steps stay fast. The host reads `value`, gets `oninput`/`onblur`, and finds the field
 // from any of its elements with `codeFieldOf` (the element that has focus carries the host's id and data attribute).
 import CodeMirror from 'codemirror';
+import { keysByPosition, tabKey } from './keys';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/edit/closebrackets';
@@ -165,11 +166,11 @@ export class CodeField {
     io?.unobserve(this.el);
     const multi = this.o.multiline;
     const keys: Record<string, any> = {
-      'Ctrl-Space': (cm: any) => support.hint && cm.showHint({ hint: support.hint, completeSingle: false }),
+      'Ctrl-Space': (cm: any) => support.hint && cm.showHint({ hint: support.hint, completeSingle: false, explicit: true }),
       'Shift-Alt-F': () => this.format(),
     };
     if (multi) {
-      keys.Tab = (cm: any) => (cm.somethingSelected() ? cm.execCommand('indentMore') : cm.execCommand('insertSoftTab'));
+      keys.Tab = tabKey;
       keys['Shift-Tab'] = (cm: any) => cm.execCommand('indentLess');
     } else {
       // One line: Enter keeps its meaning (nothing to add), Tab moves on as in any field.
@@ -206,6 +207,7 @@ export class CodeField {
       this.width();
       if (!this.silent) this.oninput?.();
     });
+    keysByPosition(cm); // punctuation shortcuts by key position, on any keyboard layout
     cm.on('blur', () => {
       this.escThenTab = false;
       this.onblur?.();
@@ -217,10 +219,14 @@ export class CodeField {
         this.escThenTab = false;
       } else if (e.key !== 'Shift') this.escThenTab = false;
     });
+    // closebrackets' quote and `[` keys insert without an inputRead: still open the suggestions (Context.Options[").
+    cm.on('keyHandled', (c: any, name: string) => {
+      if (support.hint && !c.state.completionActive && /^'["'[]'$/.test(name)) c.showHint({ hint: support.hint, completeSingle: false });
+    });
     cm.on('inputRead', (c: any, change: any) => {
       if (!support.hint || c.state.completionActive) return;
       const afterEquals = change.text[0] === ' ' && /[\w\]]\s*=\s$/.test(c.getLine(change.from.line).slice(0, change.from.ch + 1));
-      if (change.text[0] === '.' || /^[\w$]$/.test(change.text[0]) || afterEquals) c.showHint({ hint: support.hint, completeSingle: false });
+      if (change.text[0] === '.' || /^[\w$"'[,]$/.test(change.text[0]) || afterEquals) c.showHint({ hint: support.hint, completeSingle: false });
     });
     const w = cm.getWrapperElement() as HTMLElement;
     w.addEventListener('mousemove', (e: MouseEvent) => {

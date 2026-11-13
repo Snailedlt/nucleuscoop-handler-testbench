@@ -2,6 +2,7 @@
 // code, a second editor for its text files (ini, cfg, json, xml…, with highlighting and checks) and a card for
 // binaries. handler.js stays in the main editor, so everything that reads "the handler" keeps reading it.
 import CodeMirror from 'codemirror';
+import { wrapEditor, wrapOn } from './wrap';
 import 'codemirror/mode/properties/properties';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/toml/toml';
@@ -82,10 +83,11 @@ export function initPackageUI(host: PkgHost) {
   function ensureEditor() {
     if (fileEd) return fileEd;
     fileEd = CodeMirror($('#file-editor'), {
-      lineNumbers: true, indentUnit: 2, tabSize: 2, lineWrapping: false,
+      lineNumbers: true, indentUnit: 2, tabSize: 2, lineWrapping: wrapOn(),
       gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers'],
       lint: { getAnnotations: (text: string) => (active ? checkFileText(active, text) : []).map((p) => ({ from: CodeMirror.Pos((p.line ?? 1) - 1, 0), to: CodeMirror.Pos((p.line ?? 1) - 1, 999), message: `${p.title}. ${p.why}`, severity: p.severity })), delay: 300 },
     } as any);
+    wrapEditor(fileEd); // Settings › Wrap long lines, Alt+Z
     fileEd.on('change', () => {
       clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {

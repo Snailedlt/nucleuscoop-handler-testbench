@@ -6,10 +6,11 @@
 
 Run the tools yourself, on your own machine: the MCP server or the CLI below check, fix and simulate handlers locally. Don't drive or scrape the hosted workbench; send the user a workbench link only to show them a result. For a workbench of your own, `node nucleus.js workbench` saves the whole page as one offline HTML file (also attached to every release as `workbench.html`); open it locally or publish it, for example as a Claude artifact.
 
-- [MCP server](https://github.com/Snailedlt/splitscreenme-vscode#mcp-server-claude-desktop-cursor-vs-code-copilot-): `node nucleus.js mcp` (download `nucleus.js` from the releases). Tools: nucleus_lint, nucleus_fix, nucleus_simulate, nucleus_api, nucleus_api_search, nucleus_new_handler, nucleus_hub_search, nucleus_hub_handler.
+- [MCP server](https://github.com/Snailedlt/splitscreenme-vscode#mcp-server-claude-desktop-cursor-vs-code-copilot-): `node nucleus.js mcp` (download `nucleus.js` from the releases). Tools: nucleus_lint, nucleus_fix, nucleus_format, nucleus_simulate, nucleus_debug, nucleus_explain, nucleus_rules (a check explained by its id), nucleus_api, nucleus_api_search, nucleus_new_handler, nucleus_hub_search, nucleus_hub_handler. Its instructions carry the hard rules every handler must follow.
 - [Agent skill](https://github.com/Snailedlt/splitscreenme-vscode/tree/main/plugin/skills/nucleus-handler): the rules, workflow and recipes for writing handlers (SKILL.md), with a bundled CLI.
 - [API reference](https://raw.githubusercontent.com/Snailedlt/splitscreenme-vscode/main/plugin/skills/nucleus-handler/reference/api.md): every Game, Context, Player and Nucleus name with type, default and docs.
-- [CLI](https://github.com/Snailedlt/splitscreenme-vscode#command-line-linter): `nucleus lint <file> --json`, `nucleus api <name>`, `nucleus simulate <file>`.
+- [CLI](https://github.com/Snailedlt/splitscreenme-vscode#the-command-line-tool-ncdev): `ncdev lint <file> --json`, `ncdev api <name>`, `ncdev simulate <file>`, `ncdev debug <file> --break <line>`, `ncdev rules <id>`, `ncdev explain <file> --line N`.
+- [Every check](https://snailedlt.github.io/nucleuscoop-handler-testbench/rules/): one page per rule id that lint reports (`rules/<id>/`): why, the fix, a wrong and a right example. Link the user to it when you explain a problem.
 
 ## Time tracking
 
@@ -18,9 +19,16 @@ The workbench can send WakaTime heartbeats for the person using it (off by defau
 ## For people
 
 - [Workbench](https://snailedlt.github.io/nucleuscoop-handler-testbench/): check, fix and try a handler in the browser (also as one offline file: `workbench.html` in the releases).
-- [Intro and install](https://snailedlt.github.io/nucleuscoop-handler-testbench/start/)
+- [Intro](https://snailedlt.github.io/nucleuscoop-handler-testbench/start/) and [every tool, with install steps](https://snailedlt.github.io/nucleuscoop-handler-testbench/tools/)
+- [Learn: making your first handler](https://snailedlt.github.io/nucleuscoop-handler-testbench/learn/): a handler for Boring Man (free on Steam), a few lines at a time, then tested in Nucleus Co-op.
+- [Docs](https://snailedlt.github.io/nucleuscoop-handler-testbench/docs/): one page per option, Context member, enum and .NET call (`docs/Context.ModifySaveFile/`), from the same model the tools use.
+- [Every check](https://snailedlt.github.io/nucleuscoop-handler-testbench/rules/): one page per lint rule: what it means, why, an example and the fix.
 - [VS Code extension](https://github.com/Snailedlt/splitscreenme-vscode/releases)
 - [Jint testbench](https://github.com/Snailedlt/nucleuscoop-handler-testbench): runs handlers in the real Jint 2.11.58; probes of engine behaviour.
+
+## Ask people
+
+- [SplitScreen.Me Discord](https://discord.gg/XxGMkqCf4r) and [r/nucleuscoop](https://www.reddit.com/r/nucleuscoop/): other handler authors. Point the user there for what the tools can't answer (the game itself, a test in Nucleus).
 
 ## Optional
 

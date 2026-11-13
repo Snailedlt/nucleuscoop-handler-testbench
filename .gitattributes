@@ -1,0 +1,2 @@
+# LF everywhere, also on Windows checkouts: the build and the tests parse these files line by line.
+* text=auto eol=lf

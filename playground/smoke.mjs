@@ -97,11 +97,11 @@ for (const theme of ['light', 'dark']) {
   const typed = focused && (await p.keyboard.type('// typed'), await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue().includes('// typed')));
   check(typed, `${theme}: Tab reaches the code editor, and typing goes into it`);
   await axe(p, `${theme}, Try it`);
-  // Reference with nothing typed shows what's in it.
+  // Docs with nothing typed shows what's in it.
   await p.click('[role=tab][data-tab=api]');
   await p.waitForTimeout(200);
-  check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Reference lists what's in it when nothing is typed`);
-  await axe(p, `${theme}, Reference`);
+  check((await p.$$('#api-results .api-group')).length >= 6 && (await p.$$('#api-results .api-chip')).length >= 10, `${theme}: Docs lists what's in it when nothing is typed`);
+  await axe(p, `${theme}, Docs`);
   // A custom theme file: applied, unsafe values left out, removable.
   await p.$eval('#settings-open', (b) => b.click()); // in the menu now
   await p.waitForTimeout(300);
@@ -154,9 +154,106 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(400);
   check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) === 'Game.GUID = "A";\nGame.GameName = "A";\nGame.ExecutableName = "a.exe";\nGame.Play = function () {\n    Context.StartArguments = "-w";\n};\n', `${theme}: Shift+Alt+F formats the code`);
   check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
+  // Folding, as in VS Code: Ctrl+K Ctrl+0 folds all, Ctrl+K Ctrl+J unfolds all.
+  const folds = () => p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getAllMarks().filter((m) => m.__isFold).length);
+  await p.click('.CodeMirror-code');
+  await p.keyboard.press('Control+k');
+  await p.keyboard.press('Control+0');
+  check((await folds()) > 0, `${theme}: Ctrl+K Ctrl+0 folds the code`);
+  await p.keyboard.press('Control+k');
+  await p.keyboard.press('Control+j');
+  check((await folds()) === 0, `${theme}: Ctrl+K Ctrl+J unfolds it`);
+  // Coding keys as in VS Code: Tab indents a selection (doesn't replace it); F2 selects every use to rename.
+  const cmSet = (v, a, h) => p.evaluate(([v, a, h]) => { const e = document.querySelector('.CodeMirror').CodeMirror; e.setValue(v); e.setSelection(a, h); e.focus(); }, [v, a, h]);
+  const cmVal = () => p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue());
+  await cmSet('var a = 1;\nvar b = 2;\n', { line: 0, ch: 0 }, { line: 1, ch: 3 });
+  await p.keyboard.press('Tab');
+  check((await cmVal()) === '  var a = 1;\n  var b = 2;\n', `${theme}: Tab indents the selected lines`);
+  await cmSet('function go() {}\ngo();\n', { line: 1, ch: 1 }, { line: 1, ch: 1 });
+  await p.keyboard.press('F2');
+  await p.keyboard.type('run');
+  check((await cmVal()) === 'function run() {}\nrun();\n', `${theme}: F2 renames every use`);
+  // Ctrl+.: the line's problems and fixes, even with the cursor on a name that has docs of its own.
+  await cmSet('Game.GUID = "a";\nGame.GameName = "a";\nGame.ExecutableName = "a.exe";\nGame.MaxPlayers = "4";\n', { line: 3, ch: 0 }, { line: 3, ch: 0 });
+  await p.waitForTimeout(400);
+  await p.keyboard.press('Control+.');
+  await p.waitForTimeout(300);
+  check(await p.isVisible('[data-lp-fix]'), `${theme}: Ctrl+. on a name shows the line's fixes, not only the name's docs`);
+  await p.keyboard.press('Escape');
+  // Explain this line (Ctrl+Alt+E): plain words in the hover card.
+  await cmSet('Game.Play = function () {\n};\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
+  await p.keyboard.press('Control+Alt+e');
+  await p.waitForTimeout(200);
+  check(/once for each player/.test(await p.textContent('#tip')) && await p.isVisible('#tip'), `${theme}: Ctrl+Alt+E explains the line`);
+  { const r = await p.$eval('.CodeMirror', (e) => e.getBoundingClientRect()); await p.mouse.move(r.x + 200, r.y + 120); await p.waitForTimeout(500); }
+  check(await p.isVisible('#tip') && /once for each player/.test(await p.textContent('#tip')), `${theme}: the explanation stays while the mouse moves over the code`);
+  await p.keyboard.press('Escape');
+  // Find and replace (Ctrl+F, Ctrl+H, Ctrl+Alt+Enter), go to line (Ctrl+G), as in VS Code.
+  await cmSet('var foo = 1;\nvar bar = foo;\n', { line: 0, ch: 5 }, { line: 0, ch: 5 });
+  await p.keyboard.press('Control+f');
+  await p.waitForTimeout(200);
+  check((await p.textContent('.find-widget .fw-count')) === '1 of 2', `${theme}: Ctrl+F finds the word at the cursor, with a count`);
+  await p.keyboard.press('Control+h');
+  await p.keyboard.type('qux');
+  await p.keyboard.press('Control+Alt+Enter');
+  check((await cmVal()) === 'var qux = 1;\nvar bar = qux;\n', `${theme}: Ctrl+H, Ctrl+Alt+Enter replaces all`);
+  await p.keyboard.press('Escape');
+  await p.keyboard.press('Control+g');
+  await p.waitForTimeout(300);
+  await p.keyboard.type('2:5');
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(200);
+  check((await p.evaluate(() => JSON.stringify(document.querySelector('.CodeMirror').CodeMirror.getCursor()))).startsWith('{"line":1,"ch":4'), `${theme}: Ctrl+G 2:5 goes to line 2, column 5`);
+  // Find, Alt+Enter: every match selected; → / ← put a cursor after / before each (suffix and prefix in one go).
+  await cmSet('a.x = 1;\nb.x = 2;\nc.y = 3;\n', { line: 2, ch: 0 }, { line: 2, ch: 0 });
+  await p.keyboard.press('Control+f');
+  await p.keyboard.type('.x');
+  await p.keyboard.press('Alt+Enter');
+  await p.keyboard.press('ArrowRight');
+  await p.keyboard.type('Y');
+  await p.keyboard.press('ArrowLeft');
+  for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowLeft');
+  await p.keyboard.type('_');
+  check((await cmVal()) === 'a_.xY = 1;\nb_.xY = 2;\nc.y = 3;\n', `${theme}: Find, Alt+Enter, then → / ← add a suffix and a prefix to every match`);
+  // Find stays quick with many matches: no mark per match, the highlight only on the lines on screen.
+  await cmSet('var x = 1;\n'.repeat(30000), { line: 30000, ch: 0 }, { line: 30000, ch: 0 }); // an empty last line: nothing to seed Find with
+  await p.keyboard.press('Control+f');
+  const t0 = Date.now();
+  check(!/of 20000/.test(await p.textContent('.find-widget .fw-count')), `${theme}: (Find starts without those matches)`);
+  await p.keyboard.type('x');
+  await p.waitForFunction(() => /of 20000\+/.test(document.querySelector('.find-widget .fw-count').textContent), null, { timeout: 5000 }).catch(() => {});
+  const took = Date.now() - t0;
+  check(/of 20000\+/.test(await p.textContent('.find-widget .fw-count')) && took < 1500, `${theme}: Find with 30000 matches counts them in ${took} ms (under 1.5 s)`);
+  const t1 = Date.now();
+  await p.keyboard.press('Enter');
+  await p.keyboard.press('Enter');
+  check(Date.now() - t1 < 400, `${theme}: and steps through them without a hang (${Date.now() - t1} ms)`);
+  await p.keyboard.press('Escape');
+  // A German keyboard: Ctrl + the key where a US keyboard has "/" (it prints "-") toggles a comment.
+  await cmSet('var a = 1;\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
+  await p.evaluate(() => {
+    const e = document.querySelector('.CodeMirror').CodeMirror;
+    const ev = new KeyboardEvent('keydown', { key: '-', code: 'Slash', ctrlKey: true, bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'keyCode', { get: () => 189 });
+    e.getInputField().dispatchEvent(ev);
+  });
+  check((await cmVal()) === '// var a = 1;\n', `${theme}: shortcuts with punctuation work by key position on other keyboard layouts`);
+  // Rebinding: Settings › Keyboard shortcuts, press the new keys, Enter; it works in the code at once; Reset puts it back.
+  await p.keyboard.press('Control+Comma');
+  await p.click('#st-keys');
+  await p.fill('#sp-keys .kb-q', 'comment or');
+  await p.click('#sp-keys [data-kb-change="comment"]');
+  await p.keyboard.press('Control+Shift+Digit7');
+  await p.keyboard.press('Enter');
+  await p.keyboard.press('Escape');
+  await cmSet('var a = 1;\n', { line: 0, ch: 0 }, { line: 0, ch: 0 });
+  await p.keyboard.press('Control+Shift+Digit7');
+  check((await cmVal()) === '// var a = 1;\n', `${theme}: a changed shortcut works in the code`);
+  check((await p.evaluate(() => localStorage.getItem('nucleus-workbench-keys'))) === '{"comment":"Ctrl+Shift+7"}', `${theme}: changed shortcuts are kept (and exported with the settings)`);
+  await p.evaluate(() => localStorage.removeItem('nucleus-workbench-keys'));
   // Dialogs
   // Open: the arrow keys move through tiles, chips and rows.
-  await p.keyboard.press('Control+k');
+  await p.keyboard.press('Control+p'); // in the code Ctrl+K starts VS Code's two-key shortcuts
   await p.waitForTimeout(300);
   await p.focus('#open-q');
   const kinds = [];
@@ -184,21 +281,6 @@ for (const theme of ['light', 'dark']) {
     await axe(p, `${theme}, ${m} menu`);
     await p.keyboard.press('Escape');
     await p.waitForTimeout(150);
-  }
-  // An example package: the handler plus its files.
-  await p.keyboard.press('Control+k');
-  await p.fill('#open-dialog input', 'with its files');
-  await p.waitForTimeout(300);
-  await p.keyboard.press('Enter');
-  await p.waitForTimeout(1000);
-  const chip = await p.$('#files-open');
-  check(!!chip && /\+ \d+ files/.test(await chip.innerText()), `${theme}: the example package opens with its files`);
-  if (chip) {
-    await chip.click();
-    await p.waitForTimeout(300);
-    check((await p.$$('#files-panel .fp-open')).length > 1, `${theme}: the Files panel lists them`);
-    await axe(p, `${theme}, Files panel`);
-    await p.keyboard.press('Escape');
   }
   // A Hub handler whose package has other files: they open in Files, big ones as placeholders (Hub badge, a card).
   {
@@ -246,6 +328,20 @@ for (const theme of ['light', 'dark']) {
     await q.waitForTimeout(300);
     check((await q.$$('#test-body .tg-list > .tg-item')).length >= 3 && await q.isVisible('#tg-change'), `${theme}: the answers show the recommendations, with Change`);
     await axe(q, `${theme}, tester recommendations`);
+    // Behind the questions: the home page, not a handler (what a handler is, the steps, New / Open / Learn).
+    await q.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+    check(await q.isVisible('#no-handler .nh-intro') && (await q.textContent('#nh-title')) === 'Welcome to the workbench' && await q.isHidden('#main'), `${theme}: a first visit starts on the home page`);
+    await axe(q, `${theme}, home page`);
+    await q.click('[data-nh=new]');
+    await q.fill('#new-name', 'Smoke Game');
+    await q.fill('#new-exe', 'Smoke.exe');
+    await q.click('#new-dialog button[type=submit]');
+    await q.waitForTimeout(600);
+    check(await q.isHidden('#no-handler') && await q.isVisible('#main') && !(await q.$('#welcome')), `${theme}: New handler… leaves the home page for the code, with no welcome box above it`);
+    await q.click('#welcome-open');
+    check(await q.isVisible('#no-handler') && (await q.textContent('#nh-title')) === 'Getting started' && await q.isVisible('[data-nh=back]'), `${theme}: Getting started shows the home page over the open handler`);
+    await q.keyboard.press('Escape');
+    check(await q.isHidden('#no-handler') && await q.isVisible('#main'), `${theme}: Esc goes back to the code`);
     await fresh.close();
   }
   // One handler per tab: another handler opens a new tab; one that's already open switches to its tab.
@@ -261,6 +357,22 @@ for (const theme of ['light', 'dark']) {
     await p.evaluate(() => { location.hash = 'example-mistakes'; });
     await p.waitForTimeout(600);
     check(tabsAfter === tabsBefore + 1 && (await nTabs()) === tabsAfter && /mistakes/i.test(await p.innerText('#htabs [aria-selected=true]')), `${theme}: another handler opens a new tab, and an open one switches to its tab (${tabsBefore} -> ${tabsAfter})`);
+    // The ▾ (all open handlers) follows the number of tabs, on a fresh load as after any change.
+    const allShown = () => p.isVisible('#tab-all');
+    check((await allShown()) === (tabsAfter >= 2), `${theme}: ▾ all open handlers shown with ${tabsAfter} tabs`);
+    // Header buttons: one height and one centre line; ▾ and + centred on the tabs.
+    const geo = await p.evaluate(() => Object.fromEntries(['#share-open', '#code-menu-open', '#save-more', '#app-menu-open', '#tab-all', '#tab-add', '.htab-w.on'].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return [q, { h: r.height, mid: r.top + r.height / 2 }]; })));
+    const hdr = ['#share-open', '#code-menu-open', '#save-more', '#app-menu-open'].map((q) => geo[q]);
+    check(hdr.every((g) => Math.abs(g.h - hdr[0].h) < 1 && Math.abs(g.mid - hdr[0].mid) < 1), `${theme}: Share, Save, its ▾ and the menu are one height on one line (${hdr.map((g) => g.h).join('/')})`);
+    check(['#tab-all', '#tab-add'].every((q) => Math.abs(geo[q].mid - geo['.htab-w.on'].mid) <= 1.5), `${theme}: ▾ and + sit level with the tabs`);
+    await p.reload();
+    await p.waitForTimeout(800);
+    check((await allShown()) === ((await nTabs()) >= 2), `${theme}: ▾ the same after a reload`);
+    while ((await nTabs()) > 1) { await p.click('#htabs .htab-w:not(.on) [data-close]'); await p.waitForTimeout(150); }
+    check(!(await allShown()), `${theme}: ▾ hidden with one tab`);
+    await p.reload();
+    await p.waitForTimeout(800);
+    check(!(await allShown()), `${theme}: ▾ still hidden with one tab after a reload (it showed on first load)`);
   }
   // The side rail's Save: right-click offers the formats, like the arrow beside Save in the slim bar.
   await p.evaluate(() => localStorage.setItem('nucleus-workbench-layout', 'rail'));
@@ -356,12 +468,13 @@ for (const theme of ['light', 'dark']) {
     const at = await p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; const r = cm.charCoords({ line: 5, ch: 6 }, 'window'); return { x: r.left + 2, y: (r.top + r.bottom) / 2 }; });
     await p.mouse.move(at.x, at.y);
     await p.waitForTimeout(900);
-    check(await p.isVisible('#tip') && (await p.$$('#tip code.hl .cm-property')).length > 0, `${theme}: the hover card shows code in the editor's colours`);
+    check(await p.isVisible('#tip') && (await p.$$('#tip code.hl :is(.cm-property, .cm-nucleus-prop)')).length > 0, `${theme}: the hover card shows code in the editor's colours`);
     await p.mouse.move(5, 5);
     await p.click('[role=tab][data-tab=api]');
     await p.fill('#api-q', 'Game.PlayersPerInstance');
     await p.waitForTimeout(400);
-    check((await p.$$('#api-results pre.doc-code.hl .cm-number')).length > 0, `${theme}: Reference shows its example coloured like the code`);
+    check((await p.$$('#api-results pre.doc-code.hl .cm-number')).length > 0, `${theme}: Docs shows its example coloured like the code`);
+    check(/docs\/Game\.PlayersPerInstance\/$/.test((await p.getAttribute('#api-results .api-page a', 'href')) ?? ''), `${theme}: Docs' Open as a page leads to that name's docs page`);
     // Blocks: a code step is a small CodeMirror with the colours, and typing in it edits the handler.
     await p.click('[data-view-mode=blocks]');
     await p.waitForTimeout(800);
@@ -403,11 +516,47 @@ for (const theme of ['light', 'dark']) {
   await s.p.goto(BASE + 'start/');
   await s.p.evaluate(() => document.querySelectorAll('img').forEach((i) => (i.loading = 'eager')));
   await s.p.waitForTimeout(1500);
-  const shots = await s.p.$$eval('figure img', (l) => l.map((i) => [i.currentSrc.split('/').pop(), i.naturalWidth]));
-  check(shots.length > 0 && shots.every(([f, w]) => f.endsWith(`-${theme}.png`) && w > 0), `${theme}: start page screenshots load in the ${theme} theme`);
-  check((await s.p.getAttribute('.ctas a.btn.primary', 'href')) === '../', `${theme}: the start page links to its own workbench`);
+  // The gallery: both halves load; a view, a tool and a look switch the pictures; the slider moves the seam.
+  const halves = () => s.p.$$eval('.ba img', (l) => l.map((i) => [i.currentSrc.split('/').pop(), i.naturalWidth]));
+  let h = await halves();
+  check(h.length === 2 && h[0][0].endsWith('-light.webp') && h[1][0].endsWith('-dark.webp') && h.every(([, w]) => w > 0), `${theme}: start page gallery shows the light and the dark screenshot (${h.map((x) => x[0]).join(', ')})`);
+  await s.p.click('.ba-next');
+  await s.p.waitForTimeout(500);
+  h = await halves();
+  check(h.every(([f, w]) => /^workbench-suggestions-/.test(f) && w > 0) && /^2 of /.test(await s.p.textContent('.g-cap')), `${theme}: start page gallery: › goes to the next view, light and dark together (${h.map((x) => x[0]).join(', ')})`);
+  await s.p.click('.g-views button:last-child'); // Looks
+  await s.p.click('.g-looks button:nth-child(3)'); // Mac
+  await s.p.waitForTimeout(500);
+  h = await halves();
+  check(h.every(([f, w]) => /^workbench-look-mac-/.test(f) && w > 0), `${theme}: start page gallery: the looks switch the pictures (${h.map((x) => x[0]).join(', ')})`);
+  await s.p.click('.g-tabs button:last-child');
+  await s.p.waitForTimeout(500);
+  h = await halves();
+  check(h.every(([f, w]) => /^notepadpp-/.test(f) && w > 0) && (await s.p.isHidden('.g-looks')), `${theme}: start page gallery: another tool, its own views`);
+  await s.p.focus('.ba-range');
+  for (let i = 0; i < 5; i++) await s.p.keyboard.press('ArrowLeft');
+  check((await s.p.$eval('.ba-frame', (e) => e.style.getPropertyValue('--pos'))) === '45%', `${theme}: start page gallery: the arrow keys move the slider`);
+  check((await s.p.getAttribute('.ctas a.btn.primary', 'href')) .replace(/\?ref=[\w.-]+$/, '').replace(/index\.html$/, '') === '../', `${theme}: the start page links to its own workbench (by its file in a preview: some hosts don't serve ../)`);
   await axe(s.p, `${theme}, start page`);
   check(!s.errors.length, `${theme}: start page has no page errors`);
+  // The tools page: the downloads, a language-server editor's setup on a click, and old start-page links forwarded.
+  await s.p.goto(BASE + 'tools/');
+  await s.p.waitForTimeout(600);
+  const dl = await s.p.$$eval('#vsix, #ncdev', (a) => a.map((x) => x.getAttribute('href')));
+  check(dl.length === 2 && dl.every((h) => /^https:\/\/github\.com\//.test(h)), `${theme}: tools page links the .vsix and ncdev.exe (${dl.join(', ')})`);
+  await s.p.click('a.ed[data-ed="neovim"]');
+  check(await s.p.isVisible('#setup-neovim'), `${theme}: tools page: a language-server editor shows its setup`);
+  await axe(s.p, `${theme}, tools page`);
+  await s.p.goto(BASE + 'start/#get-notepadpp');
+  await s.p.waitForTimeout(500);
+  check(/\/tools\/#get-notepadpp$/.test(s.p.url()), `${theme}: an old start-page link to the downloads goes to the tools page (${s.p.url()})`);
+  // Every page has the way home (the brand) and to the workbench in its header.
+  for (const u of ['start/', 'tools/', 'docs/', 'docs/Game.Play/', 'rules/', 'rules/syntax-error/', 'learn/']) {
+    await s.p.goto(BASE + u);
+    const nav = await s.p.evaluate(() => ({ home: [...document.querySelectorAll('header a, .top a, nav a')].some((a) => /\/start\/$/.test(a.href)), wb: [...document.querySelectorAll('header a, .top a, nav a')].some((a) => a.textContent.trim() === 'Workbench') }));
+    check(nav.home && nav.wb, `${theme}: ${u} links home and to the workbench from its header`);
+  }
+  check(!s.errors.length, `${theme}: tools page and the headers: no page errors ${s.errors.join(' ')}`);
   await s.ctx.close();
 }
 
@@ -435,6 +584,288 @@ await m.p.keyboard.press('Escape');
 await m.p.waitForTimeout(200);
 check(!(await m.p.$('dialog.xf-dialog')), 'phone: Esc closes it');
 await m.ctx.close();
+
+// Help test the beta: pin a task, and it floats over the workbench while you test (testpins.ts).
+{
+  const s = await page('light', { viewport: { width: 1440, height: 900 } });
+  await s.ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('nucleus-workbench-tester-profile', JSON.stringify({ coding: 'dev', nucleus: 'expert' }));
+      // A handler open (a first visit starts on the home page, without the code editor this corner belongs to).
+      if (!localStorage.getItem('nucleus-workbench-draft')) localStorage.setItem('nucleus-workbench-draft', 'Game.GUID = "Pins";\n');
+    } catch {}
+  });
+  await s.p.goto(BASE);
+  await s.p.waitForTimeout(600);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  check(await s.p.isHidden('#test-pins'), 'pinned tasks: nothing on screen until something is pinned');
+  await s.p.click('#test-open');
+  await s.p.waitForTimeout(300);
+  const first = await s.p.$eval('#test-body .tg-pin', (b) => b.getAttribute('data-pin'));
+  await s.p.click('#test-body .tg-pin');
+  check((await s.p.getAttribute('#test-body .tg-pin', 'aria-pressed')) === 'true', 'pinned tasks: Pin says it is pinned');
+  check(await s.p.isVisible(`#tg-pinned input[data-id="${first}"]`), 'pinned tasks: also listed on top of the guide');
+  await s.p.click(`#tg-pinned [data-goto="${first}"]`);
+  check(await s.p.evaluate((id) => { const a = document.activeElement; return a?.dataset.id === id && !a.closest('#tg-pinned'); }, first), 'pinned tasks: its name there goes to its card in the list');
+  await s.p.click('#test-close');
+  await s.p.waitForTimeout(200);
+  check(await s.p.isVisible(`#test-pins [data-toggle="${first}"]`), 'pinned tasks: the task floats over the workbench');
+  check(await s.p.isVisible('#test-pins .tf-body'), 'pinned tasks: the first one shows what to try');
+  await s.p.click(`#test-pins [data-toggle="${first}"]`);
+  check(await s.p.isHidden('#test-pins .tf-body'), 'pinned tasks: closing the only open task keeps it closed');
+  await s.p.click(`#test-pins [data-toggle="${first}"]`);
+  const inCorner = () => s.p.evaluate(() => {
+    const b = document.querySelector('#test-pins').getBoundingClientRect(), e = document.querySelector('#editor').getBoundingClientRect();
+    return b.left >= e.left && b.right <= e.right && b.bottom <= e.bottom && e.right - b.right < 40 && e.bottom - b.bottom < 40;
+  });
+  check(await inCorner(), 'pinned tasks: starts in the code editor\'s bottom-right corner');
+  await axe(s.p, 'light, pinned tasks');
+  await s.p.check(`#test-pins input[data-done="${first}"]`);
+  await s.p.click('#test-open');
+  await s.p.waitForTimeout(200);
+  check(await s.p.isChecked(`#test-body input[data-id="${first}"]`), 'pinned tasks: a tick there shows in the guide');
+  await s.p.click('#test-close');
+  const before = await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left);
+  const h = await s.p.$eval('#test-pins .tf-title', (e) => { const r = e.getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; });
+  await s.p.mouse.move(h.x, h.y);
+  await s.p.mouse.down();
+  await s.p.mouse.move(h.x - 300, h.y - 200, { steps: 6 });
+  await s.p.mouse.up();
+  const dragged = await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left);
+  check(dragged < before - 250, 'pinned tasks: drag the header to move it');
+  await s.p.focus('#test-pins .tf-grip');
+  await s.p.keyboard.press('ArrowRight');
+  check((await s.p.$eval('#test-pins', (e) => e.getBoundingClientRect().left)) > dragged + 10, 'pinned tasks: the arrow keys move it too');
+  await s.p.dblclick('#test-pins .tf-title');
+  check(await inCorner(), 'pinned tasks: double-click the header puts it back in the corner');
+  await s.p.click('#test-pins .tf-fold');
+  check(await s.p.isHidden('#test-pins .tf-list'), 'pinned tasks: collapse to the header');
+  await s.p.reload();
+  await s.p.waitForTimeout(600);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  check((await s.p.isVisible('#test-pins')) && (await s.p.isHidden('#test-pins .tf-list')), 'pinned tasks: still there, and still collapsed, after a reload');
+  await s.p.click('#test-pins .tf-fold');
+  await s.p.click(`#test-pins [data-unpin="${first}"]`);
+  check(await s.p.isHidden('#test-pins'), 'pinned tasks: unpinning the last one hides the window');
+  check(!s.errors.length, `pinned tasks: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
+{
+  // The docs as pages: the site header, the page, the votes (kept in the browser, pressed state shown) and the
+  // report link; axe in light and dark; nothing cut off on a phone.
+  for (const theme of ['light', 'dark']) {
+    const s = await page(theme);
+    await s.p.goto(BASE + 'docs/Context.ModifySaveFile/');
+    check(await s.p.isVisible('.site-nav a[aria-current="page"]') && /Context\.ModifySaveFile/.test(await s.p.textContent('main h1')), `docs page ${theme}: header and the name`);
+    await s.p.click('.doc-fb [data-vote=down]');
+    check((await s.p.getAttribute('.doc-fb [data-vote=down]', 'aria-pressed')) === 'true' && /Thanks/.test(await s.p.textContent('.doc-fb-thanks')), `docs page ${theme}: a vote shows as pressed, with thanks`);
+    check(/doc-review/.test(await s.p.getAttribute('.doc-fb a', 'href')), `docs page ${theme}: the report link opens the doc review form`);
+    await s.p.waitForSelector('#dn-list details');
+    check(await s.p.isVisible('#dn-list a[aria-current]'), `docs page ${theme}: the drawer lists the docs, this page marked`);
+    await s.p.fill('.dn-filter', 'save file');
+    await s.p.waitForTimeout(200);
+    check((await s.p.$$('#dn-list .hit')).length > 0 && /ModifySaveFile/.test(await s.p.textContent('#dn-list .hit')), `docs page ${theme}: the filter finds names by name and by words, the name first`);
+    await axe(s.p, `${theme}, docs page`);
+    await s.p.goto(BASE + 'docs/');
+    await axe(s.p, `${theme}, docs list`);
+    check(!s.errors.length, `docs page ${theme}: no page errors ${s.errors.join(' ')}`);
+    await s.ctx.close();
+  }
+  const ph = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  for (const u of ['docs/Context.ModifySaveFile/', 'rules/', 'rules/syntax-error/', 'start/', 'tools/']) {
+    await ph.p.goto(BASE + u);
+    const wide = await ph.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    check(wide <= 1, `phone ${u}: no sideways scrolling, header included (${wide}px)`);
+  }
+  await ph.ctx.close();
+}
+{
+  // Every handler can be closed, the last one too: the work area says nothing is open, with ways on; Reopen brings
+  // it back, and opening anything fills the empty place (no extra blank tab).
+  const s = await page('light');
+  await s.p.goto(BASE + '#example-mistakes');
+  await s.p.waitForTimeout(900);
+  await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  const tabsNow = () => s.p.$$eval('#htabs [role=tab]', (l) => l.length);
+  for (let n = await tabsNow(); n > 0; n--) { await s.p.click('#htabs [aria-selected=true] .ht-x'); await s.p.waitForTimeout(250); }
+  check((await tabsNow()) === 0 && (await s.p.isVisible('#no-handler')) && !(await s.p.isVisible('#main')), 'tabs: the last handler closes too, and the page says nothing is open');
+  await axe(s.p, 'light, no handler open');
+  await s.p.click('[data-nh=undo]');
+  await s.p.waitForTimeout(400);
+  check((await tabsNow()) === 1 && !(await s.p.isVisible('#no-handler')), 'tabs: Reopen brings the last one back, with no blank tab left over');
+  await s.p.click('#htabs [aria-selected=true] .ht-x');
+  await s.p.waitForTimeout(250);
+  await s.p.goto(BASE + '#example-mistakes');
+  await s.p.waitForTimeout(900);
+  check((await tabsNow()) === 1 && (await s.p.isVisible('#main')), 'tabs: opening a handler from nothing open fills the place');
+  check(!s.errors.length, `tabs: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
+{
+  // Learn (learn/): the intro scene step by step; a lesson ticks when its code is done; Solve; Try it; the test
+  // lesson's download; the lesson list; axe in light and dark; nothing cut off on a phone. #learn in the workbench
+  // leads there.
+  for (const theme of ['light', 'dark']) {
+    const s = await page(theme, { viewport: { width: 1366, height: 800 } });
+    await s.p.goto(BASE + 'learn/#first-handler/why');
+    await s.p.waitForTimeout(500);
+    check(await s.p.isVisible('#scene [data-scene=next]'), `learn ${theme}: the intro starts with one step`);
+    for (let i = 0; i < 3; i++) { await s.p.click('#scene [data-scene=next]'); await s.p.waitForTimeout(150); }
+    await s.p.waitForTimeout(1200); // the list's fade-in
+    check((await s.p.isVisible('#scene .fixes')) && (await s.p.isVisible('#scene [data-scene=go]')), `learn ${theme}: the intro ends with what a handler does`);
+    await axe(s.p, `${theme}, learn intro`);
+    await s.p.click('#scene [data-scene=go]');
+    await s.p.waitForTimeout(400);
+    check(/#first-handler\/get-ready$/.test(s.p.url()) && (await s.p.isVisible('.steps')) && !(await s.p.isVisible('.CodeMirror')), `learn ${theme}: then getting ready, steps on their own`);
+    await axe(s.p, `${theme}, learn setup`);
+    await s.p.click('#next');
+    await s.p.waitForTimeout(400);
+    check(/#first-handler\/name$/.test(s.p.url()) && !(await s.p.isVisible('#task.ok')), `learn ${theme}: the first code lesson, unfinished`);
+    await s.p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.replaceRange('Game.GUID = "SRB2 Tutorial";\nGame.GameName = "SRB2 Tutorial";\n', { line: cm.lastLine(), ch: 0 }); });
+    await s.p.waitForTimeout(600);
+    check(await s.p.isVisible('#task.ok'), `learn ${theme}: typing the lines ticks the task`);
+    check(/Nothing wrong so far/.test(await s.p.textContent('#pane')), `learn ${theme}: Check leaves out the lines a lesson soon adds, and says so`);
+    await axe(s.p, `${theme}, learn code lesson`);
+    await s.p.goto(BASE + 'learn/#first-handler/name');
+    await s.p.waitForTimeout(400);
+    check(/Nothing wrong so far/.test(await s.p.textContent('#pane')), `learn ${theme}: a handler without its name and exe never reads as loadable`);
+    await s.p.goto(BASE + 'learn/#first-handler/game');
+    await s.p.waitForTimeout(400);
+    check(!(await s.p.isVisible('#checkpoint')), `learn ${theme}: no Nucleus checkpoint before the code works`);
+    await s.p.click('#show');
+    await s.p.waitForTimeout(600);
+    check(await s.p.isVisible('#checkpoint summary'), `learn ${theme}: Try it in Nucleus Co-op, once it works`);
+    await s.p.click('#checkpoint summary');
+    const [cpd] = await Promise.all([s.p.waitForEvent('download'), s.p.click('#cp-download')]);
+    check(cpd.suggestedFilename() === 'Boring Man Tutorial.zip', `learn ${theme}: the checkpoint downloads the handler so far, zipped for Nucleus`);
+    await s.p.goto(BASE + 'learn/#first-handler/fullscreen');
+    await s.p.waitForTimeout(500);
+    check(!(await s.p.isVisible('#task.ok')), `learn ${theme}: a lesson starts from its own code, unfinished`);
+    await s.p.click('#show');
+    await s.p.waitForTimeout(600);
+    check((await s.p.isVisible('#task.ok')) && /Fullscreen = "0"/.test(await s.p.textContent('#pane')) && (await s.p.textContent('#show')) === 'Reset', `learn ${theme}: the Show me button passes, Try it shows each player's settings, and the button turns into Reset`);
+    await s.p.selectOption('#try-players', '4');
+    await s.p.waitForTimeout(300);
+    check((await s.p.$$('#try-out .player')).length === 4, `learn ${theme}: Try it with the players you pick`);
+    await s.p.click('#back');
+    await s.p.waitForTimeout(300);
+    check(/#first-handler\/test$/.test(s.p.url()), `learn ${theme}: Back`);
+    await s.p.goto(BASE + 'learn/#first-handler/test');
+    await s.p.waitForTimeout(400);
+    const [dl] = await Promise.all([s.p.waitForEvent('download'), s.p.click('#download')]);
+    check(dl.suggestedFilename() === 'Boring Man Tutorial.zip', `learn ${theme}: the test lesson downloads the handler, zipped`);
+    await axe(s.p, `${theme}, learn test lesson`);
+    check((await s.p.isVisible('#drawer-list a[aria-current]')) && (await s.p.$$('#drawer-list a')).length >= 10, `learn ${theme}: the lesson list, open beside the lesson on a wide screen`);
+    await axe(s.p, `${theme}, learn lesson list`);
+    await s.p.click('#drawer-toggle');
+    await s.p.waitForTimeout(300);
+    check(!(await s.p.isVisible('#drawer-list a[aria-current]')), `learn ${theme}: the lesson list closes`);
+    await s.p.click('#drawer-toggle');
+    check(!s.errors.length, `learn ${theme}: no page errors ${s.errors.join(' ')}`);
+    await s.ctx.close();
+  }
+  {
+    const s = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    for (const l of ['why', 'settings', 'test']) {
+      await s.p.goto(BASE + `learn/#first-handler/${l}`);
+      await s.p.waitForTimeout(400);
+      const wide = await s.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      check(wide <= 1, `learn phone ${l}: no sideways scrolling (${wide}px)`);
+    }
+    check(!s.errors.length, `learn phone: no page errors ${s.errors.join(' ')}`);
+    await s.ctx.close();
+  }
+  {
+    const s = await page('light');
+    await s.p.goto(BASE + '#learn');
+    await s.p.waitForURL(/learn\//, { timeout: 5000 }).catch(() => {});
+    check(/\/learn\//.test(s.p.url()), `learn: the workbench's #learn link leads to the lessons (${s.p.url()})`);
+    await s.ctx.close();
+  }
+}
+for (const theme of ['light', 'dark']) {
+  // One page per check, and the list of them: they load, the examples are there, the filter works, accessible.
+  const s = await page(theme);
+  await s.p.goto(BASE + 'rules/');
+  await s.p.fill('.rsearch', 'proto input');
+  const shown = await s.p.$$eval('.ruleset li', (l) => l.filter((x) => !x.hidden).length);
+  check(shown > 0 && shown < 10, `${theme}: rules list: the filter narrows the list (${shown})`);
+  await s.p.fill('.rsearch', '');
+  await axe(s.p, `${theme}, rules list`);
+  await s.p.click('.ruleset a[href="wrong-arguments/"]');
+  await s.p.waitForLoadState();
+  check((await s.p.$$('.ex pre')).length === 2 && /wrong number/.test(await s.p.textContent('h1')), `${theme}: a rule's page: its title and both examples`);
+  await axe(s.p, `${theme}, a rule's page`);
+  check(!s.errors.length, `${theme}: rules pages: no page errors ${s.errors.join(' ')}`);
+  await s.ctx.close();
+}
+{
+  // A laptop with a touch screen has a real keyboard: a text field getting focus inside a frame (the claude.ai
+  // preview) must not shrink the page for an on-screen keyboard that isn't there.
+  const s = await page('dark', { viewport: { width: 1600, height: 730 } }); // a mouse (fine pointer) ...
+  await s.ctx.addInitScript(() => Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 10 })); // ... and a touch screen
+  await s.ctx.addInitScript(() => { try { if (!localStorage.getItem('nucleus-workbench-draft')) localStorage.setItem('nucleus-workbench-draft', 'Game.GUID = "Frame";\n'); } catch {} }); // a handler open, as in the claude.ai preview
+  await s.p.setContent(`<style>body{margin:0}</style><iframe src="${BASE}" style="border:0;width:100vw;height:100vh"></iframe>`);
+  await s.p.waitForTimeout(1200);
+  const f = s.p.frames()[1];
+  await f.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+  await f.click('#tab-add');
+  await f.getByText('Examples and Hub handlers').click();
+  await f.focus('#open-dialog input');
+  await f.waitForTimeout(1200);
+  check(await f.evaluate(() => !document.documentElement.classList.contains('kb-up') && document.querySelector('.app').getBoundingClientRect().height >= innerHeight - 2), 'touch-screen laptop, in a frame: the page keeps its height when a text field gets focus');
+  await s.ctx.close();
+}
+{
+  const s = await page('dark', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await s.ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('nucleus-workbench-tester-profile', JSON.stringify({ coding: 'new', nucleus: 'new' }));
+      localStorage.setItem('nucleus-workbench-test-pins', JSON.stringify(['messages']));
+    } catch {}
+  });
+  await s.p.goto(BASE);
+  await s.p.waitForTimeout(600);
+  const r = await s.p.$eval('#test-pins', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, b: b.bottom }; });
+  check(r.l >= 0 && r.r <= 390 && r.b <= 844, 'phone: pinned tasks dock at the bottom, inside the screen');
+  await s.ctx.close();
+}
+
+// Start-up with each general tip first (the first one is random): none may stop the page (a tip's highlight once
+// asked for a control declared later in app.ts, and the whole workbench failed to start).
+{
+  let crashed = 0;
+  for (let i = 0; i < 40; i++) {
+    const s = await page('light');
+    await s.ctx.addInitScript((v) => {
+      const r = Math.random;
+      let first = true;
+      Math.random = () => (first ? ((first = false), v) : r());
+    }, (i + 0.5) / 40);
+    await s.p.goto(BASE + '#docs');
+    await s.p.waitForTimeout(400);
+    if (s.errors.length) crashed++;
+    await s.ctx.close();
+  }
+  check(crashed === 0, `start-up with every possible first tip: no page errors (${crashed} of 40 failed)`);
+}
+// The main button stays readable in every look (light and dark): the looks restyle .btn.
+for (const site of ['v3', 'mac', 'alpha8'])
+  for (const theme of ['light', 'dark']) {
+    const s = await page(theme);
+    await s.ctx.addInitScript((v) => {
+      try {
+        localStorage.setItem('nucleus-workbench-dev-site', v);
+      } catch {}
+    }, site);
+    await s.p.goto(BASE);
+    await s.p.waitForTimeout(500);
+    await s.p.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+    await s.p.addScriptTag({ content: AXE });
+    const bad = await s.p.evaluate(async () => (await axe.run('#code-menu-open, #save-more', { runOnly: ['color-contrast'] })).violations.length);
+    check(bad === 0, `${site} look, ${theme}: Save is readable (contrast)`);
+    await s.ctx.close();
+  }
 
 await browser.close();
 server.close();

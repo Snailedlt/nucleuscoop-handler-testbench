@@ -44,7 +44,9 @@ export function reportContext(extra: Record<string, string | undefined> = {}): s
   return [...lines, `Check: ${checksum(lines)}`].join('\n');
 }
 
-const FORM = 'https://github.com/Snailedlt/splitscreenme-vscode/issues/new';
+// The workbench's own feedback goes to this repo's form (.github/ISSUE_TEMPLATE/feedback.yml); checks and the editors
+// have theirs in splitscreenme-vscode.
+const FORM = 'https://github.com/Snailedlt/nucleuscoop-handler-testbench/issues/new';
 /** Phones and tablets only: the GitHub app can catch github.com links, and it opens a blank issue: no form, no details. */
 const onPhone = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
 export const GH_APP_NOTE = 'Opens GitHub. Use your browser, not the GitHub app: the app leaves out the form and its details.';
@@ -58,9 +60,9 @@ export function openReport(url: string): void {
   window.open(url, '_blank', 'noopener');
 }
 /** The tester feedback form, filled in. */
-export function feedbackUrl(opts: { title?: string; test?: string } = {}): string {
+export function feedbackUrl(opts: { title?: string; test?: string; area?: string } = {}): string {
   const s = state();
-  const q = new URLSearchParams({ template: 'tester-feedback.yml', area: 'Workbench (browser)', version: `workbench ${BUILD.bench ?? ''}`.trim() });
+  const q = new URLSearchParams({ template: 'feedback.yml', area: opts.area ?? 'Workbench', version: `workbench ${BUILD.bench ?? ''}`.trim() });
   if (opts.title) q.set('title', opts.title);
   if (s.handler?.link) q.set('handler', s.handler.link);
   q.set('context', reportContext({ 'Test item': opts.test }));
