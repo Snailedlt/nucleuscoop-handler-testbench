@@ -12,6 +12,7 @@ import 'codemirror/addon/hint/show-hint';
 import { hoverAt, completionsAt, explainLine, signatureHelpAt, type CompletionEntry } from '@core/features';
 import { formatHandler } from '@core/format';
 import { kbdify } from '../kbd';
+import { createDrafts } from './drafts';
 import { semanticMarks } from '../semmarks';
 import type { Diagnostic } from '@core/lint';
 import { codeHandlers, fixedCodeKeys, vscodeMouse } from '../keys';
@@ -58,32 +59,16 @@ let index = 0;
 const lesson = (): Lesson => chapter.lessons[index];
 const keyOf = (l: Lesson) => `${chapter.id}/${l.id}`;
 
-// What the learner typed in each code lesson, kept across reloads (localStorage, beside the progress). Each draft
-// remembers a hash of the lesson's start: when a later version of the lesson starts differently, the draft is
-// dropped rather than restored onto code it no longer fits.
-const CODE_KEY = 'nucleus-learn-code';
-type Drafts = Record<string, { s: string; c: string }>;
-/** FNV-1a, enough to notice that a lesson's start changed. */
-const hashOf = (t: string) => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 0x01000193); return (h >>> 0).toString(36); };
-const drafts: Drafts = (() => {
-  try { const v = JSON.parse(localStorage.getItem(CODE_KEY) || 'null'); if (v && typeof v === 'object') return v; } catch { /* private mode */ }
-  return {};
-})();
+// What the learner typed in each code lesson, kept across reloads (drafts.ts: one entry per lesson).
+const drafts = createDrafts(() => { try { return localStorage; } catch { return undefined; } });
 let draftTimer: ReturnType<typeof setTimeout> | undefined;
-const saveDrafts = () => { clearTimeout(draftTimer); draftTimer = undefined; try { localStorage.setItem(CODE_KEY, JSON.stringify(drafts)); } catch { /* private mode or full */ } };
-addEventListener('pagehide', () => { if (draftTimer) saveDrafts(); });
+const saveDrafts = () => { clearTimeout(draftTimer); draftTimer = undefined; drafts.save(); };
+addEventListener('pagehide', () => { if (drafts.pending()) saveDrafts(); });
 /** The learner's code for a code lesson, if they changed it (and the lesson still starts the same). */
-function draftFor(l: Lesson): string | undefined {
-  const d = drafts[keyOf(l)];
-  if (!d) return undefined;
-  if (d.s === hashOf(l.start) && typeof d.c === 'string') return d.c;
-  delete drafts[keyOf(l)];
-  saveDrafts();
-  return undefined;
-}
+const draftFor = (l: Lesson): string | undefined => drafts.get(keyOf(l), l.start);
 function setDraft(l: Lesson, code: string) {
-  const k = keyOf(l);
-  if (code === l.start) { if (!(k in drafts)) return; delete drafts[k]; } else drafts[k] = { s: hashOf(l.start), c: code };
+  drafts.set(keyOf(l), l.start, code);
+  if (!drafts.pending()) return;
   clearTimeout(draftTimer);
   draftTimer = setTimeout(saveDrafts, 400);
 }

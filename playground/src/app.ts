@@ -9,7 +9,7 @@ import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
 import { announce, clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
-import { decodeShare, DISCORD_LIMIT, encodeShare, shareAdvice, shareFileMessage } from './share';
+import { decodeShare, DISCORD_LIMIT, encodeShare, isNamedLink, shareAdvice, shareFileMessage } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/lint/lint';
@@ -1274,6 +1274,8 @@ interface DocMeta {
   /** For the credit lines (credit.ts): Fix with AI changes kept, and the last Try it (of which version). */
   ai?: { direct: number; reviewed: number };
   tried?: { of: string; players: number; loaded: boolean };
+  /** A file in its package was added, changed, renamed or removed here: its name link would open the original files. */
+  filesEdited?: boolean;
 }
 const META_KEY = 'nucleus-workbench-doc';
 let doc: DocMeta = { name: 'Untitled handler', kind: 'draft' };
@@ -1313,7 +1315,7 @@ function renderDocHead() {
  */
 async function copyLink(trigger?: HTMLElement | null) {
   const selection = editor.getSelection();
-  const edited = editor.getValue() !== loadedText;
+  const edited = editor.getValue() !== loadedText || !!doc.filesEdited;
   let id = doc.hash && !edited && !selection ? doc.hash : '';
   if (!id) {
     try {
@@ -2428,7 +2430,7 @@ setViewMode(viewMode);
 pkgUI = initPackageUI({
   editor,
   getFiles: () => packageFiles,
-  setFiles: (files) => { packageFiles = files; storeFiles(files); renderDocHead(); if (tabsReady) saveTabs(); },
+  setFiles: (files) => { packageFiles = files; storeFiles(files); if (!doc.filesEdited) { doc.filesEdited = true; saveDocMeta(); } renderDocHead(); if (tabsReady) saveTabs(); },
   showMain: () => setViewMode(viewMode),
   changed: () => { pkgProblems = pkgUI!.problems(); (editor as any).performLint(); },
   extraSection: gameSection,
@@ -2889,9 +2891,11 @@ function openCodeDialog() {
   const len = editor.getValue().length + 10;
   // Which of the two leads: the link when it carries the whole handler and fits a Discord message, else the file.
   const selection = !!editor.getSelection();
-  const unchanged = !!doc.hash && editor.getValue() === loadedText && !selection;
+  // Unchanged (code and package files): the link is the handler's own; a name link (#hub-…) is short and opens its files too.
+  const unchanged = !!doc.hash && editor.getValue() === loadedText && !doc.filesEdited && !selection;
+  const named = unchanged && isNamedLink(doc.hash);
   const advise = (linkLength: number | null) => {
-    const a = shareAdvice({ selection, files: packageFiles.length, linkLength, named: unchanged });
+    const a = shareAdvice({ selection, files: packageFiles.length, linkLength, named });
     $('#code-link-sub').textContent = a.linkSub;
     $('#code-file-sub').textContent = a.fileSub;
     codeDialog.querySelector('[data-code=link]')!.className = a.fileFirst ? 'code-opt' : 'code-hero';
@@ -2925,6 +2929,7 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
   try {
     const text = exportText();
     const data = kind === 'js' ? new TextEncoder().encode(text) : buildPackage(text, packageFiles);
+    const remote = packageFiles.filter((f) => f.remote);
     await downloads.save({ filename, data });
     waka.saved();
     use(`save-${kind}`);
@@ -2934,15 +2939,14 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
     if (kind === 'zip' && seen < 2) showInstallSteps(filename);
     else confirmOn(trigger, 'Saved ✓', `Saved ${filename}.`);
     // Files of a Hub package that weren't downloaded here can't go in it: say so, with the original.
-    if (kind !== 'js') noteRemoteFiles();
+    if (kind !== 'js') noteRemoteFiles(remote);
   } catch (e: any) {
     if (e?.code === 'declined') return;
     notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
   }
 }
 /** After saving a package: the Hub package's big files that aren't downloaded here aren't in it. */
-function noteRemoteFiles() {
-  const remote = packageFiles.filter((f) => f.remote);
+function noteRemoteFiles(remote = packageFiles.filter((f) => f.remote)) {
   if (!remote.length) return;
   const url = remote[0].remote!.url;
   notice(`Saved without ${remote.length} big file${remote.length === 1 ? '' : 's'} from the Hub package (${fileSize(remote.reduce((n, f) => n + f.remote!.size, 0))}: ${remote.slice(0, 3).map((f) => f.name.split('/').pop()).join(', ')}${remote.length > 3 ? ', …' : ''}), which aren't downloaded here. Get them from the original package on the Hub.`, { kind: 'warning', action: { label: 'Open the Hub page', run: () => window.open(url, '_blank', 'noopener') } });
@@ -2957,11 +2961,14 @@ async function shareFile(trigger: HTMLElement) {
   // The public site, not this page's own address, inside a Claude artifact or from a file on disk.
   const site = (window as any).claude || !/^https?:$/.test(location.protocol) ? 'https://snailedlt.github.io/nucleuscoop-handler-testbench/' : location.href.replace(/[?#].*$/, '');
   const game = editor.getValue().match(/^\s*Game\.GameName\s*=\s*"([^"]*)"/m)?.[1] ?? '';
+  // What's open now, before anything waits: the person may switch tab or edit while the clipboard answers.
+  const data = buildPackage(exportText(), packageFiles);
+  const remote = packageFiles.filter((f) => f.remote);
   // The message first: after the save dialog the browser may no longer let the page copy.
   let copied = true;
   try { await navigator.clipboard.writeText(shareFileMessage({ game, filename, site })); } catch { copied = false; }
   try {
-    await downloads.save({ filename, data: buildPackage(exportText(), packageFiles) });
+    await downloads.save({ filename, data });
   } catch (e: any) {
     if (e?.code === 'declined') return;
     return notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
@@ -2969,7 +2976,7 @@ async function shareFile(trigger: HTMLElement) {
   waka.saved();
   use('share-file');
   confirmOn(trigger, 'Saved ✓', copied ? `Saved ${filename} and copied a message to post with it. Attach the file where you paste the message.` : `Saved ${filename}. Attach it to your message: whoever gets it drops it on this page to open it.`);
-  noteRemoteFiles();
+  noteRemoteFiles(remote);
 }
 // Save into Nucleus: straight into its handlers folder (Chrome, Edge); elsewhere the .zip, to drop onto Nucleus.
 let nucleusFolderName: string | undefined;

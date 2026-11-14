@@ -232,12 +232,55 @@ test('Share: the link leads while it carries everything and fits Discord, else t
   assert.match(shareFileMessage({ game: '', filename: 'x.zip', site: 's' }), /^Nucleus Co-op handler: x\.zip/);
 });
 
+test('share: only a catalogue link is a name link; a #share- link carries the code and its length counts', async () => {
+  const { isNamedLink, shareAdvice } = await load('playground/src/share.ts');
+  assert.equal(isNamedLink('hub-123'), true);
+  assert.equal(isNamedLink('package-x'), true);
+  assert.equal(isNamedLink('share-abc'), false);
+  assert.equal(isNamedLink(undefined), false);
+  // An unchanged, opened share link that's too long still leads with the file.
+  assert.equal(shareAdvice({ selection: false, files: 0, linkLength: 5000, named: isNamedLink('share-abc') }).fileFirst, true);
+});
+
+test('Learn drafts: one entry per lesson, so two tabs keep each other\'s lessons; a changed start drops the draft', async () => {
+  const { createDrafts, CODE_KEY } = await load('playground/src/learn/drafts.ts');
+  const store = memoryStorage();
+  const a = createDrafts(() => store);
+  const b = createDrafts(() => store);
+  a.set('c/1', 'start1', 'mine1');
+  b.set('c/2', 'start2', 'mine2');
+  b.save();
+  a.save(); // a's save doesn't drop b's lesson
+  assert.equal(createDrafts(() => store).get('c/1', 'start1'), 'mine1');
+  assert.equal(createDrafts(() => store).get('c/2', 'start2'), 'mine2');
+  // b reads storage fresh: a's lesson shows up there.
+  assert.equal(b.get('c/1', 'start1'), 'mine1');
+  // Back to the start: forgotten.
+  a.set('c/1', 'start1', 'start1');
+  assert.equal(a.get('c/1', 'start1'), undefined, 'unsaved removal already counts');
+  a.save();
+  assert.equal(store.getItem(`${CODE_KEY}/c/1`), null);
+  // The lesson's start changed: the draft is dropped.
+  assert.equal(b.get('c/2', 'new start'), undefined);
+  assert.equal(store.getItem(`${CODE_KEY}/c/2`), null);
+  assert.equal(a.pending(), false);
+  // Nothing changed (start == start, nothing stored): nothing to write.
+  a.set('c/3', 's', 's');
+  assert.equal(a.pending(), false);
+});
+
 test('code spans: inline code with backticks in it (a longer fence, as Explain writes a template string)', async () => {
   const { codeSpans } = await load('playground/src/codespans.ts');
   assert.equal(codeSpans('Sets `a` to `1`.'), 'Sets <code>a</code> to <code>1</code>.');
   assert.equal(codeSpans('stores `` `-w ${x}` `` in it'), 'stores <code>`-w ${x}`</code> in it');
   assert.equal(codeSpans('``` a ``b`` ```'), '<code>a ``b``</code>');
   assert.equal(codeSpans('a ` b'), 'a ` b', 'a lone backtick stays');
+  // A fence starts where a run of backticks starts, not inside one.
+  assert.equal(codeSpans('``a` b'), '``a` b');
+  const { withCodeSpans } = await load('playground/src/codespans.ts');
+  const bold = (t) => t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a>$2</a>');
+  assert.equal(withCodeSpans('**a** `**b**` and `see https://x.y` https://z', bold), '<strong>a</strong> <code>**b**</code> and <code>see https://x.y</code> <a>https://z</a>');
+  assert.equal(withCodeSpans('no code', bold), 'no code');
 });
 
 test('snippets: a bare stop repeats its default text', async () => {

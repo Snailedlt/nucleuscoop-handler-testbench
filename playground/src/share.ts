@@ -57,6 +57,9 @@ export function shareAdvice(o: { selection: boolean; files: number; linkLength: 
   return { fileFirst: n > 0 || tooLong, linkSub, fileSub };
 }
 
+/** A link by name (#hub-…, #package-…, #example-…): short, and opens the original. A #share-… link carries the code itself. */
+export const isNamedLink = (hash: string | undefined): boolean => !!hash && !hash.startsWith(SHARE_PREFIX);
+
 /** The message to post with a shared file: what it is, and the two things to do with it. */
 export function shareFileMessage(o: { game: string; filename: string; site: string }): string {
   return [
