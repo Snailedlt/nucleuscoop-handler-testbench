@@ -267,6 +267,16 @@ test('Learn drafts: one entry per lesson, so two tabs keep each other\'s lessons
   // Nothing changed (start == start, nothing stored): nothing to write.
   a.set('c/3', 's', 's');
   assert.equal(a.pending(), false);
+  // Opening a lesson restores its draft: that writes nothing, so a newer save from another tab isn't overwritten.
+  const c = createDrafts(() => store);
+  const d = createDrafts(() => store);
+  c.set('c/4', 's', 'old'); c.save();
+  const restored = d.get('c/4', 's');
+  d.set('c/4', 's', restored); // the editor's change after setValue, if it gets through
+  assert.equal(d.pending(), false);
+  c.set('c/4', 's', 'newer'); c.save();
+  d.save();
+  assert.equal(createDrafts(() => store).get('c/4', 's'), 'newer');
 });
 
 test('code spans: inline code with backticks in it (a longer fence, as Explain writes a template string)', async () => {

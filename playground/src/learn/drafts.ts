@@ -51,9 +51,11 @@ export function createDrafts(store: () => Store | undefined) {
     },
     /** Remembers `code` for lesson `k` (forgets it when it's the start again); written by the next save. */
     set(k: string, start: string, code: string) {
+      const now = read(k);
       if (code === start) {
-        if (read(k)) dirty.set(k, null);
-      } else dirty.set(k, { s: hashOf(start), c: code });
+        if (now) dirty.set(k, null);
+      } else if (!(now && now.s === hashOf(start) && now.c === code)) dirty.set(k, { s: hashOf(start), c: code });
+      // The same code as kept already (a lesson opened again): nothing to write, so another tab's newer save stays.
     },
     pending: () => dirty.size > 0,
     save,

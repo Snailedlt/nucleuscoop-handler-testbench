@@ -385,7 +385,8 @@ editor.on('change', (_cm: any, ch: any) => {
   const l = lesson();
   if (ch?.origin !== 'setValue') touched = true;
   if (ch?.origin !== 'setValue' && ch?.origin !== 'complete') clearDiff();
-  if (l.kind === 'code') setDraft(l, editor.getValue());
+  // Only the learner's own edits: opening a lesson (setValue) restores its draft and writes nothing.
+  if (l.kind === 'code' && ch?.origin !== 'setValue') setDraft(l, editor.getValue());
   clearTimeout(checkTimer);
   checkTimer = setTimeout(status, 300);
 });
@@ -567,6 +568,7 @@ function showMe() {
   const l = lesson();
   const before = editor.getValue();
   editor.setValue(l.solution);
+  if (l.kind === 'code') setDraft(l, l.solution); // Show me's code is kept like the learner's
   clearDiff();
   diffLines = addedLines(before === l.solution ? l.start : before, l.solution);
   for (const n of diffLines) editor.addLineClass(n, 'background', 'diff-add');
