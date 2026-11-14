@@ -75,6 +75,8 @@ export function initPackageUI(host: PkgHost) {
   let fileEd: CM = null;
   const docs = new Map<string, { doc: CM; enc: ReturnType<typeof textOf> extends infer T ? (T extends { enc: infer E } ? E : never) : never }>();
   let saveTimer = 0;
+  /** The file whose edits wait for the pause in typing (not necessarily the one shown now). */
+  let pendingFile: string | null = null;
   let blobUrl = '';
 
   const files = () => host.getFiles();
@@ -89,22 +91,29 @@ export function initPackageUI(host: PkgHost) {
     } as any);
     wrapEditor(fileEd); // Settings › Wrap long lines, Alt+Z
     fileEd.on('change', () => {
+      if (pendingFile && pendingFile !== active) commit(); // another file's wait ends here
+      pendingFile = active;
       clearTimeout(saveTimer);
       saveTimer = window.setTimeout(commit, 350);
     });
     return fileEd;
   }
 
-  /** The open text file's edits into the package (after a short pause in typing, or at once by flush). */
+  /**
+   * The edited file's text into the package (after a short pause in typing, or at once by flush). It goes by the
+   * file that was edited and that file's own document, so moving to handler.js or another file first loses nothing.
+   */
   function commit() {
     clearTimeout(saveTimer);
     saveTimer = 0;
-    if (!active || !fileEd) return;
-    const d = docs.get(active);
-    if (!d) return;
-    host.setFiles(files().map((f) => (f.name === active && !f.remote ? { name: f.name, data: bytesOf(fileEd.getValue(), d.enc) } : f)));
+    const name = pendingFile;
+    pendingFile = null;
+    const d = name ? docs.get(name) : undefined;
+    if (!name || !d) return;
+    host.setFiles(files().map((f) => (f.name === name && !f.remote ? { name: f.name, data: bytesOf(d.doc.getValue(), d.enc) } : f)));
     host.changed();
   }
+  const flush = () => { if (pendingFile) commit(); };
 
   function show(which: 'main' | 'text' | 'card') {
     $('#file-editor').hidden = which !== 'text';
@@ -188,6 +197,7 @@ export function initPackageUI(host: PkgHost) {
   }
 
   function removeFile(name: string) {
+    if (pendingFile === name) { clearTimeout(saveTimer); saveTimer = 0; pendingFile = null; }
     host.setFiles(files().filter((f) => f.name !== name));
     docs.delete(name);
     open = open.filter((n) => n !== name);
@@ -196,6 +206,7 @@ export function initPackageUI(host: PkgHost) {
     host.changed();
   }
   function moveFile(from: string, to: string) {
+    flush();
     host.setFiles(files().map((f) => (f.name === from ? { ...f, name: to } : f)));
     const d = docs.get(from);
     if (d) { docs.delete(from); docs.set(to, d); }
@@ -292,9 +303,9 @@ export function initPackageUI(host: PkgHost) {
     /** Back to handler.js without touching the main editor (the host shows it). */
     deselect() { active = null; $('#file-editor').hidden = true; $('#file-card').hidden = true; render(); },
     /** Edits still waiting for the pause in typing go into the package now (before Share, Save or a tab switch). */
-    flush() { if (saveTimer) commit(); },
+    flush,
     /** A different handler (tab): back to its handler.js, files closed. */
-    reset() { active = null; open = []; docs.clear(); show('main'); render(); },
+    reset() { flush(); active = null; open = []; docs.clear(); show('main'); render(); },
     problems: (): PkgProblem[] => checkPackage(handler(), files()),
   };
 }
