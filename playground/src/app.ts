@@ -2962,7 +2962,8 @@ async function shareFile(trigger: HTMLElement) {
   const site = (window as any).claude || !/^https?:$/.test(location.protocol) ? 'https://snailedlt.github.io/nucleuscoop-handler-testbench/' : location.href.replace(/[?#].*$/, '');
   const game = editor.getValue().match(/^\s*Game\.GameName\s*=\s*"([^"]*)"/m)?.[1] ?? '';
   // What's open now, before anything waits: the person may switch tab or edit while the clipboard answers.
-  const data = buildPackage(exportText(), packageFiles);
+  let data: Uint8Array;
+  try { data = buildPackage(exportText(), packageFiles); } catch { return notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' }); }
   const remote = packageFiles.filter((f) => f.remote);
   // The message first: after the save dialog the browser may no longer let the page copy.
   let copied = true;
