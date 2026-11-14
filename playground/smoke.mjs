@@ -351,17 +351,23 @@ for (const theme of ['light', 'dark']) {
           const lead = await p.evaluate(() => document.querySelector('#code-dialog .code-hero')?.dataset.code);
           await p.click('#code-close');
           check(lead === 'file', `${theme}: Share right after editing a package file leads with the file (${lead})`);
-          // Edit again, go straight to handler.js (before the pause), then Save: the edit is still in the package.
+          // Edit again, go straight to handler.js and Share the file, all in the same tick (well inside the 350 ms
+          // pause): the downloaded .zip has the edit. buildPackage stores files uncompressed, so the text is in the bytes.
           await p.click(`#files-panel .fp-open[data-fp="${txt.name.replace(/"/g, '\\"')}"]`);
           await p.waitForTimeout(200);
-          await p.evaluate(() => { document.querySelector('#file-editor .CodeMirror').CodeMirror.replaceRange('; second edit\n', { line: 0, ch: 0 }); document.querySelector('#files-panel .fp-open[data-fp=""]').click(); });
-          await p.waitForTimeout(500);
-          // The package as stored (package.ts storeFiles): [name, base64] per file.
-          const kept = await p.evaluate((n) => {
-            const row = JSON.parse(localStorage.getItem('nucleus-workbench-package-files') || '[]').find((x) => x[0] === n);
-            return row ? atob(row[1]).includes('; second edit') : null;
-          }, txt.name);
-          check(kept === true, `${theme}: an edit made just before switching to handler.js stays in the package (${kept})`);
+          const [zip] = await Promise.all([
+            p.waitForEvent('download'),
+            p.evaluate(() => {
+              document.querySelector('#file-editor .CodeMirror').CodeMirror.replaceRange('; second edit\n', { line: 0, ch: 0 });
+              document.querySelector('#files-panel .fp-open[data-fp=""]').click();
+              document.querySelector('#share-open').click();
+              document.querySelector('#code-dialog [data-code=file]').click();
+            }),
+          ]);
+          const zipText = fs.readFileSync(await zip.path()).toString('latin1');
+          check(/\.zip$/.test(zip.suggestedFilename()) && zipText.includes('; second edit'), `${theme}: an edit made just before switching to handler.js and sharing at once is in the .zip (${zip.suggestedFilename()})`);
+          await p.waitForTimeout(300);
+          if (await p.$eval('#code-dialog', (d) => d.open)) await p.click('#code-close');
         }
       }
     }
