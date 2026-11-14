@@ -90,15 +90,20 @@ export function initPackageUI(host: PkgHost) {
     wrapEditor(fileEd); // Settings › Wrap long lines, Alt+Z
     fileEd.on('change', () => {
       clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {
-        if (!active) return;
-        const d = docs.get(active);
-        if (!d) return;
-        host.setFiles(files().map((f) => (f.name === active && !f.remote ? { name: f.name, data: bytesOf(fileEd.getValue(), d.enc) } : f)));
-        host.changed();
-      }, 350);
+      saveTimer = window.setTimeout(commit, 350);
     });
     return fileEd;
+  }
+
+  /** The open text file's edits into the package (after a short pause in typing, or at once by flush). */
+  function commit() {
+    clearTimeout(saveTimer);
+    saveTimer = 0;
+    if (!active || !fileEd) return;
+    const d = docs.get(active);
+    if (!d) return;
+    host.setFiles(files().map((f) => (f.name === active && !f.remote ? { name: f.name, data: bytesOf(fileEd.getValue(), d.enc) } : f)));
+    host.changed();
   }
 
   function show(which: 'main' | 'text' | 'card') {
@@ -286,6 +291,8 @@ export function initPackageUI(host: PkgHost) {
     active: () => active,
     /** Back to handler.js without touching the main editor (the host shows it). */
     deselect() { active = null; $('#file-editor').hidden = true; $('#file-card').hidden = true; render(); },
+    /** Edits still waiting for the pause in typing go into the package now (before Share, Save or a tab switch). */
+    flush() { if (saveTimer) commit(); },
     /** A different handler (tab): back to its handler.js, files closed. */
     reset() { active = null; open = []; docs.clear(); show('main'); render(); },
     problems: (): PkgProblem[] => checkPackage(handler(), files()),

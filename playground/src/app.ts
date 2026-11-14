@@ -1314,6 +1314,7 @@ function renderDocHead() {
  * (#share-…). With text selected, only the selection is shared.
  */
 async function copyLink(trigger?: HTMLElement | null) {
+  pkgUI?.flush();
   const selection = editor.getSelection();
   const edited = editor.getValue() !== loadedText || !!doc.filesEdited;
   let id = doc.hash && !edited && !selection ? doc.hash : '';
@@ -1482,6 +1483,7 @@ function saveTabs() {
 }
 /** Puts the open handler's state into its tab (before switching away). */
 function stashTab() {
+  pkgUI?.flush(); // its edits stay with this tab
   const x = activeT();
   Object.assign(x, { meta: doc, base: loadedText, text: editor.getValue(), files: packageFiles, cm: editor.getDoc(), counts: countsOf(current), folder: gameFolder });
   try { localStorage.setItem(textKey(x.id), x.text); } catch { /* ignore */ }
@@ -2885,6 +2887,7 @@ function syncSaveButton() {
 }
 syncSaveButton();
 function openCodeDialog() {
+  pkgUI?.flush(); // a package file typed in just now counts
   $('#save-h').textContent = 'Share';
   $('#code-main').hidden = false;
   $('#code-done').hidden = true;
@@ -2922,6 +2925,7 @@ function showInstallSteps(filename: string) {
   $('#code-close').focus();
 }
 async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveButton()) {
+  pkgUI?.flush();
   try { localStorage.setItem(SAVE_KEY, kind); } catch { /* not kept */ }
   syncSaveButton();
   if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
@@ -2956,6 +2960,7 @@ function noteRemoteFiles(remote = packageFiles.filter((f) => f.remote)) {
  * For what a link can't carry or Discord won't take; whoever gets the file drops it on the workbench.
  */
 async function shareFile(trigger: HTMLElement) {
+  pkgUI?.flush();
   if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
   const filename = `${handlerFileName()}.zip`;
   // The public site, not this page's own address, inside a Claude artifact or from a file on disk.
@@ -2983,6 +2988,7 @@ async function shareFile(trigger: HTMLElement) {
 let nucleusFolderName: string | undefined;
 void rememberedName().then((n) => (nucleusFolderName = n));
 async function saveToNucleus(pick = false, trigger: HTMLElement = saveButton()) {
+  pkgUI?.flush();
   if (!canSaveIntoFolder()) {
     await saveAs('zip', trigger);
     notice("This browser can't save into a folder: drag the .zip onto Nucleus Co-op's window to install it. (Chrome and Edge can save straight into Nucleus' handlers folder.)", { kind: 'info' });

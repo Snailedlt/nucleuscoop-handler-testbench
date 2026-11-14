@@ -325,6 +325,34 @@ for (const theme of ['light', 'dark']) {
         check(/not downloaded here/.test(await p.$eval('#file-card', (e) => e.textContent)), `${theme}: a big file of the Hub package shows where to get it`);
       }
       await axe(p, `${theme}, Files panel with a Hub package`);
+      // Share right after typing in one of its text files (before the pause that saves it): the edit counts, so the
+      // file leads, not the Hub link (which would open the original files).
+      // A Hub handler whose package has a text file that's downloaded here (hub/<id>.files.json in this build).
+      const txt = (() => {
+        const dir = path.join(root, 'hub');
+        for (const n of fs.existsSync(dir) ? fs.readdirSync(dir).filter((x) => x.endsWith('.files.json')).sort() : []) {
+          const f = JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8')).files.find((x) => x.b64 !== undefined && /\.(ini|txt|cfg|json)$/i.test(x.name));
+          if (f) return { id: n.replace(/\.files\.json$/, ''), name: f.name };
+        }
+        return null;
+      })();
+      if (txt) {
+        await p.goto(BASE + '#hub-' + txt.id);
+        await p.waitForTimeout(1500);
+        if (await p.$eval('#files-panel', (e) => e.hidden)) await p.click('#files-toggle');
+        await p.waitForTimeout(300);
+        await p.click(`#files-panel .fp-open[data-fp="${txt.name.replace(/"/g, '\\"')}"]`);
+        await p.waitForTimeout(300);
+        const opened = !(await p.$eval('#file-editor', (e) => e.hidden));
+        check(opened, `${theme}: ${txt.name} opens in the file editor`);
+        if (opened) {
+          await p.evaluate(() => { document.querySelector('#file-editor .CodeMirror').CodeMirror.replaceRange('; edited\n', { line: 0, ch: 0 }); document.querySelector('#share-open').click(); });
+          await p.waitForTimeout(500);
+          const lead = await p.evaluate(() => document.querySelector('#code-dialog .code-hero')?.dataset.code);
+          await p.click('#code-close');
+          check(lead === 'file', `${theme}: Share right after editing a package file leads with the file (${lead})`);
+        }
+      }
     }
   }
   // A first visit (beta): the tester questions come first, can't be skipped, and lead to the recommendations.
