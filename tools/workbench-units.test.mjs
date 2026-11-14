@@ -264,6 +264,22 @@ test('Learn drafts: one entry per lesson, so two tabs keep each other\'s lessons
   assert.equal(b.get('c/2', 'new start'), undefined);
   assert.equal(store.getItem(`${CODE_KEY}/c/2`), null);
   assert.equal(a.pending(), false);
+  // Storage full or blocked: the draft stays in memory for this session, and is written by a later save.
+  let full = true;
+  const flaky = { getItem: (k) => store.getItem(k), setItem: (k, v) => { if (full) throw new Error('QuotaExceededError'); store.setItem(k, v); }, removeItem: (k) => store.removeItem(k) };
+  const e = createDrafts(() => flaky);
+  e.set('c/5', 's', 'typed');
+  e.save();
+  assert.equal(e.pending(), true);
+  assert.equal(e.get('c/5', 's'), 'typed');
+  full = false;
+  e.save();
+  assert.equal(e.pending(), false);
+  assert.equal(createDrafts(() => store).get('c/5', 's'), 'typed');
+  const none = createDrafts(() => undefined);
+  none.set('c/6', 's', 'typed');
+  none.save();
+  assert.equal(none.get('c/6', 's'), 'typed', 'no storage at all: still there this session');
   // Nothing changed (start == start, nothing stored): nothing to write.
   a.set('c/3', 's', 's');
   assert.equal(a.pending(), false);

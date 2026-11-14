@@ -27,17 +27,20 @@ export function createDrafts(store: () => Store | undefined) {
       return undefined; // private mode, or not ours
     }
   };
+  // An entry leaves `dirty` only once it's written (or removed): with storage blocked or full, the draft stays here
+  // for this session (and is tried again on the next save).
   const save = () => {
     const s = store();
-    for (const [k, v] of dirty) {
+    if (!s) return;
+    for (const [k, v] of [...dirty]) {
       try {
-        if (v) s?.setItem(keyFor(k), JSON.stringify(v));
-        else s?.removeItem(keyFor(k));
+        if (v) s.setItem(keyFor(k), JSON.stringify(v));
+        else s.removeItem(keyFor(k));
+        dirty.delete(k);
       } catch {
-        /* private mode or full */
+        /* private mode or full: kept in memory */
       }
     }
-    dirty.clear();
   };
   return {
     /** The learner's code for lesson `k`, if they changed it and the lesson still starts with `start`. */

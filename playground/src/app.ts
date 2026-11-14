@@ -2886,8 +2886,10 @@ function syncSaveButton() {
   $('#code-menu-open').title = `Save: ${SAVE_LABEL[k]} · Ctrl+S`;
 }
 syncSaveButton();
+let codeDialogOpening = 0;
 function openCodeDialog() {
   pkgUI?.flush(); // a package file typed in just now counts
+  const opening = ++codeDialogOpening; // a slow link from an earlier opening doesn't update this one
   $('#save-h').textContent = 'Share';
   $('#code-main').hidden = false;
   $('#code-done').hidden = true;
@@ -2908,7 +2910,7 @@ function openCodeDialog() {
   // The link's real length takes a moment (it's compressed): the dialog opens at once and settles when it's known.
   const base = location.href.replace(/#.*$/, '').length + 1;
   if (unchanged) advise(base + doc.hash!.length);
-  else void encodeShare(editor.getSelection() || editor.getValue()).then((id) => { if (codeDialog.open) advise(base + id.length); }, () => {});
+  else void encodeShare(editor.getSelection() || editor.getValue()).then((id) => { if (codeDialog.open && opening === codeDialogOpening) advise(base + id.length); }, () => {});
   $('#code-discord-sub').textContent = len > DISCORD_LIMIT ? `Too long for one message (${len.toLocaleString()} of ${DISCORD_LIMIT.toLocaleString()} characters): select the lines that matter first` : 'The code in a code block, ready to paste';
   codeDialog.showModal();
 }
