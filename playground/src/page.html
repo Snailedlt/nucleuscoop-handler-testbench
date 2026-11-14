@@ -462,6 +462,9 @@ details.set-sec[open] summary { margin-bottom: 4px; }
 .code-hero { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 1px solid var(--accent); border-radius: var(--r-pane); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--fg); font: inherit; font-size: 15px; cursor: pointer; }
 .code-hero:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 .code-hero > span:nth-child(2) { flex: 1; }
+/* Copy a link and Share the file: the one that fits this handler is the big one, on top (app.ts openCodeDialog). */
+.code-top { display: flex; flex-direction: column; gap: 8px; }
+.code-top .code-hero { order: -1; }
 .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .code-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
 .code-opt:hover { background: var(--surface-2); }
@@ -2424,7 +2427,10 @@ footer .made-by { margin-left: auto; }
 <dialog id="code-dialog" aria-labelledby="save-h">
   <h2 id="save-h">Share</h2>
   <div id="code-main">
-    <button class="code-hero" type="button" data-code="link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy a link</b><small id="code-link-sub">Opens this handler for anyone, or just the selected lines</small></span></button>
+    <div class="code-top">
+      <button class="code-hero" type="button" data-code="link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy a link</b><small id="code-link-sub">Opens this handler for anyone, or just the selected lines</small></span></button>
+      <button class="code-opt" type="button" data-code="file"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7zM14 3v4h4M12 11v6M9.5 14.5 12 17l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Share the file</b><small id="code-file-sub">The .zip, and a message to post with it</small></span></button>
+    </div>
     <div class="code-grid">
       <button class="code-opt" type="button" data-code="copy"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 9h10v10H9zM5 15V5h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Copy the code</b><small>To paste anywhere</small></span></button>
       <button class="code-opt" type="button" data-code="discord"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 5h14v10H9l-4 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span><b>Copy for Discord</b><small id="code-discord-sub">The code in a code block, ready to paste</small></span></button>

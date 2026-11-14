@@ -9,7 +9,7 @@ import { applyTheme, initDevBar } from './devbar';
 import { applyCodeTheme, applyCustomTheme } from './customtheme';
 import { watchPictures } from './themed';
 import { announce, clearNotice, confirmOn, initToasts, notice, toast as showToast, type ToastOptions } from './toast';
-import { decodeShare, encodeShare } from './share';
+import { decodeShare, DISCORD_LIMIT, encodeShare, isNamedLink, shareAdvice, shareFileMessage } from './share';
 import CodeMirror from 'codemirror';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/lint/lint';
@@ -1274,6 +1274,8 @@ interface DocMeta {
   /** For the credit lines (credit.ts): Fix with AI changes kept, and the last Try it (of which version). */
   ai?: { direct: number; reviewed: number };
   tried?: { of: string; players: number; loaded: boolean };
+  /** A file in its package was added, changed, renamed or removed here: its name link would open the original files. */
+  filesEdited?: boolean;
 }
 const META_KEY = 'nucleus-workbench-doc';
 let doc: DocMeta = { name: 'Untitled handler', kind: 'draft' };
@@ -1292,7 +1294,12 @@ function renderDocHead() {
   $('#doc-edited').hidden = editor.getValue() === loadedText || doc.kind === 'draft' || doc.kind === 'new';
   const h = doc.kind === 'hub' && doc.hubIndex !== undefined ? HUB_EXAMPLES.handlers[doc.hubIndex] : undefined;
   const parts: string[] = [];
-  if (h) parts.push(`<span>v${h.version} by ${esc(h.owner)}</span><span class="chip ok">verified on the Hub</span><a href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a>`);
+  if (h) {
+    // Our copy of the Hub is a day old at most (the daily sync): say from when, and where a newer one would be.
+    const copied = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    const asOf = copied ? `<span title="${esc(`The workbench's copy of the Hub, from ${copied}. A newer version may be on the Hub page.`)}">as of ${esc(copied)}</span>` : '';
+    parts.push(`<span>v${h.version} by ${esc(h.owner)}</span>${asOf}${h.unverified ? '<span class="chip warning" title="The Hub hasn\'t verified this version yet">not verified</span>' : '<span class="chip ok">verified on the Hub</span>'}<a href="${esc(h.url)}" target="_blank" rel="noopener">Hub page</a>`);
+  }
   else if (doc.kind === 'probe') parts.push('<span>Engine probe</span>');
   else if (doc.kind === 'template') parts.push(`<span>Engine template from the <a href="https://github.com/SplitScreen-Me/splitscreenme-discordbot/tree/main/src/handler_templates" target="_blank" rel="noopener">Discord bot</a></span>`);
   if (packageFiles.length) {
@@ -1306,10 +1313,10 @@ function renderDocHead() {
  * Copy link: an unchanged example links by name (#hub-…); anything else is packed into the link
  * (#share-…). With text selected, only the selection is shared.
  */
-const DISCORD_LIMIT = 2000;
 async function copyLink(trigger?: HTMLElement | null) {
+  pkgUI?.flush();
   const selection = editor.getSelection();
-  const edited = editor.getValue() !== loadedText;
+  const edited = editor.getValue() !== loadedText || !!doc.filesEdited;
   let id = doc.hash && !edited && !selection ? doc.hash : '';
   if (!id) {
     try {
@@ -1476,6 +1483,7 @@ function saveTabs() {
 }
 /** Puts the open handler's state into its tab (before switching away). */
 function stashTab() {
+  pkgUI?.flush(); // its edits stay with this tab
   const x = activeT();
   Object.assign(x, { meta: doc, base: loadedText, text: editor.getValue(), files: packageFiles, cm: editor.getDoc(), counts: countsOf(current), folder: gameFolder });
   try { localStorage.setItem(textKey(x.id), x.text); } catch { /* ignore */ }
@@ -1829,6 +1837,7 @@ function commandList(): OpenEntry[] {
     c('New handler…', '', 'new create template', () => newDialog.showModal()),
     c('Copy the handler', '', 'copy clipboard code', () => copyCode()),
     c('Copy a link to this handler', '', 'share link url copy', click('[data-code=link]')),
+    c('Share the file (.zip and a message to post)', '', 'share file zip attach discord send package', click('[data-code=file]')),
     c('Download for Nucleus (.zip)', 'Ctrl+S', 'save download zip nc package nucleus', click('[data-code=zip]')),
     c('Download the code (.js)', '', 'save download js file', click('[data-code=js]')),
     c('Theme: light', '', 'theme light colour color appearance', () => setThemeMode('light')),
@@ -2005,7 +2014,7 @@ function renderOpen() {
   }
   const taken = HUB_EXAMPLES.takenAt ? new Date(HUB_EXAMPLES.takenAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   const groupNote: Record<string, string> = {
-    'Hub handlers': HUB_EXAMPLES.all ? `Every handler on the Hub, most downloaded first, as of ${esc(taken)}` : `The most downloaded, current version verified, as of ${esc(taken)}`,
+    'Hub handlers': HUB_EXAMPLES.all ? `Every handler on the Hub as of ${esc(taken)}, most downloaded first. Newer ones may be on the Hub` : `The most downloaded, current version verified, as of ${esc(taken)}`,
     'Engine templates': 'The same templates the SplitScreen.Me Discord bot sends with /create',
   };
   // Searching: results grouped by kind (the best match's group first), each group with a count.
@@ -2423,7 +2432,7 @@ setViewMode(viewMode);
 pkgUI = initPackageUI({
   editor,
   getFiles: () => packageFiles,
-  setFiles: (files) => { packageFiles = files; storeFiles(files); renderDocHead(); if (tabsReady) saveTabs(); },
+  setFiles: (files) => { packageFiles = files; storeFiles(files); if (!doc.filesEdited) { doc.filesEdited = true; saveDocMeta(); } renderDocHead(); if (tabsReady) saveTabs(); },
   showMain: () => setViewMode(viewMode),
   changed: () => { pkgProblems = pkgUI!.problems(); (editor as any).performLint(); },
   extraSection: gameSection,
@@ -2877,11 +2886,31 @@ function syncSaveButton() {
   $('#code-menu-open').title = `Save: ${SAVE_LABEL[k]} · Ctrl+S`;
 }
 syncSaveButton();
+let codeDialogOpening = 0;
 function openCodeDialog() {
+  pkgUI?.flush(); // a package file typed in just now counts
+  const opening = ++codeDialogOpening; // a slow link from an earlier opening doesn't update this one
   $('#save-h').textContent = 'Share';
   $('#code-main').hidden = false;
   $('#code-done').hidden = true;
   const len = editor.getValue().length + 10;
+  // Which of the two leads: the link when it carries the whole handler and fits a Discord message, else the file.
+  const selection = !!editor.getSelection();
+  // Unchanged (code and package files): the link is the handler's own; a name link (#hub-…) is short and opens its files too.
+  const unchanged = !!doc.hash && editor.getValue() === loadedText && !doc.filesEdited && !selection;
+  const named = unchanged && isNamedLink(doc.hash);
+  const advise = (linkLength: number | null) => {
+    const a = shareAdvice({ selection, files: packageFiles.length, linkLength, named });
+    $('#code-link-sub').textContent = a.linkSub;
+    $('#code-file-sub').textContent = a.fileSub;
+    codeDialog.querySelector('[data-code=link]')!.className = a.fileFirst ? 'code-opt' : 'code-hero';
+    codeDialog.querySelector('[data-code=file]')!.className = a.fileFirst ? 'code-hero' : 'code-opt';
+  };
+  advise(null);
+  // The link's real length takes a moment (it's compressed): the dialog opens at once and settles when it's known.
+  const base = location.href.replace(/#.*$/, '').length + 1;
+  if (unchanged) advise(base + doc.hash!.length);
+  else void encodeShare(editor.getSelection() || editor.getValue()).then((id) => { if (codeDialog.open && opening === codeDialogOpening) advise(base + id.length); }, () => {});
   $('#code-discord-sub').textContent = len > DISCORD_LIMIT ? `Too long for one message (${len.toLocaleString()} of ${DISCORD_LIMIT.toLocaleString()} characters): select the lines that matter first` : 'The code in a code block, ready to paste';
   codeDialog.showModal();
 }
@@ -2898,6 +2927,7 @@ function showInstallSteps(filename: string) {
   $('#code-close').focus();
 }
 async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveButton()) {
+  pkgUI?.flush();
   try { localStorage.setItem(SAVE_KEY, kind); } catch { /* not kept */ }
   syncSaveButton();
   if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
@@ -2905,6 +2935,7 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
   try {
     const text = exportText();
     const data = kind === 'js' ? new TextEncoder().encode(text) : buildPackage(text, packageFiles);
+    const remote = packageFiles.filter((f) => f.remote);
     await downloads.save({ filename, data });
     waka.saved();
     use(`save-${kind}`);
@@ -2914,20 +2945,52 @@ async function saveAs(kind: SaveKind = saveKind(), trigger: HTMLElement = saveBu
     if (kind === 'zip' && seen < 2) showInstallSteps(filename);
     else confirmOn(trigger, 'Saved ✓', `Saved ${filename}.`);
     // Files of a Hub package that weren't downloaded here can't go in it: say so, with the original.
-    const remote = kind === 'js' ? [] : packageFiles.filter((f) => f.remote);
-    if (remote.length) {
-      const url = remote[0].remote!.url;
-      notice(`Saved without ${remote.length} big file${remote.length === 1 ? '' : 's'} from the Hub package (${fileSize(remote.reduce((n, f) => n + f.remote!.size, 0))}: ${remote.slice(0, 3).map((f) => f.name.split('/').pop()).join(', ')}${remote.length > 3 ? ', …' : ''}), which aren't downloaded here. Get them from the original package on the Hub.`, { kind: 'warning', action: { label: 'Open the Hub page', run: () => window.open(url, '_blank', 'noopener') } });
-    }
+    if (kind !== 'js') noteRemoteFiles(remote);
   } catch (e: any) {
     if (e?.code === 'declined') return;
     notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
   }
 }
+/** After saving a package: the Hub package's big files that aren't downloaded here aren't in it. */
+function noteRemoteFiles(remote = packageFiles.filter((f) => f.remote)) {
+  if (!remote.length) return;
+  const url = remote[0].remote!.url;
+  notice(`Saved without ${remote.length} big file${remote.length === 1 ? '' : 's'} from the Hub package (${fileSize(remote.reduce((n, f) => n + f.remote!.size, 0))}: ${remote.slice(0, 3).map((f) => f.name.split('/').pop()).join(', ')}${remote.length > 3 ? ', …' : ''}), which aren't downloaded here. Get them from the original package on the Hub.`, { kind: 'warning', action: { label: 'Open the Hub page', run: () => window.open(url, '_blank', 'noopener') } });
+}
+/**
+ * Share the file: the .zip (the code and every file with it), plus a message to post with it, on the clipboard.
+ * For what a link can't carry or Discord won't take; whoever gets the file drops it on the workbench.
+ */
+async function shareFile(trigger: HTMLElement) {
+  pkgUI?.flush();
+  if (!downloads) return notice("Saving files isn't available here. Share › Copy the code, and paste it into a .js file.", { kind: 'error' });
+  const filename = `${handlerFileName()}.zip`;
+  // The public site, not this page's own address, inside a Claude artifact or from a file on disk.
+  const site = (window as any).claude || !/^https?:$/.test(location.protocol) ? 'https://snailedlt.github.io/nucleuscoop-handler-testbench/' : location.href.replace(/[?#].*$/, '');
+  const game = editor.getValue().match(/^\s*Game\.GameName\s*=\s*"([^"]*)"/m)?.[1] ?? '';
+  // What's open now, before anything waits: the person may switch tab or edit while the clipboard answers.
+  let data: Uint8Array;
+  try { data = buildPackage(exportText(), packageFiles); } catch { return notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' }); }
+  const remote = packageFiles.filter((f) => f.remote);
+  // The message first: after the save dialog the browser may no longer let the page copy.
+  let copied = true;
+  try { await navigator.clipboard.writeText(shareFileMessage({ game, filename, site })); } catch { copied = false; }
+  try {
+    await downloads.save({ filename, data });
+  } catch (e: any) {
+    if (e?.code === 'declined') return;
+    return notice("Couldn't save the file here. Share › Copy the code instead, and paste it into a .js file.", { kind: 'error' });
+  }
+  waka.saved();
+  use('share-file');
+  confirmOn(trigger, 'Saved ✓', copied ? `Saved ${filename} and copied a message to post with it. Attach the file where you paste the message.` : `Saved ${filename}. Attach it to your message: whoever gets it drops it on this page to open it.`);
+  noteRemoteFiles(remote);
+}
 // Save into Nucleus: straight into its handlers folder (Chrome, Edge); elsewhere the .zip, to drop onto Nucleus.
 let nucleusFolderName: string | undefined;
 void rememberedName().then((n) => (nucleusFolderName = n));
 async function saveToNucleus(pick = false, trigger: HTMLElement = saveButton()) {
+  pkgUI?.flush();
   if (!canSaveIntoFolder()) {
     await saveAs('zip', trigger);
     notice("This browser can't save into a folder: drag the .zip onto Nucleus Co-op's window to install it. (Chrome and Edge can save straight into Nucleus' handlers folder.)", { kind: 'info' });
@@ -2978,6 +3041,7 @@ codeDialog.querySelectorAll<HTMLButtonElement>('[data-code]').forEach((b) =>
     if (kind === 'copy') return copyCode();
     if (kind === 'link') return copyLink(shareButton());
     if (kind === 'discord') return copyForDiscord(shareButton());
+    if (kind === 'file') return shareFile(shareButton());
   }),
 );
 initSheetDrag();

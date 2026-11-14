@@ -95,7 +95,7 @@ export function routeLink(h: string, cat: LinkCatalog): LinkTarget {
 
 /** What an unknown link says, and the way on it offers: never a dead end. */
 export function unknownNote(t: LinkTarget): { text: string; action: { label: string; to: 'hub' | 'probes' | 'open'; url?: string } } | undefined {
-  if (t.kind === 'unknown-hub') return { text: "That Hub handler isn't one of the examples in this version of the workbench. It's still on the Hub.", action: { label: 'Open it on the Hub', to: 'hub', url: `https://hub.splitscreen.me/handler/${encodeURIComponent(t.id)}` } };
+  if (t.kind === 'unknown-hub') return { text: "That Hub handler isn't in the workbench's copy of the Hub. It may be new: look on the Hub.", action: { label: 'Open it on the Hub', to: 'hub', url: `https://hub.splitscreen.me/handler/${encodeURIComponent(t.id)}` } };
   if (t.kind === 'unknown-probe') return { text: `There's no probe ${t.number} in this version of the workbench; the probes are numbered again when they change.`, action: { label: 'See the probes', to: 'probes' } };
   if (t.kind === 'unknown') return { text: `The link "#${t.hash}" is from another version of the workbench, or mistyped: it doesn't match anything here.`, action: { label: 'Open an example or a Hub handler', to: 'open' } };
   return undefined;

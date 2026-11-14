@@ -12,6 +12,30 @@ How to write it (people and AI agents read this, and the workbench shows it):
 - When it goes live: rename "## Unreleased" to "## <yyyy-mm-dd>" (add " HH:MM", UTC, for a second release on the same day). A `---` line separates releases.
 -->
 
+## Unreleased
+
+### ✨ New
+
+- **Share the file.** Share has a new choice for handlers a link can't carry: it saves the .zip (the code and every file with it) and copies a short message to post with it. It leads the dialog when the handler has other files, or when the link would be too long for a Discord message (2,000 characters). Whoever gets the file drops it on the workbench to open it, or onto Nucleus Co-op to play.
+
+### 🛠️ Improved
+
+- **Hub handlers say how fresh they are.** An opened Hub handler shows the date of the workbench's copy of the Hub next to its version, and the list says newer ones may be on the Hub.
+- **A link to an unchanged Hub handler says it's short.** Share now tells you that link opens the whole handler, files included.
+
+### 🐛 Fixed
+
+- **A Hub handler that isn't verified no longer says "verified on the Hub".** It shows "not verified", as the list already did.
+- **Learn keeps your code.** What you typed in a lesson is still there after a reload or a browser restart. Reset (above the code) goes back to the lesson's start and forgets it.
+- **One Reset in Learn.** After Show me there used to be two Reset buttons; now Show me steps aside and the one above the code stays.
+- **Learn's header fits on a phone.** The lesson count no longer gets cut off and the page no longer scrolls sideways; the chapter name gives way on narrow screens.
+- **Copy no longer covers code in Learn.** The button has a row of its own above the code.
+- **The lines to add are highlighted across the whole code block in Learn,** also when it scrolls sideways.
+- **Learn's file name stays on one line** above the code; the shortcut hints give way instead.
+- **Explain shows a template string as it's written** (backticks kept), in the workbench and in Learn.
+
+---
+
 ## 2026-11-13
 
 ### ✨ New

@@ -154,6 +154,23 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(400);
   check((await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) === 'Game.GUID = "A";\nGame.GameName = "A";\nGame.ExecutableName = "a.exe";\nGame.Play = function () {\n    Context.StartArguments = "-w";\n};\n', `${theme}: Shift+Alt+F formats the code`);
   check(/Shortcut|Pitfall|Best practice|Feature|Setting|Heads up/.test(await p.innerText('#tip-label').catch(() => '')), `${theme}: tips show their topic`);
+  // Share: the link leads while it fits a Discord message; past that, the file does (the .zip and a message to post).
+  const shareLead = async () => {
+    await p.click('#share-open');
+    await p.waitForTimeout(500);
+    const r = await p.evaluate(() => ({ lead: document.querySelector('#code-dialog .code-hero')?.dataset.code, link: document.querySelector('#code-link-sub').textContent, file: document.querySelector('#code-file-sub').textContent }));
+    await p.click('#code-close');
+    return r;
+  };
+  const short = await shareLead();
+  check(short.lead === 'link' && /Opens this handler/.test(short.link), `${theme}: Share leads with the link for a short handler (${short.lead}: ${short.link})`);
+  const shortCode = await p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue());
+  // Text that doesn't compress, so the link is long whatever the compression.
+  await p.evaluate(() => { let x = 7, pad = ''; for (let i = 0; i < 4000; i++) { x = (x * 1103515245 + 12345) % 2147483648; pad += String.fromCharCode(97 + (x % 26)); } const cm = document.querySelector('.CodeMirror').CodeMirror; cm.setValue(cm.getValue() + '// ' + pad + '\n'); });
+  const long = await shareLead();
+  check(long.lead === 'file' && /too long for a Discord message/.test(long.link) && /\.zip/.test(long.file), `${theme}: Share leads with the file when the link is too long for Discord (${long.lead}: ${long.link})`);
+  await p.evaluate((c) => document.querySelector('.CodeMirror').CodeMirror.setValue(c), shortCode);
+  await p.waitForTimeout(200);
   // Folding, as in VS Code: Ctrl+K Ctrl+0 folds all, Ctrl+K Ctrl+J unfolds all.
   const folds = () => p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getAllMarks().filter((m) => m.__isFold).length);
   await p.click('.CodeMirror-code');
@@ -308,6 +325,51 @@ for (const theme of ['light', 'dark']) {
         check(/not downloaded here/.test(await p.$eval('#file-card', (e) => e.textContent)), `${theme}: a big file of the Hub package shows where to get it`);
       }
       await axe(p, `${theme}, Files panel with a Hub package`);
+      // Share right after typing in one of its text files (before the pause that saves it): the edit counts, so the
+      // file leads, not the Hub link (which would open the original files).
+      // A Hub handler whose package has a text file that's downloaded here (hub/<id>.files.json in this build).
+      const txt = (() => {
+        const dir = path.join(root, 'hub');
+        for (const n of fs.existsSync(dir) ? fs.readdirSync(dir).filter((x) => x.endsWith('.files.json')).sort() : []) {
+          const f = JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8')).files.find((x) => x.b64 !== undefined && /\.(ini|txt|cfg|json)$/i.test(x.name));
+          if (f) return { id: n.replace(/\.files\.json$/, ''), name: f.name };
+        }
+        return null;
+      })();
+      if (txt) {
+        await p.goto(BASE + '#hub-' + txt.id);
+        await p.waitForTimeout(1500);
+        if (await p.$eval('#files-panel', (e) => e.hidden)) await p.click('#files-toggle');
+        await p.waitForTimeout(300);
+        await p.click(`#files-panel .fp-open[data-fp="${txt.name.replace(/"/g, '\\"')}"]`);
+        await p.waitForTimeout(300);
+        const opened = !(await p.$eval('#file-editor', (e) => e.hidden));
+        check(opened, `${theme}: ${txt.name} opens in the file editor`);
+        if (opened) {
+          await p.evaluate(() => { document.querySelector('#file-editor .CodeMirror').CodeMirror.replaceRange('; edited\n', { line: 0, ch: 0 }); document.querySelector('#share-open').click(); });
+          await p.waitForTimeout(500);
+          const lead = await p.evaluate(() => document.querySelector('#code-dialog .code-hero')?.dataset.code);
+          await p.click('#code-close');
+          check(lead === 'file', `${theme}: Share right after editing a package file leads with the file (${lead})`);
+          // Edit again, go straight to handler.js and Share the file, all in the same tick (well inside the 350 ms
+          // pause): the downloaded .zip has the edit. buildPackage stores files uncompressed, so the text is in the bytes.
+          await p.click(`#files-panel .fp-open[data-fp="${txt.name.replace(/"/g, '\\"')}"]`);
+          await p.waitForTimeout(200);
+          const [zip] = await Promise.all([
+            p.waitForEvent('download'),
+            p.evaluate(() => {
+              document.querySelector('#file-editor .CodeMirror').CodeMirror.replaceRange('; second edit\n', { line: 0, ch: 0 });
+              document.querySelector('#files-panel .fp-open[data-fp=""]').click();
+              document.querySelector('#share-open').click();
+              document.querySelector('#code-dialog [data-code=file]').click();
+            }),
+          ]);
+          const zipText = fs.readFileSync(await zip.path()).toString('latin1');
+          check(/\.zip$/.test(zip.suggestedFilename()) && zipText.includes('; second edit'), `${theme}: an edit made just before switching to handler.js and sharing at once is in the .zip (${zip.suggestedFilename()})`);
+          await p.waitForTimeout(300);
+          if (await p.$eval('#code-dialog', (d) => d.open)) await p.click('#code-close');
+        }
+      }
     }
   }
   // A first visit (beta): the tester questions come first, can't be skipped, and lead to the recommendations.
@@ -724,6 +786,10 @@ await m.ctx.close();
     await s.p.evaluate(() => { const cm = document.querySelector('.CodeMirror').CodeMirror; cm.replaceRange('Game.GUID = "SRB2 Tutorial";\nGame.GameName = "SRB2 Tutorial";\n', { line: cm.lastLine(), ch: 0 }); });
     await s.p.waitForTimeout(600);
     check(await s.p.isVisible('#task.ok'), `learn ${theme}: typing the lines ticks the task`);
+    await s.p.waitForTimeout(500); // the draft is saved shortly after typing
+    await s.p.reload();
+    await s.p.waitForTimeout(600);
+    check(/SRB2 Tutorial/.test(await s.p.evaluate(() => document.querySelector('.CodeMirror').CodeMirror.getValue())) && (await s.p.isVisible('#task.ok')), `learn ${theme}: typed code is still there after a reload`);
     check(/Nothing wrong so far/.test(await s.p.textContent('#pane')), `learn ${theme}: Check leaves out the lines a lesson soon adds, and says so`);
     await axe(s.p, `${theme}, learn code lesson`);
     await s.p.goto(BASE + 'learn/#first-handler/name');
@@ -743,7 +809,12 @@ await m.ctx.close();
     check(!(await s.p.isVisible('#task.ok')), `learn ${theme}: a lesson starts from its own code, unfinished`);
     await s.p.click('#show');
     await s.p.waitForTimeout(600);
-    check((await s.p.isVisible('#task.ok')) && /Fullscreen = "0"/.test(await s.p.textContent('#pane')) && (await s.p.textContent('#show')) === 'Reset', `learn ${theme}: the Show me button passes, Try it shows each player's settings, and the button turns into Reset`);
+    check((await s.p.isVisible('#task.ok')) && /Fullscreen = "0"/.test(await s.p.textContent('#pane')) && (await s.p.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.offsetParent && getComputedStyle(b).visibility !== 'hidden' && /^\s*Reset\s*$/.test(b.textContent)).length)) === 1 && !(await s.p.evaluate(() => getComputedStyle(document.querySelector('#show')).visibility === 'visible')), `learn ${theme}: the Show me button passes, Try it shows each player's settings, Show me steps aside and there's one Reset`);
+    await s.p.click('#reset');
+    await s.p.waitForTimeout(500);
+    check(!(await s.p.isVisible('#task.ok')) && (await s.p.evaluate(() => getComputedStyle(document.querySelector('#show')).visibility === 'visible')), `learn ${theme}: Reset goes back to the lesson's start, and Show me is back`);
+    await s.p.click('#show');
+    await s.p.waitForTimeout(600);
     await s.p.selectOption('#try-players', '4');
     await s.p.waitForTimeout(300);
     check((await s.p.$$('#try-out .player')).length === 4, `learn ${theme}: Try it with the players you pick`);
@@ -766,11 +837,24 @@ await m.ctx.close();
   }
   {
     const s = await page('light', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    for (const l of ['why', 'settings', 'test']) {
-      await s.p.goto(BASE + `learn/#first-handler/${l}`);
-      await s.p.waitForTimeout(400);
-      const wide = await s.p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-      check(wide <= 1, `learn phone ${l}: no sideways scrolling (${wide}px)`);
+    for (const width of [390, 360]) {
+      await s.p.setViewportSize({ width, height: 844 });
+      for (const l of ['why', 'name', 'settings', 'test']) {
+        await s.p.goto(BASE + `learn/#first-handler/${l}`);
+        await s.p.waitForTimeout(400);
+        const wide = await s.p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        check(wide <= 0, `learn phone ${width}px ${l}: no sideways scrolling (${wide}px)`);
+        // The header: the lesson count whole, and no "›" without a neighbour after it.
+        const hdr = await s.p.evaluate(() => {
+          const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+          const count = [...document.querySelectorAll('header *')].find((e) => vis(e) && /^\d+ of \d+$/.test(e.textContent.trim()) && !e.children.length);
+          const r = count?.getBoundingClientRect();
+          const seps = [...document.querySelectorAll('header *')].filter((e) => vis(e) && !e.children.length && e.textContent.trim() === '›');
+          const lone = seps.filter((sep) => { let n = sep.nextElementSibling; while (n && !vis(n)) n = n.nextElementSibling; return !n || !n.textContent.trim(); });
+          return { count: r ? r.left >= 0 && r.right <= document.documentElement.clientWidth : false, lone: lone.length };
+        });
+        check(hdr.count && !hdr.lone, `learn phone ${width}px ${l}: the header shows the lesson count whole, no lone ›`);
+      }
     }
     check(!s.errors.length, `learn phone: no page errors ${s.errors.join(' ')}`);
     await s.ctx.close();

@@ -12,6 +12,7 @@ import 'codemirror/addon/hint/show-hint';
 import { hoverAt, completionsAt, explainLine, signatureHelpAt, type CompletionEntry } from '@core/features';
 import { formatHandler } from '@core/format';
 import { kbdify } from '../kbd';
+import { createDrafts } from './drafts';
 import { semanticMarks } from '../semmarks';
 import type { Diagnostic } from '@core/lint';
 import { codeHandlers, fixedCodeKeys, vscodeMouse } from '../keys';
@@ -55,9 +56,22 @@ const testEvent = (name: string, detail: string) => { try { (window as any).goat
 
 let chapter: Chapter = CHAPTERS[0];
 let index = 0;
-const edits = new Map<string, string>();
 const lesson = (): Lesson => chapter.lessons[index];
 const keyOf = (l: Lesson) => `${chapter.id}/${l.id}`;
+
+// What the learner typed in each code lesson, kept across reloads (drafts.ts: one entry per lesson).
+const drafts = createDrafts(() => { try { return localStorage; } catch { return undefined; } });
+let draftTimer: ReturnType<typeof setTimeout> | undefined;
+const saveDrafts = () => { clearTimeout(draftTimer); draftTimer = undefined; drafts.save(); };
+addEventListener('pagehide', () => { if (drafts.pending()) saveDrafts(); });
+/** The learner's code for a code lesson, if they changed it (and the lesson still starts the same). */
+const draftFor = (l: Lesson): string | undefined => drafts.get(keyOf(l), l.start);
+function setDraft(l: Lesson, code: string) {
+  drafts.set(keyOf(l), l.start, code);
+  if (!drafts.pending()) return;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(saveDrafts, 400);
+}
 
 const editor = CodeMirror($('#code'), {
   value: '',
@@ -337,14 +351,16 @@ function renderTryIt(text: string) {
 let checkTimer: ReturnType<typeof setTimeout> | undefined;
 /** The learner has typed in this lesson (hints only show after that). */
 let touched = false;
-/** The Show me button: "Show me" until the editor holds the answer, then "Reset". */
+/** The Show me button, in code lessons until the editor holds the answer. It keeps its place when it hides, so Back
+ *  and Next don't move; Reset is the code bar's (#reset). */
 function syncShow() {
   const l = lesson();
   const b = $('#show');
   b.hidden = l.kind !== 'code';
   const done = editor.getValue() === l.solution;
-  b.textContent = done ? 'Reset' : 'Show me';
-  b.dataset.act = done ? 'reset' : 'show';
+  b.style.visibility = done ? 'hidden' : '';
+  b.setAttribute('aria-hidden', String(done));
+  b.tabIndex = done ? -1 : 0;
 }
 function status() {
   const l = lesson();
@@ -369,7 +385,8 @@ editor.on('change', (_cm: any, ch: any) => {
   const l = lesson();
   if (ch?.origin !== 'setValue') touched = true;
   if (ch?.origin !== 'setValue' && ch?.origin !== 'complete') clearDiff();
-  if (l.kind === 'code') edits.set(keyOf(l), editor.getValue());
+  // Only the learner's own edits: opening a lesson (setValue) restores its draft and writes nothing.
+  if (l.kind === 'code' && ch?.origin !== 'setValue') setDraft(l, editor.getValue());
   clearTimeout(checkTimer);
   checkTimer = setTimeout(status, 300);
 });
@@ -423,7 +440,7 @@ function renderLesson(focus = false) {
     // Read-only code still scrolls from the keyboard.
     const scroller = editor.getScrollerElement();
     if (l.kind === 'test') { scroller.tabIndex = 0; scroller.setAttribute('aria-label', 'The handler (read-only)'); } else { scroller.removeAttribute('tabindex'); scroller.removeAttribute('aria-label'); }
-    editor.setValue(l.kind === 'code' ? edits.get(keyOf(l)) ?? l.start : l.start);
+    editor.setValue(l.kind === 'code' ? draftFor(l) ?? l.start : l.start);
     editor.clearHistory();
     $('#pane').hidden = !l.pane;
     $('#pane').innerHTML = '';
@@ -529,7 +546,7 @@ const scene = (() => {
 
 // ------------------------------------------------------------------------------------------------------------
 // The Show me button: the answer in the editor, the lines it added marked (Svelte 4's button, Svelte 5's diff);
-// then Reset.
+// the code bar's Reset goes back to the lesson's start.
 let diffLines: number[] = [];
 function clearDiff() {
   for (const n of diffLines) editor.removeLineClass(n, 'background', 'diff-add');
@@ -551,6 +568,7 @@ function showMe() {
   const l = lesson();
   const before = editor.getValue();
   editor.setValue(l.solution);
+  if (l.kind === 'code') setDraft(l, l.solution); // Show me's code is kept like the learner's
   clearDiff();
   diffLines = addedLines(before === l.solution ? l.start : before, l.solution);
   for (const n of diffLines) editor.addLineClass(n, 'background', 'diff-add');
@@ -559,13 +577,13 @@ function showMe() {
 }
 function reset() {
   clearDiff();
-  editor.setValue(lesson().start);
+  const l = lesson();
+  editor.setValue(l.start);
+  setDraft(l, l.start); // Reset also forgets the saved code
+  saveDrafts();
   editor.focus();
 }
-$('#show').addEventListener('click', () => {
-  if ($('#show').dataset.act === 'show') showMe(); else reset();
-  status();
-});
+$('#show').addEventListener('click', () => { showMe(); status(); });
 $('#reset').addEventListener('click', () => { reset(); status(); });
 
 // ------------------------------------------------------------------------------------------------------------
