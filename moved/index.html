@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Moved: Nucleus handler workbench</title>
+<link rel="canonical" href="https://snailedlt.github.io/nucleus-devtools/">
+<script>
+  // Same page, same query and #link, at the new address.
+  (function () {
+    var path = location.pathname.replace(/^\/nucleuscoop-handler-testbench(\/|$)/, '/nucleus-devtools/');
+    if (path.indexOf('/nucleus-devtools/') !== 0) path = '/nucleus-devtools/';
+    location.replace('https://snailedlt.github.io' + path + location.search + location.hash);
+  })();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=https://snailedlt.github.io/nucleus-devtools/"></noscript>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 36rem; margin: 15vh auto; padding: 0 1.25rem; }
+  a { color: #0b62d6; }
+  @media (prefers-color-scheme: dark) { body { background: #16181d; color: #e8eaed; } a { color: #7cb4ff; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>The workbench has moved</h1>
+  <p>The Nucleus handler workbench is now part of <strong>nucleus-devtools</strong>, at a new address. Taking you there…</p>
+  <p><a id="to" href="https://snailedlt.github.io/nucleus-devtools/">Go to snailedlt.github.io/nucleus-devtools</a></p>
+  <p>Please update your bookmarks and links.</p>
+</main>
+<script>
+  document.getElementById('to').href = 'https://snailedlt.github.io' + location.pathname.replace(/^\/nucleuscoop-handler-testbench(\/|$)/, '/nucleus-devtools/') + location.search + location.hash;
+</script>
+</body>
+</html>

@@ -1,14 +1,11 @@
-name: Workbench (GitHub Pages)
-# Publishes the browser workbench to https://snailedlt.github.io/nucleuscoop-handler-testbench/
-# Built from this repo plus splitscreenme-vscode's main branch (the linter and Try it), with a fresh
-# snapshot of verified Hub handlers (from our daily Hub index; only new versions are looked up) and
-# the Discord bot's templates. Built daily, but deployed only when the result differs from the live site.
-# One-time setup: Settings > Pages > Build and deployment > Source: "GitHub Actions".
+# The workbench moved to Snailedlt/nucleus-devtools (https://snailedlt.github.io/nucleus-devtools/).
+# This address now serves only a small page that forwards every old link (path, query and #link) there:
+# moved/index.html for the root, moved/404.html for every other path.
+name: Pages (moved note)
+
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '41 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -18,178 +15,18 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: Snailedlt/splitscreenme-vscode
-          ref: main
-          path: core
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci
-        working-directory: core
-      - run: npm ci
-        working-directory: playground
-      - name: Newest usage counts for Lines (the weekly check publishes them on the data branch)
-        run: |
-          git fetch -q --depth 1 origin data || exit 0
-          git show FETCH_HEAD:usage.json > "$RUNNER_TEMP/usage.json" 2>/dev/null || { echo "No usage.json on the data branch yet: keeping the committed one."; exit 0; }
-          node -e 'const u = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (!(u.handlers > 0 && u.counts)) process.exit(1)' "$RUNNER_TEMP/usage.json" && cp "$RUNNER_TEMP/usage.json" playground/src/usage.json
-      - name: Every Hub handler, from our own copy (the data branch; tools/hub-mirror.mjs keeps it, no Hub requests here)
-        run: git clone -q --depth 1 --branch data "https://github.com/${{ github.repository }}.git" playground/.hubdata
-      - name: The mascot download packs (the assets branch)
-        run: |
-          git clone -q --depth 1 --branch assets "https://github.com/${{ github.repository }}.git" playground/.assets || echo "No assets branch, so the mascot page's Downloads stay empty."
-      - name: Build (all Hub handlers from the data branch)
-        run: node build.mjs --core ../core --hub-data .hubdata --assets .assets
-        env:
-          GITHUB_TOKEN: ${{ github.token }} # the start page's download link (newest .vsix release)
-          FEEDBACK_GOATCOUNTER: ${{ vars.FEEDBACK_GOATCOUNTER || secrets.FEEDBACK_GOATCOUNTER }} # anonymous votes (src/feedback.ts), a variable or a secret; empty: nothing is sent
-        working-directory: playground
-      - name: The previous release at /previous/, for testers to compare (playground/previous.json; none, none built)
-        run: |
-          [ -f playground/previous.json ] || { echo "No previous.json: not building a previous version."; exit 0; }
-          bench=$(node -p "require('./playground/previous.json').bench")
-          core=$(node -p "require('./playground/previous.json').core")
-          label=$(node -p "require('./playground/previous.json').label")
-          git fetch -q --depth 1 origin "$bench"
-          git worktree add -q --detach "$RUNNER_TEMP/prev" "$bench"
-          git clone -q --filter=blob:none https://github.com/Snailedlt/splitscreenme-vscode.git "$RUNNER_TEMP/prev-core"
-          git -C "$RUNNER_TEMP/prev-core" -c advice.detachedHead=false checkout -q "$core"
-          (cd "$RUNNER_TEMP/prev-core" && npm ci --silent)
-          (cd "$RUNNER_TEMP/prev/playground" && npm ci --silent && node build.mjs --core "$RUNNER_TEMP/prev-core")
-          node tools/previous-wrap.mjs "$RUNNER_TEMP/prev/playground/dist/pages/index.html" playground/dist/pages/previous/index.html "$label"
-      - name: Typecheck the workbench (catches code the smoke test doesn't reach)
-        run: npx tsc --noEmit -p tsconfig.ci.json  # the extension is checked out at ../core here
-        working-directory: playground
-      - name: Workbench unit tests and links that must live for ever (tools/workbench-units.test.mjs, tools/links.test.mjs)
-        run: npm test # the extension at ../core, as in tools/bundle-ts.mjs
-        working-directory: playground
-      - name: Try it still matches Jint on every probe
-        run: node sim-parity.mjs --core ../core
-        working-directory: playground
-      - name: Unit tests (Hub package files; feedback links match the extension's issue forms and bot)
-        run: |
-          node tools/hub-files.test.mjs
-          node tools/hub-client.test.mjs
-          node tools/report-links.test.mjs
-          node tools/credit.test.mjs
-      - name: Browser smoke test (Check, Fix all, Try it, packages, themes, keyboard, accessibility)
-        run: |
-          npx playwright install --with-deps chromium
-          node smoke.mjs
-        working-directory: playground
-      - name: A new release section? (the live release.txt is the last announced one)
-        id: release
-        run: |
-          live=$(curl -fsS https://snailedlt.github.io/nucleuscoop-handler-testbench/release.txt || true)
-          now=$(grep -m1 -oE '^## [0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2})?$' CHANGELOG.md | cut -c4- || true)
-          [ -n "$now" ] && echo "$now" > playground/dist/pages/release.txt
-          if [ -n "$now" ] && [ "$live" != "$now" ]; then echo "New: $now (live: ${live:-none})"; echo "id=$now" >> "$GITHUB_OUTPUT"; else echo "No new release section."; fi
-      - name: Anything new to deploy? (the live build.txt is the last deploy's fingerprint)
-        id: changed
-        run: |
-          live=$(curl -fsS https://snailedlt.github.io/nucleuscoop-handler-testbench/build.txt || true)
-          now=$(cat playground/dist/pages/build.txt)
-          if [ "$live" = "$now" ] && [ -z "${{ steps.release.outputs.id }}" ] && [ "${{ github.event_name }}" != workflow_dispatch ]; then echo "Same as the live site: skipping the deploy."; echo "deploy=false" >> "$GITHUB_OUTPUT"; else echo "deploy=true" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/upload-pages-artifact@v3
-        if: steps.changed.outputs.deploy == 'true'
-        with:
-          path: playground/dist/pages
-    outputs:
-      deploy: ${{ steps.changed.outputs.deploy }}
-      release: ${{ steps.release.outputs.id }}
   deploy:
-    needs: build
-    if: needs.build.outputs.deploy == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # the GitHub release with the update's notes
-      pages: write
-      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: moved
       - id: deployment
         uses: actions/deploy-pages@v4
-      # The release notes, once per new CHANGELOG.md section: on Discord with a DISCORD_WEBHOOKS
-      # secret (one webhook URL per line), and in the run summary to copy either way.
-      - uses: actions/checkout@v4
-        if: needs.build.outputs.release != ''
-      - name: Announce the update on Discord
-        if: needs.build.outputs.release != ''
-        env:
-          DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
-          RELEASE: ${{ needs.build.outputs.release }}
-        run: |
-          node tools/release-post.mjs "$RELEASE" > post.txt
-          node tools/release-post.mjs "$RELEASE" --json > post.json
-          node tools/announce.mjs post.json
-          { echo "### 💬 Workbench update ($RELEASE)"; echo; echo '```text'; cat post.txt; echo '```'; echo; if [ -n "${{ secrets.DISCORD_WEBHOOKS != '' && 'yes' || '' }}" ]; then echo "Posted to Discord automatically (DISCORD_WEBHOOKS)."; else echo "Not posted: add a DISCORD_WEBHOOKS secret (one webhook URL per line) to post it automatically."; fi; } >> "$GITHUB_STEP_SUMMARY"
-      - name: Publish the update as a GitHub release (the same notes as What's new)
-        id: publish
-        if: needs.build.outputs.release != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE: ${{ needs.build.outputs.release }}
-        run: |
-          tag=$(node tools/release-post.mjs "$RELEASE" --tag)
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          node tools/release-post.mjs "$RELEASE" --notes > notes.md
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists."
-          else
-            gh release create "$tag" --target "$GITHUB_SHA" --title "Workbench update · $RELEASE" --notes-file notes.md --latest
-            echo "Published the GitHub release $tag." >> "$GITHUB_STEP_SUMMARY"
-          fi
-    outputs:
-      tag: ${{ steps.publish.outputs.tag }}
-  # Close the loop: "This is in workbench-<date>" on each issue this update fixes ("Fixes #N" in the commits since
-  # the last update, issues named under Fixed or as (#N) in its notes), this repository's only, once each, with a
-  # thanks to the reporter. The logic is splitscreenme-vscode's scripts/issue-bots.mjs (tested there), as on main.
-  # A job of its own: the code from the other repository never runs where the token can write contents or Pages,
-  # and a failure here never fails the deploy.
-  issues:
-    needs: [build, deploy]
-    if: needs.build.outputs.release != '' && needs.deploy.outputs.tag != ''
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    permissions:
-      contents: read
-      issues: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: Snailedlt/splitscreenme-vscode
-          ref: main
-          path: devtools
-          persist-credentials: false
-          sparse-checkout: scripts/issue-bots.mjs
-          sparse-checkout-cone-mode: false
-      - name: Tell the issues it fixes (never fails the deploy)
-        continue-on-error: true
-        uses: actions/github-script@v7
-        env:
-          RELEASE: ${{ needs.build.outputs.release }}
-          TAG: ${{ needs.deploy.outputs.tag }}
-        with:
-          script: |
-            const { execSync } = require('child_process');
-            const bots = await import(`${process.env.GITHUB_WORKSPACE}/devtools/scripts/issue-bots.mjs`);
-            const tag = process.env.TAG;
-            const notes = execSync(`node tools/release-post.mjs "${process.env.RELEASE}" --notes`).toString();
-            const url = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/${tag}`;
-            const commits = await bots.commitsSincePrevious({ github, context, tag, prefix: 'workbench-' });
-            const done = await bots.runFixedComments({ github, context, tag, url, notes, commits, core });
-            if (done.length) await core.summary.addRaw(`Told the issues it fixes: ${done.map((n) => `#${n}`).join(', ')}\n`).write();
